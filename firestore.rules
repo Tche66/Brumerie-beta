@@ -1,0 +1,186 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── HELPER : est-ce l'admin ? ─────────────────────────────────
+    // L'UID admin est stocké dans le document system/config (champ adminUid)
+    // Firestore ne peut pas lire les env vars — on utilise un document dédié
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/system/config) &&
+        get(/databases/$(database)/documents/system/config).data.adminUid == request.auth.uid;
+    }
+
+    // ── PRODUITS ─────────────────────────────────────────────────
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      // Propriétaire OU admin
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.sellerId || isAdmin()
+      );
+    }
+
+    // ── UTILISATEURS ─────────────────────────────────────────────
+    match /users/{userId} {
+      // Lecture réservée aux utilisateurs connectés (protège email et téléphone)
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        // Son propre profil
+        request.auth.uid == userId
+        ||
+        // Admin peut tout modifier
+        isAdmin()
+        ||
+        // Parrainage cross-user (champs limités)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['referralCount', 'referralBonusPublications',
+                    'referralBonusChats', 'referralFreeVerifiedUntil', 'isVerified'])
+      );
+    }
+
+    // ── CONVERSATIONS / MESSAGES ──────────────────────────────────
+    match /conversations/{convId} {
+      // Participants OU admin (pour messages admin)
+      allow read: if request.auth != null && (
+        request.auth.uid in resource.data.participants || isAdmin()
+      );
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        request.auth.uid in resource.data.participants || isAdmin()
+      );
+
+      match /messages/{msgId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // ── AVIS / REVIEWS ────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.reviewerId || isAdmin()
+      );
+    }
+
+    // ── NOTIFICATIONS (subcollection correcte) ───────────────────
+    // Path réel : /notifications/{userId}/items/{notifId}
+    match /notifications/{userId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId || isAdmin()
+      );
+      match /items/{notifId} {
+        allow read, write: if request.auth != null && (
+          request.auth.uid == userId || isAdmin()
+        );
+        // Permet à n'importe quel user connecté de créer une notif pour autrui
+        // (nécessaire pour broadcast admin et notifications système)
+        allow create: if request.auth != null;
+      }
+    }
+
+    // ── COMMANDES / ORDERS ────────────────────────────────────────
+    match /orders/{orderId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.buyerId ||
+        request.auth.uid == resource.data.sellerId ||
+        isAdmin()
+      );
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.buyerId ||
+        request.auth.uid == resource.data.sellerId ||
+        isAdmin()
+      );
+    }
+
+    // ── STORIES ──────────────────────────────────────────────────
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.sellerId == request.auth.uid;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.sellerId
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+        || isAdmin()
+      );
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.sellerId || isAdmin()
+      );
+    }
+
+    // ── BOOSTS ───────────────────────────────────────────────────
+    match /boosts/{boostId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.sellerId == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.sellerId == request.auth.uid || isAdmin()
+      );
+      allow delete: if request.auth != null && (
+        resource.data.sellerId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ── ADMIN LOGS ───────────────────────────────────────────────
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // logs immuables
+    }
+
+    // ── SYSTEM (bannières, settings, config) ─────────────────────
+    match /system/{docId} {
+      // Lecture publique pour bannières et maintenance
+      allow read: if true;
+      // Écriture admin uniquement
+      allow write: if isAdmin();
+    }
+
+    // ── SYSTEM BANNERS ───────────────────────────────────────────
+    match /system_banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── PARRAINAGE ───────────────────────────────────────────────
+    match /referrals/{refId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId || isAdmin()
+      );
+    }
+
+
+    // ── SIGNALEMENTS (disputes commandes) ────────────────────────
+    match /reports/{reportId} {
+      // Créer : acheteur connecté (lors d'un litige)
+      allow create: if request.auth != null;
+      // Lire : admin uniquement (données sensibles)
+      allow read: if isAdmin();
+      // Modifier/résoudre : admin uniquement
+      allow update: if isAdmin();
+      allow delete: if false; // immuable
+    }
+
+    // ── ALERTES DE RECHERCHE ─────────────────────────────────────
+    match /search_alerts/{alertId} {
+      // Chaque user gère ses propres alertes
+      allow read:   if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if false; // pas de mise à jour partielle
+      // Admin peut lire toutes les alertes (stats)
+      allow read: if isAdmin();
+    }
+
+    // ── TOUTES LES AUTRES COLLECTIONS ────────────────────────────
+    // ── CATCH-ALL : bloque toute collection non déclarée ─────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

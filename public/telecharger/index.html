@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telecharger Brumerie</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#0F172A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:28px;padding:36px 28px;max-width:400px;width:100%;text-align:center}
+.ico{font-size:64px;margin-bottom:16px}.h1{font-size:28px;font-weight:900;letter-spacing:-1px;margin-bottom:6px}
+.green{color:#4ADE80}.sub{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:32px;line-height:1.6}
+.btn{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#16A34A,#0F5C2E);border-radius:18px;padding:16px 20px;text-decoration:none;margin-bottom:12px;width:100%;cursor:pointer;transition:transform .2s}
+.btn:hover{transform:translateY(-2px)}.btn.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+.btn.off{opacity:.5;cursor:not-allowed;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+.bi{font-size:26px;flex-shrink:0}.bt{text-align:left;flex:1}
+.bs{font-size:11px;color:rgba(255,255,255,.45);margin-bottom:2px}.bm{font-size:14px;font-weight:800;color:#fff}
+.chip{font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;background:rgba(74,222,128,.2);color:#4ADE80}
+.chip.s{background:rgba(255,255,255,.08);color:rgba(255,255,255,.4)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="ico">🛍</div>
+  <div class="h1"><span class="green">Brumerie</span></div>
+  <p class="sub">Marketplace Cote d'Ivoire 🇨🇮 · Gratuit · Mobile Money</p>
+  <a href="/downloads/brumerie-android.apk" class="btn">
+    <div class="bi">🤖</div><div class="bt"><div class="bs">Android - Installation directe</div><div class="bm">Telecharger l'APK</div></div>
+    <div class="chip">APK</div>
+  </a>
+  <div class="btn off">
+    <div class="bi">🍎</div><div class="bt"><div class="bs">App Store iOS</div><div class="bm">Bientot disponible</div></div>
+    <div class="chip s">Bientot</div>
+  </div>
+  <a href="https://www.brumerie.com" class="btn ghost" style="margin-top:8px">
+    <div class="bi">🌐</div><div class="bt"><div class="bs">Sans installation</div><div class="bm">Ouvrir dans le navigateur</div></div>
+  </a>
+</div>
+</body>
+</html>
