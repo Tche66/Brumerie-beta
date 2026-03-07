@@ -1,50 +1,56 @@
-// src/utils/uploadImage.ts — Upload Cloudinary centralisé
-// Utilise les variables d'env si disponibles, sinon fallback hardcodé
-
-const CLOUD_NAME = 'dk8kfgmqx';
-const UPLOAD_PRESET = 'brumerie_preset';
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
+// src/utils/uploadImage.ts
+// Upload via Netlify Function pour éviter les erreurs CORS sur mobile Android
 
 /**
- * Upload un fichier File ou un base64 vers Cloudinary
- * Retourne l'URL sécurisée
+ * Convertit un File en base64
+ */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Enlever le préfixe "data:image/jpeg;base64,"
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Lecture fichier échouée'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Upload une image vers Cloudinary via la Netlify Function proxy
+ * Évite les erreurs CORS sur mobile Android
  */
 export async function uploadToCloudinary(
   source: File | string,
   folder = 'brumerie'
 ): Promise<string> {
-  const fd = new FormData();
+  let imageBase64: string;
+  let mimeType = 'image/jpeg';
 
-  if (typeof source === 'string') {
-    // base64 → Blob
-    const res = await fetch(source);
-    const blob = await res.blob();
-    fd.append('file', blob, 'image.jpg');
+  if (source instanceof File) {
+    mimeType = source.type || 'image/jpeg';
+    imageBase64 = await fileToBase64(source);
   } else {
-    fd.append('file', source);
+    // source = data URL base64
+    const parts = source.split(',');
+    imageBase64 = parts[1] || parts[0];
+    const mimeMatch = source.match(/data:([^;]+);/);
+    if (mimeMatch) mimeType = mimeMatch[1];
   }
 
-  fd.append('upload_preset', UPLOAD_PRESET);
-  fd.append('folder', folder);
-
-  const response = await fetch(CLOUDINARY_URL, {
+  const response = await fetch('/.netlify/functions/upload-image', {
     method: 'POST',
-    body: fd,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageBase64, folder, mimeType }),
   });
 
-  if (!response.ok) {
-    let msg = 'Upload image échoué';
-    try {
-      const err = await response.json();
-      msg = err.error?.message || `Cloudinary erreur ${response.status}: ${err.error?.message || 'inconnue'}`;
-    } catch {}
-    throw new Error(msg);
+  const data = await response.json();
+
+  if (!response.ok || !data.url) {
+    throw new Error(data.error || `Upload échoué (${response.status})`);
   }
 
-  const data = await response.json();
-  if (!data.secure_url) {
-    throw new Error('Upload échoué : URL image non reçue de Cloudinary');
-  }
-  console.log('[Cloudinary] Upload réussi:', data.secure_url);
-  return data.secure_url as string;
+  return data.url;
 }

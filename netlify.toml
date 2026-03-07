@@ -4,6 +4,8 @@
   functions = "netlify/functions"
 
 [build.environment]
+  CLOUDINARY_CLOUD_NAME = "dk8kfgmqx"
+  CLOUDINARY_UPLOAD_PRESET = "brumerie_preset"
   NODE_VERSION = "18"
 
 [functions]
@@ -27,7 +29,7 @@
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
-    Access-Control-Allow-Origin = "https://brumerie.com"
+    Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
     Vary = "Origin"
@@ -36,7 +38,7 @@
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
-    Access-Control-Allow-Origin = "capacitor://localhost"
+    Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
 
