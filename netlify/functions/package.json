@@ -1,0 +1,8 @@
+{
+  "name": "brumerie-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions pour Brumerie",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
