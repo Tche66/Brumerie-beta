@@ -39,6 +39,7 @@ import { playMessageSound, playSystemSound, unlockAudio } from '@/services/sound
 import { GuestShell } from '@/components/GuestShell';
 import { PushNotifPrompt } from '@/components/PushNotifPrompt';
 import { OnboardingGuide } from '@/components/OnboardingGuide';
+import { NetworkBanner } from '@/components/NetworkBanner';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
