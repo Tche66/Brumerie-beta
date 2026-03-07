@@ -1,12 +1,7 @@
 // src/config/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  CACHE_SIZE_UNLIMITED,
-  initializeFirestore,
-} from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -20,22 +15,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Firestore avec cache illimité (optimisé réseau mobile Afrique)
+// Firestore avec cache persistant multi-onglets (Firebase v10)
 export const db = initializeFirestore(app, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-});
-
-// Activer la persistance hors ligne (IndexedDB)
-// Mode "fail silently" — si multi-onglets ou iOS bloque, on continue sans crash
-enableIndexedDbPersistence(db, { forceOwnership: false }).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    // Plusieurs onglets ouverts — persistance désactivée pour cet onglet, pas grave
-    console.warn('[Offline] Multi-tabs: persistance désactivée pour cet onglet');
-  } else if (err.code === 'unimplemented') {
-    // Navigateur trop ancien ou mode privé iOS — pas grave
-    console.warn('[Offline] Persistance non supportée sur ce navigateur');
-  }
-  // Dans tous les cas : l'app continue de fonctionner normalement en ligne
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 });
 
 export const auth    = getAuth(app);

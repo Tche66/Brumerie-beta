@@ -24,6 +24,7 @@ type Tab = 'active' | 'sold' | 'bookmarks';
 
 export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
+  const isOwnProfile = true; // ProfilePage affiche toujours SON propre profil
   const [products, setProducts] = useState<Product[]>([]);
   const [bookmarkedProducts, setBookmarkedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);

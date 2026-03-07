@@ -1,3 +1,4 @@
+// BRUMERIE V13-FIXED — BUILD 2026-03-07-FINAL
 // src/App.tsx — Fix hooks violation #300/#310 + architecture propre
 import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';

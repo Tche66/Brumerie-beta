@@ -38,7 +38,7 @@ export async function createProduct(
     for (const file of imageFiles) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'Brumerie_preset'); 
+      formData.append('upload_preset', 'brumerie_preset'); 
 
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/dk8kfgmqx/image/upload`,
