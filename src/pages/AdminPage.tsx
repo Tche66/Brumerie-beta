@@ -577,7 +577,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
             {filteredProducts.map(p => (
               <div key={p.id} className={`bg-white rounded-2xl overflow-hidden ${p.hidden?'border-2 border-amber-200 opacity-70':''}`}>
                 <div className="flex gap-3 p-3">
-                  {p.images?.[0] && <img src={p.images[0]} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" alt=""/>}
+                  {(p.images?.[0] || (p as any).imageUrl) && <img src={p.images?.[0] || (p as any).imageUrl} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" alt=""/>}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <p className="font-black text-slate-900 text-[12px] line-clamp-2 flex-1">{p.title}</p>

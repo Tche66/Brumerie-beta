@@ -87,7 +87,6 @@ export async function getProducts(filters?: {
     let q = query(
       collection(db, 'products'),
       where('status', 'in', ['active', 'sold']),
-      where('hidden', '!=', true),
       limit(50)
     );
 
@@ -105,6 +104,9 @@ export async function getProducts(filters?: {
       images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
       createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
     })) as Product[];
+
+    // Filtre hidden côté client (compatible anciens articles sans champ hidden)
+    products = products.filter(p => !(p as any).hidden);
 
     // Tri : vérifié en premier (+20% visibilité), puis par date
     products.sort((a, b) => {
