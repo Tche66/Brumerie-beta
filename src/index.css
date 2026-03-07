@@ -27,7 +27,6 @@
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  touch-action: manipulation; /* supprime le délai 300ms sur tous les éléments */
 }
 
 input, textarea { user-select: text; }
@@ -112,14 +111,6 @@ h1, h2, h3, h4, .font-title {
 
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pageSlideIn {
-  from { opacity: 0; transform: translateX(18px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes pageSlideBack {
-  from { opacity: 0; transform: translateX(-18px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
 @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }

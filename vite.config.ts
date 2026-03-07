@@ -15,6 +15,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      // @capacitor/* = APK Android uniquement — Netlify l'ignore
       external: (id) => id.startsWith('@capacitor/'),
     },
   },
