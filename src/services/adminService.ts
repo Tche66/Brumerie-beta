@@ -57,11 +57,19 @@ export async function getAdminStats(): Promise<{
 // ─── UTILISATEURS ─────────────────────────────────────────────
 export function subscribeAllUsers(
   callback: (users: any[]) => void,
-  maxCount = 100,
+  maxCount = 500,
 ): () => void {
-  const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(maxCount));
+  // Sans orderBy — tous les users visibles même sans champ createdAt
+  const q = query(collection(db, 'users'), limit(maxCount));
   return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Tri côté client : plus récent en premier (avec fallback si createdAt absent)
+    users.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.()?.getTime() || a.createdAt?.seconds * 1000 || 0;
+      const bTime = b.createdAt?.toDate?.()?.getTime() || b.createdAt?.seconds * 1000 || 0;
+      return bTime - aTime;
+    });
+    callback(users);
   }, () => callback([]));
 }
 

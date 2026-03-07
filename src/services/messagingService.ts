@@ -109,7 +109,7 @@ export async function sendMessage(
   const convSnap = await getDoc(convRef);
   if (!convSnap.exists()) return;
   const conv = convSnap.data() as Conversation;
-  const otherId = conv.participants.find(p => p !== senderId) || '';
+  const otherId = (conv.participants || []).find(p => p !== senderId) || '';
 
   // Ajouter le message
   batch.set(msgRef, {
@@ -166,7 +166,7 @@ export async function sendProductCard(
   const convSnap = await getDoc(convRef);
   if (!convSnap.exists()) return;
   const conv = convSnap.data() as Conversation;
-  const otherId = conv.participants.find(p => p !== senderId) || '';
+  const otherId = (conv.participants || []).find(p => p !== senderId) || '';
 
   batch.set(msgRef, {
     conversationId: convId,
@@ -281,7 +281,7 @@ export async function sendOfferCard(
   const convSnap = await getDoc(convRef);
   if (!convSnap.exists()) return;
   const conv = convSnap.data() as Conversation;
-  const otherId = conv.participants.find(p => p !== senderId) || '';
+  const otherId = (conv.participants || []).find(p => p !== senderId) || '';
 
   batch.set(msgRef, {
     conversationId: convId,
@@ -329,7 +329,7 @@ export async function respondToOffer(
   const convSnap = await getDoc(convRef);
   if (!convSnap.exists()) return;
   const conv = convSnap.data() as Conversation;
-  const otherId = conv.participants.find(p => p !== sellerId) || '';
+  const otherId = (conv.participants || []).find(p => p !== sellerId) || '';
 
   // Mettre à jour le statut de l'offre dans le message
   batch.update(msgRef, { offerStatus: decision });
@@ -376,7 +376,7 @@ export async function sendSellerOfferCard(
   const convSnap = await getDoc(convRef);
   if (!convSnap.exists()) return;
   const conv = convSnap.data() as Conversation;
-  const otherId = conv.participants.find(p => p !== senderId) || '';
+  const otherId = (conv.participants || []).find(p => p !== senderId) || '';
 
   batch.set(msgRef, {
     conversationId: convId,

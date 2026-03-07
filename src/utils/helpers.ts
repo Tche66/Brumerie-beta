@@ -40,39 +40,56 @@ export function formatRelativeDate(date: Date): string {
  * Compresser une image avant upload
  */
 export async function compressImage(file: File, maxWidth: number = 1200): Promise<File> {
+  // Fallback immédiat si le fichier est déjà petit (< 500KB)
+  if (file.size < 500 * 1024) return file;
+
   return new Promise((resolve) => {
     const reader = new FileReader();
+
+    // Timeout sécurité : si ça dure > 10s → retourner fichier original
+    const timeout = setTimeout(() => resolve(file), 10000);
+
+    reader.onerror = () => { clearTimeout(timeout); resolve(file); };
     reader.readAsDataURL(file);
+
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target?.result as string;
+      img.onerror = () => { clearTimeout(timeout); resolve(file); };
+
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+        clearTimeout(timeout);
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
 
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            resolve(compressedFile);
-          } else {
-            resolve(file);
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
           }
-        }, 'image/jpeg', 0.8);
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { resolve(file); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              }));
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.8);
+        } catch {
+          resolve(file);
+        }
       };
+
+      img.src = event.target?.result as string;
     };
   });
 }

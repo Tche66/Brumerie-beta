@@ -52,14 +52,15 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const otherId = conversation.participants.find(p => p !== currentUser?.uid) || '';
+  const otherId = (conversation.participants || []).find((p: string) => p !== currentUser?.uid) || '';
   const otherName = conversation.participantNames?.[otherId] || 'Utilisateur';
   const otherPhoto = conversation.participantPhotos?.[otherId];
-  const isSeller = currentUser?.uid === conversation.participants[1];
+  const isSeller = currentUser?.uid === (conversation.participants || [])[1];
 
   // Charger le produit pour le vendeur (pour le partager)
   useEffect(() => {
     if (!isSeller) return;
+    if (!conversation.productId) return; // message admin = pas de produit
     getDoc(doc(db, 'products', conversation.productId)).then(snap => {
       if (snap.exists()) setSellerProduct({ id: snap.id, ...snap.data() });
     });

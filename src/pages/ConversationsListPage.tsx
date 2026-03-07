@@ -82,7 +82,7 @@ export function ConversationsListPage({ onOpenConversation }: ConversationsListP
       ) : (
         <div className="divide-y divide-slate-50">
           {conversations.map((conv) => {
-            const otherId = conv.participants.find(p => p !== currentUser?.uid) || '';
+            const otherId = (conv.participants || []).find((p: string) => p !== currentUser?.uid) || '';
             const otherName = conv.participantNames?.[otherId] || 'Utilisateur';
             const otherPhoto = conv.participantPhotos?.[otherId];
             const unread = conv.unreadCount?.[currentUser?.uid || ''] || 0;

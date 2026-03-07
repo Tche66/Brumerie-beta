@@ -8,7 +8,7 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
 import { User } from '@/types';
 import { sendOTPEmail, verifyOTPRemote, sendWelcomeEmail } from '@/services/otpService';
@@ -59,6 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       neighborhood: userData.neighborhood || '',
       isVerified:   false,
       bookmarkedProductIds: [],
+      createdAt:    serverTimestamp() as any,
+      publicationCount: 0,
+      publicationLimit: 50,
       // Stocker le code parrainage utilisé (pour traçabilité)
       ...(userData.referredBy ? { referredByCode: userData.referredBy } : {}),
     };

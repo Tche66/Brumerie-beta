@@ -13,7 +13,8 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
-  orderBy
+  orderBy,
+  getDocsFromServer,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -52,6 +53,15 @@ export async function createProduct(
     };
 
     const docRef = await addDoc(collection(db, 'products'), cleanUndefined(product as Record<string, any>));
+    
+    // Incrémenter le compteur de publications du vendeur
+    try {
+      await updateDoc(doc(db, 'users', productData.sellerId), {
+        publicationCount: increment(1),
+        productCount: increment(1),
+      });
+    } catch (e) { console.warn('publicationCount non mis à jour:', e); }
+
     return docRef.id;
 
   } catch (error: any) {
@@ -69,21 +79,14 @@ export async function getProducts(filters?: {
   searchTerm?: string;
 }): Promise<Product[]> {
   try {
-    // CORRECTION : On accepte 'active' et 'sold'. On rejette seulement 'deleted'.
-    let q = query(
+    // Requête simple sans index composite — filtres côté client
+    const q = query(
       collection(db, 'products'),
       where('status', 'in', ['active', 'sold']),
-      limit(50)
+      limit(200)
     );
 
-    if (filters?.category && filters.category !== 'all') {
-      q = query(q, where('category', '==', filters.category));
-    }
-    if (filters?.neighborhood && filters.neighborhood !== 'all') {
-      q = query(q, where('neighborhood', '==', filters.neighborhood));
-    }
-
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocsFromServer(q); // Force lecture serveur, ignore cache local
     let products = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
@@ -91,8 +94,17 @@ export async function getProducts(filters?: {
       createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
     })) as Product[];
 
-    // Filtre hidden côté client (compatible anciens articles sans champ hidden)
+    // Tous les filtres côté client — pas d'index composite requis
     products = products.filter(p => !(p as any).hidden);
+    if (filters?.category && filters.category !== 'all') {
+      products = products.filter(p => p.category === filters.category);
+    }
+    if (filters?.neighborhood && filters.neighborhood !== 'all') {
+      products = products.filter(p => {
+        const neighborhoods = (p as any).neighborhoods || [p.neighborhood];
+        return neighborhoods.includes(filters.neighborhood);
+      });
+    }
 
     // Tri : vérifié en premier (+20% visibilité), puis par date
     products.sort((a, b) => {
@@ -121,11 +133,10 @@ export async function getProducts(filters?: {
  */
 export async function getSellerProducts(sellerId: string): Promise<Product[]> {
   try {
-    // On récupère tout ce que le vendeur a mis en ligne (Actif ou Vendu)
+    // Requête simple par sellerId — filtre status côté client
     const q = query(
       collection(db, 'products'),
-      where('sellerId', '==', sellerId),
-      where('status', 'in', ['active', 'sold'])
+      where('sellerId', '==', sellerId)
     );
     const snapshot = await getDocs(q);
     const products = snapshot.docs.map(doc => ({
@@ -133,7 +144,7 @@ export async function getSellerProducts(sellerId: string): Promise<Product[]> {
       ...doc.data(),
       images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
       createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
-    })) as Product[];
+    })).filter((p: any) => p.status !== 'deleted') as Product[];
     
     return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (error) {
@@ -207,7 +218,9 @@ export async function canUserPublish(userId: string): Promise<{
     if (count >= limit) return { canPublish: false, reason: `Limite mensuelle atteinte`, count, limit };
     return { canPublish: true, count, limit };
   } catch (error) {
-    return { canPublish: false, reason: 'Erreur technique', count: 0, limit: 0 };
+    // En cas d'erreur technique → ne pas bloquer la publication
+    console.warn('canUserPublish erreur:', error);
+    return { canPublish: true, count: 0, limit: 50 };
   }
 }
 
