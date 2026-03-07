@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 
 // ── Supprimer les champs undefined (Firestore les refuse) ──────
 function cleanUndefined(obj: Record<string, any>): Record<string, any> {
@@ -36,23 +37,8 @@ export async function createProduct(
     const imageUrls: string[] = [];
     
     for (const file of imageFiles) {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'brumerie_preset'); 
-
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dk8kfgmqx/image/upload`,
-        { method: 'POST', body: formData }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("Erreur Cloudinary:", data.error?.message || "Inconnue");
-        throw new Error('Upload failed');
-      }
-
-      imageUrls.push(data.secure_url);
+      const url = await uploadToCloudinary(file, 'brumerie_products');
+      imageUrls.push(url);
     }
 
     const product = {

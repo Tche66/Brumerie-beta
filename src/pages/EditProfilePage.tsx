@@ -119,14 +119,9 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
     if (!name.trim() || !neighborhood) { setError('Nom et quartier obligatoires'); return; }
     setLoading(true); setError('');
     try {
-      let photoURL = userProfile.photoURL || '';
+            let photoURL = userProfile.photoURL || '';
       if (photoFile) {
-        const fd = new FormData();
-        fd.append('file', photoFile);
-        fd.append('upload_preset', 'brumerie_preset');
-        const res = await fetch('https://api.cloudinary.com/v1_1/dk8kfgmqx/image/upload', { method: 'POST', body: fd });
-        if (!res.ok) throw new Error("Échec de l'upload photo");
-        photoURL = (await res.json()).secure_url;
+        photoURL = await uploadToCloudinary(photoFile, 'brumerie_avatars');
       }
 
       const updateData: any = { name: name.trim(), neighborhood, photoURL };
