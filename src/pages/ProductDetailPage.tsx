@@ -26,7 +26,12 @@ interface ProductDetailPageProps {
   onGuestAction?: (reason: string) => void;
 }
 
-export function ProductDetailPage({ product, onBack, onSellerClick, onStartChat, onBuyClick, onProductClick, isGuest, onGuestAction }: ProductDetailPageProps) {
+export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, onStartChat, onBuyClick, onProductClick, isGuest, onGuestAction }: ProductDetailPageProps) {
+  // Normalisation rétro-compatible : anciens articles peuvent avoir imageUrl (string) au lieu de images (array)
+  const product = {
+    ...productRaw,
+    images: productRaw.images?.length ? productRaw.images : ((productRaw as any).imageUrl ? [(productRaw as any).imageUrl] : []),
+  };
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);

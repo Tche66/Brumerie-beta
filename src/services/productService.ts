@@ -102,6 +102,7 @@ export async function getProducts(filters?: {
     let products = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
+      images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
       createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
     })) as Product[];
 
@@ -142,6 +143,7 @@ export async function getSellerProducts(sellerId: string): Promise<Product[]> {
     const products = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
+      images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
       createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
     })) as Product[];
     

@@ -66,7 +66,7 @@ function Sparkline({ value, max }: { value: number; max: number }) {
 }
 
 export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, onOpenChat }: DashboardPageProps) {
-  const { userProfile } = useAuth();
+  const { userProfile, currentUser } = useAuth();
   const [products, setProducts]       = useState<Product[]>([]);
   const [orders, setOrders]           = useState<Order[]>([]);
   const [avgRating, setAvgRating]     = useState(0);

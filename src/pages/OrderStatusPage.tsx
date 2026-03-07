@@ -157,7 +157,7 @@ function ProofUploadInline({ orderId, order }: { orderId: string; order: Order }
 
 // ── Détail d'une commande ─────────────────────────────────
 function OrderDetail({ orderId, onBack }: { orderId: string; onBack: () => void }) {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
