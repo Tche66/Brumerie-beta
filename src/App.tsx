@@ -180,9 +180,10 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
   useEffect(() => {
     let listener: any;
     const setup = async () => {
+      // Seulement sur APK Android — jamais sur Netlify/web
+      if (!(window as any).Capacitor?.isNativePlatform()) return;
       try {
-        // Import dynamique : @capacitor/app n'existe que dans l'APK Android
-        const { App as CapacitorApp } = await import('@capacitor/app');
+        const { App: CapacitorApp } = await import('@capacitor/app');
         listener = await CapacitorApp.addListener('backButton', () => {
           // Si un modal/overlay est ouvert, le fermer en priorité
           const hasModal = document.querySelector('[data-modal="true"]');
@@ -199,7 +200,7 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
           goBack();
         });
       } catch {
-        // Non-Capacitor (navigateur web) — ignorer silencieusement
+        // Erreur silencieuse
       }
     };
     setup();
