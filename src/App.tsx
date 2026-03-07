@@ -1,6 +1,5 @@
 // src/App.tsx — Fix hooks violation #300/#310 + architecture propre
 import React, { useState, useEffect, useRef } from 'react';
-import { App as CapacitorApp } from '@capacitor/app';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
@@ -182,6 +181,8 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
     let listener: any;
     const setup = async () => {
       try {
+        // Import dynamique : @capacitor/app n'existe que dans l'APK Android
+        const { App as CapacitorApp } = await import('@capacitor/app');
         listener = await CapacitorApp.addListener('backButton', () => {
           // Si un modal/overlay est ouvert, le fermer en priorité
           const hasModal = document.querySelector('[data-modal="true"]');
