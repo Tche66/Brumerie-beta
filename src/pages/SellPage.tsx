@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { soundService } from '@/services/soundService';
+import { playSuccessSound } from '@/services/soundService';
 import { createProduct, canUserPublish } from '@/services/productService';
 import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
@@ -125,7 +125,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
       }
       await createProduct(productPayload as any, images);
       setSuccess(true);
-      soundService.playSuccessSound();
+      playSuccessSound();
       setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
       setError(`Erreur: ${err.message}`);
