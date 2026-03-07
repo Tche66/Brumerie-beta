@@ -8,6 +8,12 @@ import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterD
 import { SearchAlertButton } from '@/components/SearchAlertButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
+
+// Catégories avec option 'Tout' en tête
+const ALL_CATEGORIES = [
+  { id: 'all', label: 'Tout', icon: '🏪' },
+  ...CATEGORIES,
+];
 import { subscribeBoostedProductIds } from '@/services/boostService';
 import { StoriesBar } from '@/components/StoriesBar';
 import { SystemBanner } from '@/components/SystemBanner';

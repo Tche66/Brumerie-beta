@@ -149,6 +149,36 @@
     to { transform: translateY(0); opacity: 1; }
   }
   .animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+  /* ── MODE DESKTOP : centrer l'app mobile ── */
+  @media (min-width: 768px) {
+    body {
+      background: #E8EFF5;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(22,163,74,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(22,163,74,0.04) 0%, transparent 50%);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 0;
+    }
+    #root {
+      width: 390px;
+      min-height: calc(100vh - 48px);
+      background: white;
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.06),
+        0 24px 80px rgba(0,0,0,0.14),
+        0 8px 24px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    #splash {
+      border-radius: 40px;
+    }
+  }
 </style>
   </head>
   <body>
