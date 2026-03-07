@@ -1,47 +1,36 @@
-// src/utils/uploadImage.ts
-// Upload via Netlify Function proxy — évite CORS sur mobile Android
+// Upload direct vers Cloudinary — FormData simple, pas de proxy
+// Fonctionne si le preset est en mode UNSIGNED dans Cloudinary
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Garder le préfixe data: complet pour la Netlify Function
-      resolve(result);
-    };
-    reader.onerror = () => reject(new Error('Lecture fichier échouée'));
-    reader.readAsDataURL(file);
-  });
-}
+const CLOUD_NAME = 'dk8kfgmqx';
+const UPLOAD_PRESET = 'brumerie_preset';
 
 export async function uploadToCloudinary(
   source: File | string,
   folder = 'brumerie'
 ): Promise<string> {
-  let imageBase64: string;
+  const fd = new FormData();
 
   if (source instanceof File) {
-    imageBase64 = await fileToBase64(source);
+    fd.append('file', source);
   } else {
-    // Déjà une data URL ou base64
-    imageBase64 = source;
+    // data URL string
+    fd.append('file', source);
   }
 
-  const response = await fetch('/.netlify/functions/upload-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      imageBase64,
-      folder,
-      mimeType: source instanceof File ? (source.type || 'image/jpeg') : 'image/jpeg',
-    }),
-  });
+  fd.append('upload_preset', UPLOAD_PRESET);
+  // NE PAS envoyer 'folder' — le folder est défini dans le preset Cloudinary
+  // Envoyer folder cause l'erreur "Display name cannot contain slashes"
 
-  const data = await response.json();
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: fd }
+  );
 
-  if (!response.ok || !data.url) {
-    throw new Error(data.error || `Upload échoué (${response.status})`);
+  const data = await res.json();
+
+  if (!res.ok || !data.secure_url) {
+    throw new Error(data.error?.message || `Erreur upload (${res.status})`);
   }
 
-  return data.url;
+  return data.secure_url as string;
 }
