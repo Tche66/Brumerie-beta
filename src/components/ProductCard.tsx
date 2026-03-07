@@ -53,6 +53,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           alt={product.title}
           className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
         />
 
         {/* Status badges top left */}

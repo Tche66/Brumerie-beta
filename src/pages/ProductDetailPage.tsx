@@ -266,7 +266,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               <img src={img} alt={product.title}
                 className="w-full h-full object-cover transition-transform duration-200"
                 style={{ transform: idx === currentImageIndex ? `scale(${scale})` : 'scale(1)' }}
-                draggable={false} />
+                draggable={false}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://placehold.co/600x600/f1f5f9/94a3b8?text=${encodeURIComponent(product.title)}`;
+                }} />
             </div>
           ))}
         </div>

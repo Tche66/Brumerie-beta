@@ -7,6 +7,7 @@ import { verifyBeforeUpdateEmail, reauthenticateWithCredential, EmailAuthProvide
 import { NEIGHBORHOODS, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { PaymentLogo } from '@/components/PaymentLogo';
 import { compressImage } from '@/utils/helpers';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 
 interface EditProfilePageProps { onBack: () => void; onSaved: () => void; }
 

@@ -62,10 +62,24 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
     if (!files.length) return;
     if (files.length + images.length > 5) { setError('Maximum 5 photos.'); return; }
     setError('');
-    for (const file of files) {
-      const compressed = await compressImage(file);
-      setImages(prev => [...prev, compressed]);
-      setImagePreviews(prev => [...prev, URL.createObjectURL(compressed)]);
+    setLoading(true);
+    try {
+      for (const file of files) {
+        // Skip compression pour HEIC/HEIF (iOS) ou fichiers > 10MB — upload direct
+        const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic');
+        const isTooLarge = file.size > 10 * 1024 * 1024;
+        const fileToUse = (isHeic || isTooLarge) ? file : await compressImage(file);
+        setImages(prev => [...prev, fileToUse]);
+        setImagePreviews(prev => [...prev, URL.createObjectURL(fileToUse)]);
+      }
+    } catch(err) {
+      // En cas d'erreur de compression — utiliser le fichier original
+      for (const file of files) {
+        setImages(prev => [...prev, file]);
+        setImagePreviews(prev => [...prev, URL.createObjectURL(file)]);
+      }
+    } finally {
+      setLoading(false);
     }
     e.target.value = '';
   };
@@ -128,7 +142,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
       playSuccessSound();
       setTimeout(() => onSuccess(), 2000);
     } catch (err: any) {
-      setError(`Erreur: ${err.message}`);
+      setError(err.message || 'Erreur lors de la publication. Réessaie.');
     } finally {
       setLoading(false);
     }

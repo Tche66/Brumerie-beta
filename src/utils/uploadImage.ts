@@ -1,8 +1,8 @@
 // src/utils/uploadImage.ts — Upload Cloudinary centralisé
 // Utilise les variables d'env si disponibles, sinon fallback hardcodé
 
-const CLOUD_NAME = (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || 'dk8kfgmqx';
-const UPLOAD_PRESET = (import.meta as any).env?.VITE_CLOUDINARY_PRESET || 'brumerie_preset';
+const CLOUD_NAME = 'dk8kfgmqx';
+const UPLOAD_PRESET = 'brumerie_preset';
 const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
 /**
@@ -33,14 +33,18 @@ export async function uploadToCloudinary(
   });
 
   if (!response.ok) {
-    let msg = 'Upload Cloudinary échoué';
+    let msg = 'Upload image échoué';
     try {
       const err = await response.json();
-      msg = err.error?.message || msg;
+      msg = err.error?.message || `Cloudinary erreur ${response.status}: ${err.error?.message || 'inconnue'}`;
     } catch {}
     throw new Error(msg);
   }
 
   const data = await response.json();
+  if (!data.secure_url) {
+    throw new Error('Upload échoué : URL image non reçue de Cloudinary');
+  }
+  console.log('[Cloudinary] Upload réussi:', data.secure_url);
   return data.secure_url as string;
 }
