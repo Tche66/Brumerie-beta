@@ -185,6 +185,17 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // ── BOOKMARKS ────────────────────────────────────────────────
+    match /bookmarks/{bookmarkId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+
     // ── TOUTES LES AUTRES COLLECTIONS ────────────────────────────
     // ── CATCH-ALL : bloque toute collection non déclarée ─────────
     match /{document=**} {

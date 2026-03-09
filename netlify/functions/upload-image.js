@@ -1,5 +1,6 @@
-// netlify/functions/upload-image.js
-// Proxy Cloudinary — contourne le blocage réseau mobile CI
+// netlify/functions/upload-image.js — v15
+// Proxy Cloudinary : contourne le blocage réseau mobile CI
+// "type": "commonjs" dans package.json garantit que exports.handler fonctionne
 
 exports.handler = async (event) => {
   const CORS = {
@@ -18,15 +19,27 @@ exports.handler = async (event) => {
 
   try {
     const CLOUD_NAME = 'dk8kfgmqx';
-    const UPLOAD_PRESET = 'brumerie_preset';
+    const UPLOAD_PRESET = 'brumerie_preset'; // SANS majuscule, SANS folder dans la requête
 
-    const { imageBase64 } = JSON.parse(event.body || '{}');
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'JSON invalide' }) };
+    }
+
+    const { imageBase64 } = body;
 
     if (!imageBase64) {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'imageBase64 requis' }) };
     }
 
-    // Envoyer à Cloudinary en JSON — PAS de folder (cause "Display name cannot contain slashes")
+    // Vérifier que c'est bien un data URL valide
+    if (!imageBase64.startsWith('data:image/')) {
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Format image invalide' }) };
+    }
+
+    // Envoi à Cloudinary en JSON — PAS de "folder" (évite "Display name cannot contain slashes")
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,16 +49,20 @@ exports.handler = async (event) => {
       }),
     });
 
-    const data = await res.json();
-
-    if (!res.ok || !data.secure_url) {
-      return {
-        statusCode: 500,
-        headers: CORS,
-        body: JSON.stringify({ error: data.error?.message || 'Upload Cloudinary échoué' }),
-      };
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'Réponse Cloudinary illisible' }) };
     }
 
+    if (!res.ok || !data.secure_url) {
+      const msg = data?.error?.message || `Cloudinary erreur ${res.status}`;
+      console.error('[upload-image] Cloudinary error:', msg);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: msg }) };
+    }
+
+    console.log('[upload-image] Upload OK:', data.secure_url);
     return {
       statusCode: 200,
       headers: CORS,
@@ -53,6 +70,7 @@ exports.handler = async (event) => {
     };
 
   } catch (err) {
+    console.error('[upload-image] Exception:', err);
     return {
       statusCode: 500,
       headers: CORS,
