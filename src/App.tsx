@@ -662,17 +662,22 @@ function AppContent() {
     else sessionStorage.removeItem('brumerie_show_auth');
   }, [showAuth]);
 
-  // Quand Firebase a fini de charger -> arrêter le spinner Google
+  // Quand Firebase a fini de charger -> toujours arrêter le spinner Google
+  // (que la connexion ait réussi ou non)
   React.useEffect(() => {
     if (!loading) {
-      setGooglePending(false);
-      sessionStorage.removeItem('brumerie_google_pending');
+      // Arrêter le spinner Google dans tous les cas
+      if (googlePending) {
+        setGooglePending(false);
+        sessionStorage.removeItem('brumerie_google_pending');
+      }
+      // Si connecté → nettoyer aussi showAuth
       if (currentUser) {
         setShowAuth(false);
         sessionStorage.removeItem('brumerie_show_auth');
       }
     }
-  }, [loading, currentUser]);
+  }, [loading, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {
@@ -703,13 +708,16 @@ function AppContent() {
     );
   }
 
-  // Pendant le chargement initial Firebase
-  if (loading) {
+  // Pendant le chargement initial Firebase OU retour redirect Google
+  if (loading || googlePending) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
+          {googlePending && <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>}
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Chargement…</p>
+          <p className="text-[10px] font-black uppercase tracking-widest" style={{color: googlePending ? '#16A34A' : '#CBD5E1'}}>
+            {googlePending ? 'Connexion Google…' : 'Chargement…'}
+          </p>
         </div>
       </div>
     );
@@ -731,22 +739,9 @@ function AppContent() {
     );
   }
 
-  // Retour du redirect Google — Firebase est en train de valider la session
-  // Afficher un spinner au lieu du GuestShell pour éviter le flash visiteur
-  if (googlePending || (!currentUser && showAuth)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
-          <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion Google…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Pas connecté → mode visiteur avec accès limité
+  // Pas connecté → page de connexion ou mode visiteur
   if (!currentUser) {
+    if (showAuth) return <AuthGate />;
     return <GuestShell onAuthRequired={() => {
       sessionStorage.setItem('brumerie_show_auth', '1');
       setShowAuth(true);
