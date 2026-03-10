@@ -250,7 +250,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   };
 
   return (
-    <div className="min-h-screen bg-white pb-32 font-sans">
+    <div className="min-h-full bg-white pb-32 font-sans">
 
       {/* ── SLIDER PHOTOS ── */}
       <div className="relative bg-slate-100" style={{ aspectRatio: '1/1' }}>
@@ -518,7 +518,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
         {product.status === 'sold' ? (
           <div className="w-full py-5 rounded-2xl bg-slate-100 text-slate-300 font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center">VENDU</div>
         ) : isSelf ? (
@@ -565,7 +565,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── MODAL SIGNALEMENT ── */}
       {showReportModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
             {reportSent ? (
               <div className="text-center py-6">
@@ -606,7 +606,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── MODAL FAIRE UNE OFFRE ── */}
       {showOfferModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0">

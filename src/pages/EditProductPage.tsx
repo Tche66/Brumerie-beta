@@ -62,7 +62,7 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32 font-sans">
+    <div className="min-h-full bg-slate-50 pb-32 font-sans">
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
@@ -183,7 +183,7 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
       </div>
 
       {/* CTA fixe */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
         <button onClick={handleSave} disabled={loading}
           className="w-full py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>

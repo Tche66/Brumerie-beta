@@ -298,7 +298,7 @@ function TabAntiFraud() {
 // ── À PROPOS ──────────────────────────────────────────────────
 function TabAbout({ onBack }: { onBack: () => void }) {
   return (
-    <div className="min-h-screen bg-white pb-12 font-sans">
+    <div className="min-h-full bg-white pb-12 font-sans">
       <div className="bg-white sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -352,7 +352,7 @@ export function PrivacyPage({ onBack, isTerms, isAbout }: PrivacyPageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16 font-sans">
+    <div className="min-h-full bg-slate-50 pb-16 font-sans">
 
       {/* Header sticky */}
       <div className="bg-white sticky top-0 z-50 border-b border-slate-100">

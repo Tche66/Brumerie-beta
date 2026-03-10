@@ -35,7 +35,7 @@ export function ConversationsListPage({ onOpenConversation }: ConversationsListP
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount?.[currentUser?.uid || ''] || 0), 0);
 
   return (
-    <div className="min-h-screen bg-white pb-24 font-sans">
+    <div className="min-h-full bg-white pb-24 font-sans">
       {/* Header */}
       <div className="bg-white sticky top-0 z-40 px-6 pt-14 pb-5 border-b border-slate-50">
         <div className="flex items-center justify-between">

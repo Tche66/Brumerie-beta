@@ -103,7 +103,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
   })();
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20 font-sans">
+    <div className="min-h-full bg-slate-50/50 pb-20 font-sans">
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -153,7 +153,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
         <div className="fixed inset-0 z-[300] flex items-end justify-center p-4"
           style={{ height: '100dvh', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowShare(false)}>
-          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm" style={{ maxHeight: '85dvh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <p className="font-black text-slate-900 text-base mb-1">Partager la boutique</p>
             <p className="text-[11px] text-slate-400 font-medium mb-5">{seller.name}</p>
             {/* Lien */}

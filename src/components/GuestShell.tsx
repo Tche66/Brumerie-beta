@@ -25,7 +25,7 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
   const goHome = () => { setPage('home'); setSelectedProduct(null); setSelectedSellerId(null); };
 
   return (
-    <div className="min-h-screen bg-white pb-32">
+    <div className="min-h-full bg-white pb-32">
       {/* Bannière "Mode visiteur" discrète en haut */}
       {page === 'home' && (
         <div className="bg-slate-900 text-white text-[11px] font-bold text-center py-2.5 px-4 flex items-center justify-center gap-3">
@@ -34,7 +34,7 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
       )}
 
       {/* ── GROS BOUTON FIXE EN BAS — toujours visible ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-[200] px-4 pb-6 pt-3"
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-[200] px-4 pb-6 pt-3"
         style={{ background: 'linear-gradient(to top, rgba(255,255,255,1) 70%, rgba(255,255,255,0))' }}>
         <button
           onClick={onAuthRequired}

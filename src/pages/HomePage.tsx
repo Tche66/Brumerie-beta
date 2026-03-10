@@ -111,7 +111,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24 font-sans">
+    <div className="min-h-full bg-white pb-24 font-sans">
       <Header onProfileClick={onProfileClick} onSearchChange={setSearchTerm} searchTerm={searchTerm} onNotificationsClick={onNotificationsClick} onLogoClick={onLogoClick} />
 
       {/* Bannière système admin */}

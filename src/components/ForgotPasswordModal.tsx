@@ -106,8 +106,7 @@ export function ForgotPasswordModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/50 backdrop-blur-sm"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full max-w-sm bg-white rounded-t-3xl overflow-hidden shadow-2xl"
-        style={{ animation: 'slideUp .3s cubic-bezier(.2,.8,.2,1)' }}>
+      <div className="w-full max-w-sm bg-white rounded-t-3xl overflow-hidden shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto', animation: 'slideUp .3s cubic-bezier(.2,.8,.2,1)' }}
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">

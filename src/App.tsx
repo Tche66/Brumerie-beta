@@ -151,7 +151,7 @@ function AppShell() {
     setNavigationHistory(['home']);
     setSelectedProduct(null);
     setSelectedSellerId(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const root = document.getElementById('root'); if (root) root.scrollTop = 0;
   };
 
   const goBack = () => {
@@ -174,7 +174,10 @@ function AppShell() {
 
   // ── useEffect #1 — scroll top à chaque changement de page ────
   
-useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
+useEffect(() => {
+  const root = document.getElementById('root');
+  if (root) root.scrollTop = 0;
+}, [activePage, selectedProduct]);
 
   // ── useEffect : Bouton Retour Android (Capacitor) ─────────────
   // Sans ça, le bouton physique ← ferme l'app au lieu de revenir en arrière
@@ -391,7 +394,7 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
 
   // ── Rendu ─────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-full bg-white">
       <main key={pageKey} style={{ animation: 'pageSlideIn 0.22s cubic-bezier(0.25,0.46,0.45,0.94) both' }}>
         {activePage === 'home' && (
           <HomePage

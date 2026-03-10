@@ -59,8 +59,7 @@ export function BoostModal({ product, onClose, onBoosted }: BoostModalProps) {
   return (
     <div className="fixed inset-0 z-[300] flex items-end justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}>
-      <div className="w-full max-w-md bg-white rounded-t-[2.5rem] px-6 pt-5 pb-10 shadow-2xl"
-        style={{ animation: 'slideUp 0.3s ease-out' }}
+      <div className="w-full max-w-md bg-white rounded-t-[2.5rem] px-6 pt-5 pb-10 shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto', animation: 'slideUp 0.3s ease-out' }}
         onClick={e => e.stopPropagation()}>
         <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
 

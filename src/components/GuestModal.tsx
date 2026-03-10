@@ -30,8 +30,7 @@ export function GuestModal({ visible, onClose, onLogin, reason = 'default' }: Gu
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"/>
 
       {/* Drawer */}
-      <div className="relative w-full max-w-md bg-white rounded-t-[3rem] px-6 pt-5 pb-10 shadow-2xl"
-        style={{ animation: 'slideUp 0.3s ease-out' }}
+      <div className="relative w-full max-w-md bg-white rounded-t-[3rem] px-6 pt-5 pb-10 shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto', animation: 'slideUp 0.3s ease-out' }}
         onClick={(e: React.MouseEvent) => e.stopPropagation()}>
 
         {/* Handle */}

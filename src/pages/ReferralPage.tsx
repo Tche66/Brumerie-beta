@@ -53,7 +53,7 @@ export function ReferralPage({ onBack }: ReferralPageProps) {
     : 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 font-sans">
+    <div className="min-h-full bg-slate-50 pb-20 font-sans">
 
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100 shadow-sm">

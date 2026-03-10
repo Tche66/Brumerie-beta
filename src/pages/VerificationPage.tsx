@@ -47,7 +47,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
   };
 
   return (
-    <div className="min-h-screen pb-20 font-sans" style={{ background: '#F0F4FF' }}>
+    <div className="min-h-full pb-20 font-sans" style={{ background: '#F0F4FF' }}>
 
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 px-5 py-5 flex items-center gap-4 border-b border-slate-100">

@@ -256,6 +256,7 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
     <div className="fixed inset-0 z-[400] flex items-end justify-center bg-black/60"
       onClick={onClose}>
       <div className="w-full max-w-md bg-white rounded-t-[2.5rem] p-6 pb-10"
+        style={{ maxHeight: '85dvh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}>
         <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
         <h3 className="font-black text-[16px] text-slate-900 mb-5">📸 Publier une story</h3>

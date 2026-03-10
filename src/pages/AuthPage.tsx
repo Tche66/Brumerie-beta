@@ -174,7 +174,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
     <ForgotPasswordModal onClose={() => setShowForgotModal(false)}/>
   )}
     return (
-      <div className="min-h-screen bg-white flex flex-col font-sans">
+      <div className="min-h-full bg-white flex flex-col font-sans">
 
         {/* Header */}
         <div className="relative overflow-hidden flex flex-col items-center pt-14 pb-12 px-6 text-center"
@@ -331,7 +331,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   // FORMULAIRE PRINCIPAL
   // ════════════════════════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-full bg-white flex flex-col font-sans">
       {/* Hero */}
       <div className="relative overflow-hidden flex flex-col items-center justify-center pt-20 pb-16 px-6 text-center"
         style={{ background: 'linear-gradient(160deg,#16A34A 0%,#115E2E 100%)' }}>

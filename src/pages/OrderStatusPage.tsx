@@ -270,7 +270,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   }, [orderId]);
 
   if (!order || !currentUser) return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-full flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-green-200 border-t-green-600 rounded-full animate-spin"/>
     </div>
   );
@@ -286,7 +286,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24 font-sans">
+    <div className="min-h-full bg-white pb-24 font-sans">
       <div className="sticky top-0 bg-white/95 backdrop-blur-md px-5 py-5 flex items-center gap-4 border-b border-slate-100 z-40">
         <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -625,7 +625,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
       {/* Modal signalement */}
       {showDisputeForm && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] flex items-end justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-5">
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-5" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto"/>
             <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight text-center">Signaler un problème</h3>
             <textarea value={disputeReason} onChange={e => setDisputeReason(e.target.value)}
@@ -694,7 +694,7 @@ export function OrderStatusPage({ orderId, onBack, onOpenChatWithSeller }: Order
   const currentRole = tab === 'purchases' ? 'buyer' : 'seller';
 
   return (
-    <div className="min-h-screen bg-white pb-24 font-sans">
+    <div className="min-h-full bg-white pb-24 font-sans">
       {/* Header */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-md px-5 py-5 flex items-center gap-4 border-b border-slate-100 z-40">
         <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">

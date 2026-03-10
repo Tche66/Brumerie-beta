@@ -502,7 +502,7 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
       {/* ── MODAL PRIX PERSONNALISÉ VENDEUR ── */}
       {showCustomPriceModal && sellerProduct && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4" style={{ height: '100dvh' }}>
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
             <p className="font-black text-slate-900 text-lg uppercase tracking-tight mb-1">🏷️ Prix personnalisé</p>
             <p className="text-slate-400 text-[11px] mb-5">Propose un prix spécial pour cet acheteur. Il pourra acheter directement à ce prix.</p>

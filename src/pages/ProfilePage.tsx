@@ -126,7 +126,7 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
   const totalWA = products.reduce((a, p) => a + (p.whatsappClickCount || 0), 0);
 
   return (
-    <div className="min-h-screen bg-white page-container pb-24">
+    <div className="min-h-full bg-white page-container pb-24">
 
       {/* Bannière boutique — vérifié/premium avec bannière */}
       {(userProfile.isVerified || userProfile.isPremium) && userProfile.shopBanner && (
@@ -292,7 +292,7 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
       {/* Action Sheet */}
       {actionProduct && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end justify-center p-4" onClick={() => setActionProduct(null)}>
-          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 animate-slide-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 animate-slide-up" style={{ maxHeight: '85dvh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-6" />
             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 text-center mb-6 line-clamp-1">{actionProduct.title}</p>
             <div className="flex flex-col gap-3">

@@ -63,7 +63,7 @@ export function RatingModal({ orderId, productId, productTitle, productImage,
 
   return (
     <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
         <div className="px-7 pt-6 pb-7 space-y-5">
           <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto"/>
 

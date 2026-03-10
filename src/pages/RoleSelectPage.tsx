@@ -11,7 +11,7 @@ export function RoleSelectPage({ onSelect, userName }: RoleSelectPageProps) {
   const [selected, setSelected] = useState<'buyer' | 'seller' | null>(null);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12 font-sans">
+    <div className="min-h-full bg-white flex flex-col items-center justify-center px-6 py-12 font-sans">
 
       {/* Logo */}
       <img src="/favicon.png" alt="Brumerie" className="w-14 h-14 object-contain mb-8 drop-shadow-lg" />
