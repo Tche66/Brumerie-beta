@@ -134,9 +134,12 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
     r.readAsDataURL(f);
   };
 
+  const [error, setError] = useState<string | null>(null);
+
   const handlePublish = async () => {
     if (!imageFile || !currentUser || !userProfile) return;
     setLoading(true);
+    setError(null);
     try {
       const imageUrl = await uploadToCloudinary(imageFile);
       await publishStory({
@@ -147,8 +150,12 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
         caption: caption.trim() || undefined,
       });
       onPublished();
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      console.error('[StoriesBar] publish error:', e);
+      setError(e?.message || 'Erreur lors de la publication. Réessaie.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -180,6 +187,12 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
           className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-[13px] border-2 border-transparent focus:border-green-400 outline-none resize-none mb-4"
         />
         <p className="text-[10px] text-slate-400 text-right mb-4">{caption.length}/120</p>
+
+        {error && (
+          <div className="w-full bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-3 text-red-600 text-[12px] font-bold text-center">
+            ⚠️ {error}
+          </div>
+        )}
 
         <button onClick={handlePublish} disabled={!imageFile || loading}
           className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-40 active:scale-95 transition-all"

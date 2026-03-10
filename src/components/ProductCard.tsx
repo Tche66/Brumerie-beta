@@ -49,7 +49,11 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
       <div className="relative aspect-[4/5] bg-gray-50 overflow-hidden">
         {!imgLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse" />}
         <img
-          src={(product.images?.[0]) || (product as any).imageUrl || 'https://via.placeholder.com/400x500?text=Brumerie'}
+          src={
+            (product.images?.length ? product.images[0] : null) ||
+            (product as any).imageUrl ||
+            'https://via.placeholder.com/400x500?text=Brumerie'
+          }
           alt={product.title}
           className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setImgLoaded(true)}
