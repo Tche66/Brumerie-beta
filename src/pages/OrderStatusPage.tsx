@@ -42,14 +42,11 @@ function WhatsAppButton({ order, orderId }: { order: Order; orderId: string }) {
   }, [order.sellerId]);
 
   const msg = encodeURIComponent(
-    'Bonjour, je suis ' + order.buyerName + ' 👋
-' +
-    'J'ai commandé "' + order.productTitle + '" sur Brumerie ' +
-    '(Commande #' + orderId.slice(-6).toUpperCase() + ').
-' +
-    'Montant : ' + order.productPrice.toLocaleString('fr-FR') + ' FCFA
-' +
-    'Puis-je avoir plus d'informations ?'
+    `Bonjour, je suis ${order.buyerName} 👋\n` +
+    `J'ai commandé "${order.productTitle}" sur Brumerie ` +
+    `(Commande #${orderId.slice(-6).toUpperCase()}).\n` +
+    `Montant : ${order.productPrice.toLocaleString('fr-FR')} FCFA\n` +
+    `Puis-je avoir plus d'informations ?`
   );
 
   if (!sellerPhone) return (
