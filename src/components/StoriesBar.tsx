@@ -191,12 +191,6 @@ function StoryViewer({
             {story.productRef ? (
               <>
                 <button
-                  onClick={() => { onClose(); onOrder?.(story); }}
-                  className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
-                  style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
-                  🛍️ Commander
-                </button>
-                <button
                   onClick={() => { onClose(); onOffer?.(story); }}
                   className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
                   💬 Faire une offre
