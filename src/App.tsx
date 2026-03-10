@@ -647,22 +647,32 @@ useEffect(() => {
 
 function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
-  // showAuth persiste dans sessionStorage pour survivre au rechargement après redirect Google
   const [showAuth, setShowAuth] = React.useState(() => {
     return sessionStorage.getItem('brumerie_show_auth') === '1';
   });
+  // googlePending = on revient du redirect Google, Firebase n'a pas encore fini
+  const [googlePending, setGooglePending] = React.useState(() => {
+    return sessionStorage.getItem('brumerie_google_pending') === '1';
+  });
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
 
-  // Sync showAuth → sessionStorage
+  // Sync showAuth <-> sessionStorage
   React.useEffect(() => {
     if (showAuth) sessionStorage.setItem('brumerie_show_auth', '1');
     else sessionStorage.removeItem('brumerie_show_auth');
   }, [showAuth]);
 
-  // Quand l'utilisateur est connecté, on nettoie le flag
+  // Quand Firebase a fini de charger -> arrêter le spinner Google
   React.useEffect(() => {
-    if (currentUser) sessionStorage.removeItem('brumerie_show_auth');
-  }, [currentUser]);
+    if (!loading) {
+      setGooglePending(false);
+      sessionStorage.removeItem('brumerie_google_pending');
+      if (currentUser) {
+        setShowAuth(false);
+        sessionStorage.removeItem('brumerie_show_auth');
+      }
+    }
+  }, [loading, currentUser]);
 
   // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {
@@ -721,13 +731,26 @@ function AppContent() {
     );
   }
 
+  // Retour du redirect Google — Firebase est en train de valider la session
+  // Afficher un spinner au lieu du GuestShell pour éviter le flash visiteur
+  if (googlePending || (!currentUser && showAuth)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
+          <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion Google…</p>
+        </div>
+      </div>
+    );
+  }
+
   // Pas connecté → mode visiteur avec accès limité
-  // Le visiteur peut voir l'accueil, les articles et les profils vendeurs
-  // Mais est invité à se connecter pour les actions
   if (!currentUser) {
-    // showAuth = true → forcer l'affichage de la page de connexion
-    if (showAuth) return <AuthGate />;
-    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
+    return <GuestShell onAuthRequired={() => {
+      sessionStorage.setItem('brumerie_show_auth', '1');
+      setShowAuth(true);
+    }} />;
   }
 
   // Connecté mais rôle manquant → sélection du rôle

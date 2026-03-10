@@ -105,8 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' });
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      // Avant le redirect, marquer que l'auth est en cours
+      // Marquer les deux flags avant le redirect (page va recharger)
       sessionStorage.setItem('brumerie_show_auth', '1');
+      sessionStorage.setItem('brumerie_google_pending', '1');
       await signInWithRedirect(auth, provider);
       return; // la page recharge — getRedirectResult dans useEffect prend le relais
     }
