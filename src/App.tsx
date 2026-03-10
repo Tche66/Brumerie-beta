@@ -647,8 +647,22 @@ useEffect(() => {
 
 function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
-  const [showAuth, setShowAuth] = React.useState(false);
+  // showAuth persiste dans sessionStorage pour survivre au rechargement après redirect Google
+  const [showAuth, setShowAuth] = React.useState(() => {
+    return sessionStorage.getItem('brumerie_show_auth') === '1';
+  });
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
+
+  // Sync showAuth → sessionStorage
+  React.useEffect(() => {
+    if (showAuth) sessionStorage.setItem('brumerie_show_auth', '1');
+    else sessionStorage.removeItem('brumerie_show_auth');
+  }, [showAuth]);
+
+  // Quand l'utilisateur est connecté, on nettoie le flag
+  React.useEffect(() => {
+    if (currentUser) sessionStorage.removeItem('brumerie_show_auth');
+  }, [currentUser]);
 
   // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {

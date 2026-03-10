@@ -98,17 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ── Connexion Google ────────────────────────────────────────
-  // Popup sur web, Redirect sur WebView Android (Capacitor)
+  // On utilise TOUJOURS signInWithPopup (web + mobile Chrome)
+  // signInWithRedirect provoque un rechargement de page qui réinitialise
+  // l'état React (showAuth=false) → l'utilisateur reste en mode visiteur
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      // Chrome Android bloque signInWithPopup → on utilise redirect
-      await signInWithRedirect(auth, provider);
-      // La page recharge → résultat capturé dans onAuthStateChanged via getRedirectResult
-      return;
-    }
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }
