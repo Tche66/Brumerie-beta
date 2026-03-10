@@ -57,34 +57,42 @@ export function subscribeActiveStories(
   callback: (stories: Story[]) => void,
 ): () => void {
   const now = Timestamp.now();
+  // Requête simple sans orderBy — pas d'index composite requis
+  // Le tri se fait côté client
   const q = query(
     storiesCol,
     where('expiresAt', '>', now),
-    orderBy('expiresAt', 'asc'),
   );
   return onSnapshot(q, snap => {
     const stories = snap.docs.map(d => ({ id: d.id, ...d.data() } as Story));
+    // Tri côté client par date de création (plus récent en premier)
+    stories.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     // Grouper par vendeur — 1 cercle par vendeur (dernière story en premier)
     const bySellerMap = new Map<string, Story>();
     for (const s of stories) {
       const existing = bySellerMap.get(s.sellerId);
-      if (!existing || s.createdAt?.toMillis?.() > existing.createdAt?.toMillis?.()) {
+      if (!existing || (s.createdAt?.toMillis?.() || 0) > (existing.createdAt?.toMillis?.() || 0)) {
         bySellerMap.set(s.sellerId, s);
       }
     }
     callback(Array.from(bySellerMap.values()));
-  }, () => callback([]));
+  }, (error) => {
+    console.error('[Stories] subscribeActiveStories error:', error);
+    callback([]);
+  });
 }
 
 // ── Récupérer toutes les stories d'un vendeur ─────────────────
 export async function getSellerStories(sellerId: string): Promise<Story[]> {
   const now = Timestamp.now();
+  // Requête simple par sellerId — filtre expiresAt côté client
   const q = query(
     storiesCol,
     where('sellerId', '==', sellerId),
-    where('expiresAt', '>', now),
-    orderBy('expiresAt', 'asc'),
   );
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Story));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Story))
+    .filter(s => s.expiresAt?.toMillis?.() > now.toMillis())
+    .sort((a, b) => (a.expiresAt?.toMillis?.() || 0) - (b.expiresAt?.toMillis?.() || 0));
 }
