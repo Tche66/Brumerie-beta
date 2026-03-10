@@ -196,8 +196,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       setCurrentUser(user);
-      if (user) await loadUserProfile(user.uid);
-      else setUserProfile(null);
+      if (user) {
+        // Charger le profil — si absent (nouvel user Google) → créer automatiquement
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.isBanned) {
+            await firebaseSignOut(auth);
+            setUserProfile(null);
+            sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
+          } else {
+            setUserProfile({ ...data, bookmarkedProductIds: data.bookmarkedProductIds || [] } as User);
+          }
+        } else {
+          // Pas de profil → probablement connexion Google sans profil créé
+          const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
+          if (isGoogle) {
+            await handleGoogleUser(user);
+          }
+          // Recharger après création
+          await loadUserProfile(user.uid);
+        }
+      } else {
+        setUserProfile(null);
+      }
       setLoading(false);
     });
     return unsub;

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/config/firebase';
 import { NEIGHBORHOODS } from '@/types';
 
 interface AuthPageProps { onNavigate: (page: string) => void; }
@@ -9,7 +11,7 @@ type Step = 'form' | 'otp';
 
 export function AuthPage({ onNavigate }: AuthPageProps) {
   const [showForgotModal, setShowForgotModal] = React.useState(false);
-  const { signIn, signUp, resetPassword, requestOTP, verifyOTP, signInWithGoogle } = useAuth();
+  const { signIn, signUp, resetPassword, requestOTP, verifyOTP } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep]       = useState<Step>('form');
   const [loading, setLoading] = useState(false);
@@ -63,11 +65,16 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   };
 
   // ── Connexion / Inscription Google ──────────────────────────
+  // signInWithPopup appelé DIRECTEMENT ici (sans await intermédiaire)
+  // pour préserver le "user gesture" requis par Chrome Android
   const handleGoogle = async () => {
     setError(''); setLoading(true);
     try {
-      await signInWithGoogle();
-      // onAuthStateChanged prend la main → redirection automatique
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      // Appel DIRECT dans le handler du clic → Chrome Android accepte le popup
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged + loadUserProfile prennent la main automatiquement
     } catch (err: any) {
       console.error('[Google Auth] code:', err.code, '| message:', err.message);
       // Afficher TOUJOURS l'erreur pour diagnostiquer
