@@ -45,7 +45,7 @@ export function OfferModal({ product, visible, onClose, onSend }: OfferModalProp
     <div className="fixed inset-0 z-[250] flex items-end justify-center"
       onClick={onClose}>
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"/>
-      <div className="relative w-full max-w-md bg-white rounded-t-[3rem] px-6 pt-5 pb-10 shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto', animation: 'slideUp 0.3s ease-out' }}
+      <div className="relative w-full max-w-md bg-white rounded-t-[3rem] px-6 pt-5 pb-10 shadow-2xl" style={{ maxHeight: '85dvh', overflowY: 'auto', animation: 'slideUp 0.3s ease-out' }}>
         onClick={(e: React.MouseEvent) => e.stopPropagation()}>
 
         <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
