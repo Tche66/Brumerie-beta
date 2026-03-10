@@ -54,7 +54,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate }: BuyerProfilePag
   })();
 
   return (
-    <div className="min-h-full bg-white pb-24 font-sans">
+    <div className="min-h-screen bg-white pb-24 font-sans">
 
       {/* Bouton Paramètres */}
       <button onClick={() => onNavigate?.('settings')} className="settings-gear-btn" title="Paramètres">

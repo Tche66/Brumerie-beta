@@ -42,7 +42,7 @@ export function SupportPage({ onBack }: SupportPageProps) {
   const ytLink = config.youtubeChannel || 'https://youtube.com/@brumerie';
 
   return (
-    <div className="min-h-full bg-slate-50/50 pb-12 font-sans">
+    <div className="min-h-screen bg-slate-50/50 pb-12 font-sans">
       {/* Header Premium */}
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button 

@@ -56,7 +56,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
   };
 
   return (
-    <div className="min-h-full bg-slate-50 pb-20 font-sans">
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans">
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 px-5 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90">

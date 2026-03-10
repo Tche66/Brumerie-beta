@@ -62,7 +62,7 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
   };
 
   return (
-    <div className="min-h-full bg-slate-50 pb-32 font-sans">
+    <div className="min-h-screen bg-slate-50 pb-32 font-sans">
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">

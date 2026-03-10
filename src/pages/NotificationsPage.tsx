@@ -106,7 +106,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-full bg-white pb-24 font-sans">
+    <div className="min-h-screen bg-white pb-24 font-sans">
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
         <button onClick={onBack}

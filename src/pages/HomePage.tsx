@@ -15,7 +15,7 @@ const ALL_CATEGORIES = [
   ...CATEGORIES,
 ];
 import { subscribeBoostedProductIds } from '@/services/boostService';
-import { StoriesBar, PublishStoryModal } from '@/components/StoriesBar';
+import { StoriesBar } from '@/components/StoriesBar';
 import { SystemBanner } from '@/components/SystemBanner';
 
 interface HomePageProps {
@@ -110,18 +110,15 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     }
   };
 
-  const [showPublishStory, setShowPublishStory] = React.useState(false);
-
   return (
-    <>
-    <div className="min-h-full bg-white pb-24 font-sans">
+    <div className="min-h-screen bg-white pb-24 font-sans">
       <Header onProfileClick={onProfileClick} onSearchChange={setSearchTerm} searchTerm={searchTerm} onNotificationsClick={onNotificationsClick} onLogoClick={onLogoClick} />
 
       {/* Bannière système admin */}
       <SystemBanner />
 
       {/* Stories — barre horizontale comme Instagram */}
-      <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} onRequestPublish={() => setShowPublishStory(true)} />
+      <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} />
 
       {/* Barre de filtres rapides */}
       <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none">
@@ -290,14 +287,5 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       </div>
       <div className="h-16" />
     </div>
-
-      {/* Modal publication story — monté au niveau racine pour fixed correct */}
-      {showPublishStory && (
-        <PublishStoryModal
-          onClose={() => setShowPublishStory(false)}
-          onPublished={() => setShowPublishStory(false)}
-        />
-      )}
-    </>
   );
 }

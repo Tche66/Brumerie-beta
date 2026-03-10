@@ -135,7 +135,7 @@ function AppShell() {
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings'];
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])];
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const navigate = (page: Page) => {
@@ -151,7 +151,7 @@ function AppShell() {
     setNavigationHistory(['home']);
     setSelectedProduct(null);
     setSelectedSellerId(null);
-    const root = document.getElementById('root'); if (root) root.scrollTop = 0;
+    window.scrollTo(0, 0);
   };
 
   const goBack = () => {
@@ -175,8 +175,7 @@ function AppShell() {
   // ── useEffect #1 — scroll top à chaque changement de page ────
   
 useEffect(() => {
-  const root = document.getElementById('root');
-  if (root) root.scrollTop = 0;
+  window.scrollTo(0, 0);
 }, [activePage, selectedProduct]);
 
   // ── useEffect : Bouton Retour Android (Capacitor) ─────────────

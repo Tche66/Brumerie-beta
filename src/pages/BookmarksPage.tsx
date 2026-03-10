@@ -45,7 +45,7 @@ export function BookmarksPage({ onBack, onProductClick }: BookmarksPageProps) {
   };
 
   return (
-    <div className="min-h-full bg-white page-container animate-fade-in">
+    <div className="min-h-screen bg-white page-container animate-fade-in">
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-50">
         <button

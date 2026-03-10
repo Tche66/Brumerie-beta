@@ -6,7 +6,7 @@ export function CGUPage({ onBack }: CGUPageProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
-    <div className="min-h-full bg-white pb-20">
+    <div className="min-h-screen bg-white pb-20">
       {/* Header */}
       <div className="sticky top-0 bg-white/95 backdrop-blur-xl border-b border-slate-100 z-50 px-4 py-4 flex items-center gap-3">
         <button onClick={onBack} className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center active:scale-90 transition-all">

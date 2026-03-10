@@ -126,7 +126,7 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
   const totalWA = products.reduce((a, p) => a + (p.whatsappClickCount || 0), 0);
 
   return (
-    <div className="min-h-full bg-white page-container pb-24">
+    <div className="min-h-screen bg-white page-container pb-24">
 
       {/* Bannière boutique — vérifié/premium avec bannière */}
       {(userProfile.isVerified || userProfile.isPremium) && userProfile.shopBanner && (

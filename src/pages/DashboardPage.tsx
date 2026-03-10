@@ -150,7 +150,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
     : 'linear-gradient(135deg,#475569 0%,#334155 100%)';
 
   return (
-    <div className="min-h-full pb-24 bg-slate-50 font-sans">
+    <div className="min-h-screen pb-24 bg-slate-50 font-sans">
 
       {/* ── Header ── */}
       <div className="bg-white px-5 pt-6 pb-0 border-b border-slate-100 sticky top-0 z-10 shadow-sm">

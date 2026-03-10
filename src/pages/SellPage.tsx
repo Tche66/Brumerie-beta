@@ -202,7 +202,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-[60] flex flex-col" style={{ height: '100dvh' }}>
+    <div className="fixed inset-0 bg-white z-[60] flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
         <button onClick={onClose} className="p-2 -ml-2 text-slate-400 hover:text-black transition-colors">

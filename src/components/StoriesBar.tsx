@@ -308,6 +308,7 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
   const [viewerStart, setViewerStart] = useState(0);
 
   const isVerifiedSeller = userProfile?.role === 'seller' && userProfile?.isVerified;
+  const [showPublish, setShowPublish] = useState(false);
 
   useEffect(() => {
     return subscribeActiveStories(setStories);
@@ -328,7 +329,7 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
 
           {/* Bouton "Ajouter" — vendeurs vérifiés seulement */}
           {isVerifiedSeller && (
-            <button onClick={() => onRequestPublish?.()}
+            <button onClick={() => setShowPublish(true)}
               className="flex flex-col items-center gap-1.5 flex-shrink-0 active:scale-95 transition-all">
               <div className="w-14 h-14 rounded-full border-2 border-dashed border-green-400 flex items-center justify-center bg-green-50">
                 <span className="text-green-600 text-2xl font-black">+</span>
@@ -391,6 +392,13 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
       )}
 
 
+      {/* Modal publication */}
+      {showPublish && (
+        <PublishStoryModal
+          onClose={() => setShowPublish(false)}
+          onPublished={() => { setShowPublish(false); }}
+        />
+      )}
     </>
   );
 }
