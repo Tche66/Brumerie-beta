@@ -17,6 +17,7 @@ import { ProductBoost, BOOST_PLANS } from '@/types';
 import { CountdownBadge } from '@/components/CountdownBadge';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 
 const ADMIN_UID = (import.meta as any).env?.VITE_ADMIN_UID || '';
 
@@ -123,7 +124,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   useEffect(() => {
     if (!isAdmin) return;
     getAdminStats().then(setStats);
-    getGlobalSettings().then(s => { setGlobalSettings(s); setSettingsDraft(s); });
+    getGlobalSettings().then(s => { setGlobalSettings(s || {}); setSettingsDraft(s || {}); }).catch(() => {});
   }, [isAdmin]);
 
   const handleActivateBoost = async (id: string) => {
@@ -206,7 +207,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
     if (!newEmailInput.includes('@')) { showToast('⚠️ Email invalide'); return; }
     setBusy('email_' + userId);
     try {
-      const { getAuth } = await import('firebase/auth');
       const idToken = await getAuth().currentUser?.getIdToken() || '';
       const res = await adminChangeEmail(userId, newEmailInput.trim().toLowerCase(), idToken);
       if (res.success) {
@@ -789,7 +789,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 {(['24h','48h','7j'] as const).map(d => (
                   <div key={d} className="flex items-center gap-3 mb-2">
                     <span className="text-[11px] font-bold text-slate-600 w-8">{d}</span>
-                    <input type="number" value={settingsDraft.boostPrices?.[d] ?? globalSettings.boostPrices?.[d] ?? BOOST_PLANS.find(p=>p.duration===d)?.price}
+                    <input type="number" value={settingsDraft.boostPrices?.[d] ?? globalSettings.boostPrices?.[d] ?? BOOST_PLANS.find(p=>p.duration===d)?.price ?? 0}
                       onChange={e => setSettingsDraft((s: any) => ({ ...s, boostPrices:{ ...s.boostPrices, [d]: parseInt(e.target.value) } }))}
                       className="flex-1 bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2 text-[12px] font-black outline-none"/>
                     <span className="text-[10px] text-slate-400">FCFA</span>

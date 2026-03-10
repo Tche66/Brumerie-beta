@@ -13,7 +13,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-startup-image" href="/assets/Logos/logo-app-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#16A34A" />
     <title>Brumerie — Le commerce local à Abidjan</title>
     <meta name="description" content="Connecte-toi au marché de ton quartier. Publie, découvre et échange localement à Abidjan." />
@@ -150,27 +150,7 @@
   }
   .animate-slide-up { animation: slide-up 0.3s ease-out; }
 
-  /* ── MODE DESKTOP : app mobile centrée ── */
-  @media (min-width: 768px) {
-    body {
-      background: #E2E8F0;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px 0;
-    }
-    #root {
-      width: 390px;
-      min-height: calc(100vh - 48px);
-      background: white;
-      border-radius: 40px;
-      overflow: hidden;
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 24px 80px rgba(0,0,0,0.15);
-      position: relative;
-    }
-    #splash { border-radius: 40px; }
-  }
+
 
 </style>
   </head>

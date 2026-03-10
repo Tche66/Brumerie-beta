@@ -21,13 +21,26 @@ function StoryViewer({
 }) {
   const [idx, setIdx] = useState(startIndex);
   const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const story = stories[idx];
 
   useEffect(() => {
     if (!story || !currentUserId) return;
     markStoryViewed(story.id, currentUserId);
     setProgress(0);
+    setPaused(false);
+    setZoomed(false);
+  }, [idx, story?.id]);
+
+  useEffect(() => {
+    if (paused) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    if (!story) return;
     timerRef.current = setInterval(() => {
       setProgress(p => {
         if (p >= 100) {
@@ -37,9 +50,22 @@ function StoryViewer({
         }
         return p + 1;
       });
-    }, 50); // 5s par story (100 * 50ms)
+    }, 50);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [idx, story?.id]);
+  }, [idx, paused, story?.id]);
+
+  const handlePressStart = () => {
+    holdTimerRef.current = setTimeout(() => {
+      setPaused(true);
+      setZoomed(true);
+    }, 100);
+  };
+
+  const handlePressEnd = () => {
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    setPaused(false);
+    setZoomed(false);
+  };
 
   if (!story) return null;
 
@@ -50,7 +76,8 @@ function StoryViewer({
         onClick={e => e.stopPropagation()}>
 
         {/* Barre de progression */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex gap-1 p-3">
+        <div className="absolute top-0 left-0 right-0 z-10 flex gap-1 p-3"
+          style={{ opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s' }}>
           {stories.map((_, i) => (
             <div key={i} className="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30">
               <div className="h-full bg-white transition-none rounded-full"
@@ -60,7 +87,8 @@ function StoryViewer({
         </div>
 
         {/* Header vendeur */}
-        <div className="absolute top-6 left-0 right-0 z-10 flex items-center gap-3 px-4 pt-4">
+        <div className="absolute top-6 left-0 right-0 z-10 flex items-center gap-3 px-4 pt-4"
+          style={{ opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s' }}>
           <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white flex-shrink-0">
             {story.sellerPhoto
               ? <img src={story.sellerPhoto} className="w-full h-full object-cover" alt=""/>
@@ -75,7 +103,6 @@ function StoryViewer({
               {story.createdAt?.toDate ? new Date(story.createdAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
             </p>
           </div>
-          {/* Compteur de vues — visible pour tout le monde */}
           <div className="flex items-center gap-1 bg-black/30 rounded-full px-2.5 py-1">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span className="text-white text-[10px] font-bold">{story.views?.length || 0}</span>
@@ -83,13 +110,39 @@ function StoryViewer({
           <button onClick={onClose} className="text-white text-xl w-8 h-8 flex items-center justify-center">✕</button>
         </div>
 
-        {/* Image */}
-        <img src={story.imageUrl} alt="" className="w-full h-full object-cover"/>
+        {/* Image — zoom au maintien */}
+        <img
+          src={story.imageUrl}
+          alt=""
+          className="w-full h-full object-cover"
+          style={{
+            transform: zoomed ? 'scale(1.08)' : 'scale(1)',
+            transition: 'transform 0.3s ease',
+          }}
+          onMouseDown={handlePressStart}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onTouchStart={handlePressStart}
+          onTouchEnd={handlePressEnd}
+          onTouchCancel={handlePressEnd}
+          draggable={false}
+        />
+
+        {/* Icône pause au centre */}
+        {paused && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div className="bg-black/40 rounded-full p-4 backdrop-blur-sm">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+              </svg>
+            </div>
+          </div>
+        )}
 
         {/* Caption + produit */}
         {(story.caption || story.productRef) && (
           <div className="absolute bottom-0 left-0 right-0 p-5"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s' }}>
             {story.caption && (
               <p className="text-white font-bold text-[14px] leading-relaxed mb-3">{story.caption}</p>
             )}
@@ -103,7 +156,6 @@ function StoryViewer({
                 </div>
               </div>
             )}
-            {/* Compteur vues en bas — toujours visible */}
             <div className="flex items-center gap-2 mt-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <span className="text-white/60 text-[11px] font-bold">{story.views?.length || 0} vue{(story.views?.length || 0) > 1 ? 's' : ''}</span>
@@ -111,16 +163,18 @@ function StoryViewer({
           </div>
         )}
 
-        {/* Navigation tapotage */}
-        <div className="absolute inset-0 flex">
-          <div className="flex-1" onClick={() => setIdx(i => Math.max(0, i - 1))}/>
-          <div className="flex-1" onClick={() => { if (idx < stories.length - 1) setIdx(i => i + 1); else onClose(); }}/>
-        </div>
+        {/* Navigation tapotage — désactivée pendant le maintien */}
+        {!paused && (
+          <div className="absolute inset-0 flex">
+            <div className="flex-1" onClick={() => setIdx(i => Math.max(0, i - 1))}/>
+            <div className="flex-1" onClick={() => { if (idx < stories.length - 1) setIdx(i => i + 1); else onClose(); }}/>
+          </div>
+        )}
 
-        {/* ── Boutons action en bas (masqués si c'est ta propre story) ── */}
+        {/* Boutons action */}
         {story.sellerId !== currentUserId && (
           <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-2"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28 }}>
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28, opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s', pointerEvents: zoomed ? 'none' : 'auto' }}>
             {story.productRef ? (
               <>
                 <button
