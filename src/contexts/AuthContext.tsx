@@ -103,17 +103,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
 
+    // Détecter mobile (Android / iOS) — utiliser redirect systématiquement
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
-    const isWebView = /wv|WebView/.test(navigator.userAgent);
 
-    if (isCapacitor || isWebView) {
-      // Android WebView → redirect (popup bloqué)
+    if (isMobile || isCapacitor) {
+      // Mobile → redirect (plus fiable que popup sur Chrome Android)
       await signInWithRedirect(auth, provider);
-      // La page se recharge → le résultat est capturé dans le useEffect ci-dessous
-      return;
+      return; // La page se recharge, résultat capturé dans getRedirectResult
     }
 
-    // Navigateur web → popup
+    // Desktop → popup
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }

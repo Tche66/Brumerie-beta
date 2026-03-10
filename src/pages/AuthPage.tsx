@@ -69,17 +69,20 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       await signInWithGoogle();
       // onAuthStateChanged prend la main → redirection automatique
     } catch (err: any) {
+      console.error('[Google Auth] code:', err.code, '| message:', err.message);
+      // Afficher TOUJOURS l'erreur pour diagnostiquer
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        // Annulé par l'user → pas une erreur
+        setError('Connexion annulée. Réessaie.');
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up bloquée. Autorise les pop-ups pour ce site.');
+        setError('Pop-up bloquée — essaie depuis Chrome directement.');
       } else if (err.code === 'auth/unauthorized-domain') {
-        setError('Domaine non autorisé. Contacte le support Brumerie.');
+        setError('Domaine non autorisé dans Firebase. Ajoute brumerie-beta.vercel.app dans Authentication > Paramètres > Domaines autorisés.');
       } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Connexion Google non activée. Contacte le support.');
+        setError('Google non activé dans Firebase. Active-le dans Authentication > Méthode de connexion.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Erreur réseau. Vérifie ta connexion internet.');
       } else {
-        // Sur Android → redirect lancé, pas vraiment une erreur
-        console.warn('[Google Auth]', err.code, err.message);
+        setError(\`Erreur Google (\${err.code || 'inconnue'}): \${err.message || 'Réessaie.'}\`);
       }
     } finally { setLoading(false); }
   };
@@ -385,14 +388,23 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 py-5 rounded-[2.5rem] border-2 border-slate-200 bg-white font-black text-[13px] text-slate-800 uppercase tracking-[0.15em] active:scale-[0.98] transition-all shadow-sm hover:border-slate-300 hover:shadow-md disabled:opacity-40 mb-6"
         >
-          {/* Logo Google SVG officiel */}
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-          </svg>
-          Continuer avec Google
+          {loading ? (
+            <>
+              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+              Redirection Google...
+            </>
+          ) : (
+            <>
+              {/* Logo Google SVG officiel */}
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continuer avec Google
+            </>
+          )}
         </button>
 
         {/* Séparateur */}
