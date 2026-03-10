@@ -58,6 +58,7 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
           onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
           onProfileClick={() => showGuest('default')}
           onNotificationsClick={() => showGuest('default')}
+          onOpenChatWithSeller={() => showGuest('default')}
           isGuest
           onGuestAction={showGuest}
         />
