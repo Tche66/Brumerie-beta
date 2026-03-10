@@ -691,6 +691,19 @@ function AppContent() {
     );
   }
 
+  // currentUser existe mais profil pas encore chargé (ex: après redirect Google)
+  // → spinner pendant que Firestore charge le profil
+  if (currentUser && !userProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Connexion…</p>
+        </div>
+      </div>
+    );
+  }
+
   // Pas connecté → mode visiteur avec accès limité
   // Le visiteur peut voir l'accueil, les articles et les profils vendeurs
   // Mais est invité à se connecter pour les actions

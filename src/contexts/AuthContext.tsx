@@ -123,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const uid = user.uid;
     const snap = await getDoc(doc(db, 'users', uid));
     if (!snap.exists()) {
+      // Nouvelle connexion → créer profil
       const newUser: User = {
         id:           uid,
         uid:          uid,
@@ -142,6 +143,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile(newUser);
       await ensureReferralCode(uid, newUser.name);
       sendWelcomeEmail(newUser.email, newUser.name);
+    } else {
+      // Profil existant → charger dans le state immédiatement
+      await loadUserProfile(uid);
     }
   }
 
@@ -200,26 +204,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Capturer le résultat du redirect Google (Android) ──────────
+  // ── Auth state + redirect Google (combiné pour éviter race condition) ─
   useEffect(() => {
+    let resolved = false;
+
+    // D'abord capturer un éventuel redirect Google en cours
     getRedirectResult(auth).then(async (result) => {
       if (result?.user) {
+        // Nouvelle connexion Google via redirect → créer profil si besoin
         await handleGoogleUser(result.user);
       }
     }).catch(() => {
-      // Pas de redirect en cours — silencieux
+      // Pas de redirect → silencieux
+    }).finally(() => {
+      // Ensuite écouter les changements d'état auth normalement
+      if (!resolved) {
+        const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+          setCurrentUser(user);
+          if (user) await loadUserProfile(user.uid);
+          else setUserProfile(null);
+          setLoading(false);
+        });
+        resolved = true;
+        // Cleanup
+        (window as any).__brumeAuthUnsub = unsub;
+      }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      setCurrentUser(user);
-      if (user) await loadUserProfile(user.uid);
-      else setUserProfile(null);
-      setLoading(false);
-    });
-    return unsub;
+    return () => {
+      resolved = true;
+      (window as any).__brumeAuthUnsub?.();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const value: AuthContextType = {
