@@ -202,40 +202,17 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                 className="w-full px-5 py-4 bg-white rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-green-500 outline-none"/>
             </div>
 
-            {/* ── Modification email ── */}
+            {/* ── Email — lecture seule (modifier dans Paramètres > Sécurité) ── */}
             <div>
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Adresse email</label>
-              <div className="flex items-center gap-3 bg-white rounded-2xl px-5 py-4 shadow-sm">
-                <p className="flex-1 text-sm font-bold text-slate-700 truncate">{currentUser?.email}</p>
-                <button onClick={() => setShowEmailChange(v => !v)}
-                  className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-xl uppercase tracking-wider active:scale-95 transition-all flex-shrink-0">
-                  Modifier
-                </button>
+              <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-5 py-4 border border-slate-100">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <p className="flex-1 text-sm font-bold text-slate-500 truncate">{currentUser?.email}</p>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Paramètres</span>
               </div>
-              {showEmailChange && (
-                <div className="mt-3 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Changer mon email</p>
-                  <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
-                    placeholder="Nouvel email"
-                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-[13px] border-2 border-transparent focus:border-green-400 outline-none"/>
-                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
-                    placeholder="Mot de passe actuel (sécurité)"
-                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-[13px] border-2 border-transparent focus:border-green-400 outline-none"/>
-                  {emailError && <p className="text-[11px] text-red-500 font-bold">{emailError}</p>}
-                  {emailSuccess && <p className="text-[11px] text-green-600 font-bold">{emailSuccess}</p>}
-                  <div className="flex gap-2">
-                    <button onClick={() => { setShowEmailChange(false); setEmailError(''); }}
-                      className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-black text-[10px] uppercase">
-                      Annuler
-                    </button>
-                    <button onClick={handleChangeEmail}
-                      disabled={emailLoading || !newEmail.trim() || !currentPassword.trim()}
-                      className="flex-1 py-3 rounded-xl bg-green-600 text-white font-black text-[10px] uppercase disabled:opacity-40 active:scale-95 transition-all">
-                      {emailLoading ? '...' : 'Confirmer'}
-                    </button>
-                  </div>
-                </div>
-              )}
+              <p className="text-[10px] text-slate-400 font-bold mt-1.5 ml-1">
+                Pour modifier ton email, va dans Paramètres → Sécurité.
+              </p>
             </div>
 
             {/* Quartier */}

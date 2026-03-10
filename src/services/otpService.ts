@@ -1,15 +1,14 @@
-// src/services/otpService.ts — OTP 100% via Netlify Function (sans Firestore)
+// src/services/otpService.ts — OTP 100% via Vercel Function (sans Firestore)
 // La Function gère : génération, stockage mémoire, envoi Brevo, vérification
 
 // Sur Capacitor (APK), window.location.origin = "capacitor://localhost"
-// → le chemin relatif /.netlify ne fonctionne pas → URL absolue nécessaire
-// brumerie.com est le domaine custom pointant vers Netlify
+// → le chemin relatif /api ne fonctionne pas → URL absolue nécessaire
 const PROD_BASE = 'https://brumerie.com';
 const isCapacitor = typeof (window as any).Capacitor !== 'undefined'
   || window.location.protocol === 'capacitor:';
 const FUNCTION_URL = isCapacitor
-  ? `${PROD_BASE}/.netlify/functions/send-email`
-  : '/.netlify/functions/send-email';
+  ? `${PROD_BASE}/api/send-email`
+  : '/api/send-email';
 
 // ── Demander l'envoi d'un OTP ──────────────────────────────────
 // Retourne { success: true } ou { devCode: string } si Function non déployée

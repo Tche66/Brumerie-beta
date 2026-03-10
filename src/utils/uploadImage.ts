@@ -21,7 +21,7 @@ export async function uploadToCloudinary(
 
   // Appel à notre Netlify Function proxy
   // Même domaine = pas de CORS, pas de blocage réseau opérateur
-  const res = await fetch('/.netlify/functions/upload-image', {
+  const res = await fetch('/api/upload-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ imageBase64 }),

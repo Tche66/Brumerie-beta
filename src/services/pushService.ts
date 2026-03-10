@@ -86,7 +86,7 @@ export async function sendPushNotification(
   productId?: string
 ): Promise<void> {
   try {
-    await fetch('/.netlify/functions/push-notify', {
+    await fetch('/api/push-notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

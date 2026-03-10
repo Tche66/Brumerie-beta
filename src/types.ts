@@ -206,7 +206,16 @@ export interface PaymentInfo {
 }
 
 // ─── COMMANDES ────────────────────────────────────────────
-export type OrderStatus = 'initiated' | 'proof_sent' | 'confirmed' | 'delivered' | 'disputed' | 'cancelled' | 'cod_pending' | 'cod_confirmed';
+export type OrderStatus =
+  | 'initiated'       // Commande créée, attente paiement acheteur
+  | 'proof_sent'      // Preuve de paiement envoyée
+  | 'confirmed'       // Vendeur confirme réception paiement
+  | 'ready'           // Vendeur Prêt à livrer → code généré
+  | 'delivered'       // Acheteur a validé le code → livré
+  | 'disputed'
+  | 'cancelled'
+  | 'cod_pending'
+  | 'cod_confirmed';
 
 export interface OrderProof {
   screenshotUrl: string;
@@ -242,9 +251,14 @@ export interface Order {
   sellerBlocked?: boolean;
   createdAt?: any;
   updatedAt?: any;
+  // Livraison — code escrow
+  deliveryCode?: string;         // Code 6 chars ex: XK9B2R (visible acheteur + vendeur)
+  deliveryCodeGeneratedAt?: any; // Timestamp génération
+  deliveryValidatedAt?: any;     // Timestamp validation par acheteur
   // Sprint 7 — notation
   buyerReviewed?: boolean;
   sellerReviewed?: boolean;
+  reviewsUnlocked?: boolean;     // true dès que le code est validé
 }
 
 // ─── NOTATION Sprint 7 ───────────────────────────────────

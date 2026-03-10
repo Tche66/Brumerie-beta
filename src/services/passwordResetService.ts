@@ -1,7 +1,7 @@
 // src/services/passwordResetService.ts
 // Réinitialisation mot de passe par OTP Brevo (pas de lien Firebase)
 
-const API = '/.netlify/functions/send-email';
+const API = '/api/send-email';
 
 export type ResetStep = 'email' | 'otp' | 'newpassword' | 'done';
 

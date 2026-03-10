@@ -187,6 +187,97 @@ export async function confirmPaymentReceived(orderId: string): Promise<void> {
   });
 }
 
+
+// ── Générer code livraison 6 chars (XK9B2R) ───────────────
+function generateDeliveryCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 (confusion visuelle)
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+// ── Vendeur clique "Prêt à livrer" → génère le code ────────
+export async function markReadyToDeliver(orderId: string): Promise<string> {
+  const snap = await getDoc(doc(ordersCol, orderId));
+  if (!snap.exists()) throw new Error('Commande introuvable');
+  const order = { id: snap.id, ...snap.data() } as Order;
+
+  const deliveryCode = generateDeliveryCode();
+
+  await updateDoc(doc(ordersCol, orderId), {
+    status: 'ready' as OrderStatus,
+    deliveryCode,
+    deliveryCodeGeneratedAt: serverTimestamp(),
+  });
+
+  // Notifier les deux parties avec leur code
+  await notifyBoth({
+    sellerId: order.sellerId,
+    sellerMsg: {
+      title: '🔐 Code de livraison généré',
+      body: 'Ton code : ' + deliveryCode + ' — Donne-le à l'acheteur UNIQUEMENT à la livraison.',
+      convData: { orderId, productId: order.productId },
+    },
+    buyerId: order.buyerId,
+    buyerMsg: {
+      title: '🚚 Ton article arrive !',
+      body: 'Ton code de confirmation : ' + deliveryCode + ' — Saisis-le sur Brumerie à la réception.',
+      convData: { orderId, productId: order.productId },
+    },
+  });
+
+  return deliveryCode;
+}
+
+// ── Acheteur valide le code → livraison confirmée ──────────
+export async function validateDeliveryCode(
+  orderId: string,
+  inputCode: string,
+): Promise<{ success: boolean; error?: string }> {
+  const snap = await getDoc(doc(ordersCol, orderId));
+  if (!snap.exists()) return { success: false, error: 'Commande introuvable' };
+  const order = { id: snap.id, ...snap.data() } as Order;
+
+  if (order.status !== 'ready') {
+    return { success: false, error: 'La commande n'est pas encore prête à être livrée' };
+  }
+
+  if (!order.deliveryCode) {
+    return { success: false, error: 'Code de livraison non généré' };
+  }
+
+  if (order.deliveryCode.toUpperCase() !== inputCode.trim().toUpperCase()) {
+    return { success: false, error: 'Code incorrect — réessaie' };
+  }
+
+  // Code valide → livraison confirmée + avis débloqués
+  await updateDoc(doc(ordersCol, orderId), {
+    status: 'delivered' as OrderStatus,
+    deliveredAt: serverTimestamp(),
+    deliveryValidatedAt: serverTimestamp(),
+    reviewsUnlocked: true,
+  });
+
+  await notifyBoth({
+    sellerId: order.sellerId,
+    sellerMsg: {
+      title: '✅ Livraison confirmée !',
+      body: order.buyerName + ' a confirmé la réception de "' + order.productTitle + '". Transaction terminée ✓',
+      convData: { orderId, productId: order.productId },
+    },
+    buyerId: order.buyerId,
+    buyerMsg: {
+      title: '🎉 Article reçu !',
+      body: 'Livraison confirmée. Tu peux maintenant noter ' + order.sellerName + ' !',
+      convData: { orderId, productId: order.productId },
+    },
+  });
+
+  return { success: true };
+}
+
 // ── Acheteur confirme réception physique ───────────────────
 export async function confirmDelivery(orderId: string): Promise<void> {
   const snap = await getDoc(doc(ordersCol, orderId));

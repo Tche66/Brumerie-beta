@@ -7,6 +7,7 @@ import {
   confirmDelivery, openOrderDispute, getCountdown,
   subscribeOrdersAsBuyer, subscribeOrdersAsSeller, checkExpiredOrders,
   confirmCODReady, confirmCODDelivered,
+  markReadyToDeliver, validateDeliveryCode,
 } from '@/services/orderService';
 import { Order, OrderStatus, MOBILE_PAYMENT_METHODS } from '@/types';
 import { RatingModal } from '@/components/RatingModal';
@@ -20,6 +21,57 @@ interface OrderStatusPageProps {
   onBack: () => void;
 }
 
+// ── Composant saisie code livraison ──────────────────────────
+function DeliveryCodeInput({ orderId, order, onValidated }: {
+  orderId: string; order: Order; onValidated: () => void;
+}) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleValidate = async () => {
+    if (code.trim().length !== 6) { setError('Le code doit faire 6 caractères'); return; }
+    setLoading(true); setError(null);
+    const result = await validateDeliveryCode(orderId, code);
+    setLoading(false);
+    if (result.success) { onValidated(); }
+    else { setError(result.error || 'Code incorrect'); }
+  };
+
+  return (
+    <div className="space-y-3 pt-2">
+      <div className="bg-yellow-50 rounded-2xl p-4 border border-yellow-200">
+        <p className="text-[10px] font-black text-yellow-800 uppercase tracking-widest mb-1">Code de confirmation</p>
+        <p className="text-[11px] text-yellow-800 font-bold">
+          Le vendeur t'a donné un code à 6 caractères. Saisis-le pour confirmer la réception.
+        </p>
+      </div>
+      <input
+        value={code}
+        onChange={e => { setCode(e.target.value.toUpperCase()); setError(null); }}
+        maxLength={6}
+        placeholder="Ex: XK9B2R"
+        className="w-full bg-slate-50 border-2 border-slate-200 focus:border-green-400 rounded-2xl px-5 py-4 text-center text-2xl font-black tracking-[0.4em] font-mono uppercase outline-none transition-colors"
+      />
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-red-600 text-[12px] font-bold text-center">
+          ⚠️ {error}
+        </div>
+      )}
+      <button onClick={handleValidate} disabled={loading || code.length !== 6}
+        className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-40"
+        style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+        {loading
+          ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
+          : '✅ Valider le code — Confirmer la réception'}
+      </button>
+      <p className="text-[10px] text-slate-400 text-center font-bold">
+        En validant ce code, tu confirmes avoir reçu l'article en bon état.
+      </p>
+    </div>
+  );
+}
+
 // ── Badge statut ───────────────────────────────────────────
 function StatusBadge({ status }: { status: OrderStatus }) {
   const map: Record<OrderStatus, { label: string; bg: string; color: string }> = {
@@ -31,6 +83,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     cancelled:  { label: 'Annulé',            bg: '#F3F4F6', color: '#374151' },
     cod_pending:   { label: '🤝 Payer à livraison', bg: '#EFF6FF', color: '#1D4ED8' },
     cod_confirmed: { label: '🚚 En livraison',      bg: '#F0FDF4', color: '#166534' },
+    ready:        { label: '📦 Prêt à livrer',     bg: '#FEF9C3', color: '#854D0E' },
   };
   const s = map[status] || map.initiated;
   return (
@@ -200,6 +253,38 @@ function OrderDetail({ orderId, onBack }: { orderId: string; onBack: () => void 
       </div>
 
       <div className="px-5 py-6 space-y-5">
+
+        {/* ── BOUTONS CONTACT — Chat + WhatsApp (acheteur → vendeur) ── */}
+        {isBuyer && !['delivered', 'cancelled'].includes(order.status) && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => {
+                // Ouvre le chat intégré avec le vendeur
+                window.dispatchEvent(new CustomEvent('brumerie:open-chat', {
+                  detail: { sellerId: order.sellerId, sellerName: order.sellerName, productId: order.productId }
+                }));
+              }}
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+              style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Chat
+            </button>
+            <a
+              href={`https://wa.me/${(order.sellerPhone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                `Bonjour, je suis ${order.buyerName} 👋
+Je viens de commander "${order.productTitle}" sur Brumerie (Commande #${orderId.slice(-6).toUpperCase()}).
+Montant : ${order.productPrice.toLocaleString('fr-FR')} FCFA
+Puis-je avoir plus d'informations ?`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+              style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              WhatsApp
+            </a>
+          </div>
+        )}
 
         {/* Produit + montant */}
         <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-3xl">
@@ -404,22 +489,61 @@ function OrderDetail({ orderId, onBack }: { orderId: string; onBack: () => void 
 
         {isBuyer && order.status === 'confirmed' && (
           <div className="space-y-3 pt-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Avez-vous reçu l'article ?</p>
-            <button onClick={() => act(async () => {
-              await confirmDelivery(orderId);
-              // Auto-marquer le produit comme vendu
-              try { await updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
-              setShowRatingModal(true);
-            })} disabled={loading}
-              className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-blue-200 active:scale-95 transition-all"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/> : "J'ai reçu l'article ✓"}
-            </button>
+            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+              <p className="text-[11px] text-blue-800 font-bold">
+                ✅ Paiement confirmé. Le vendeur prépare ton article et va bientôt générer ton code de livraison.
+              </p>
+            </div>
             <button onClick={() => setShowDisputeForm(true)}
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-orange-600 bg-orange-50 border border-orange-100 active:scale-95 transition-all">
               Signaler un problème
             </button>
           </div>
+        )}
+
+        {/* ── VENDEUR — Confirme paiement reçu → peut marquer prêt à livrer ── */}
+        {isSeller && order.status === 'confirmed' && (
+          <div className="space-y-3 pt-2">
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+              <p className="text-[11px] text-green-800 font-bold">
+                💰 Paiement confirmé. Prépare l'article puis clique "Prêt à livrer" pour générer le code.
+              </p>
+            </div>
+            <button onClick={() => act(async () => {
+              await markReadyToDeliver(orderId);
+            })} disabled={loading}
+              className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-yellow-200 active:scale-95 transition-all"
+              style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/> : '📦 Prêt à livrer — Générer le code'}
+            </button>
+          </div>
+        )}
+
+        {/* ── VENDEUR — Voit son code livraison ── */}
+        {isSeller && order.status === 'ready' && order.deliveryCode && (
+          <div className="space-y-3 pt-2">
+            <div className="bg-yellow-50 rounded-2xl p-5 border-2 border-yellow-200 text-center">
+              <p className="text-[10px] font-black text-yellow-800 uppercase tracking-widest mb-3">Ton code de livraison</p>
+              <div className="bg-slate-900 rounded-2xl px-6 py-4 inline-block mb-3">
+                <span className="text-3xl font-black text-yellow-300 tracking-[0.4em] font-mono">
+                  {order.deliveryCode}
+                </span>
+              </div>
+              <p className="text-[10px] text-yellow-700 font-bold">
+                🔐 Donne ce code à l'acheteur UNIQUEMENT à la livraison physique
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── ACHETEUR — Saisie du code livraison ── */}
+        {isBuyer && order.status === 'ready' && (
+          <DeliveryCodeInput orderId={orderId} order={order}
+            onValidated={() => {
+              try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+              setShowRatingModal(true);
+            }}
+          />
         )}
 
         {order.status === 'disputed' && (

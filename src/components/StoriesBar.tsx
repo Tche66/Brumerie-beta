@@ -11,9 +11,12 @@ interface StoriesBarProps {
 
 // ── Visionneuse de story ──────────────────────────────────────
 function StoryViewer({
-  stories, startIndex, onClose, currentUserId,
+  stories, startIndex, onClose, currentUserId, onOrder, onOffer, onContact,
 }: {
   stories: Story[]; startIndex: number; onClose: () => void; currentUserId?: string;
+  onOrder?: (story: Story) => void;
+  onOffer?: (story: Story) => void;
+  onContact?: (sellerId: string, sellerName: string) => void;
 }) {
   const [idx, setIdx] = useState(startIndex);
   const [progress, setProgress] = useState(0);
@@ -112,6 +115,32 @@ function StoryViewer({
           <div className="flex-1" onClick={() => setIdx(i => Math.max(0, i - 1))}/>
           <div className="flex-1" onClick={() => { if (idx < stories.length - 1) setIdx(i => i + 1); else onClose(); }}/>
         </div>
+
+        {/* ── Boutons action en bas ── */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-2"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28 }}>
+          {story.productRef ? (
+            <>
+              <button
+                onClick={() => { onClose(); onOrder?.(story); }}
+                className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+                🛍️ Commander
+              </button>
+              <button
+                onClick={() => { onClose(); onOffer?.(story); }}
+                className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
+                💬 Faire une offre
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => { onClose(); onContact?.(story.sellerId, story.sellerName); }}
+              className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
+              💬 Contacter le vendeur
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -123,6 +152,9 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
+  const [productLink, setProductLink] = useState('');
+  const [productTitle, setProductTitle] = useState('');
+  const [productPrice, setProductPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -142,12 +174,16 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
     setError(null);
     try {
       const imageUrl = await uploadToCloudinary(imageFile);
+      const productRef = productLink.trim() && productTitle.trim()
+        ? { id: productLink.trim(), title: productTitle.trim(), price: Number(productPrice) || 0 }
+        : undefined;
       await publishStory({
         sellerId: currentUser.uid,
         sellerName: userProfile.name,
         sellerPhoto: userProfile.photoURL,
         imageUrl,
         caption: caption.trim() || undefined,
+        productRef,
       });
       onPublished();
     } catch (e: any) {
@@ -274,6 +310,22 @@ export function StoriesBar({ onSellerClick }: StoriesBarProps) {
           startIndex={viewerStart}
           onClose={() => setViewerStories(null)}
           currentUserId={currentUser?.uid}
+          onOrder={(story) => {
+            setViewerStories(null);
+            if (story.productRef) {
+              onSellerClick?.(story.sellerId);
+            }
+          }}
+          onOffer={(story) => {
+            setViewerStories(null);
+            if (story.productRef) {
+              onSellerClick?.(story.sellerId);
+            }
+          }}
+          onContact={(sellerId) => {
+            setViewerStories(null);
+            onSellerClick?.(sellerId);
+          }}
         />
       )}
 

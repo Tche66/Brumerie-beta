@@ -1,7 +1,7 @@
 // src/services/emailChangeService.ts
 // Changement email sécurisé : mot de passe → OTP sur nouvel email → change
 
-const API = '/.netlify/functions/send-email';
+const API = '/api/send-email';
 
 // Étape 1 — Vérifier le mot de passe actuel
 export async function verifyCurrentPassword(email: string, password: string): Promise<{
