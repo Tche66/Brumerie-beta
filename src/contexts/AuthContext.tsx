@@ -7,6 +7,8 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -26,6 +28,7 @@ interface AuthContextType {
   // OTP
   requestOTP: (email: string, name: string) => Promise<{ devCode?: string }>;
   verifyOTP: (email: string, code: string) => Promise<'valid' | 'expired' | 'invalid'>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +93,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── Connexion ────────────────────────────────────────────────
   async function signIn(email: string, password: string) {
     await signInWithEmailAndPassword(auth, email, password);
+  }
+
+  // ── Connexion Google ────────────────────────────────────────
+  async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const cred = await signInWithPopup(auth, provider);
+    const user = cred.user;
+    const uid  = user.uid;
+
+    // Vérifier si le profil existe déjà
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (!snap.exists()) {
+      // Première connexion Google → créer le profil
+      const newUser: User = {
+        id:           uid,
+        uid:          uid,
+        email:        user.email || '',
+        name:         user.displayName || '',
+        phone:        '',
+        role:         'buyer',
+        neighborhood: '',
+        isVerified:   false,
+        photoURL:     user.photoURL || '',
+        bookmarkedProductIds: [],
+        createdAt:    serverTimestamp() as any,
+        publicationCount: 0,
+        publicationLimit: 50,
+      };
+      await setDoc(doc(db, 'users', uid), newUser);
+      setUserProfile(newUser);
+      // Générer code parrainage
+      await ensureReferralCode(uid, newUser.name);
+      // Email bienvenue
+      sendWelcomeEmail(newUser.email, newUser.name);
+    }
+    // Si profil existe → onAuthStateChanged le chargera automatiquement
   }
 
   // ── Déconnexion ──────────────────────────────────────────────
@@ -160,7 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextType = {
     currentUser, userProfile, loading,
     signUp, signIn, signOut, resetPassword, refreshUserProfile,
-    requestOTP, verifyOTP,
+    requestOTP, verifyOTP, signInWithGoogle,
   };
 
   return (

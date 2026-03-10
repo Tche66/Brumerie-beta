@@ -42,6 +42,7 @@ import { PushNotifPrompt } from '@/components/PushNotifPrompt';
 import { NetworkBanner } from '@/components/NetworkBanner';
 
 import { OfferModal } from '@/components/OfferModal';
+import { GoogleNeighborhoodModal } from '@/components/GoogleNeighborhoodModal';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
@@ -127,6 +128,7 @@ function AppShell() {
   const [productToEdit, setProductToEdit]         = useState<Product | null>(null);
   const [orderFlowProduct, setOrderFlowProduct]   = useState<any>(null);
   const [storyOfferProduct, setStoryOfferProduct] = useState<any>(null);
+  const [showNeighborhoodModal, setShowNeighborhoodModal] = useState(false);
   const [acceptedOfferPrice, setAcceptedOfferPrice] = useState<number | undefined>(undefined);
   const [selectedOrderId, setSelectedOrderId]     = useState<string>('');
   const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
@@ -225,6 +227,40 @@ useEffect(() => {
       setNavigationHistory(['home']);
     }
   }, [currentUser]);
+
+  // ── useEffect #2a — modal quartier pour user Google sans neighborhood ─
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    // Déclencher uniquement si pas de quartier ET connexion récente (pas d'email custom)
+    const isGoogleUser = currentUser.providerData?.some(p => p.providerId === 'google.com');
+    if (isGoogleUser && !userProfile.neighborhood) {
+      // Délai court pour laisser l'app se charger
+      const t = setTimeout(() => setShowNeighborhoodModal(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [currentUser?.uid, userProfile?.neighborhood]);
+
+  // ── useEffect #2b — deep link ?product=ID au démarrage ─────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('product');
+    if (!productId) return;
+    // Nettoyer l'URL immédiatement
+    window.history.replaceState({}, '', window.location.pathname);
+    // Charger le produit depuis Firestore et naviguer vers sa fiche
+    const loadAndOpen = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'products', productId));
+        if (snap.exists()) {
+          const product = { id: snap.id, ...snap.data() } as any;
+          setSelectedProduct(product);
+          navigate('product-detail');
+        }
+      } catch (e) { console.error('[deeplink]', e); }
+    };
+    loadAndOpen();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // une seule fois au montage
 
   // ── useEffect #3 — messages non-lus ──────────────────────────
   useEffect(() => {
@@ -568,6 +604,11 @@ useEffect(() => {
             <p className="text-white text-[13px] font-black whitespace-nowrap tracking-tight">Appuie encore pour quitter</p>
           </div>
         </div>
+      )}
+
+      {/* Modal quartier — utilisateurs Google sans neighborhood */}
+      {showNeighborhoodModal && (
+        <GoogleNeighborhoodModal onDone={() => setShowNeighborhoodModal(false)} />
       )}
 
       {/* OfferModal depuis une Story */}

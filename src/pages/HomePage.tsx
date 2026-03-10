@@ -62,6 +62,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [boostedIds, setBoostedIds] = useState<Set<string>>(new Set());
+  const [neighborhoodSellerCount, setNeighborhoodSellerCount] = useState<number>(0);
 
   // Écouter les produits boostés
   useEffect(() => {
@@ -95,6 +96,23 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     const t = setTimeout(loadProducts, 300);
     return () => clearTimeout(t);
   }, [loadProducts]);
+
+  // Compter les vendeurs dans le même quartier que l'utilisateur
+  useEffect(() => {
+    if (!userProfile?.neighborhood || products.length === 0) return;
+    const userNeighborhood = userProfile.neighborhood.trim().toLowerCase();
+    // Collecter les sellerIds uniques ayant au moins un produit dans ce quartier
+    const sellerIds = new Set<string>();
+    products.forEach(p => {
+      const pNeighborhood = (p.neighborhood || '').trim().toLowerCase();
+      if (pNeighborhood === userNeighborhood && p.sellerId) {
+        sellerIds.add(p.sellerId);
+      }
+    });
+    // Exclure le vendeur courant lui-même
+    if (userProfile?.uid) sellerIds.delete(userProfile.uid);
+    setNeighborhoodSellerCount(sellerIds.size);
+  }, [products, userProfile?.neighborhood, userProfile?.uid]);
 
   const handleBookmark = async (productId: string) => {
     if (!currentUser) return;
@@ -186,6 +204,25 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         onApply={f => { setFilters(f); }}
         onClose={() => setShowFilters(false)}
       />
+
+      {/* Ancrage local — vendeurs dans le même quartier */}
+      {!searchTerm && userProfile?.neighborhood && neighborhoodSellerCount > 0 && (
+        <div className="mx-5 mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', border: '1.5px solid #BBF7D0' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: '#16A34A22' }}>
+            <span style={{ fontSize: 18 }}>📍</span>
+          </div>
+          <div>
+            <p className="font-black text-slate-900 text-[12px] leading-tight">
+              {neighborhoodSellerCount} vendeur{neighborhoodSellerCount > 1 ? 's' : ''} actif{neighborhoodSellerCount > 1 ? 's' : ''} à {userProfile.neighborhood}
+            </p>
+            <p className="text-[10px] font-bold text-green-700 mt-0.5">
+              Des articles près de chez toi disponibles maintenant
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       {!searchTerm && (

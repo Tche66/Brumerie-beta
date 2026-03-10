@@ -5,19 +5,26 @@ const SLIDES = [
   {
     emoji: '🛍️',
     title: 'Bienvenue sur\nBrumerie',
-    sub: 'Le marché en ligne d\'Abidjan.\nAchète et vends en toute confiance.',
+    sub: 'Le marché local d\'Abidjan.\nAchète et vends près de chez toi.',
     color: '#16A34A',
   },
   {
+    emoji: '🔔',
+    title: 'Ne rate\naucune pépite',
+    sub: 'Active une alerte sur ce que tu cherches.\nOn te prévient dès que ça arrive près de toi.',
+    color: '#8B5CF6',
+    hasAlert: true,
+  },
+  {
     emoji: '🔍',
-    title: 'Trouve ce\nque tu cherches',
-    sub: 'Parcours les annonces, fais une offre,\npaye par Mobile Money ou à la livraison.',
+    title: 'Achète en\ntoute confiance',
+    sub: 'Vendeurs vérifiés, paiement Mobile Money\nou à la livraison. Zéro arnaque.',
     color: '#3B82F6',
   },
   {
     emoji: '🚀',
     title: 'Vends en\n2 minutes',
-    sub: 'Publie ton article avec une photo,\nfixe ton prix et reçois tes paiements.',
+    sub: 'Publie avec une photo, fixe ton prix\net reçois tes paiements directement.',
     color: '#F59E0B',
   },
 ];
@@ -28,10 +35,26 @@ interface OnboardingScreenProps {
 
 export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
   const [idx, setIdx] = useState(0);
-  const slide = SLIDES[idx];
+  const [alertKeyword, setAlertKeyword] = useState('');
+  const slide = SLIDES[idx] as typeof SLIDES[0] & { hasAlert?: boolean };
   const isLast = idx === SLIDES.length - 1;
 
+  const saveAlert = async (kw: string) => {
+    if (!kw.trim()) return;
+    try {
+      const { subscribeToKeyword } = await import('@/services/searchAlertService');
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) await subscribeToKeyword(user.uid, kw.trim().toLowerCase());
+    } catch {}
+  };
+
   const next = () => {
+    // Si on quitte la slide alerte, sauvegarder si rempli
+    if ((slide as any).hasAlert && alertKeyword.trim()) {
+      saveAlert(alertKeyword);
+    }
     if (isLast) { onDone(); return; }
     setIdx(i => i + 1);
   };
@@ -66,6 +89,31 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
           style={{ color: 'rgba(255,255,255,0.5)' }}>
           {slide.sub}
         </p>
+
+        {/* Champ alerte mots-clés */}
+        {(slide as any).hasAlert && (
+          <div className="mt-8 w-full max-w-xs">
+            <input
+              type="text"
+              value={alertKeyword}
+              onChange={e => setAlertKeyword(e.target.value)}
+              placeholder="Ex: iPhone 14, Robe africaine..."
+              className="w-full px-5 py-4 rounded-2xl font-bold text-[13px] text-slate-900 outline-none placeholder:text-slate-400"
+              style={{ background: 'rgba(255,255,255,0.95)' }}
+            />
+            {alertKeyword.trim().length >= 2 && (
+              <p className="text-[11px] font-bold mt-2 text-center" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                🔔 Tu seras alerté dès qu'un vendeur publie "{alertKeyword}"
+              </p>
+            )}
+            <button
+              onClick={next}
+              className="w-full mt-3 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest"
+              style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Passer cette étape →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Dots */}
@@ -82,12 +130,14 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
         ))}
       </div>
 
-      {/* Bouton */}
-      <button onClick={next}
-        className="w-full max-w-xs py-5 rounded-2xl font-black text-[13px] uppercase tracking-widest text-white active:scale-95 transition-all shadow-2xl"
-        style={{ background: `linear-gradient(135deg, ${slide.color}, ${slide.color}cc)` }}>
-        {isLast ? "C'est parti ! 🎉" : 'Suivant →'}
-      </button>
+      {/* Bouton principal — masqué sur la slide alerte (elle a son propre flow) */}
+      {!(slide as any).hasAlert && (
+        <button onClick={next}
+          className="w-full max-w-xs py-5 rounded-2xl font-black text-[13px] uppercase tracking-widest text-white active:scale-95 transition-all shadow-2xl"
+          style={{ background: `linear-gradient(135deg, ${slide.color}, ${slide.color}cc)` }}>
+          {isLast ? "C'est parti ! 🎉" : 'Suivant →'}
+        </button>
+      )}
 
       <style>{`
         @keyframes fadeSlide {
