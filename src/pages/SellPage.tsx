@@ -150,8 +150,8 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-white z-[70] flex flex-col items-center justify-center px-8 text-center" style={{ height: '100dvh' }}
-        style={{ animation: 'fadeUp .35s cubic-bezier(.2,.8,.2,1) both' }}>
+      <div className="fixed inset-0 bg-white z-[70] flex flex-col items-center justify-center px-8 text-center"
+        style={{ height: '100dvh', animation: 'fadeUp .35s cubic-bezier(.2,.8,.2,1) both' }}>
 
         {/* Emoji animé — canvas-confetti non requis */}
         <div style={{ fontSize: 72, animation: 'bounceIn .5s cubic-bezier(.34,1.56,.64,1) both', marginBottom: 20 }}>

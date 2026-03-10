@@ -13,11 +13,12 @@ interface SellerProfilePageProps {
   sellerId: string;
   onBack: () => void;
   onProductClick: (product: Product) => void;
+  onStartChat?: (sellerId: string, sellerName: string) => void;
   isGuest?: boolean;
   onGuestAction?: (reason: string) => void;
 }
 
-export function SellerProfilePage({ sellerId, onBack, onProductClick, isGuest, onGuestAction }: SellerProfilePageProps) {
+export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartChat, isGuest, onGuestAction }: SellerProfilePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const [seller, setSeller] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -135,6 +136,14 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, isGuest, o
           <button onClick={() => onGuestAction?.('default')}
             className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-full uppercase tracking-wider">
             Se connecter
+          </button>
+        )}
+        {!isGuest && onStartChat && seller && (
+          <button
+            onClick={() => onStartChat(seller.uid, seller.name)}
+            className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-200">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Contacter
           </button>
         )}
       </div>

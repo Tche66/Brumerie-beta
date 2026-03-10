@@ -412,7 +412,7 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
           />
         )}
         {activePage === 'seller-profile' && selectedSellerId && (
-          <SellerProfilePage sellerId={selectedSellerId} onBack={goBack} onProductClick={handleProductClick} />
+          <SellerProfilePage sellerId={selectedSellerId} onBack={goBack} onProductClick={handleProductClick} onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname)} />
         )}
         {activePage === 'profile' && isBuyer && (
           <BuyerProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />
