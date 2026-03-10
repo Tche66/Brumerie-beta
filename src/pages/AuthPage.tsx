@@ -72,9 +72,14 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
         // Annulé par l'user → pas une erreur
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up bloquée. Autorise les pop-ups pour ce site dans ton navigateur.');
+        setError('Pop-up bloquée. Autorise les pop-ups pour ce site.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Domaine non autorisé. Contacte le support Brumerie.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Connexion Google non activée. Contacte le support.');
       } else {
-        setError('Erreur Google. Réessaie ou utilise email/mot de passe.');
+        // Sur Android → redirect lancé, pas vraiment une erreur
+        console.warn('[Google Auth]', err.code, err.message);
       }
     } finally { setLoading(false); }
   };

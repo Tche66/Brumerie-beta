@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -96,17 +98,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ── Connexion Google ────────────────────────────────────────
+  // Popup sur web, Redirect sur WebView Android (Capacitor)
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    const cred = await signInWithPopup(auth, provider);
-    const user = cred.user;
-    const uid  = user.uid;
 
-    // Vérifier si le profil existe déjà
+    const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+    const isWebView = /wv|WebView/.test(navigator.userAgent);
+
+    if (isCapacitor || isWebView) {
+      // Android WebView → redirect (popup bloqué)
+      await signInWithRedirect(auth, provider);
+      // La page se recharge → le résultat est capturé dans le useEffect ci-dessous
+      return;
+    }
+
+    // Navigateur web → popup
+    const cred = await signInWithPopup(auth, provider);
+    await handleGoogleUser(cred.user);
+  }
+
+  // Traitement commun après auth Google (popup ou redirect)
+  async function handleGoogleUser(user: FirebaseUser) {
+    const uid = user.uid;
     const snap = await getDoc(doc(db, 'users', uid));
     if (!snap.exists()) {
-      // Première connexion Google → créer le profil
       const newUser: User = {
         id:           uid,
         uid:          uid,
@@ -124,12 +140,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await setDoc(doc(db, 'users', uid), newUser);
       setUserProfile(newUser);
-      // Générer code parrainage
       await ensureReferralCode(uid, newUser.name);
-      // Email bienvenue
       sendWelcomeEmail(newUser.email, newUser.name);
     }
-    // Si profil existe → onAuthStateChanged le chargera automatiquement
   }
 
   // ── Déconnexion ──────────────────────────────────────────────
@@ -186,6 +199,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function refreshUserProfile() {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
+
+  // ── Capturer le résultat du redirect Google (Android) ──────────
+  useEffect(() => {
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        await handleGoogleUser(result.user);
+      }
+    }).catch(() => {
+      // Pas de redirect en cours — silencieux
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
