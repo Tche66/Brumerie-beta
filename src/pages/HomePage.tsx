@@ -52,7 +52,7 @@ const TrustBadges = () => (
   </div>
 );
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction }: HomePageProps) {
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
