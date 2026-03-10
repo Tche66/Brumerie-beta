@@ -50,6 +50,14 @@ body {
 }
 
 /* ── #root : architecture v14 — scroll sur body, fixed par rapport au viewport ── */
+.price-brumerie {
+  font-family: var(--font-price) !important;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 #root {
   min-height: 100vh;
   max-width: 480px;
