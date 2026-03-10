@@ -201,29 +201,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Auth state + redirect Google ────────────────────────────
   useEffect(() => {
-    // Intercepter d'abord le résultat d'un éventuel redirect Google
-    // AVANT d'écouter onAuthStateChanged pour éviter la race condition
+    // Flag pour éviter la race condition :
+    // si getRedirectResult a déjà créé/chargé le profil, onAuthStateChanged ne le retraite pas
+    let googleRedirectHandled = false;
+
     const init = async () => {
+      // 1) Traiter d'abord le résultat d'un éventuel redirect Google
       try {
-        console.log('[Auth] getRedirectResult START');
         const result = await getRedirectResult(auth);
-        console.log('[Auth] getRedirectResult result:', result?.user?.uid || 'null');
         if (result?.user) {
-          console.log('[Auth] Google redirect user found:', result.user.email);
+          googleRedirectHandled = true;
           await handleGoogleUser(result.user);
-          console.log('[Auth] handleGoogleUser done');
         }
       } catch (e: any) {
-        console.error('[Auth] getRedirectResult error:', e?.code, e?.message);
+        // Erreurs courantes : popup bloquée, redirect annulée → pas critique
+        if (e?.code !== 'auth/cancelled-popup-request' && e?.code !== 'auth/popup-closed-by-user') {
+          console.error('[Auth] getRedirectResult error:', e?.code, e?.message);
+        }
       }
 
-      // Ensuite écouter les changements d'état
+      // 2) Écouter les changements d'état
       const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-        console.log('[Auth] onAuthStateChanged fired, user:', user?.uid || 'null', 'provider:', user?.providerData?.[0]?.providerId);
         setCurrentUser(user);
         if (user) {
+          // Si le redirect Google vient d'être traité, le profil est déjà dans le state
+          if (googleRedirectHandled) {
+            googleRedirectHandled = false;
+            setLoading(false);
+            return;
+          }
           const snap = await getDoc(doc(db, 'users', user.uid));
-          console.log('[Auth] Firestore profile exists:', snap.exists());
           if (snap.exists()) {
             const data = snap.data();
             if (data.isBanned) {
@@ -231,7 +238,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUserProfile(null);
               sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
             } else {
-              setUserProfile({ ...data, bookmarkedProductIds: data.bookmarkedProductIds || [] } as User);
+              setUserProfile({
+                ...data,
+                bookmarkedProductIds:  data.bookmarkedProductIds  || [],
+                defaultPaymentMethods: data.defaultPaymentMethods || [],
+                deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
+                deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
+                managesDelivery: data.managesDelivery || false,
+                contactCount:    data.contactCount    || 0,
+              } as User);
             }
           } else {
             // Profil absent → user Google sans profil → créer
