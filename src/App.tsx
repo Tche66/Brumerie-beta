@@ -647,37 +647,8 @@ useEffect(() => {
 
 function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
-  const [showAuth, setShowAuth] = React.useState(() => {
-    return sessionStorage.getItem('brumerie_show_auth') === '1';
-  });
-  // googlePending = on revient du redirect Google, Firebase n'a pas encore fini
-  const [googlePending, setGooglePending] = React.useState(() => {
-    return sessionStorage.getItem('brumerie_google_pending') === '1';
-  });
+  const [showAuth, setShowAuth] = React.useState(false);
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
-
-  // Sync showAuth <-> sessionStorage
-  React.useEffect(() => {
-    if (showAuth) sessionStorage.setItem('brumerie_show_auth', '1');
-    else sessionStorage.removeItem('brumerie_show_auth');
-  }, [showAuth]);
-
-  // Quand Firebase a fini de charger -> toujours arrêter le spinner Google
-  // (que la connexion ait réussi ou non)
-  React.useEffect(() => {
-    if (!loading) {
-      // Arrêter le spinner Google dans tous les cas
-      if (googlePending) {
-        setGooglePending(false);
-        sessionStorage.removeItem('brumerie_google_pending');
-      }
-      // Si connecté → nettoyer aussi showAuth
-      if (currentUser) {
-        setShowAuth(false);
-        sessionStorage.removeItem('brumerie_show_auth');
-      }
-    }
-  }, [loading, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {
@@ -708,48 +679,39 @@ function AppContent() {
     );
   }
 
-  // Pendant le chargement initial Firebase OU retour redirect Google
-  if (loading || googlePending) {
+  // Chargement Firebase en cours (incluant traitement redirect Google)
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          {googlePending && <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>}
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-widest" style={{color: googlePending ? '#16A34A' : '#CBD5E1'}}>
-            {googlePending ? 'Connexion Google…' : 'Chargement…'}
-          </p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Chargement…</p>
         </div>
       </div>
     );
   }
 
-  // currentUser existe mais profil pas encore chargé (ex: après redirect Google)
-  // → spinner pendant que Firestore charge le profil
-  if (currentUser && !userProfile) {
-    console.log('[App] currentUser exists but no userProfile yet, uid:', currentUser.uid);
+  // Firebase a répondu — pas de user connecté
+  if (!currentUser) {
+    if (showAuth) return <AuthGate />;
+    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
+  }
+
+  // User connecté mais profil Firestore pas encore chargé → spinner court
+  if (!userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion Google…</p>
-          <p className="text-[9px] text-slate-300">uid: {currentUser.uid.slice(0,8)}…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Chargement du profil…</p>
         </div>
       </div>
     );
   }
 
-  // Pas connecté → page de connexion ou mode visiteur
-  if (!currentUser) {
-    if (showAuth) return <AuthGate />;
-    return <GuestShell onAuthRequired={() => {
-      sessionStorage.setItem('brumerie_show_auth', '1');
-      setShowAuth(true);
-    }} />;
-  }
-
-  // Connecté mais rôle manquant → sélection du rôle
-  if (userProfile && !userProfile.role) {
+  // Connecté mais rôle manquant (nouveau compte Google) → sélection du rôle
+  if (!userProfile.role) {
     return (
       <RoleSelectPage
         userName={userProfile.name}
@@ -761,9 +723,10 @@ function AppContent() {
     );
   }
 
-  // Authentifié + rôle ok → application complète
+  // ✅ Tout bon → application complète
   return <AppShell />;
 }
+
 
 export default function App() {
   // Débloquer AudioContext iOS au premier touch

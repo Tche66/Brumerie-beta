@@ -27,7 +27,6 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUserProfile: () => Promise<void>;
-  // OTP
   requestOTP: (email: string, name: string) => Promise<{ devCode?: string }>;
   verifyOTP: (email: string, code: string) => Promise<'valid' | 'expired' | 'invalid'>;
   signInWithGoogle: () => Promise<void>;
@@ -46,91 +45,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile]  = useState<User | null>(null);
   const [loading, setLoading]          = useState(true);
 
-  // ── Inscription ──────────────────────────────────────────────
-  async function signUp(
-    email: string, password: string,
-    userData: Partial<User> & { referredBy?: string }
-  ) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid  = cred.user.uid;
-
-    const newUser: User = {
-      id:           uid,
-      uid:          uid,
-      email,
-      name:         userData.name    || '',
-      phone:        userData.phone   || '',
-      role:         userData.role    || 'buyer',
-      neighborhood: userData.neighborhood || '',
-      isVerified:   false,
-      bookmarkedProductIds: [],
-      createdAt:    serverTimestamp() as any,
-      publicationCount: 0,
-      publicationLimit: 50,
-      // Stocker le code parrainage utilisé (pour traçabilité)
-      ...(userData.referredBy ? { referredByCode: userData.referredBy } : {}),
-    };
-
-    await setDoc(doc(db, 'users', uid), newUser);
-    setUserProfile(newUser);
-
-    // Générer le code parrainage
-    await ensureReferralCode(uid, userData.name || '');
-
-    // Appliquer parrainage si fourni
-    if (userData.referredBy) {
-      try {
-        const ok = await applyReferral(uid, userData.referredBy);
-        if (!ok) console.warn('[Referral] Code non trouvé ou invalide:', userData.referredBy);
-      } catch (refErr) {
-        // Ne pas bloquer l'inscription si parrainage échoue
-        console.error('[Referral] Erreur applyReferral:', refErr);
-      }
-    }
-
-    // Email de bienvenue
-    sendWelcomeEmail(email, userData.name || '');
-  }
-
-  // ── Connexion ────────────────────────────────────────────────
-  async function signIn(email: string, password: string) {
-    await signInWithEmailAndPassword(auth, email, password);
-  }
-
-  // ── Connexion Google ────────────────────────────────────────
-  // Popup sur desktop, Redirect sur mobile (popup bloquée par Chrome Android)
-  // Le bug de state après redirect est résolu via sessionStorage dans App.tsx
-  async function signInWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      // Marquer les deux flags avant le redirect (page va recharger)
-      sessionStorage.setItem('brumerie_show_auth', '1');
-      sessionStorage.setItem('brumerie_google_pending', '1');
-      await signInWithRedirect(auth, provider);
-      return; // la page recharge — getRedirectResult dans useEffect prend le relais
-    }
-    const cred = await signInWithPopup(auth, provider);
-    await handleGoogleUser(cred.user);
-  }
-
-  // Traitement commun après auth Google (popup ou redirect)
-  async function handleGoogleUser(user: FirebaseUser) {
-    const uid = user.uid;
+  // ── Charger profil Firestore ─────────────────────────────────
+  const loadUserProfile = useCallback(async (uid: string): Promise<boolean> => {
     const snap = await getDoc(doc(db, 'users', uid));
-    if (!snap.exists()) {
-      // Nouvelle connexion → créer profil
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    if (data.isBanned) {
+      await firebaseSignOut(auth);
+      setUserProfile(null);
+      sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
+      return false;
+    }
+    setUserProfile({
+      ...data,
+      bookmarkedProductIds:   data.bookmarkedProductIds   || [],
+      defaultPaymentMethods:  data.defaultPaymentMethods  || [],
+      deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
+      deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
+      managesDelivery: data.managesDelivery || false,
+      contactCount:    data.contactCount    || 0,
+    } as User);
+    return true;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Créer ou charger un compte Google ───────────────────────
+  const handleGoogleUser = useCallback(async (user: FirebaseUser) => {
+    const uid = user.uid;
+    const exists = await loadUserProfile(uid);
+    if (!exists) {
       const newUser: User = {
-        id:           uid,
-        uid:          uid,
-        email:        user.email || '',
-        name:         user.displayName || '',
+        id: uid, uid,
+        email:        user.email        || '',
+        name:         user.displayName  || '',
         phone:        '',
         role:         'buyer',
         neighborhood: '',
         isVerified:   false,
-        photoURL:     user.photoURL || '',
+        photoURL:     user.photoURL     || '',
         bookmarkedProductIds: [],
         createdAt:    serverTimestamp() as any,
         publicationCount: 0,
@@ -138,12 +89,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await setDoc(doc(db, 'users', uid), newUser);
       setUserProfile(newUser);
-      await ensureReferralCode(uid, newUser.name);
+      ensureReferralCode(uid, newUser.name);
       sendWelcomeEmail(newUser.email, newUser.name);
-    } else {
-      // Profil existant → charger dans le state immédiatement
-      await loadUserProfile(uid);
     }
+  }, [loadUserProfile]);
+
+  // ── Inscription email ────────────────────────────────────────
+  async function signUp(
+    email: string, password: string,
+    userData: Partial<User> & { referredBy?: string }
+  ) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const uid  = cred.user.uid;
+    const newUser: User = {
+      id: uid, uid, email,
+      name:         userData.name         || '',
+      phone:        userData.phone        || '',
+      role:         userData.role         || 'buyer',
+      neighborhood: userData.neighborhood || '',
+      isVerified:   false,
+      bookmarkedProductIds: [],
+      createdAt:    serverTimestamp() as any,
+      publicationCount: 0,
+      publicationLimit: 50,
+      ...(userData.referredBy ? { referredByCode: userData.referredBy } : {}),
+    };
+    await setDoc(doc(db, 'users', uid), newUser);
+    setUserProfile(newUser);
+    await ensureReferralCode(uid, userData.name || '');
+    if (userData.referredBy) {
+      try { await applyReferral(uid, userData.referredBy); }
+      catch (e) { console.error('[Referral]', e); }
+    }
+    sendWelcomeEmail(email, userData.name || '');
+  }
+
+  // ── Connexion email ──────────────────────────────────────────
+  async function signIn(email: string, password: string) {
+    await signInWithEmailAndPassword(auth, email, password);
+  }
+
+  // ── Connexion Google ─────────────────────────────────────────
+  async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    const cred = await signInWithPopup(auth, provider);
+    await handleGoogleUser(cred.user);
   }
 
   // ── Déconnexion ──────────────────────────────────────────────
@@ -152,127 +148,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(null);
   }
 
-  // ── Mot de passe oublié ──────────────────────────────────────
   async function resetPassword(email: string) {
     await sendPasswordResetEmail(auth, email);
   }
 
-  // ── OTP : demander l'envoi ───────────────────────────────────
   async function requestOTP(email: string, name: string): Promise<{ devCode?: string }> {
     const result = await sendOTPEmail(email, name);
     if (result.devCode) return { devCode: result.devCode };
     return {};
   }
 
-  // ── OTP : vérifier le code ───────────────────────────────────
-  async function verifyOTP(
-    email: string, code: string
-  ): Promise<'valid' | 'expired' | 'invalid'> {
+  async function verifyOTP(email: string, code: string): Promise<'valid' | 'expired' | 'invalid'> {
     return verifyOTPRemote(email, code);
   }
-
-  // ── Charger profil ───────────────────────────────────────────
-  const loadUserProfile = useCallback(async (uid: string) => {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      // ── Vérification bannissement ─────────────────────────────
-      if (data.isBanned) {
-        // Déconnecter immédiatement l'utilisateur banni
-        await firebaseSignOut(auth);
-        setUserProfile(null);
-        // Stocker le motif pour afficher un message
-        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
-        return;
-      }
-      setUserProfile({
-        ...data,
-        bookmarkedProductIds:  data.bookmarkedProductIds  || [],
-        defaultPaymentMethods: data.defaultPaymentMethods || [],
-        deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
-        deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
-        managesDelivery: data.managesDelivery || false,
-        contactCount:    data.contactCount    || 0,
-      } as User);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function refreshUserProfile() {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Auth state + redirect Google ────────────────────────────
+  // ── Initialisation auth : redirect Google + écoute état ─────
   useEffect(() => {
-    // Flag pour éviter la race condition :
-    // si getRedirectResult a déjà créé/chargé le profil, onAuthStateChanged ne le retraite pas
-    let googleRedirectHandled = false;
-
     const init = async () => {
-      // 1) Traiter d'abord le résultat d'un éventuel redirect Google
+      // Étape 1 — Récupérer le résultat du redirect Google si applicable
+      // Cette étape DOIT être faite avant onAuthStateChanged
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
-          // ⚠️ Poser le flag AVANT l'await pour que onAuthStateChanged le voit
-          googleRedirectHandled = true;
+          // Redirect Google réussi → créer/charger le profil
           await handleGoogleUser(result.user);
-          // Nettoyer le flag sessionStorage maintenant que c'est géré
-          sessionStorage.removeItem('brumerie_show_auth');
+          setCurrentUser(result.user);
+          setLoading(false);
+          // Étape 2 — Écouter les changements suivants (déconnexion, etc.)
+          return onAuthStateChanged(auth, async (user) => {
+            setCurrentUser(user);
+            if (!user) { setUserProfile(null); setLoading(false); }
+            // Si user toujours connecté, profil déjà chargé → rien à faire
+          });
         }
       } catch (e: any) {
-        if (e?.code !== 'auth/cancelled-popup-request' && e?.code !== 'auth/popup-closed-by-user') {
-          console.error('[Auth] getRedirectResult error:', e?.code, e?.message);
-        }
-        // En cas d'erreur de redirect, nettoyer aussi
-        sessionStorage.removeItem('brumerie_show_auth');
+        console.error('[Auth] getRedirectResult:', e?.code, e?.message);
       }
 
-      // 2) Écouter les changements d'état
-      const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+      // Étape 2 — Pas de redirect → écouter l'état normal Firebase
+      return onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
         setCurrentUser(user);
         if (user) {
-          // Si le redirect Google vient d'être traité, le profil est déjà dans le state
-          if (googleRedirectHandled) {
-            googleRedirectHandled = false;
-            setLoading(false);
-            return;
-          }
-          const snap = await getDoc(doc(db, 'users', user.uid));
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.isBanned) {
-              await firebaseSignOut(auth);
-              setUserProfile(null);
-              sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
-            } else {
-              setUserProfile({
-                ...data,
-                bookmarkedProductIds:  data.bookmarkedProductIds  || [],
-                defaultPaymentMethods: data.defaultPaymentMethods || [],
-                deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
-                deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
-                managesDelivery: data.managesDelivery || false,
-                contactCount:    data.contactCount    || 0,
-              } as User);
-            }
-          } else {
-            // Profil absent → user Google sans profil → créer
-            const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
-            if (isGoogle) await handleGoogleUser(user);
-            else await loadUserProfile(user.uid);
-          }
+          await loadUserProfile(user.uid) ||
+            // Profil absent (ex: nouveau Google sans redirect) → créer
+            (user.providerData?.some(p => p.providerId === 'google.com') && await handleGoogleUser(user));
         } else {
           setUserProfile(null);
         }
         setLoading(false);
       });
-
-      return unsub;
     };
 
     let unsub: (() => void) | undefined;
     init().then(fn => { unsub = fn; });
     return () => { unsub?.(); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [handleGoogleUser, loadUserProfile]);
 
   const value: AuthContextType = {
     currentUser, userProfile, loading,
@@ -280,9 +214,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     requestOTP, verifyOTP, signInWithGoogle,
   };
 
+  // On rend children même pendant loading pour que AppContent puisse
+  // afficher son propre spinner et lire sessionStorage correctement
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
