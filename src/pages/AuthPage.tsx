@@ -82,7 +82,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       } else if (err.code === 'auth/network-request-failed') {
         setError('Erreur réseau. Vérifie ta connexion internet.');
       } else {
-        setError(\`Erreur Google (\${err.code || 'inconnue'}): \${err.message || 'Réessaie.'}\`);
+        setError('Erreur Google (' + (err.code || 'inconnue') + '): ' + (err.message || 'Réessaie.'));
       }
     } finally { setLoading(false); }
   };
