@@ -190,7 +190,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
 
       {/* ── MODAL QR CODE — Design Brumerie ── */}
       {showQR && seller && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ height: '100dvh', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ height: '100dvh', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
           onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-[2.5rem] w-full max-w-xs overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
 

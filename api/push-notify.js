@@ -1,28 +1,20 @@
-// netlify/functions/push-notify.js
-// Envoi de notifications push PWA via Web Push Protocol
-// Nécessite : VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL dans env Netlify
+// api/push-notify.js — Format Vercel Serverless Function
+// Envoi notifications push PWA via Web Push Protocol
 
-const headers = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
-// ── Store en mémoire des subscriptions (remplacer par Firestore en prod) ──
-// En prod, les subscriptions sont stockées dans Firestore via le frontend
-// Cette function reçoit la subscription + le payload et envoie la notif
-
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: 'Method not allowed' };
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { action, subscription, payload } = JSON.parse(event.body || '{}');
+    const { action, subscription, payload } = req.body || {};
 
-    // Action : envoyer une notification à une subscription
     if (action === 'send') {
       if (!subscription || !payload) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'subscription et payload requis' }) };
+        return res.status(400).json({ error: 'subscription et payload requis' });
       }
 
       const vapidPublicKey  = process.env.VAPID_PUBLIC_KEY;
@@ -30,35 +22,20 @@ exports.handler = async (event) => {
       const vapidEmail      = process.env.VAPID_EMAIL || 'mailto:contact.brumerie@gmail.com';
 
       if (!vapidPublicKey || !vapidPrivateKey) {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Clés VAPID manquantes' }) };
+        return res.status(500).json({ error: 'VAPID keys manquantes' });
       }
 
-      // Utiliser web-push via require (installé dans node_modules)
-      let webpush;
-      try {
-        webpush = require('web-push');
-      } catch {
-        return { statusCode: 500, headers, body: JSON.stringify({ error: 'web-push non installé. Ajoute web-push dans package.json' }) };
-      }
+      const webpush = await import('web-push');
+      webpush.default.setVapidDetails(`mailto:${vapidEmail}`, vapidPublicKey, vapidPrivateKey);
 
-      webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
-
-      const notifPayload = JSON.stringify({
-        title: payload.title || 'Brumerie 🛍',
-        body:  payload.body  || 'Nouveau message',
-        icon:  '/assets/Logos/logo-app-icon.png',
-        badge: '/assets/Logos/logo-app-icon.png',
-        data:  { url: payload.url || '/', productId: payload.productId },
-      });
-
-      await webpush.sendNotification(subscription, notifPayload);
-      return { statusCode: 200, headers, body: JSON.stringify({ sent: true }) };
+      await webpush.default.sendNotification(subscription, JSON.stringify(payload));
+      return res.status(200).json({ success: true });
     }
 
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Action inconnue' }) };
+    return res.status(400).json({ error: 'Action inconnue' });
 
   } catch (err) {
-    console.error('[Push] Erreur:', err.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    console.error('[push-notify] Error:', err);
+    return res.status(500).json({ error: String(err?.message || err) });
   }
-};
+}

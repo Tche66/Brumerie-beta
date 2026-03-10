@@ -48,7 +48,7 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
-exports.handler = async (event) => {
+export default async function handler(req, res) {
   const headers = {
     'Access-Control-Allow-Origin':  '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -56,12 +56,12 @@ exports.handler = async (event) => {
     'Content-Type': 'application/json',
   };
 
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
-  if (event.httpMethod !== 'POST')    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' });
 
   let body;
-  try { body = JSON.parse(event.body); }
-  catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'JSON invalide' }) }; }
+  try { body = req.body || {}; }
+  catch { return res.status(400).json({ error: 'JSON invalide' }); }
 
   const { action } = body;
 
@@ -71,23 +71,19 @@ exports.handler = async (event) => {
   if (emailForLimit && otpActions.includes(action)) {
     const rl = checkRateLimit(emailForLimit);
     if (!rl.allowed) {
-      return {
-        statusCode: 429,
-        headers,
-        body: JSON.stringify({ error: 'Trop de tentatives. Réessaie dans ' + rl.retryAfter + 's.' })
-      };
+      return res.status(429).json({ error: 'Trop de tentatives. Réessaie dans ' + rl.retryAfter + 's.' });
     }
   }
 
   // ── ACTION : send_otp ─────────────────────────────────────────
   if (action === 'send_otp') {
     const { email, name } = body;
-    if (!email || !name) return { statusCode: 400, headers, body: JSON.stringify({ error: 'email et name requis' }) };
+    if (!email || !name) return res.status(400).json({ error: 'email et name requis' });
 
     const apiKey = process.env.BREVO_API_KEY;
     if (!apiKey) {
       console.error('[OTP] BREVO_API_KEY manquante dans les variables Netlify');
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuration serveur manquante. Contacte le support.' }) };
+      return res.status(500).json({ error: 'Configuration serveur manquante. Contacte le support.' });
     }
 
     cleanExpired();
@@ -95,7 +91,7 @@ exports.handler = async (event) => {
     // Anti-spam : max 3 envois par email en 10 min
     const existing = otpStore.get(email.toLowerCase());
     if (existing && existing.sendCount >= 3 && existing.expires > Date.now()) {
-      return { statusCode: 429, headers, body: JSON.stringify({ error: 'Trop de tentatives. Attends 10 minutes.' }) };
+      return res.status(429).json({ error: 'Trop de tentatives. Attends 10 minutes.' });
     }
 
     const code    = generateOTP();
@@ -174,7 +170,7 @@ exports.handler = async (event) => {
 </html>`;
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method:  'POST',
         headers: {
           'accept':       'application/json',
@@ -189,73 +185,64 @@ exports.handler = async (event) => {
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await brevoRes.json().catch(() => ({}));
 
-      if (!res.ok) {
+      if (!brevoRes.ok) {
         // ── Diagnostic détaillé de l'erreur Brevo ──────────────
         const brevoError = data.message || data.error || JSON.stringify(data);
         console.error(`[OTP] Brevo a refusé l'envoi vers ${email}`);
-        console.error(`[OTP] Status: ${res.status} | Erreur: ${brevoError}`);
+        console.error(`[OTP] Status: ${brevoRes.status} | Erreur: ${brevoError}`);
         console.error(`[OTP] Sender: ${process.env.BREVO_SENDER_EMAIL || 'non configuré'}`);
         console.error(`[OTP] Clé API (premiers chars): ${apiKey.substring(0, 12)}...`);
 
         // Diagnostic de la cause probable
         let hint = '';
-        if (res.status === 401) hint = 'Clé API Brevo invalide ou révoquée';
-        if (res.status === 400 && brevoError.includes('sender')) hint = 'Email sender non vérifié dans Brevo';
-        if (res.status === 403) hint = 'Compte Brevo suspendu ou quota dépassé';
+        if (brevoRes.status === 401) hint = 'Clé API Brevo invalide ou révoquée';
+        if (brevoRes.status === 400 && brevoError.includes('sender')) hint = 'Email sender non vérifié dans Brevo';
+        if (brevoRes.status === 403) hint = 'Compte Brevo suspendu ou quota dépassé';
         console.error(`[OTP] Cause probable: ${hint || 'Voir détail ci-dessus'}`);
 
-        return {
-          statusCode: 502,
-          headers,
-          body: JSON.stringify({
-            error: 'Erreur envoi email',
-            detail: brevoError,
-            hint,
-            status: res.status,
-          }),
-        };
+        return res.status(502).json({ error: 'Erreur envoi email', detail: brevoError, hint, status: brevoRes.status });
       }
 
       console.log(`[OTP] ✅ Code envoyé à ${email} — messageId: ${data.messageId}`);
-      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      return res.status(200).json({ success: true });
 
     } catch (err) {
       console.error('[OTP] Erreur réseau Brevo:', err.message);
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur réseau lors de l\'envoi' }) };
+      return res.status(500).json({ error: 'Erreur réseau lors de l\'envoi' });
     }
   }
 
   // ── ACTION : verify_otp ───────────────────────────────────────
   if (action === 'verify_otp') {
     const { email, code } = body;
-    if (!email || !code) return { statusCode: 400, headers, body: JSON.stringify({ error: 'email et code requis' }) };
+    if (!email || !code) return res.status(400).json({ error: 'email et code requis' });
 
     const entry = otpStore.get(email.toLowerCase());
 
-    if (!entry) return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
+    if (!entry) return res.status(200).json({ result: 'invalid' });
     if (entry.expires < Date.now()) {
       otpStore.delete(email.toLowerCase());
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'expired' }) };
+      return res.status(200).json({ result: 'expired' });
     }
 
     entry.attempts = (entry.attempts || 0) + 1;
     if (entry.attempts > 5) {
       otpStore.delete(email.toLowerCase());
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid', reason: 'too_many_attempts' }) };
+      return res.status(200).json({ result: 'invalid', reason: 'too_many_attempts' });
     }
 
-    if (entry.code !== code.trim()) return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
+    if (entry.code !== code.trim()) return res.status(200).json({ result: 'invalid' });
 
     otpStore.delete(email.toLowerCase());
-    return { statusCode: 200, headers, body: JSON.stringify({ result: 'valid' }) };
+    return res.status(200).json({ result: 'valid' });
   }
 
   // ── ACTION : welcome ──────────────────────────────────────────
   if (action === 'welcome') {
     const { email, name } = body;
-    if (!email || !process.env.BREVO_API_KEY) return { statusCode: 200, headers, body: JSON.stringify({ skipped: true }) };
+    if (!email || !process.env.BREVO_API_KEY) return res.status(200).json({ skipped: true });
 
     const htmlWelcome = `
 <!DOCTYPE html><html lang="fr"><body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif">
@@ -290,7 +277,7 @@ exports.handler = async (event) => {
       }),
     }).catch(console.warn);
 
-    return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+    return res.status(200).json({ success: true });
   }
 
 
@@ -298,10 +285,10 @@ exports.handler = async (event) => {
   // Envoie un OTP de réinitialisation de mot de passe via Brevo
   if (action === 'reset_password_send') {
     const { email } = body;
-    if (!email) return { statusCode: 400, headers, body: JSON.stringify({ error: 'email requis' }) };
+    if (!email) return res.status(400).json({ error: 'email requis' });
 
     const apiKey = process.env.BREVO_API_KEY;
-    if (!apiKey) return { statusCode: 500, headers, body: JSON.stringify({ error: 'Configuration serveur manquante' }) };
+    if (!apiKey) return res.status(500).json({ error: 'Configuration serveur manquante' });
 
     cleanExpired();
 
@@ -309,7 +296,7 @@ exports.handler = async (event) => {
     const resetKey = 'reset_' + email.toLowerCase();
     const existing = otpStore.get(resetKey);
     if (existing && existing.sendCount >= 3 && existing.expires > Date.now()) {
-      return { statusCode: 429, headers, body: JSON.stringify({ error: 'Trop de tentatives. Attends 10 minutes.' }) };
+      return res.status(429).json({ error: 'Trop de tentatives. Attends 10 minutes.' });
     }
 
     const code    = generateOTP();
@@ -352,7 +339,7 @@ exports.handler = async (event) => {
 </body></html>`;
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -363,14 +350,14 @@ exports.handler = async (event) => {
         }),
       });
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        return { statusCode: 502, headers, body: JSON.stringify({ error: 'Erreur envoi email', detail: data.message }) };
+      if (!brevoRes.ok) {
+        const data = await brevoRes.json().catch(() => ({}));
+        return res.status(502).json({ error: 'Erreur envoi email', detail: data.message });
       }
 
-      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      return res.status(200).json({ success: true });
     } catch (err) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur réseau' }) };
+      return res.status(500).json({ error: 'Erreur réseau' });
     }
   }
 
@@ -378,25 +365,25 @@ exports.handler = async (event) => {
   // Vérifie l'OTP et retourne un token signé permettant de changer le mot de passe
   if (action === 'reset_password_verify') {
     const { email, code } = body;
-    if (!email || !code) return { statusCode: 400, headers, body: JSON.stringify({ error: 'email et code requis' }) };
+    if (!email || !code) return res.status(400).json({ error: 'email et code requis' });
 
     const resetKey = 'reset_' + email.toLowerCase();
     const entry    = otpStore.get(resetKey);
 
-    if (!entry) return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
+    if (!entry) return res.status(200).json({ result: 'invalid' });
     if (entry.expires < Date.now()) {
       otpStore.delete(resetKey);
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'expired' }) };
+      return res.status(200).json({ result: 'expired' });
     }
 
     entry.attempts = (entry.attempts || 0) + 1;
     if (entry.attempts > 5) {
       otpStore.delete(resetKey);
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid', reason: 'too_many_attempts' }) };
+      return res.status(200).json({ result: 'invalid', reason: 'too_many_attempts' });
     }
 
     if (entry.code !== code.trim()) {
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
+      return res.status(200).json({ result: 'invalid' });
     }
 
     otpStore.delete(resetKey);
@@ -407,7 +394,7 @@ exports.handler = async (event) => {
     const tokenExpiry = Date.now() + 5 * 60 * 1000;
     otpStore.set('rtoken_' + email.toLowerCase(), { token: resetToken, expires: tokenExpiry });
 
-    return { statusCode: 200, headers, body: JSON.stringify({ result: 'valid', resetToken, email }) };
+    return res.status(200).json({ result: 'valid', resetToken, email });
   }
 
   // ── ACTION : reset_password_change ───────────────────────────
@@ -415,17 +402,17 @@ exports.handler = async (event) => {
   if (action === 'reset_password_change') {
     const { email, resetToken, newPassword } = body;
     if (!email || !resetToken || !newPassword) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Paramètres manquants' }) };
+      return res.status(400).json({ error: 'Paramètres manquants' });
     }
     if (newPassword.length < 6) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Mot de passe trop court (min 6 caractères)' }) };
+      return res.status(400).json({ error: 'Mot de passe trop court (min 6 caractères)' });
     }
 
     // Vérifier le resetToken
     const tokenKey   = 'rtoken_' + email.toLowerCase();
     const tokenEntry = otpStore.get(tokenKey);
     if (!tokenEntry || tokenEntry.token !== resetToken || tokenEntry.expires < Date.now()) {
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid', error: 'Token expiré ou invalide' }) };
+      return res.status(200).json({ result: 'invalid', error: 'Token expiré ou invalide' });
     }
     otpStore.delete(tokenKey);
 
@@ -433,12 +420,7 @@ exports.handler = async (event) => {
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccountJson) {
       // Fallback : renvoyer un lien de reset Firebase standard si pas d'Admin SDK configuré
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ result: 'needs_firebase_reset', email,
-          message: 'Admin SDK non configuré. Configure FIREBASE_SERVICE_ACCOUNT dans Netlify.' }),
-      };
+      return res.status(200).json({ result: 'needs_firebase_reset', email, message: 'Admin SDK non configuré. Configure FIREBASE_SERVICE_ACCOUNT dans Vercel.' });
     }
 
     try {
@@ -453,13 +435,13 @@ exports.handler = async (event) => {
       // Changer le mot de passe
       await admin.auth().updateUser(userRecord.uid, { password: newPassword });
 
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'success' }) };
+      return res.status(200).json({ result: 'success' });
     } catch (err) {
       console.error('[RESET] Erreur Firebase Admin:', err.message);
       if (err.code === 'auth/user-not-found') {
-        return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid', error: 'Aucun compte avec cet email' }) };
+        return res.status(200).json({ result: 'invalid', error: 'Aucun compte avec cet email' });
       }
-      return { statusCode: 500, headers, body: JSON.stringify({ result: 'error', error: err.message }) };
+      return res.status(500).json({ result: 'error', error: err.message });
     }
   }
 
@@ -468,18 +450,18 @@ exports.handler = async (event) => {
   // Étape 1 : vérifie le mot de passe actuel via Firebase Admin
   if (action === 'change_email_verify_password') {
     const { email, password } = body;
-    if (!email || !password) return { statusCode: 400, headers, body: JSON.stringify({ error: 'email et password requis' }) };
+    if (!email || !password) return res.status(400).json({ error: 'email et password requis' });
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccountJson) {
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'needs_setup',
-        error: 'FIREBASE_SERVICE_ACCOUNT non configuré dans Netlify' }) };
+      return res.status(200).json({ result: 'needs_setup',
+        error: 'FIREBASE_SERVICE_ACCOUNT non configuré dans Netlify' });
     }
 
     try {
       // Vérifier le mot de passe via Firebase REST API (sign-in)
       const apiKey = process.env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY;
-      if (!apiKey) return { statusCode: 500, headers, body: JSON.stringify({ error: 'FIREBASE_API_KEY manquant' }) };
+      if (!apiKey) return res.status(500).json({ error: 'FIREBASE_API_KEY manquant' });
 
       const signInRes = await fetch(
         `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
@@ -488,12 +470,12 @@ exports.handler = async (event) => {
       );
       const signInData = await signInRes.json();
       if (!signInRes.ok || signInData.error) {
-        return { statusCode: 200, headers, body: JSON.stringify({ result: 'wrong_password' }) };
+        return res.status(200).json({ result: 'wrong_password' });
       }
 
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'valid' }) };
+      return res.status(200).json({ result: 'valid' });
     } catch (err) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+      return res.status(500).json({ error: err.message });
     }
   }
 
@@ -501,16 +483,16 @@ exports.handler = async (event) => {
   // Étape 2 : envoie OTP au NOUVEL email pour le vérifier
   if (action === 'change_email_send_otp') {
     const { newEmail, currentEmail } = body;
-    if (!newEmail || !currentEmail) return { statusCode: 400, headers, body: JSON.stringify({ error: 'newEmail et currentEmail requis' }) };
+    if (!newEmail || !currentEmail) return res.status(400).json({ error: 'newEmail et currentEmail requis' });
 
     const apiKey = process.env.BREVO_API_KEY;
-    if (!apiKey) return { statusCode: 500, headers, body: JSON.stringify({ error: 'BREVO_API_KEY manquant' }) };
+    if (!apiKey) return res.status(500).json({ error: 'BREVO_API_KEY manquant' });
 
     cleanExpired();
     const key = 'emailchange_' + newEmail.toLowerCase();
     const existing = otpStore.get(key);
     if (existing && existing.sendCount >= 3 && existing.expires > Date.now()) {
-      return { statusCode: 429, headers, body: JSON.stringify({ error: 'Trop de tentatives. Attends 10 minutes.' }) };
+      return res.status(429).json({ error: 'Trop de tentatives. Attends 10 minutes.' });
     }
 
     const code    = generateOTP();
@@ -550,7 +532,7 @@ exports.handler = async (event) => {
 </body></html>`;
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -560,13 +542,13 @@ exports.handler = async (event) => {
           htmlContent: html,
         }),
       });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        return { statusCode: 502, headers, body: JSON.stringify({ error: d.message || 'Erreur envoi email' }) };
+      if (!brevoRes.ok) {
+        const d = await brevoRes.json().catch(() => ({}));
+        return res.status(502).json({ error: d.message || 'Erreur envoi email' });
       }
-      return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+      return res.status(200).json({ success: true });
     } catch (err) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Erreur réseau' }) };
+      return res.status(500).json({ error: 'Erreur réseau' });
     }
   }
 
@@ -574,23 +556,23 @@ exports.handler = async (event) => {
   // Étape 3 : vérifie OTP + change l'email dans Firebase Auth + Firestore
   if (action === 'change_email_apply') {
     const { newEmail, code, uid } = body;
-    if (!newEmail || !code || !uid) return { statusCode: 400, headers, body: JSON.stringify({ error: 'newEmail, code et uid requis' }) };
+    if (!newEmail || !code || !uid) return res.status(400).json({ error: 'newEmail, code et uid requis' });
 
     const key   = 'emailchange_' + newEmail.toLowerCase();
     const entry = otpStore.get(key);
 
-    if (!entry) return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
-    if (entry.expires < Date.now()) { otpStore.delete(key); return { statusCode: 200, headers, body: JSON.stringify({ result: 'expired' }) }; }
+    if (!entry) return res.status(200).json({ result: 'invalid' });
+    if (entry.expires < Date.now()) { otpStore.delete(key); return res.status(200).json({ result: 'expired' }); }
 
     entry.attempts = (entry.attempts || 0) + 1;
-    if (entry.attempts > 5) { otpStore.delete(key); return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid', reason: 'too_many_attempts' }) }; }
-    if (entry.code !== code.trim()) return { statusCode: 200, headers, body: JSON.stringify({ result: 'invalid' }) };
+    if (entry.attempts > 5) { otpStore.delete(key); return res.status(200).json({ result: 'invalid', reason: 'too_many_attempts' }); }
+    if (entry.code !== code.trim()) return res.status(200).json({ result: 'invalid' });
 
     otpStore.delete(key);
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccountJson) {
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'needs_setup' }) };
+      return res.status(200).json({ result: 'needs_setup' });
     }
 
     try {
@@ -602,7 +584,7 @@ exports.handler = async (event) => {
       // Vérifier que le nouvel email n'est pas déjà utilisé
       try {
         await admin.auth().getUserByEmail(newEmail);
-        return { statusCode: 200, headers, body: JSON.stringify({ result: 'email_taken', error: 'Cet email est déjà utilisé par un autre compte' }) };
+        return res.status(200).json({ result: 'email_taken', error: 'Cet email est déjà utilisé par un autre compte' });
       } catch (notFound) {
         if (notFound.code !== 'auth/user-not-found') throw notFound;
         // Email libre — on peut continuer
@@ -619,10 +601,10 @@ exports.handler = async (event) => {
       const adminDb = getFirestore();
       await adminDb.collection('users').doc(uid).update({ email: newEmail });
 
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'success' }) };
+      return res.status(200).json({ result: 'success' });
     } catch (err) {
       console.error('[CHANGE_EMAIL] Erreur:', err.message);
-      return { statusCode: 500, headers, body: JSON.stringify({ result: 'error', error: err.message }) };
+      return res.status(500).json({ result: 'error', error: err.message });
     }
   }
 
@@ -630,11 +612,11 @@ exports.handler = async (event) => {
   // Admin change l'email d'un user sans mot de passe (accès admin direct)
   if (action === 'admin_change_email') {
     const { targetUid, newEmail, adminToken } = body;
-    if (!targetUid || !newEmail) return { statusCode: 400, headers, body: JSON.stringify({ error: 'targetUid et newEmail requis' }) };
-    if (!adminToken) return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token admin requis' }) };
+    if (!targetUid || !newEmail) return res.status(400).json({ error: 'targetUid et newEmail requis' });
+    if (!adminToken) return res.status(401).json({ error: 'Token admin requis' });
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!serviceAccountJson) return { statusCode: 200, headers, body: JSON.stringify({ result: 'needs_setup' }) };
+    if (!serviceAccountJson) return res.status(200).json({ result: 'needs_setup' });
 
     try {
       const admin = require('firebase-admin');
@@ -647,17 +629,17 @@ exports.handler = async (event) => {
       try {
         decodedToken = await admin.auth().verifyIdToken(adminToken);
       } catch (tokenErr) {
-        return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token admin invalide ou expiré' }) };
+        return res.status(401).json({ error: 'Token admin invalide ou expiré' });
       }
       const adminUidEnv = process.env.ADMIN_UID || process.env.VITE_ADMIN_UID;
       if (!adminUidEnv || decodedToken.uid !== adminUidEnv) {
-        return { statusCode: 403, headers, body: JSON.stringify({ error: 'Accès refusé — non admin' }) };
+        return res.status(403).json({ error: 'Accès refusé — non admin' });
       }
 
       // Vérifier que le nouvel email n'est pas pris
       try {
         await admin.auth().getUserByEmail(newEmail);
-        return { statusCode: 200, headers, body: JSON.stringify({ result: 'email_taken' }) };
+        return res.status(200).json({ result: 'email_taken' });
       } catch (notFound) {
         if (notFound.code !== 'auth/user-not-found') throw notFound;
       }
@@ -666,12 +648,11 @@ exports.handler = async (event) => {
       const { getFirestore } = require('firebase-admin/firestore');
       await getFirestore().collection('users').doc(targetUid).update({ email: newEmail });
 
-      return { statusCode: 200, headers, body: JSON.stringify({ result: 'success' }) };
+      return res.status(200).json({ result: 'success' });
     } catch (err) {
-      return { statusCode: 500, headers, body: JSON.stringify({ result: 'error', error: err.message }) };
+      return res.status(500).json({ result: 'error', error: err.message });
     }
   }
 
-  return { statusCode: 400, headers, body: JSON.stringify({ error: `Action inconnue: ${action}` }) };
-};
-
+  return res.status(400).json({ error: `Action inconnue: ${action}` });
+}
