@@ -31,7 +31,6 @@ import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
 import { GuidePage } from '@/pages/GuidePage';
-import { DesktopSidebar } from '@/components/DesktopSidebar';
 import { AdminPage } from '@/pages/AdminPage';
 import { OnboardingScreen, useOnboarding } from '@/components/OnboardingScreen';
 import { ToastContainer } from '@/components/ToastNotification';
@@ -626,13 +625,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <NetworkBanner />
-      {/* Layout desktop : sidebar gauche + app centrée */}
-      <div id="desktop-layout">
-        <DesktopSidebar />
-        <div id="desktop-app">
-          <AuthProvider><AppContent /></AuthProvider>
-        </div>
-      </div>
+      <AuthProvider><AppContent /></AuthProvider>
     </ErrorBoundary>
   );
 }
