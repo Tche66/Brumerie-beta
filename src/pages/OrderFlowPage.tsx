@@ -32,6 +32,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [transactionRef, setTransactionRef] = useState('');
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState('');
+  const [orderError, setOrderError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -90,7 +91,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       });
       setOrderId(id);
       setStep('proof');
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setOrderError('Erreur lors de la création de la commande. Réessaie.'); }
     finally { setLoading(false); }
   };
 
@@ -118,7 +119,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       });
       setOrderId(id);
       setStep('cod_confirm');
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); setOrderError('Erreur lors de la création de la commande. Réessaie.'); }
     finally { setLoading(false); }
   };
 
@@ -314,7 +315,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           </button>
         ) : (
           <button
-            onClick={handleStartCOD}
+            onClick={() => { setOrderError(''); handleStartCOD(); }}
             disabled={loading}
             className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-blue-200 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
@@ -470,7 +471,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
 
       <div className="px-5 py-4 border-t border-slate-100">
-        <button onClick={handleStartOrder} disabled={loading}
+        {orderError && (
+          <p className="text-red-500 text-[12px] font-bold text-center mb-2">{orderError}</p>
+        )}
+        <button onClick={() => { setOrderError(''); handleStartOrder(); }} disabled={loading}
           className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-blue-200 active:scale-95 transition-all disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
           {loading ? (

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
-import { subscribeTotalUnread, sendOfferCard } from '@/services/messagingService';
+import { subscribeTotalUnread, sendOfferCard, getOrCreateConversation } from '@/services/messagingService';
 import { AuthPage } from '@/pages/AuthPage';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
