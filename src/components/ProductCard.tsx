@@ -17,7 +17,9 @@ interface ProductCardProps {
 
 
 export function ProductCard({ product, onClick, onBookmark, isBookmarked = false, isBoosted = false }: ProductCardProps) {
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const imgSrc = (product.images?.length ? product.images[0] : null) ||
+    (product as any).imageUrl || null;
+  const [imgLoaded, setImgLoaded] = useState(!imgSrc); // si pas d image → pas de skeleton
   const [saved, setSaved] = useState(isBookmarked);
   
   // Sync with prop when it changes externally
@@ -49,11 +51,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
       <div className="relative aspect-[4/5] bg-gray-50 overflow-hidden">
         {!imgLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse" />}
         <img
-          src={
-            (product.images?.length ? product.images[0] : null) ||
-            (product as any).imageUrl ||
-            'https://via.placeholder.com/400x500?text=Brumerie'
-          }
+          src={imgSrc || 'https://via.placeholder.com/400x500?text=Brumerie'}
           alt={product.title}
           className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setImgLoaded(true)}

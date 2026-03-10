@@ -14,7 +14,6 @@ import {
   Timestamp,
   increment,
   orderBy,
-  getDocsFromServer,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -86,13 +85,23 @@ export async function getProducts(filters?: {
       limit(200)
     );
 
-    const snapshot = await getDocsFromServer(q); // Force lecture serveur, ignore cache local
-    let products = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
-      createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
-    })) as Product[];
+    const snapshot = await getDocs(q); // Cache + serveur — plus résilient sur mobile 4G
+    let products = snapshot.docs.map(doc => {
+      const d = doc.data();
+      // Compatibilité : anciens articles ont imageUrl (string), nouveaux ont images (array)
+      let images: string[] = [];
+      if (Array.isArray(d.images) && d.images.length > 0) {
+        images = d.images;
+      } else if (typeof d.imageUrl === 'string' && d.imageUrl) {
+        images = [d.imageUrl];
+      }
+      return {
+        id: doc.id,
+        ...d,
+        images,
+        createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
+      };
+    }) as Product[];
 
     // Tous les filtres côté client — pas d'index composite requis
     products = products.filter(p => !(p as any).hidden);
@@ -139,12 +148,21 @@ export async function getSellerProducts(sellerId: string): Promise<Product[]> {
       where('sellerId', '==', sellerId)
     );
     const snapshot = await getDocs(q);
-    const products = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      images: doc.data().images?.length ? doc.data().images : (doc.data().imageUrl ? [doc.data().imageUrl] : []),
-      createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : new Date(),
-    })).filter((p: any) => p.status !== 'deleted') as Product[];
+    const products = snapshot.docs.map(doc => {
+      const d = doc.data();
+      let images: string[] = [];
+      if (Array.isArray(d.images) && d.images.length > 0) {
+        images = d.images;
+      } else if (typeof d.imageUrl === 'string' && d.imageUrl) {
+        images = [d.imageUrl];
+      }
+      return {
+        id: doc.id,
+        ...d,
+        images,
+        createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
+      };
+    }).filter((p: any) => p.status !== 'deleted') as Product[];
     
     return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   } catch (error) {

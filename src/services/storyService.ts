@@ -20,13 +20,21 @@ export async function publishStory(params: {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // +48h
 
-  const ref = await addDoc(storiesCol, {
-    ...params,
+  // Firestore rejette les champs `undefined` — on les exclut explicitement
+  const data: Record<string, any> = {
+    sellerId: params.sellerId,
+    sellerName: params.sellerName,
+    imageUrl: params.imageUrl,
     isVerified: true,
     views: [],
     createdAt: serverTimestamp(),
     expiresAt: Timestamp.fromDate(expiresAt),
-  });
+  };
+  if (params.sellerPhoto) data.sellerPhoto = params.sellerPhoto;
+  if (params.caption)     data.caption     = params.caption;
+  if (params.productRef)  data.productRef  = params.productRef;
+
+  const ref = await addDoc(storiesCol, data);
   return ref.id;
 }
 
