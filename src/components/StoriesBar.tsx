@@ -10,8 +10,8 @@ interface StoriesBarProps {
   onSellerClick?: (sellerId: string) => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
   onRequestPublish?: () => void;
-  onOrderFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
-  onOfferFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
+  onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
+  onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
 }
 
 // ── Visionneuse de story ──────────────────────────────────────
@@ -146,8 +146,13 @@ function StoryViewer({
 
         {/* Caption + produit */}
         {(story.caption || story.productRef) && (
-          <div className="absolute bottom-0 left-0 right-0 p-5"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s' }}>
+          <div className="absolute left-0 right-0 p-5"
+            style={{
+              bottom: story.sellerId !== currentUserId ? 80 : 16,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.75), transparent)',
+              opacity: zoomed ? 0 : 1,
+              transition: 'opacity 0.2s'
+            }}>
             {story.caption && (
               <p className="text-white font-bold text-[14px] leading-relaxed mb-3">{story.caption}</p>
             )}
@@ -161,10 +166,13 @@ function StoryViewer({
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 mt-2">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span className="text-white/60 text-[11px] font-bold">{story.views?.length || 0} vue{(story.views?.length || 0) > 1 ? 's' : ''}</span>
-            </div>
+            {/* Vues — uniquement pour le vendeur */}
+            {story.sellerId === currentUserId && (
+              <div className="flex items-center gap-2 mt-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2.5" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span className="text-white/60 text-[11px] font-bold">{story.views?.length || 0} vue{(story.views?.length || 0) > 1 ? 's' : ''}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -424,9 +432,11 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
             setViewerStories(null);
             if (story.productRef) {
               if (onOrderFromStory) {
-                onOrderFromStory(story.productRef, story.sellerId, story.sellerName);
+                onOrderFromStory(
+                  { ...story.productRef, imageUrl: story.imageUrl },
+                  story.sellerId, story.sellerName
+                );
               } else {
-                // fallback : ouvrir le chat avec le produit
                 onOpenChatWithSeller?.(story.sellerId, story.sellerName,
                   story.productRef.id, story.productRef.title);
               }
@@ -436,7 +446,10 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
             setViewerStories(null);
             if (story.productRef) {
               if (onOfferFromStory) {
-                onOfferFromStory(story.productRef, story.sellerId, story.sellerName);
+                onOfferFromStory(
+                  { ...story.productRef, imageUrl: story.imageUrl },
+                  story.sellerId, story.sellerName
+                );
               } else {
                 onOpenChatWithSeller?.(story.sellerId, story.sellerName,
                   story.productRef.id, story.productRef.title);

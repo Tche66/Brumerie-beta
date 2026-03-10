@@ -26,8 +26,8 @@ interface HomePageProps {
   onNotificationsClick?: () => void;
   onLogoClick?: () => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
-  onOrderFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
-  onOfferFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
+  onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
+  onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
 }
 
 

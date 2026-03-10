@@ -41,6 +41,8 @@ import { GuestShell } from '@/components/GuestShell';
 import { PushNotifPrompt } from '@/components/PushNotifPrompt';
 import { NetworkBanner } from '@/components/NetworkBanner';
 
+import { OfferModal } from '@/components/OfferModal';
+
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
   | 'product-detail' | 'seller-profile' | 'chat'
@@ -404,19 +406,21 @@ useEffect(() => {
             onNotificationsClick={() => navigate('notifications')}
             onOpenChatWithSeller={handleOpenChatWithSeller}
             onOrderFromStory={async (productRef, sellerId, sellerName) => {
-              // Charger le produit complet depuis Firestore
               try {
                 const snap = await getDoc(doc(db, 'products', productRef.id));
+                // Si le produit existe → utiliser ses vraies données (images Cloudinary)
+                // Sinon → fallback avec l'imageUrl de la story
                 const fullProduct = snap.exists()
                   ? { id: snap.id, ...snap.data() }
                   : { id: productRef.id, title: productRef.title, price: productRef.price,
-                      images: [], sellerId, sellerName, neighborhood: '' };
+                      images: productRef.imageUrl ? [productRef.imageUrl] : [],
+                      sellerId, sellerName, neighborhood: '' };
                 setOrderFlowProduct(fullProduct);
                 navigate('order-flow');
               } catch {
-                // fallback avec les données de la story
                 setOrderFlowProduct({ id: productRef.id, title: productRef.title, price: productRef.price,
-                  images: [], sellerId, sellerName, neighborhood: '' });
+                  images: productRef.imageUrl ? [productRef.imageUrl] : [],
+                  sellerId, sellerName, neighborhood: '' });
                 navigate('order-flow');
               }
             }}
@@ -426,11 +430,13 @@ useEffect(() => {
                 const fullProduct = snap.exists()
                   ? { id: snap.id, ...snap.data() }
                   : { id: productRef.id, title: productRef.title, price: productRef.price,
-                      images: [], sellerId, sellerName, neighborhood: '' };
+                      images: productRef.imageUrl ? [productRef.imageUrl] : [],
+                      sellerId, sellerName, neighborhood: '' };
                 setStoryOfferProduct(fullProduct);
               } catch {
                 setStoryOfferProduct({ id: productRef.id, title: productRef.title, price: productRef.price,
-                  images: [], sellerId, sellerName, neighborhood: '' });
+                  images: productRef.imageUrl ? [productRef.imageUrl] : [],
+                  sellerId, sellerName, neighborhood: '' });
               }
             }}
           />
