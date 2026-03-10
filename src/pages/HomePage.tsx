@@ -26,6 +26,8 @@ interface HomePageProps {
   onNotificationsClick?: () => void;
   onLogoClick?: () => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
+  onOrderFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
+  onOfferFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
 }
 
 
@@ -52,7 +54,7 @@ const TrustBadges = () => (
   </div>
 );
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller }: HomePageProps) {
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       <SystemBanner />
 
       {/* Stories — barre horizontale comme Instagram */}
-      <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} />
+      <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} onOrderFromStory={onOrderFromStory} onOfferFromStory={onOfferFromStory} />
 
       {/* Barre de filtres rapides */}
       <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none">

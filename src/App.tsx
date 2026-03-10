@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
-import { subscribeTotalUnread } from '@/services/messagingService';
+import { subscribeTotalUnread, sendOfferCard } from '@/services/messagingService';
 import { AuthPage } from '@/pages/AuthPage';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
@@ -124,6 +124,7 @@ function AppShell() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [productToEdit, setProductToEdit]         = useState<Product | null>(null);
   const [orderFlowProduct, setOrderFlowProduct]   = useState<any>(null);
+  const [storyOfferProduct, setStoryOfferProduct] = useState<any>(null);
   const [acceptedOfferPrice, setAcceptedOfferPrice] = useState<number | undefined>(undefined);
   const [selectedOrderId, setSelectedOrderId]     = useState<string>('');
   const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
@@ -402,6 +403,36 @@ useEffect(() => {
             onLogoClick={handleLogoClick}
             onNotificationsClick={() => navigate('notifications')}
             onOpenChatWithSeller={handleOpenChatWithSeller}
+            onOrderFromStory={async (productRef, sellerId, sellerName) => {
+              // Charger le produit complet depuis Firestore
+              try {
+                const snap = await getDoc(doc(db, 'products', productRef.id));
+                const fullProduct = snap.exists()
+                  ? { id: snap.id, ...snap.data() }
+                  : { id: productRef.id, title: productRef.title, price: productRef.price,
+                      images: [], sellerId, sellerName, neighborhood: '' };
+                setOrderFlowProduct(fullProduct);
+                navigate('order-flow');
+              } catch {
+                // fallback avec les données de la story
+                setOrderFlowProduct({ id: productRef.id, title: productRef.title, price: productRef.price,
+                  images: [], sellerId, sellerName, neighborhood: '' });
+                navigate('order-flow');
+              }
+            }}
+            onOfferFromStory={async (productRef, sellerId, sellerName) => {
+              try {
+                const snap = await getDoc(doc(db, 'products', productRef.id));
+                const fullProduct = snap.exists()
+                  ? { id: snap.id, ...snap.data() }
+                  : { id: productRef.id, title: productRef.title, price: productRef.price,
+                      images: [], sellerId, sellerName, neighborhood: '' };
+                setStoryOfferProduct(fullProduct);
+              } catch {
+                setStoryOfferProduct({ id: productRef.id, title: productRef.title, price: productRef.price,
+                  images: [], sellerId, sellerName, neighborhood: '' });
+              }
+            }}
           />
         )}
         {activePage === 'product-detail' && selectedProduct && (
@@ -531,6 +562,33 @@ useEffect(() => {
             <p className="text-white text-[13px] font-black whitespace-nowrap tracking-tight">Appuie encore pour quitter</p>
           </div>
         </div>
+      )}
+
+      {/* OfferModal depuis une Story */}
+      {storyOfferProduct && currentUser && userProfile && (
+        <OfferModal
+          product={storyOfferProduct}
+          visible={true}
+          onClose={() => setStoryOfferProduct(null)}
+          onSend={async (offerPrice, message) => {
+            const convId = await getOrCreateConversation(
+              currentUser.uid, storyOfferProduct.sellerId,
+              { id: storyOfferProduct.id, title: storyOfferProduct.title, price: storyOfferProduct.price,
+                image: storyOfferProduct.images?.[0] || '', neighborhood: storyOfferProduct.neighborhood || '' },
+              userProfile.name, storyOfferProduct.sellerName || '', userProfile.photoURL, storyOfferProduct.sellerPhoto || '',
+            );
+            await sendOfferCard(
+              convId, currentUser.uid, userProfile.name,
+              { id: storyOfferProduct.id, title: storyOfferProduct.title, price: storyOfferProduct.price,
+                image: storyOfferProduct.images?.[0] || '', sellerId: storyOfferProduct.sellerId,
+                neighborhood: storyOfferProduct.neighborhood || '',
+                sellerName: storyOfferProduct.sellerName || '', sellerPhoto: storyOfferProduct.sellerPhoto || '' },
+              offerPrice, userProfile.photoURL,
+            );
+            setStoryOfferProduct(null);
+            await handleStartChat(convId);
+          }}
+        />
       )}
     </div>
   );

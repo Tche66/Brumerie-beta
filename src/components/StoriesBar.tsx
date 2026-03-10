@@ -10,6 +10,8 @@ interface StoriesBarProps {
   onSellerClick?: (sellerId: string) => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
   onRequestPublish?: () => void;
+  onOrderFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
+  onOfferFromStory?: (productRef: { id: string; title: string; price: number }, sellerId: string, sellerName: string) => void;
 }
 
 // ── Visionneuse de story ──────────────────────────────────────
@@ -349,7 +351,7 @@ export function PublishStoryModal({ onClose, onPublished }: { onClose: () => voi
 }
 
 // ── Composant principal ───────────────────────────────────────
-export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPublish }: StoriesBarProps) {
+export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPublish, onOrderFromStory, onOfferFromStory }: StoriesBarProps) {
   const { currentUser, userProfile } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
   const [viewerStories, setViewerStories] = useState<Story[] | null>(null);
@@ -421,15 +423,24 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
           onOrder={(story) => {
             setViewerStories(null);
             if (story.productRef) {
-              onOpenChatWithSeller?.(story.sellerId, story.sellerName,
-                story.productRef.id, story.productRef.title);
+              if (onOrderFromStory) {
+                onOrderFromStory(story.productRef, story.sellerId, story.sellerName);
+              } else {
+                // fallback : ouvrir le chat avec le produit
+                onOpenChatWithSeller?.(story.sellerId, story.sellerName,
+                  story.productRef.id, story.productRef.title);
+              }
             }
           }}
           onOffer={(story) => {
             setViewerStories(null);
             if (story.productRef) {
-              onOpenChatWithSeller?.(story.sellerId, story.sellerName,
-                story.productRef.id, story.productRef.title);
+              if (onOfferFromStory) {
+                onOfferFromStory(story.productRef, story.sellerId, story.sellerName);
+              } else {
+                onOpenChatWithSeller?.(story.sellerId, story.sellerName,
+                  story.productRef.id, story.productRef.title);
+              }
             }
           }}
           onContact={(sellerId, sellerName) => {
