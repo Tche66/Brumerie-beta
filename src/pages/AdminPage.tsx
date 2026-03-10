@@ -15,7 +15,7 @@ import {
 import { adminChangeEmail } from '@/services/emailChangeService';
 import { ProductBoost, BOOST_PLANS } from '@/types';
 import { CountdownBadge } from '@/components/CountdownBadge';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
@@ -115,6 +115,19 @@ export function AdminPage({ onBack }: AdminPageProps) {
     if (currentUser?.uid) await logAdminAction(currentUser.uid, action, targetId, details);
   }, [currentUser]);
 
+  // Auto-setup system/config si absent (nécessaire pour les règles Firestore isAdmin())
+  useEffect(() => {
+    if (!isAdmin || !currentUser?.uid) return;
+    const ref = doc(db, 'system', 'config');
+    getDoc(ref).then(snap => {
+      if (!snap.exists()) {
+        setDoc(ref, { adminUid: currentUser.uid }, { merge: true })
+          .then(() => console.log('system/config créé automatiquement'))
+          .catch(() => {});
+      }
+    }).catch(() => {});
+  }, [isAdmin, currentUser?.uid]);
+
   useEffect(() => { if (!isAdmin) return; return subscribeAllBoosts(setAllBoosts); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAllUsers(setUsers); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAllProducts(setProducts); }, [isAdmin]);
@@ -123,8 +136,17 @@ export function AdminPage({ onBack }: AdminPageProps) {
   useEffect(() => { if (!isAdmin) return; return subscribeActiveBanners(setActiveBanners); }, [isAdmin]);
   useEffect(() => {
     if (!isAdmin) return;
-    getAdminStats().then(setStats);
-    getGlobalSettings().then(s => { setGlobalSettings(s || {}); setSettingsDraft(s || {}); }).catch(() => {});
+    getAdminStats()
+      .then(setStats)
+      .catch(err => {
+        console.error('AdminStats error:', err);
+        setStats({ totalUsers:0, totalSellers:0, verifiedSellers:0, totalProducts:0,
+          activeProducts:0, totalOrders:0, totalBoostRevenue:0, totalVerifRevenue:0,
+          newUsersToday:0, newProductsToday:0 });
+      });
+    getGlobalSettings()
+      .then(s => { setGlobalSettings(s || {}); setSettingsDraft(s || {}); })
+      .catch(() => { setGlobalSettings({}); setSettingsDraft({}); });
   }, [isAdmin]);
 
   const handleActivateBoost = async (id: string) => {
@@ -264,7 +286,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
   if (!isAdmin) {
     return (
-      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center" style={{ background: '#0F172A' }}>
+      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center" style={{ background: '#0F172A', height: '100dvh' }}>
         <div className="text-center px-8">
           <div className="text-6xl mb-6">🔒</div>
           <h2 className="font-black text-white text-[20px] mb-3">Accès refusé</h2>
@@ -276,7 +298,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden" style={{ background: '#0F172A' }}>
+    <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden" style={{ background: '#0F172A', height: '100dvh' }}>
 
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 px-4 pt-12 pb-2">

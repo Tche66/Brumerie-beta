@@ -31,7 +31,13 @@
 
 input, textarea { user-select: text; }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
+  height: 100%;
   font-family: var(--font-body);
   background-color: #F8FAFC;
   color: var(--slate-900);
@@ -55,11 +61,14 @@ h1, h2, h3, h4, .font-title {
 }
 
 #root {
-  min-height: 100vh;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   background: #fff;
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 0 80px rgba(15, 23, 42, 0.04);
 }
 

@@ -148,7 +148,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   // ── ÉTAPE 1 : Récapitulatif ────────────────────────────
   if (step === 'recap') return (
-    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -332,7 +332,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   // ── ÉTAPE 2 : Coordonnées paiement ─────────────────────
   if (step === 'availability_check') return (
-    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={() => setStep('recap')} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -403,7 +403,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   );
 
   if (step === 'payment_details') return (
-    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={() => setStep('recap')} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -486,7 +486,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   // ── ÉTAPE COD : Confirmation réception à la livraison ───
   if (step === 'cod_confirm') return (
-    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center">
           <span className="text-xl">🤝</span>
@@ -561,7 +561,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   // ── ÉTAPE 3 : Upload preuve ─────────────────────────────
   return (
-    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <div className="w-11 h-11 bg-green-50 rounded-2xl flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>

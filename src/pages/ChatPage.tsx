@@ -175,7 +175,7 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   let lastDate = '';
 
   return (
-    <div className="fixed inset-0 bg-white z-[80] flex flex-col font-sans">
+    <div className="fixed inset-0 bg-white z-[80] flex flex-col font-sans" style={{ height: '100dvh' }}>
 
       {/* Header */}
       <div className="bg-white/95 backdrop-blur-md border-b border-slate-100 px-4 py-4 flex items-center gap-3 flex-shrink-0">
@@ -501,7 +501,7 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
 
       {/* ── MODAL PRIX PERSONNALISÉ VENDEUR ── */}
       {showCustomPriceModal && sellerProduct && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4" style={{ height: '100dvh' }}>
           <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8">
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
             <p className="font-black text-slate-900 text-lg uppercase tracking-tight mb-1">🏷️ Prix personnalisé</p>

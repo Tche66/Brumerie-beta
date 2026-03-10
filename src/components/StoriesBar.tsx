@@ -71,8 +71,9 @@ function StoryViewer({
 
   return (
     <div className="fixed inset-0 z-[500] bg-black flex items-center justify-center"
+      style={{ height: '100dvh' }}
       onClick={onClose}>
-      <div className="relative w-full max-w-sm h-full max-h-[700px]"
+      <div className="relative w-full max-w-sm h-full"
         onClick={e => e.stopPropagation()}>
 
         {/* Barre de progression */}
