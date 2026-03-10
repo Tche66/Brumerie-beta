@@ -58,7 +58,7 @@ export function FilterDrawer({ visible, filters, onApply, onClose }: FilterDrawe
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center" style={{ height: \'100dvh\' }} onClick={onClose}>
+    <div className="fixed inset-0 z-[200] flex items-end justify-center" style={{ height: '100dvh' }} onClick={onClose}>
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"/>
       <div className="relative w-full max-w-md bg-white rounded-t-[3rem] shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}

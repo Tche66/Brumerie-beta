@@ -37,8 +37,7 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[600] flex flex-col items-center justify-between pb-16 pt-20 px-8" style={{ height: \'100dvh\' }}
-      style={{ background: '#0F172A' }}>
+    <div className="fixed inset-0 z-[600] flex flex-col items-center justify-between pb-16 pt-20 px-8" style={{ height: '100dvh', background: '#0F172A' }}>
 
       {/* Skip */}
       {!isLast && (
