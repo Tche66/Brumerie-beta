@@ -6,6 +6,7 @@ import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { useAuth } from '@/contexts/AuthContext';
+import { BoostModal } from '@/components/BoostModal';
 import { ImageLightbox } from '@/components/ImageLightbox';
 import { getOrCreateConversation, checkChatLimit, sendOfferCard } from '@/services/messagingService';
 import { subscribeSellerReviews } from '@/services/reviewService';
@@ -241,6 +242,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const createdAtDate = product.createdAt?.toDate ? product.createdAt.toDate() : new Date(product.createdAt);
   const isNew = new Date().getTime() - createdAtDate.getTime() < 48 * 60 * 60 * 1000;
   const isSelf = currentUser?.uid === product.sellerId;
+  const [showBoost, setShowBoost] = useState(false);
 
   // Helper livraison (évite regex/template literals imbriqués dans JSX)
   const getDeliveryLink = () => {
@@ -522,7 +524,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {product.status === 'sold' ? (
           <div className="w-full py-5 rounded-2xl bg-slate-100 text-slate-300 font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center">VENDU</div>
         ) : isSelf ? (
-          <div className="w-full py-4 rounded-2xl bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center">Ton annonce</div>
+          <button onClick={() => setShowBoost(true)}
+            className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-100">
+            ⚡ Booster cet article
+          </button>
         ) : (
           <>
           <div className="flex gap-3">
@@ -661,6 +666,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         </div>
       )}
 
+
+      {/* Boost Modal */}
+      {showBoost && (
+        <BoostModal
+          product={product}
+          onClose={() => setShowBoost(false)}
+          onBoosted={() => setShowBoost(false)}
+        />
+      )}
     </div>
   );
 }

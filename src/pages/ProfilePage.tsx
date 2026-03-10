@@ -312,7 +312,7 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
                 Supprimer l'annonce
               </button>
               <button onClick={() => { setBoostProduct(actionProduct); setActionProduct(null); }}
-                className="w-full py-5 rounded-3xl bg-amber-50 text-amber-700 font-bold text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+                className="w-full py-5 rounded-3xl bg-blue-500 text-white font-bold text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100">
                 ⚡ Booster l'annonce
               </button>
               <button onClick={() => setActionProduct(null)} className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest">

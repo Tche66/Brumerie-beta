@@ -288,10 +288,6 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           />
         </SettingSection>
 
-        <p className="text-center text-[9px] font-black text-slate-300 mt-10 mb-4 uppercase tracking-[0.3em]">
-          Brumerie ® 2025 · Abidjan 
-        </p>
-
         {/* Bouton admin — visible uniquement si l'UID correspond */}
         {currentUser?.uid === ((import.meta as any).env?.VITE_ADMIN_UID || '__NONE__') && (
           <div className="px-2 mb-8">

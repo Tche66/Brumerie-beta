@@ -58,13 +58,33 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const isSeller = currentUser?.uid === (conversation.participants || [])[1];
 
   // Charger le produit pour le vendeur (pour le partager)
+  const [sellerProducts, setSellerProducts] = useState<any[]>([]);
+  const [selectedSellerProduct, setSelectedSellerProduct] = useState<any>(null);
   useEffect(() => {
-    if (!isSeller) return;
-    if (!conversation.productId) return; // message admin = pas de produit
-    getDoc(doc(db, 'products', conversation.productId)).then(snap => {
-      if (snap.exists()) setSellerProduct({ id: snap.id, ...snap.data() });
-    });
-  }, [conversation.productId, isSeller]);
+    if (!isSeller || !currentUser) return;
+    if (conversation.productId) {
+      // Conversation liée à un produit → charger ce produit
+      getDoc(doc(db, 'products', conversation.productId)).then(snap => {
+        if (snap.exists()) {
+          const p = { id: snap.id, ...snap.data() };
+          setSellerProduct(p);
+          setSelectedSellerProduct(p);
+        }
+      });
+    } else {
+      // Contact direct (via Stories ou autre) → charger tous les produits actifs du vendeur
+      import('@/services/productService').then(({ getSellerProducts }) => {
+        getSellerProducts(currentUser.uid).then(products => {
+          const active = products.filter((p: any) => p.status === 'active');
+          setSellerProducts(active);
+          if (active.length > 0) {
+            setSellerProduct(active[0]);
+            setSelectedSellerProduct(active[0]);
+          }
+        });
+      });
+    }
+  }, [conversation.productId, isSeller, currentUser?.uid]);
 
   // Abonnement messages temps réel
   useEffect(() => {
@@ -457,23 +477,39 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
       <div className="bg-white border-t border-slate-100 px-4 py-3 flex-shrink-0">
         {/* Boutons vendeur */}
         {isSeller && sellerProduct && (
-          <div className="flex gap-2 mb-3">
-            <button onClick={handleShareProduct}
-              className="flex-1 flex items-center gap-2 bg-green-50 border border-green-100 rounded-2xl px-3 py-2.5 active:scale-98 transition-all">
-              <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
-                <img src={sellerProduct.images?.[0]} alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="text-[9px] font-black text-green-800 truncate">{sellerProduct.title}</p>
-                <p className="text-[8px] text-green-600 font-bold">{sellerProduct.price?.toLocaleString('fr-FR')} FCFA</p>
-              </div>
-              <span className="text-green-600 text-[8px] font-black uppercase flex-shrink-0">📦 Partager</span>
-            </button>
-            <button onClick={() => setShowCustomPriceModal(true)}
-              className="flex items-center gap-1 bg-purple-50 border border-purple-100 rounded-2xl px-3 py-2.5 active:scale-98 transition-all flex-shrink-0">
-              <span className="text-[10px]">🏷️</span>
-              <span className="text-purple-700 text-[8px] font-black uppercase">Prix perso</span>
-            </button>
+          <div className="flex flex-col gap-2 mb-3">
+            {/* Sélecteur de produit si contact direct (plusieurs produits) */}
+            {sellerProducts.length > 1 && (
+              <select
+                value={selectedSellerProduct?.id || ''}
+                onChange={e => {
+                  const p = sellerProducts.find((x: any) => x.id === e.target.value);
+                  if (p) { setSellerProduct(p); setSelectedSellerProduct(p); }
+                }}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-[11px] font-bold text-slate-700 outline-none">
+                {sellerProducts.map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.title} — {p.price?.toLocaleString('fr-FR')} FCFA</option>
+                ))}
+              </select>
+            )}
+            <div className="flex gap-2">
+              <button onClick={handleShareProduct}
+                className="flex-1 flex items-center gap-2 bg-green-50 border border-green-100 rounded-2xl px-3 py-2.5 active:scale-98 transition-all">
+                <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
+                  <img src={sellerProduct.images?.[0]} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-[9px] font-black text-green-800 truncate">{sellerProduct.title}</p>
+                  <p className="text-[8px] text-green-600 font-bold">{sellerProduct.price?.toLocaleString('fr-FR')} FCFA</p>
+                </div>
+                <span className="text-green-600 text-[8px] font-black uppercase flex-shrink-0">📦 Partager</span>
+              </button>
+              <button onClick={() => setShowCustomPriceModal(true)}
+                className="flex items-center gap-1 bg-purple-50 border border-purple-100 rounded-2xl px-3 py-2.5 active:scale-98 transition-all flex-shrink-0">
+                <span className="text-[10px]">🏷️</span>
+                <span className="text-purple-700 text-[8px] font-black uppercase">Prix perso</span>
+              </button>
+            </div>
           </div>
         )}
 

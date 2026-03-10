@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.tsx — Dashboard SVG pro + Simple vs Vérifié/Premium
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSellerProducts } from '@/services/productService';
+import { getSellerProducts, deleteProduct, updateProductStatus } from '@/services/productService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { subscribeOrdersAsSeller } from '@/services/orderService';
 import { subscribeSellerPendingOffers, respondToOffer } from '@/services/messagingService';
@@ -76,6 +76,8 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [pendingOffers, setPendingOffers] = useState<any[]>([]);
   const [respondingOffer, setRespondingOffer] = useState<string | null>(null);
   const [boostProduct, setBoostProduct] = useState<Product | null>(null);
+  const [actionProduct, setActionProduct] = useState<Product | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activeBoosts, setActiveBoosts] = useState<Record<string, any>>({}); // productId → boost data
 
   const tier     = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
@@ -475,12 +477,15 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                       )}
                       {p.status !== 'sold' && (
                         <button onClick={() => setBoostProduct(p)}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-amber-50 active:scale-90 transition-all"
+                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-blue-500 active:scale-90 transition-all shadow-sm shadow-blue-200"
                           title="Booster l'annonce">
                           <span className="text-[14px]">⚡</span>
                         </button>
                       )}
-                      {/* Compte à rebours si boost actif */}
+                      <button onClick={() => setActionProduct(p)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all text-slate-500 text-lg font-black">
+                        ···
+                      </button>
                       {activeBoosts[p.id] && (
                         <CountdownBadge expiresAt={activeBoosts[p.id].expiresAt} size="sm"/>
                       )}
@@ -670,6 +675,47 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
           onClose={() => setBoostProduct(null)}
           onBoosted={() => setBoostProduct(null)}
         />
+      )}
+
+      {/* Action Sheet — Marquer vendu / Supprimer / Booster */}
+      {actionProduct && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-end justify-center p-4"
+          onClick={() => setActionProduct(null)}>
+          <div className="w-full max-w-md bg-white rounded-[2.5rem] p-6 pb-8"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center mb-5 truncate px-4">
+              {actionProduct.title}
+            </p>
+            {actionProduct.status !== 'sold' && (
+              <button onClick={async () => {
+                await updateProductStatus(actionProduct.id, 'sold');
+                setActionProduct(null);
+                setProducts(prev => prev.map((p: Product) => p.id === actionProduct.id ? {...p, status: 'sold' as any} : p));
+              }} className="w-full py-5 rounded-3xl bg-green-600 text-white font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2">
+                🎉 Marquer comme vendu
+              </button>
+            )}
+            <button onClick={async () => {
+              if (!window.confirm('Supprimer définitivement cette annonce ?')) return;
+              await deleteProduct(actionProduct.id, actionProduct.sellerId);
+              setActionProduct(null);
+              setProducts(prev => prev.filter((p: Product) => p.id !== actionProduct.id));
+            }} className="w-full py-5 rounded-3xl bg-red-50 text-red-600 font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all">
+              Supprimer l'annonce
+            </button>
+            {actionProduct.status !== 'sold' && (
+              <button onClick={() => { setBoostProduct(actionProduct); setActionProduct(null); }}
+                className="w-full py-5 rounded-3xl bg-blue-500 text-white font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100">
+                ⚡ Booster l'annonce
+              </button>
+            )}
+            <button onClick={() => setActionProduct(null)}
+              className="w-full py-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+              Annuler
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
