@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Story } from '@/types';
 import { subscribeActiveStories, getSellerStories, markStoryViewed, publishStory, deleteStory } from '@/services/storyService';
+import { getSellerProducts } from '@/services/productService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -216,6 +217,22 @@ export function PublishStoryModal({ onClose, onPublished }: { onClose: () => voi
   const [productPrice, setProductPrice] = useState('');
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [sellerProducts, setSellerProducts] = useState<any[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+
+  useEffect(() => {
+    if (!currentUser) return;
+    getSellerProducts(currentUser.uid).then(prods => {
+      const active = prods.filter((p: any) => p.status === 'active');
+      setSellerProducts(active);
+      if (active.length > 0) {
+        setSelectedProductId(active[0].id);
+        setProductLink(active[0].id);
+        setProductTitle(active[0].title);
+        setProductPrice(String(active[0].price));
+      }
+    });
+  }, [currentUser?.uid]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return;
@@ -284,13 +301,44 @@ export function PublishStoryModal({ onClose, onPublished }: { onClose: () => voi
         />
         <p className="text-[10px] text-slate-400 text-right mb-4">{caption.length}/120</p>
 
+        {/* Sélecteur de produit — obligatoire */}
+        <div className="mb-4">
+          <p className="text-[11px] font-black text-slate-700 uppercase tracking-widest mb-2">📦 Article lié</p>
+          {sellerProducts.length > 0 ? (
+            <select
+              value={selectedProductId}
+              onChange={e => {
+                const p = sellerProducts.find((x: any) => x.id === e.target.value);
+                if (p) {
+                  setSelectedProductId(p.id);
+                  setProductLink(p.id);
+                  setProductTitle(p.title);
+                  setProductPrice(String(p.price));
+                }
+              }}
+              className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-[13px] font-bold text-slate-800 outline-none focus:border-green-400">
+              {sellerProducts.map((p: any) => (
+                <option key={p.id} value={p.id}>{p.title} — {p.price.toLocaleString('fr-FR')} FCFA</option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-[12px] text-slate-400 italic">Aucun article actif trouvé. Publie d'abord une annonce.</p>
+          )}
+          {selectedProductId && productPrice && (
+            <div className="mt-2 flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
+              <span className="text-green-700 font-black text-[13px]">{Number(productPrice).toLocaleString('fr-FR')} FCFA</span>
+              <span className="text-slate-400 text-[10px]">· les acheteurs pourront Discuter, Faire une offre ou Acheter</span>
+            </div>
+          )}
+        </div>
+
         {error && (
           <div className="w-full bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-3 text-red-600 text-[12px] font-bold text-center">
             ⚠️ {error}
           </div>
         )}
 
-        <button onClick={handlePublish} disabled={!imageFile || loading}
+        <button onClick={handlePublish} disabled={!imageFile || loading || sellerProducts.length === 0}
           className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-40 active:scale-95 transition-all"
           style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
           {loading ? '⏳ Publication...' : '🚀 Publier (48h)'}

@@ -84,13 +84,23 @@ export function subscribeBoostedProductIds(
   callback: (ids: Set<string>) => void,
 ): () => void {
   const now = Timestamp.now();
+  // Inclure les boosts actifs ET en attente de validation (pending)
+  // Les pending sont placés en tête immédiatement — l'admin valide ensuite
   const q = query(
     boostsCol,
-    where('status', '==', 'active'),
-    where('expiresAt', '>', now),
+    where('status', 'in', ['active', 'pending']),
   );
   return onSnapshot(q, snap => {
-    const ids = new Set(snap.docs.map(d => d.data().productId as string));
+    const ids = new Set(
+      snap.docs
+        .map(d => d.data())
+        .filter(d => {
+          if (d.status === 'pending') return true; // pending → toujours montré
+          // active → vérifier expiresAt
+          return d.expiresAt && d.expiresAt.toMillis() > now.toMillis();
+        })
+        .map(d => d.productId as string)
+    );
     callback(ids);
   }, () => callback(new Set()));
 }
