@@ -115,7 +115,7 @@ export function ImageLightbox({ images, initialIndex = 0, onClose }: ImageLightb
 
   return (
     <div
-      className="fixed inset-0 z-[999] flex items-center justify-center"
+      className="fixed inset-0 z-[999] flex items-center justify-center" style={{ height: \'100dvh\' }}
       style={{ background: 'rgba(0,0,0,0.96)', touchAction: 'none' }}
     >
       {/* Bouton fermer */}

@@ -141,7 +141,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, isGuest, o
 
       {/* ── MODAL PARTAGE ── */}
       {showShare && seller && (
-        <div className="fixed inset-0 z-[300] flex items-end justify-center p-4"
+        <div className="fixed inset-0 z-[300] flex items-end justify-center p-4" style={{ height: \'100dvh\' }}
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowShare(false)}>
           <div className="bg-white rounded-[2rem] p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
@@ -181,7 +181,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, isGuest, o
 
       {/* ── MODAL QR CODE — Design Brumerie ── */}
       {showQR && seller && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{ height: \'100dvh\' }}
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
           onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-[2.5rem] w-full max-w-xs overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>

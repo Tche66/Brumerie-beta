@@ -70,7 +70,7 @@ function StoryViewer({
   if (!story) return null;
 
   return (
-    <div className="fixed inset-0 z-[500] bg-black flex items-center justify-center"
+    <div className="fixed inset-0 z-[500] bg-black flex items-center justify-center" style={{ height: \'100dvh\' }}
       style={{ height: '100dvh' }}
       onClick={onClose}>
       <div className="relative w-full max-w-sm h-full"

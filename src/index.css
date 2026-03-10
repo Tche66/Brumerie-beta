@@ -29,20 +29,37 @@
   user-select: none;
 }
 
-input, textarea { user-select: text; }
+input, textarea, select {
+  user-select: text;
+  font-size: 16px; /* Empêche le zoom auto iOS/Android sur focus */
+  touch-action: manipulation;
+}
 
-html {
+button, a {
+  touch-action: manipulation; /* Supprime le délai 300ms et le double-tap zoom */
+}
+
+html, body {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
+  /* Bloquer zoom navigateur sur mobile */
+  touch-action: pan-x pan-y;
 }
 
 body {
-  height: 100%;
   font-family: var(--font-body);
   background-color: #F8FAFC;
   color: var(--slate-900);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
+  /* Bloquer double-tap zoom sur iOS/Android */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Bloquer zoom sur tous les éléments interactifs */
+input, textarea, select, button {
+  touch-action: manipulation;
+  font-size: 16px; /* Empêche le zoom auto iOS sur focus input < 16px */
 }
 
 h1, h2, h3, h4, .font-title {
@@ -61,7 +78,7 @@ h1, h2, h3, h4, .font-title {
 }
 
 #root {
-  height: 100dvh;
+  height: 100%;
   max-width: 480px;
   margin: 0 auto;
   background: #fff;
