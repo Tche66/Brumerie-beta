@@ -206,7 +206,9 @@ export function AdminPage({ onBack }: AdminPageProps) {
     if (!newEmailInput.includes('@')) { showToast('⚠️ Email invalide'); return; }
     setBusy('email_' + userId);
     try {
-      const res = await adminChangeEmail(userId, newEmailInput.trim().toLowerCase());
+      const { getAuth } = await import('firebase/auth');
+      const idToken = await getAuth().currentUser?.getIdToken() || '';
+      const res = await adminChangeEmail(userId, newEmailInput.trim().toLowerCase(), idToken);
       if (res.success) {
         await logAction('EMAIL_CHANGED', userId, newEmailInput);
         setEmailTarget(null); setNewEmailInput('');
@@ -794,6 +796,52 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </div>
                 ))}
               </div>
+              {/* ── Lien paiement badge vérifié ── */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[16px]">✅</span>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Lien de paiement Badge Vérifié</p>
+                    <p className="text-[9px] text-slate-400">Lien Wave/CinetPay qui s'ouvre quand un vendeur demande le badge.</p>
+                  </div>
+                </div>
+                <input
+                  value={settingsDraft.badgePaymentLink ?? globalSettings.badgePaymentLink ?? ''}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, badgePaymentLink: e.target.value }))}
+                  placeholder="wave://send?phone=+225...&amount=1000&note=BadgeVerifie"
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                />
+              </div>
+
+              {/* ── WhatsApp après paiement badge ── */}
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">📱 WhatsApp pour preuve de paiement badge</p>
+                <input
+                  value={settingsDraft.badgeWhatsappAfter ?? globalSettings.badgeWhatsappAfter ?? '2250586867693'}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, badgeWhatsappAfter: e.target.value }))}
+                  placeholder="2250586867693"
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">Format : indicatif + numéro sans + ni espaces (ex: 2250586867693)</p>
+              </div>
+
+              {/* ── Lien YouTube ── */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[16px]">🎥</span>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Chaîne YouTube Brumerie</p>
+                    <p className="text-[9px] text-slate-400">Lien visible dans le Guide utilisateur et dans le Support.</p>
+                  </div>
+                </div>
+                <input
+                  value={settingsDraft.youtubeChannel ?? globalSettings.youtubeChannel ?? ''}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, youtubeChannel: e.target.value }))}
+                  placeholder="https://youtube.com/@brumerie"
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                />
+              </div>
+
               <div className="flex items-center justify-between py-1">
                 <div>
                   <p className="font-black text-slate-800 text-[13px]">🔧 Maintenance</p>

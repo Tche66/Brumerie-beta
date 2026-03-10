@@ -629,8 +629,9 @@ exports.handler = async (event) => {
   // ── ACTION : admin_change_email ───────────────────────────────
   // Admin change l'email d'un user sans mot de passe (accès admin direct)
   if (action === 'admin_change_email') {
-    const { targetUid, newEmail } = body;
+    const { targetUid, newEmail, adminToken } = body;
     if (!targetUid || !newEmail) return { statusCode: 400, headers, body: JSON.stringify({ error: 'targetUid et newEmail requis' }) };
+    if (!adminToken) return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token admin requis' }) };
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
     if (!serviceAccountJson) return { statusCode: 200, headers, body: JSON.stringify({ result: 'needs_setup' }) };
@@ -639,6 +640,18 @@ exports.handler = async (event) => {
       const admin = require('firebase-admin');
       if (!admin.apps.length) {
         admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountJson)) });
+      }
+
+      // Vérifier que le appelant est bien l'admin via son Firebase ID Token
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(adminToken);
+      } catch (tokenErr) {
+        return { statusCode: 401, headers, body: JSON.stringify({ error: 'Token admin invalide ou expiré' }) };
+      }
+      const adminUidEnv = process.env.ADMIN_UID || process.env.VITE_ADMIN_UID;
+      if (!adminUidEnv || decodedToken.uid !== adminUidEnv) {
+        return { statusCode: 403, headers, body: JSON.stringify({ error: 'Accès refusé — non admin' }) };
       }
 
       // Vérifier que le nouvel email n'est pas pris

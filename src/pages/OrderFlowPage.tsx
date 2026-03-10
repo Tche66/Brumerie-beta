@@ -16,14 +16,14 @@ interface OrderFlowPageProps {
   acceptedPrice?: number; // Prix négocié si offre acceptée
 }
 
-type Step = 'recap' | 'payment_details' | 'proof' | 'cod_confirm';
+type Step = 'recap' | 'availability_check' | 'payment_details' | 'proof' | 'cod_confirm';
 type PaymentMode = 'mobile_money' | 'cash_on_delivery';
 
 export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }: OrderFlowPageProps) {
   const { currentUser, userProfile } = useAuth();
   const [step, setStep] = useState<Step>('recap');
   const [orderId, setOrderId] = useState('');
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>('mobile_money');
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash_on_delivery');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
@@ -225,25 +225,34 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de paiement</p>
           <div className="grid grid-cols-1 gap-3 mb-4">
             <button onClick={() => setPaymentMode('mobile_money')}
-              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'mobile_money' ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`}>
+              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'mobile_money' ? 'border-orange-400 bg-orange-50' : 'border-slate-100 bg-slate-50'}`}>
               <div className="text-2xl flex-shrink-0">💳</div>
               <div className="flex-1">
-                <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-green-800' : 'text-slate-700'}`}>Payer maintenant</p>
+                <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer à l'avance</p>
                 <p className="text-[10px] text-slate-400 font-medium">Wave · Orange Money · MTN · Moov</p>
+                {paymentMode === 'mobile_money' && (
+                  <p className="text-[9px] text-orange-600 font-black mt-1 leading-tight">
+                    ⚠️ Payez en avance uniquement si vous connaissez bien le vendeur ou lui faites confiance. Brumerie ne rembourse pas au MVP.
+                  </p>
+                )}
               </div>
               {paymentMode === 'mobile_money' && (
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center flex-shrink-0 flex-shrink-0">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
               )}
             </button>
 
             <button onClick={() => setPaymentMode('cash_on_delivery')}
-              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'cash_on_delivery' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
+              className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'cash_on_delivery' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
+              {/* Badge Recommandé */}
+              <div className="absolute -top-2 -right-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                🛡️ Recommandé
+              </div>
               <div className="text-2xl flex-shrink-0">🤝</div>
               <div className="flex-1">
-                <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Commander – Payer à la livraison</p>
-                <p className="text-[10px] text-slate-400 font-medium">Le vendeur livre, tu paies à la réception</p>
+                <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Payer à la livraison</p>
+                <p className="text-[10px] text-slate-400 font-medium">Tu paies uniquement quand tu reçois l'article</p>
               </div>
               {paymentMode === 'cash_on_delivery' && (
                 <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -297,11 +306,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       <div className="px-5 py-4 border-t border-slate-100 space-y-3">
         {paymentMode === 'mobile_money' ? (
           <button
-            onClick={() => setStep('payment_details')}
+            onClick={() => setStep('availability_check')}
             disabled={!paymentInfo || loading}
-            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
-            Continuer → Voir les coordonnées
+            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-orange-200 active:scale-95 transition-all disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
+            Continuer → Vérifier la disponibilité
           </button>
         ) : (
           <button
@@ -322,6 +331,77 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   );
 
   // ── ÉTAPE 2 : Coordonnées paiement ─────────────────────
+  if (step === 'availability_check') return (
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
+      <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
+        <button onClick={() => setStep('recap')} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+        <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Disponibilité</h1>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+        {/* Article */}
+        <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-3xl">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0">
+            <img src={product.images?.[0]} alt={product.title} className="w-full h-full object-cover"/>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-slate-900 text-sm truncate">{product.title}</p>
+            <p className="text-green-600 font-black">{effectivePrice.toLocaleString('fr-FR')} FCFA</p>
+          </div>
+        </div>
+
+        {/* Avertissement sécurité */}
+        <div className="bg-orange-50 rounded-2xl p-4 border-2 border-orange-200">
+          <p className="text-[11px] font-black text-orange-900 mb-2">⚠️ Avant de payer — lisez attentivement</p>
+          <ul className="space-y-1.5">
+            {[
+              "Confirmez que le vendeur est disponible pour livrer.",
+              "Payez en avance uniquement si vous connaissez le vendeur ou lui faites confiance.",
+              "Brumerie ne rembourse pas en cas de litige au stade MVP.",
+              "En cas de doute, choisissez Payer à la livraison."
+            ].map((txt, i) => (
+              <li key={i} className="flex gap-2 text-[10px] text-orange-800 font-bold leading-snug">
+                <span className="flex-shrink-0">•</span>{txt}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Attente confirmation vendeur — ici on passe directement, le vendeur confirmera après */}
+        <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          <p className="text-[11px] font-black text-blue-900 mb-1">📋 Comment ça marche</p>
+          <p className="text-[10px] text-blue-800 font-bold leading-relaxed">
+            1. Tu passes ta commande<br/>
+            2. Le vendeur <strong>confirme la disponibilité</strong> dans les 24h<br/>
+            3. Seulement après sa confirmation, tu envoies le paiement<br/>
+            4. Tu envoies la preuve de paiement sur Brumerie
+          </p>
+        </div>
+
+        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Vendeur</p>
+          <p className="font-black text-slate-900 text-[13px]">{product.sellerName}</p>
+          <p className="text-[11px] text-slate-400 font-bold">{product.neighborhood}</p>
+        </div>
+      </div>
+
+      <div className="px-5 py-4 border-t border-slate-100 space-y-3">
+        <button
+          onClick={() => setStep('payment_details')}
+          className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-orange-200 active:scale-95 transition-all"
+          style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
+          J'ai compris — Continuer vers le paiement →
+        </button>
+        <button onClick={() => setStep('recap')}
+          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 bg-slate-50">
+          ← Retour
+        </button>
+      </div>
+    </div>
+  );
+
   if (step === 'payment_details') return (
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans">
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">

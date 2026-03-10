@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getGlobalSettings } from '@/services/adminService';
 import { SUPPORT_WHATSAPP } from '@/types';
+import { getAppConfig } from '@/services/appConfigService';
 
 interface VerificationPageProps { onBack: () => void; }
 
@@ -22,9 +23,21 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
   const handleActivate = () => {
     if (!userProfile) return;
-    const msg = `Bonjour Brumerie ! 👋\n\nJe veux activer le *Badge Vérifié* à ${verificationPrice.toLocaleString('fr-FR')} FCFA/mois.\n\n👤 Nom : ${userProfile.name}\n📧 Email : ${userProfile.email}\n📱 Tel : ${userProfile.phone || 'non renseigné'}`;
-    window.open(`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+    const config = getAppConfig();
+    const payLink = config.badgePaymentLink || '';
+    if (payLink) {
+      // Ouvre le lien de paiement (Wave, CinetPay, etc.)
+      window.open(payLink, '_blank');
+    }
     setSent(true);
+  };
+
+  const handleSendProof = () => {
+    if (!userProfile) return;
+    const config = getAppConfig();
+    const waNum = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
+    const msg = 'Bonjour Brumerie ! Je viens de payer le Badge Vérifié (' + verificationPrice.toLocaleString('fr-FR') + ' FCFA).\n\nVoici ma preuve de paiement en photo.\n\n👤 Nom : ' + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\n📱 App : ' + userProfile.uid;
+    window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
 
   const handleWaitlist = () => {
@@ -132,15 +145,26 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
               ) : tier === 'simple' ? (
                 <>
                   {sent ? (
-                    <div className="rounded-2xl py-4 text-center bg-slate-900">
-                      <p className="text-white font-black text-[11px] uppercase">📱 WhatsApp ouvert !</p>
-                      <p className="text-slate-400 text-[9px] mt-1">Envoie le message pour activer</p>
+                    <div className="space-y-3">
+                      <div className="rounded-2xl py-4 px-4 text-center bg-green-50 border-2 border-green-200">
+                        <p className="text-green-800 font-black text-[12px]">✅ Paiement lancé !</p>
+                        <p className="text-green-600 text-[10px] mt-1 font-bold">Après paiement, clique ci-dessous pour envoyer ta preuve à Brumerie</p>
+                      </div>
+                      <button onClick={handleSendProof}
+                        className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white active:scale-[0.98] transition-all"
+                        style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
+                        📸 Envoyer ma preuve de paiement
+                      </button>
+                      <button onClick={() => setSent(false)}
+                        className="w-full py-3 rounded-2xl font-bold text-[11px] text-slate-400 bg-slate-50">
+                        ← Recommencer
+                      </button>
                     </div>
                   ) : (
                     <button onClick={handleActivate}
                       className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white active:scale-[0.98] transition-all"
-                      style={{ background: '#1D9BF0', boxShadow: '0 10px 30px rgba(29,155,240,0.4)' }}>
-                      ACTIVER (1 MOIS OFFERT)
+                      style={{ background: 'linear-gradient(135deg,#1B5E20,#16A34A)', boxShadow: '0 10px 30px rgba(22,163,74,0.4)' }}>
+                      💳 PAYER {verificationPrice.toLocaleString('fr-FR')} FCFA
                     </button>
                   )}
                   <p className="text-center text-amber-500 font-black text-[10px]">✨ Cadeau : +30 jours gratuits !</p>

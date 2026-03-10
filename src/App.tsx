@@ -31,6 +31,7 @@ import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
 import { GuidePage } from '@/pages/GuidePage';
+import { DesktopSidebar } from '@/components/DesktopSidebar';
 import { AdminPage } from '@/pages/AdminPage';
 import { OnboardingScreen, useOnboarding } from '@/components/OnboardingScreen';
 import { ToastContainer } from '@/components/ToastNotification';
@@ -135,7 +136,7 @@ function AppShell() {
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', ...(isBuyer ? [] : ['sell' as Page])];
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])];
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const navigate = (page: Page) => {
@@ -357,6 +358,24 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
     }
   };
 
+  // Ouvrir le chat avec un vendeur depuis Stories / OrderStatus / etc.
+  const handleOpenChatWithSeller = async (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => {
+    if (!currentUser || !userProfile) return;
+    const { getOrCreateConversation } = await import('@/services/messagingService');
+    try {
+      const convId = await getOrCreateConversation(
+        currentUser.uid,
+        sellerId,
+        { id: productId || 'direct', title: productTitle || 'Contact direct', price: 0, image: '', neighborhood: '' },
+        userProfile.name,
+        sellerName,
+        userProfile.photoURL,
+        undefined,
+      );
+      await handleStartChat(convId);
+    } catch (e) { console.error('[Chat direct]', e); }
+  };
+
   const handleNavigate = (p: string) => {
     if (p === 'switch-to-seller' || p === 'switch-to-buyer') { setShowRoleSwitch(true); return; }
     if (p === 'orders') { setSelectedOrderId(''); navigate('order-status'); return; }
@@ -381,6 +400,7 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
             onProfileClick={() => navigate('profile')}
             onLogoClick={handleLogoClick}
             onNotificationsClick={() => navigate('notifications')}
+            onOpenChatWithSeller={handleOpenChatWithSeller}
           />
         )}
         {activePage === 'product-detail' && selectedProduct && (
@@ -471,7 +491,11 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
           />
         )}
         {activePage === 'order-status' && (
-          <OrderStatusPage orderId={selectedOrderId || undefined} onBack={goBack} />
+          <OrderStatusPage
+            orderId={selectedOrderId || undefined}
+            onBack={goBack}
+            onOpenChatWithSeller={handleOpenChatWithSeller}
+          />
         )}
         {activePage === 'referral' && (
           <ReferralPage onBack={goBack} />
@@ -500,10 +524,10 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
 
       {/* Toast double appui pour quitter ── */}
       {showExitConfirm && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
-          <div className="bg-slate-900/92 backdrop-blur-sm px-6 py-3.5 rounded-2xl flex items-center gap-3 shadow-2xl border border-white/10 animate-fade-up">
-            <span className="text-base">👋</span>
-            <p className="text-white text-[12px] font-bold whitespace-nowrap">Appuie encore pour quitter Brumerie</p>
+        <div className="fixed bottom-28 left-4 right-4 z-[999] pointer-events-none flex justify-center">
+          <div className="bg-slate-950 px-6 py-4 rounded-2xl flex items-center gap-3 shadow-2xl border-2 border-white/20">
+            <span className="text-xl">👋</span>
+            <p className="text-white text-[13px] font-black whitespace-nowrap tracking-tight">Appuie encore pour quitter</p>
           </div>
         </div>
       )}
@@ -602,7 +626,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <NetworkBanner />
-      <AuthProvider><AppContent /></AuthProvider>
+      {/* Layout desktop : sidebar gauche + app centrée */}
+      <div id="desktop-layout">
+        <DesktopSidebar />
+        <div id="desktop-app">
+          <AuthProvider><AppContent /></AuthProvider>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }

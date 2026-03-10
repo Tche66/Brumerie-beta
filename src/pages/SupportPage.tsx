@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendFeedbackViaEmail } from '@/services/productService';
 import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from '@/types';
+import { getAppConfig } from '@/services/appConfigService';
 
 interface SupportPageProps {
   onBack: () => void;
@@ -37,6 +38,9 @@ export function SupportPage({ onBack }: SupportPageProps) {
     window.open(`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  const config = getAppConfig();
+  const ytLink = config.youtubeChannel || 'https://youtube.com/@brumerie';
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-12 font-sans">
       {/* Header Premium */}
@@ -69,7 +73,7 @@ export function SupportPage({ onBack }: SupportPageProps) {
           </button>
 
           <a
-            href={`mailto:${SUPPORT_EMAIL}`}
+            href={`mailto:support@brumerie.com`}
             className="bg-white rounded-[2.5rem] p-6 text-center border border-slate-100 shadow-xl shadow-slate-200/50 active:scale-95 transition-all block"
           >
             <div className="w-14 h-14 mx-auto bg-slate-900 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-lg shadow-slate-200">
@@ -79,6 +83,22 @@ export function SupportPage({ onBack }: SupportPageProps) {
             <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">Sous 24h</p>
           </a>
         </div>
+
+        {/* YouTube */}
+        <a href={ytLink} target="_blank" rel="noopener noreferrer"
+          className="bg-white rounded-[2.5rem] p-5 flex items-center gap-4 border border-slate-100 shadow-xl shadow-slate-200/50 active:scale-95 transition-all block">
+          <div className="w-14 h-14 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 shadow-lg"
+            style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M23 7s-.3-2-1.2-2.7c-1.1-1.2-2.4-1.2-3-1.3C16.2 3 12 3 12 3s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.7c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.4 12 21.5 12 21.5s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.7 1.2-2.7 1.2-2.7s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l6.6 3.6-6.6 3.5z"/></svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-slate-900 text-[13px]">Tutoriels Vidéo</p>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Chaîne YouTube Brumerie</p>
+          </div>
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-slate-300">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </a>
 
         {/* FAQ Premium */}
         <div className="space-y-4">

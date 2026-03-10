@@ -26,6 +26,13 @@ export interface AppConfig {
   bannerMessage:       string;
   bannerColor:         string;   // 'green' | 'red' | 'orange'
 
+  // ── Liens & contacts configurables ─────────────────
+  badgePaymentLink?:   string;   // Lien de paiement badge vérifié (ex: Wave, CinetPay)
+  badgeWhatsappAfter?: string;   // Numéro WhatsApp pour preuve de paiement badge
+  youtubeChannel?:     string;   // Lien chaîne YouTube tutoriels
+  contactEmail?:       string;   // Email contact général
+  supportEmail?:       string;   // Email support
+
   // ── Meta ─────────────────────────────────────────────
   updatedAt?:          any;
   updatedBy?:          string;
@@ -45,6 +52,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   bannerEnabled:       false,
   bannerMessage:       '',
   bannerColor:         'green',
+  badgePaymentLink:    '',
+  badgeWhatsappAfter:  '2250586867693',
+  youtubeChannel:      '',
+  contactEmail:        'contact@brumerie.com',
+  supportEmail:        'support@brumerie.com',
 };
 
 // Callback appelé à chaque changement de config

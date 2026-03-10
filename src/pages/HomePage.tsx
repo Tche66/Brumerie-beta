@@ -25,6 +25,7 @@ interface HomePageProps {
   onProfileClick: () => void;
   onNotificationsClick?: () => void;
   onLogoClick?: () => void;
+  onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
 }
 
 
@@ -117,7 +118,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       <SystemBanner />
 
       {/* Stories — barre horizontale comme Instagram */}
-      <StoriesBar />
+      <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} />
 
       {/* Barre de filtres rapides */}
       <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none">

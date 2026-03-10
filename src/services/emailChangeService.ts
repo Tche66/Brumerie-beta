@@ -62,13 +62,13 @@ export async function applyEmailChange(newEmail: string, code: string, uid: stri
 }
 
 // Admin — changer l'email d'un user directement (sans mot de passe)
-export async function adminChangeEmail(targetUid: string, newEmail: string): Promise<{
+export async function adminChangeEmail(targetUid: string, newEmail: string, adminToken: string): Promise<{
   success: boolean; error?: string;
 }> {
   try {
     const res  = await fetch(API, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'admin_change_email', targetUid, newEmail }),
+      body: JSON.stringify({ action: 'admin_change_email', targetUid, newEmail, adminToken }),
     });
     const data = await res.json();
     if (data.result === 'success')     return { success: true };

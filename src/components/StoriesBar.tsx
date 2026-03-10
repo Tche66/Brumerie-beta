@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface StoriesBarProps {
   onSellerClick?: (sellerId: string) => void;
+  onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
 }
 
 // ── Visionneuse de story ──────────────────────────────────────
@@ -116,31 +117,33 @@ function StoryViewer({
           <div className="flex-1" onClick={() => { if (idx < stories.length - 1) setIdx(i => i + 1); else onClose(); }}/>
         </div>
 
-        {/* ── Boutons action en bas ── */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-2"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28 }}>
-          {story.productRef ? (
-            <>
+        {/* ── Boutons action en bas (masqués si c'est ta propre story) ── */}
+        {story.sellerId !== currentUserId && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-2"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28 }}>
+            {story.productRef ? (
+              <>
+                <button
+                  onClick={() => { onClose(); onOrder?.(story); }}
+                  className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+                  🛍️ Commander
+                </button>
+                <button
+                  onClick={() => { onClose(); onOffer?.(story); }}
+                  className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
+                  💬 Faire une offre
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => { onClose(); onOrder?.(story); }}
-                className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
-                style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
-                🛍️ Commander
-              </button>
-              <button
-                onClick={() => { onClose(); onOffer?.(story); }}
+                onClick={() => { onClose(); onContact?.(story.sellerId, story.sellerName); }}
                 className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
-                💬 Faire une offre
+                💬 Contacter le vendeur
               </button>
-            </>
-          ) : (
-            <button
-              onClick={() => { onClose(); onContact?.(story.sellerId, story.sellerName); }}
-              className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
-              💬 Contacter le vendeur
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -241,7 +244,7 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
 }
 
 // ── Composant principal ───────────────────────────────────────
-export function StoriesBar({ onSellerClick }: StoriesBarProps) {
+export function StoriesBar({ onSellerClick, onOpenChatWithSeller }: StoriesBarProps) {
   const { currentUser, userProfile } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
   const [viewerStories, setViewerStories] = useState<Story[] | null>(null);
@@ -313,18 +316,20 @@ export function StoriesBar({ onSellerClick }: StoriesBarProps) {
           onOrder={(story) => {
             setViewerStories(null);
             if (story.productRef) {
-              onSellerClick?.(story.sellerId);
+              onOpenChatWithSeller?.(story.sellerId, story.sellerName,
+                story.productRef.id, story.productRef.title);
             }
           }}
           onOffer={(story) => {
             setViewerStories(null);
             if (story.productRef) {
-              onSellerClick?.(story.sellerId);
+              onOpenChatWithSeller?.(story.sellerId, story.sellerName,
+                story.productRef.id, story.productRef.title);
             }
           }}
-          onContact={(sellerId) => {
+          onContact={(sellerId, sellerName) => {
             setViewerStories(null);
-            onSellerClick?.(sellerId);
+            onOpenChatWithSeller?.(sellerId, sellerName);
           }}
         />
       )}

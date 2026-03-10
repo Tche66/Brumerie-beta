@@ -163,7 +163,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, isGuest, o
                 { name: 'Twitter', ico: '🐦', color: '#1DA1F2', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Découvre ${seller.name} sur Brumerie 🛍`)}&url=${encodeURIComponent(profileUrl)}` },
                 { name: 'Telegram', ico: '✈️', color: '#0088CC', url: `https://t.me/share/url?url=${encodeURIComponent(profileUrl)}&text=${encodeURIComponent(`Boutique ${seller.name} sur Brumerie`)}` },
               ].map(s => (
-                <a key={s.name} href={s.url} target="_blank" rel="noreferrer"
+                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center gap-1.5 p-3 rounded-2xl active:scale-95 transition-all"
                   style={{ background: `${s.color}15` }}>
                   <span className="text-2xl">{s.ico}</span>

@@ -41,6 +41,12 @@ const PlusIcon = () => (
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
+const SettingsIcon = (active: boolean, color: string) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? color : '#94A3B8'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
 
 function NavBtn({ id, label, icon, active, onClick, badge }: {
   id: string; label: string; icon: React.ReactNode;
@@ -102,13 +108,13 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
           }
         />
 
-        {/* PROFIL / BOUTIQUE */}
+        {/* PARAMÈTRES */}
         <NavBtn
-          id="profile"
-          label={isBuyer ? 'Profil' : 'Boutique'}
-          active={activePage === 'profile'}
-          onClick={() => onNavigate('profile')}
-          icon={ProfileIcon(activePage === 'profile', isBuyer ? CB : C)}
+          id="settings"
+          label="Paramètres"
+          active={activePage === 'settings'}
+          onClick={() => onNavigate('settings')}
+          icon={SettingsIcon(activePage === 'settings', isBuyer ? CB : C)}
         />
       </div>
       <div className="h-safe-area-inset-bottom"/>

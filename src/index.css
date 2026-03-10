@@ -234,3 +234,117 @@ h1, h2, h3, h4, .font-title {
 
 /* ── Mode sombre Sprint 8 ── */
 /* Dark mode supprimé */
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE DESKTOP — Brumerie
+   Sur écrans >= 768px : app centrée façon "téléphone
+   dans le navigateur" avec fond décoratif et sidebar
+   ══════════════════════════════════════════════════════ */
+
+/* Fond du bureau (visible seulement sur desktop) */
+@media (min-width: 768px) {
+  html, body {
+    background: #0d1117;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 30%, rgba(22,163,74,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 70%, rgba(17,94,46,0.10) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(30,41,59,0.8) 0%, transparent 100%);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Grille de points décorative */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Conteneur principal = smartphone centré */
+  #root {
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    position: relative;
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 30px 120px rgba(0,0,0,0.7),
+      0 0 60px rgba(22,163,74,0.08);
+  }
+
+  /* NetworkBanner doit couvrir toute la largeur #root */
+  #root > * { max-width: 480px; }
+
+  /* Sidebar cachée sur tablette — visible seulement >= 1100px */
+  #desktop-sidebar { display: none; }
+  #desktop-layout { display: block; }
+  #desktop-app { width: 100%; }
+}
+
+/* Desktop large ≥ 1100px : layout 2 colonnes
+   Gauche = panneau info décoratif | Droite = app */
+@media (min-width: 1100px) {
+  #desktop-layout {
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+  }
+
+  #desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 48px 48px 48px 24px;
+    width: 340px;
+    flex-shrink: 0;
+  }
+
+  #desktop-app {
+    width: 480px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  #root {
+    margin: 0;
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 1099px) {
+  #desktop-sidebar { display: none; }
+}
+
+/* Animation d'entrée de l'app sur desktop */
+@media (min-width: 768px) {
+  #root {
+    animation: desktopAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes desktopAppear {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Page slide-in — garder l'animation mobile */
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
