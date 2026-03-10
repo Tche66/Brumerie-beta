@@ -9,8 +9,6 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -102,18 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-
-    // Détecter mobile (Android / iOS) — utiliser redirect systématiquement
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
-
-    if (isMobile || isCapacitor) {
-      // Mobile → redirect (plus fiable que popup sur Chrome Android)
-      await signInWithRedirect(auth, provider);
-      return; // La page se recharge, résultat capturé dans getRedirectResult
-    }
-
-    // Desktop → popup
+    // signInWithPopup fonctionne sur Chrome Android (onglet séparé)
+    // signInWithRedirect est évité car il casse sur Vercel (authDomain cross-origin)
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }
@@ -204,39 +192,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Auth state + redirect Google (combiné pour éviter race condition) ─
+  // ── Auth state ───────────────────────────────────────────────
   useEffect(() => {
-    let resolved = false;
-
-    // D'abord capturer un éventuel redirect Google en cours
-    getRedirectResult(auth).then(async (result) => {
-      if (result?.user) {
-        // Nouvelle connexion Google via redirect → créer profil si besoin
-        await handleGoogleUser(result.user);
-      }
-    }).catch(() => {
-      // Pas de redirect → silencieux
-    }).finally(() => {
-      // Ensuite écouter les changements d'état auth normalement
-      if (!resolved) {
-        const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-          setCurrentUser(user);
-          if (user) await loadUserProfile(user.uid);
-          else setUserProfile(null);
-          setLoading(false);
-        });
-        resolved = true;
-        // Cleanup
-        (window as any).__brumeAuthUnsub = unsub;
-      }
+    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+      setCurrentUser(user);
+      if (user) await loadUserProfile(user.uid);
+      else setUserProfile(null);
+      setLoading(false);
     });
-
-    return () => {
-      resolved = true;
-      (window as any).__brumeAuthUnsub?.();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return unsub;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value: AuthContextType = {
     currentUser, userProfile, loading,
