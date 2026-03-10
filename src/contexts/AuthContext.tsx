@@ -98,12 +98,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // ── Connexion Google ────────────────────────────────────────
-  // On utilise TOUJOURS signInWithPopup (web + mobile Chrome)
-  // signInWithRedirect provoque un rechargement de page qui réinitialise
-  // l'état React (showAuth=false) → l'utilisateur reste en mode visiteur
+  // Popup sur desktop, Redirect sur mobile (popup bloquée par Chrome Android)
+  // Le bug de state après redirect est résolu via sessionStorage dans App.tsx
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Avant le redirect, marquer que l'auth est en cours
+      sessionStorage.setItem('brumerie_show_auth', '1');
+      await signInWithRedirect(auth, provider);
+      return; // la page recharge — getRedirectResult dans useEffect prend le relais
+    }
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }
@@ -205,14 +211,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
+          // ⚠️ Poser le flag AVANT l'await pour que onAuthStateChanged le voit
           googleRedirectHandled = true;
           await handleGoogleUser(result.user);
+          // Nettoyer le flag sessionStorage maintenant que c'est géré
+          sessionStorage.removeItem('brumerie_show_auth');
         }
       } catch (e: any) {
-        // Erreurs courantes : popup bloquée, redirect annulée → pas critique
         if (e?.code !== 'auth/cancelled-popup-request' && e?.code !== 'auth/popup-closed-by-user') {
           console.error('[Auth] getRedirectResult error:', e?.code, e?.message);
         }
+        // En cas d'erreur de redirect, nettoyer aussi
+        sessionStorage.removeItem('brumerie_show_auth');
       }
 
       // 2) Écouter les changements d'état
