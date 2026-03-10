@@ -217,7 +217,7 @@ export async function markReadyToDeliver(orderId: string): Promise<string> {
     sellerId: order.sellerId,
     sellerMsg: {
       title: '🔐 Code de livraison généré',
-      body: 'Ton code : ' + deliveryCode + ' — Donne-le à l'acheteur UNIQUEMENT à la livraison.',
+      body: \`Ton code : \${deliveryCode} — Remets ce code à l'acheteur à la livraison uniquement.\`,
       convData: { orderId, productId: order.productId },
     },
     buyerId: order.buyerId,
@@ -241,7 +241,7 @@ export async function validateDeliveryCode(
   const order = { id: snap.id, ...snap.data() } as Order;
 
   if (order.status !== 'ready') {
-    return { success: false, error: 'La commande n'est pas encore prête à être livrée' };
+    return { success: false, error: 'Commande non prête pour la livraison' };
   }
 
   if (!order.deliveryCode) {
