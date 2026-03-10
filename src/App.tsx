@@ -135,7 +135,7 @@ function AppShell() {
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])];
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings'];
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const navigate = (page: Page) => {

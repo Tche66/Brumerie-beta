@@ -18,11 +18,15 @@ export async function getAdminStats(): Promise<{
   totalBoostRevenue: number;
   totalVerifRevenue: number;
   newUsersToday: number;
+  newUsersThisWeek: number;
   newProductsToday: number;
 }> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const todayTs = Timestamp.fromDate(today);
+  // Fenêtre 7 jours pour fallback si createdAt absent sur anciens comptes
+  const week = new Date(today); week.setDate(week.getDate() - 7);
+  const weekTs = Timestamp.fromDate(week);
 
   const [users, products, orders, boosts] = await Promise.all([
     getDocs(collection(db, 'users')),
@@ -50,8 +54,18 @@ export async function getAdminStats(): Promise<{
     totalOrders: orders.size,
     totalBoostRevenue,
     totalVerifRevenue: verifiedCount * 1000,
-    newUsersToday: usersData.filter(u => u.createdAt?.toMillis?.() > todayTs.toMillis()).length,
-    newProductsToday: productsData.filter(p => p.createdAt?.toMillis?.() > todayTs.toMillis()).length,
+    newUsersToday: usersData.filter(u => {
+      const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
+      return ms !== null && ms > todayTs.toMillis();
+    }).length,
+    newProductsToday: productsData.filter(p => {
+      const ms = p.createdAt?.toMillis?.() ?? (p.createdAt?.seconds ? p.createdAt.seconds * 1000 : null);
+      return ms !== null && ms > todayTs.toMillis();
+    }).length,
+    newUsersThisWeek: usersData.filter(u => {
+      const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
+      return ms !== null && ms > weekTs.toMillis();
+    }).length,
   };
 }
 

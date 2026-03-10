@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface StoriesBarProps {
   onSellerClick?: (sellerId: string) => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
+  onRequestPublish?: () => void;
 }
 
 // ── Visionneuse de story ──────────────────────────────────────
@@ -205,7 +206,7 @@ function StoryViewer({
 }
 
 // ── Modal publication story ───────────────────────────────────
-function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPublished: () => void }) {
+export function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPublished: () => void }) {
   const { currentUser, userProfile } = useAuth();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -300,12 +301,11 @@ function PublishStoryModal({ onClose, onPublished }: { onClose: () => void; onPu
 }
 
 // ── Composant principal ───────────────────────────────────────
-export function StoriesBar({ onSellerClick, onOpenChatWithSeller }: StoriesBarProps) {
+export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPublish }: StoriesBarProps) {
   const { currentUser, userProfile } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
   const [viewerStories, setViewerStories] = useState<Story[] | null>(null);
   const [viewerStart, setViewerStart] = useState(0);
-  const [showPublish, setShowPublish] = useState(false);
 
   const isVerifiedSeller = userProfile?.role === 'seller' && userProfile?.isVerified;
 
@@ -328,7 +328,7 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller }: StoriesBarPr
 
           {/* Bouton "Ajouter" — vendeurs vérifiés seulement */}
           {isVerifiedSeller && (
-            <button onClick={() => setShowPublish(true)}
+            <button onClick={() => onRequestPublish?.()}
               className="flex flex-col items-center gap-1.5 flex-shrink-0 active:scale-95 transition-all">
               <div className="w-14 h-14 rounded-full border-2 border-dashed border-green-400 flex items-center justify-center bg-green-50">
                 <span className="text-green-600 text-2xl font-black">+</span>
@@ -390,13 +390,7 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller }: StoriesBarPr
         />
       )}
 
-      {/* Modal publication */}
-      {showPublish && (
-        <PublishStoryModal
-          onClose={() => setShowPublish(false)}
-          onPublished={() => { setShowPublish(false); }}
-        />
-      )}
+
     </>
   );
 }

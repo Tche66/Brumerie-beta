@@ -75,7 +75,7 @@ export function playMessageSound(): void {
 
     // === IMPACT INITIAL (la pièce touche le sol) ===
     // Bruit d'impact court et fort
-    playNoise(ctx, t, 0.08, 0.35, 3500);
+    playNoise(ctx, t, 0.08, 0.55, 3500);
 
     // Tonalité métallique de la pièce — fréquence qui descend rapidement
     const coinOsc = ctx.createOscillator();
@@ -87,7 +87,7 @@ export function playMessageSound(): void {
     coinOsc.frequency.exponentialRampToValueAtTime(1800, t + 0.15);
     coinOsc.frequency.exponentialRampToValueAtTime(900, t + 0.35);
     coinGain.gain.setValueAtTime(0, t);
-    coinGain.gain.linearRampToValueAtTime(0.45, t + 0.005);
+    coinGain.gain.linearRampToValueAtTime(0.85, t + 0.005);
     coinGain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
     coinOsc.start(t);
     coinOsc.stop(t + 0.5);
@@ -101,32 +101,32 @@ export function playMessageSound(): void {
     coinOsc2.frequency.setValueAtTime(8400, t);
     coinOsc2.frequency.exponentialRampToValueAtTime(3200, t + 0.2);
     coinGain2.gain.setValueAtTime(0, t);
-    coinGain2.gain.linearRampToValueAtTime(0.20, t + 0.005);
+    coinGain2.gain.linearRampToValueAtTime(0.45, t + 0.005);
     coinGain2.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
     coinOsc2.start(t);
     coinOsc2.stop(t + 0.35);
 
     // === REBOND 1 (plus court, plus aigu) ===
     const r1 = t + 0.50;
-    playNoise(ctx, r1, 0.05, 0.18, 4000);
-    playNote(ctx, 3800, r1, 0.25, 0.28, 'sine');
-    playNote(ctx, 7200, r1, 0.18, 0.12, 'triangle');
+    playNoise(ctx, r1, 0.05, 0.38, 4000);
+    playNote(ctx, 3800, r1, 0.25, 0.55, 'sine');
+    playNote(ctx, 7200, r1, 0.18, 0.28, 'triangle');
 
     // === REBOND 2 ===
     const r2 = t + 0.82;
-    playNoise(ctx, r2, 0.04, 0.10, 4500);
-    playNote(ctx, 4100, r2, 0.20, 0.18, 'sine');
-    playNote(ctx, 8200, r2, 0.12, 0.08, 'triangle');
+    playNoise(ctx, r2, 0.04, 0.28, 4500);
+    playNote(ctx, 4100, r2, 0.20, 0.40, 'sine');
+    playNote(ctx, 8200, r2, 0.12, 0.20, 'triangle');
 
     // === REBOND 3 ===
     const r3 = t + 1.06;
-    playNoise(ctx, r3, 0.03, 0.07, 5000);
-    playNote(ctx, 4400, r3, 0.15, 0.11, 'sine');
+    playNoise(ctx, r3, 0.03, 0.22, 5000);
+    playNote(ctx, 4400, r3, 0.15, 0.30, 'sine');
 
     // === REBOND 4 (presque inaudible) ===
     const r4 = t + 1.26;
-    playNoise(ctx, r4, 0.02, 0.05, 5200);
-    playNote(ctx, 4600, r4, 0.10, 0.06, 'sine');
+    playNoise(ctx, r4, 0.02, 0.16, 5200);
+    playNote(ctx, 4600, r4, 0.10, 0.20, 'sine');
 
     // === GLISSEMENT FINAL — la pièce tourne sur elle-même ===
     // Tremolo rapide qui ralentit (effet "spinning coin")
@@ -150,9 +150,9 @@ export function playMessageSound(): void {
     spinLfo.type = 'sine';
     spinLfo.frequency.setValueAtTime(28, spinStart);   // 28Hz = très rapide
     spinLfo.frequency.exponentialRampToValueAtTime(4, spinStart + spinDuration); // ralentit
-    spinLfoGain.gain.value = 0.04;
+    spinLfoGain.gain.value = 0.10;
 
-    spinGain.gain.setValueAtTime(0.06, spinStart);
+    spinGain.gain.setValueAtTime(0.18, spinStart);
     spinGain.gain.exponentialRampToValueAtTime(0.001, spinStart + spinDuration);
 
     spinLfo.start(spinStart);

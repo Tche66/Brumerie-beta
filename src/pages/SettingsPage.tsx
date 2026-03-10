@@ -97,9 +97,9 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
   };
 
   return (
-    <div className="min-h-full bg-slate-50/50 pb-12 font-sans">
+    <div className="fixed inset-0 bg-slate-50/50 font-sans flex flex-col" style={{ height: '100dvh' }}>
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
+      <div className="bg-white/90 backdrop-blur-md px-6 py-5 flex items-center gap-4 border-b border-slate-100 flex-shrink-0">
         <button onClick={onBack}
           className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         <h1 className="font-bold text-sm uppercase tracking-widest text-slate-900">Paramètres</h1>
       </div>
 
-      <div className="px-5 pt-8">
+      <div className="flex-1 overflow-y-auto"><div className="px-5 pt-8">
 
         {/* Carte profil cliquable */}
         <button onClick={() => onNavigate('profile')}
@@ -288,14 +288,6 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           />
         </SettingSection>
 
-        {/* Déconnexion */}
-        <div className="mt-6 px-2">
-          <button onClick={() => setShowSignOutModal(true)}
-            className="w-full py-5 rounded-[2rem] bg-red-50 border-2 border-red-100 text-red-500 font-black uppercase tracking-[0.2em] text-[11px] active:scale-95 transition-all">
-            Se déconnecter
-          </button>
-        </div>
-
         <p className="text-center text-[9px] font-black text-slate-300 mt-10 mb-4 uppercase tracking-[0.3em]">
           Brumerie ® 2025 · Abidjan 
         </p>
@@ -309,6 +301,14 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             </button>
           </div>
         )}
+      </div></div>
+
+      {/* Bouton déconnexion — toujours visible */}
+      <div className="flex-shrink-0 px-4 py-4 bg-white border-t border-slate-100">
+        <button onClick={() => setShowSignOutModal(true)}
+          className="w-full py-5 rounded-[2rem] bg-red-50 border-2 border-red-100 text-red-500 font-black uppercase tracking-[0.2em] text-[11px] active:scale-95 transition-all">
+          Se déconnecter
+        </button>
       </div>
 
       <ConfirmModal

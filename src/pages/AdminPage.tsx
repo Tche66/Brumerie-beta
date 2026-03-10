@@ -142,7 +142,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
         console.error('AdminStats error:', err);
         setStats({ totalUsers:0, totalSellers:0, verifiedSellers:0, totalProducts:0,
           activeProducts:0, totalOrders:0, totalBoostRevenue:0, totalVerifRevenue:0,
-          newUsersToday:0, newProductsToday:0 });
+          newUsersToday:0, newUsersThisWeek:0, newProductsToday:0 });
       });
     getGlobalSettings()
       .then(s => { setGlobalSettings(s || {}); setSettingsDraft(s || {}); })
@@ -341,7 +341,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <StatCard label="Utilisateurs" value={fmt(stats.totalUsers)} sub={`+${stats.newUsersToday} aujourd'hui`} color="text-blue-600"/>
+              <StatCard label="Utilisateurs" value={fmt(stats.totalUsers)} sub={stats.newUsersToday > 0 ? `+${stats.newUsersToday} aujourd'hui` : `+${stats.newUsersThisWeek ?? 0} cette semaine`} color="text-blue-600"/>
               <StatCard label="Vendeurs" value={fmt(stats.totalSellers)} sub={`${stats.verifiedSellers} vérifiés`} color="text-green-600"/>
               <StatCard label="Articles" value={fmt(stats.totalProducts)} sub={`${stats.activeProducts} actifs`} color="text-slate-800"/>
               <StatCard label="Commandes" value={fmt(stats.totalOrders)} sub={`${disputeCount} litiges`} color="text-purple-600"/>
