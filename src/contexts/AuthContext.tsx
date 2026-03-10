@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -100,8 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    // signInWithPopup fonctionne sur Chrome Android (onglet séparé)
-    // signInWithRedirect est évité car il casse sur Vercel (authDomain cross-origin)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // Chrome Android bloque signInWithPopup → on utilise redirect
+      await signInWithRedirect(auth, provider);
+      // La page recharge → résultat capturé dans onAuthStateChanged via getRedirectResult
+      return;
+    }
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }
@@ -192,37 +199,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Auth state ───────────────────────────────────────────────
+  // ── Auth state + redirect Google ────────────────────────────
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      setCurrentUser(user);
-      if (user) {
-        // Charger le profil — si absent (nouvel user Google) → créer automatiquement
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.isBanned) {
-            await firebaseSignOut(auth);
-            setUserProfile(null);
-            sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
+    // Intercepter d'abord le résultat d'un éventuel redirect Google
+    // AVANT d'écouter onAuthStateChanged pour éviter la race condition
+    const init = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          // Redirect Google réussi → créer/charger profil immédiatement
+          await handleGoogleUser(result.user);
+        }
+      } catch (e) {
+        // Pas de redirect en cours, continuer normalement
+      }
+
+      // Ensuite écouter les changements d'état
+      const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+        setCurrentUser(user);
+        if (user) {
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.isBanned) {
+              await firebaseSignOut(auth);
+              setUserProfile(null);
+              sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
+            } else {
+              setUserProfile({ ...data, bookmarkedProductIds: data.bookmarkedProductIds || [] } as User);
+            }
           } else {
-            setUserProfile({ ...data, bookmarkedProductIds: data.bookmarkedProductIds || [] } as User);
+            // Profil absent → user Google sans profil → créer
+            const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
+            if (isGoogle) await handleGoogleUser(user);
+            else await loadUserProfile(user.uid);
           }
         } else {
-          // Pas de profil → probablement connexion Google sans profil créé
-          const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
-          if (isGoogle) {
-            await handleGoogleUser(user);
-          }
-          // Recharger après création
-          await loadUserProfile(user.uid);
+          setUserProfile(null);
         }
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-    return unsub;
+        setLoading(false);
+      });
+
+      return unsub;
+    };
+
+    let unsub: (() => void) | undefined;
+    init().then(fn => { unsub = fn; });
+    return () => { unsub?.(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value: AuthContextType = {
