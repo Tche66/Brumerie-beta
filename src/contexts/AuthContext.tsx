@@ -205,20 +205,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // AVANT d'écouter onAuthStateChanged pour éviter la race condition
     const init = async () => {
       try {
+        console.log('[Auth] getRedirectResult START');
         const result = await getRedirectResult(auth);
+        console.log('[Auth] getRedirectResult result:', result?.user?.uid || 'null');
         if (result?.user) {
-          // Redirect Google réussi → créer/charger profil immédiatement
+          console.log('[Auth] Google redirect user found:', result.user.email);
           await handleGoogleUser(result.user);
+          console.log('[Auth] handleGoogleUser done');
         }
-      } catch (e) {
-        // Pas de redirect en cours, continuer normalement
+      } catch (e: any) {
+        console.error('[Auth] getRedirectResult error:', e?.code, e?.message);
       }
 
       // Ensuite écouter les changements d'état
       const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+        console.log('[Auth] onAuthStateChanged fired, user:', user?.uid || 'null', 'provider:', user?.providerData?.[0]?.providerId);
         setCurrentUser(user);
         if (user) {
           const snap = await getDoc(doc(db, 'users', user.uid));
+          console.log('[Auth] Firestore profile exists:', snap.exists());
           if (snap.exists()) {
             const data = snap.data();
             if (data.isBanned) {
