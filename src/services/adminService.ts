@@ -5,6 +5,7 @@ import {
   limit, startAfter, QueryDocumentSnapshot, Timestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { syncSellerDataToProducts } from './productService';
 
 // ─── STATISTIQUES ─────────────────────────────────────────────
 export async function getAdminStats(): Promise<{
@@ -102,6 +103,8 @@ export async function forceVerifyUser(userId: string, adminUid: string): Promise
     verifiedByAdmin: adminUid,
     verifiedAt: serverTimestamp(),
   });
+  // Propager le badge vérifié sur tous les produits existants
+  try { await syncSellerDataToProducts(userId, { sellerVerified: true }); } catch {}
 }
 
 export async function revokeVerification(userId: string): Promise<void> {
@@ -109,6 +112,8 @@ export async function revokeVerification(userId: string): Promise<void> {
     isVerified: false,
     verifiedUntil: null,
   });
+  // Retirer le badge vérifié de tous les produits existants
+  try { await syncSellerDataToProducts(userId, { sellerVerified: false }); } catch {}
 }
 
 // ─── PRODUITS ─────────────────────────────────────────────────

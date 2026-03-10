@@ -14,6 +14,7 @@ import {
   Timestamp,
   increment,
   orderBy,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -294,5 +295,43 @@ export async function updateProduct(
   } catch (error) {
     console.error('Erreur updateProduct:', error);
     throw error;
+  }
+}
+
+// ── Sync données vendeur sur tous ses produits ──────────────
+// À appeler après : changement de nom, photo, badge vérifié (gain ou perte)
+export async function syncSellerDataToProducts(
+  sellerId: string,
+  data: {
+    sellerName?: string;
+    sellerPhoto?: string;
+    sellerVerified?: boolean;
+    sellerPremium?: boolean;
+  }
+): Promise<void> {
+  // Récupérer tous les produits actifs du vendeur
+  const q = query(
+    collection(db, 'products'),
+    where('sellerId', '==', sellerId),
+    where('status', 'in', ['active', 'sold']),
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return;
+
+  // Filtrer les champs définis uniquement
+  const updatePayload: Record<string, any> = {};
+  if (data.sellerName     !== undefined) updatePayload.sellerName     = data.sellerName;
+  if (data.sellerPhoto    !== undefined) updatePayload.sellerPhoto    = data.sellerPhoto;
+  if (data.sellerVerified !== undefined) updatePayload.sellerVerified = data.sellerVerified;
+  if (data.sellerPremium  !== undefined) updatePayload.sellerPremium  = data.sellerPremium;
+  if (Object.keys(updatePayload).length === 0) return;
+
+  // Batch write (max 500 docs par batch — limite Firestore)
+  const BATCH_SIZE = 400;
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    docs.slice(i, i + BATCH_SIZE).forEach(d => batch.update(d.ref, updatePayload));
+    await batch.commit();
   }
 }

@@ -39,7 +39,6 @@ import { subscribeToNotifications } from '@/services/notificationService';
 import { playMessageSound, playSystemSound, unlockAudio } from '@/services/soundService';
 import { GuestShell } from '@/components/GuestShell';
 import { PushNotifPrompt } from '@/components/PushNotifPrompt';
-import { OnboardingGuide } from '@/components/OnboardingGuide';
 import { NetworkBanner } from '@/components/NetworkBanner';
 
 type Page =
@@ -384,7 +383,6 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
             onNotificationsClick={() => navigate('notifications')}
           />
         )}
-        {activePage === 'home' && <OnboardingGuide page="home" userId={currentUser?.uid} />}
         {activePage === 'product-detail' && selectedProduct && (
           <ProductDetailPage
             product={selectedProduct} onBack={goBack}
@@ -403,7 +401,6 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
         {activePage === 'profile' && !isBuyer && (
           <ProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />
         )}
-        {activePage === 'profile' && <OnboardingGuide page="profile" userId={currentUser?.uid} />}
         {activePage === 'messages' && (
           <ConversationsListPage onOpenConversation={handleOpenConversation} />
         )}
@@ -451,7 +448,6 @@ useEffect(() => { window.scrollTo(0, 0); }, [activePage, selectedProduct]);
         {activePage === 'sell' && !isBuyer && (
           <SellPage onClose={() => handleBottomNavNavigate('home')} onSuccess={() => handleBottomNavNavigate('home')} />
         )}
-        {activePage === 'sell' && !isBuyer && <OnboardingGuide page="sell" userId={currentUser?.uid} />}
         {activePage === 'notifications' && (
           <NotificationsPage
             onBack={goBack}

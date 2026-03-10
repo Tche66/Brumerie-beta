@@ -3,6 +3,7 @@ import {
   doc, getDoc, updateDoc, collection, query, where, getDocs, increment, limit
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { syncSellerDataToProducts } from './productService';
 import { REFERRAL_REWARDS } from '@/types';
 
 // ── Générer un code unique basé sur le nom + 4 chars aléatoires ──
@@ -84,6 +85,10 @@ export async function applyReferral(newUserId: string, referralCode: string): Pr
       }
     }
     await updateDoc(referrerRef, updateData);
+    // Si le badge vient d'être accordé par parrainage, propager sur les produits
+    if (updateData.isVerified) {
+      try { await syncSellerDataToProducts(referrerId, { sellerVerified: true }); } catch {}
+    }
   } catch (e) {
     // Règles Firestore bloquent l'update du parrain → sera recalculé via recalculateReferralCount
     console.warn('[Referral] Update parrain bloqué (règles Firestore), sera recalculé:', e);

@@ -217,7 +217,7 @@ export async function markReadyToDeliver(orderId: string): Promise<string> {
     sellerId: order.sellerId,
     sellerMsg: {
       title: '🔐 Code de livraison généré',
-      body: \`Ton code : \${deliveryCode} — Remets ce code à l'acheteur à la livraison uniquement.\`,
+      body: 'Ton code : ' + deliveryCode + ' — Remets ce code a l acheteur a la livraison.',
       convData: { orderId, productId: order.productId },
     },
     buyerId: order.buyerId,

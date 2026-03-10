@@ -150,6 +150,17 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
       }
 
       await updateDoc(doc(db, 'users', currentUser.uid), updateData);
+
+      // Sync nom + photo sur tous les produits existants du vendeur
+      if (isSeller) {
+        try {
+          await syncSellerDataToProducts(currentUser.uid, {
+            sellerName: name.trim(),
+            sellerPhoto: photoURL,
+          });
+        } catch (e) { console.warn('[EditProfile] sync produits échoué', e); }
+      }
+
       await refreshUserProfile();
       onSaved();
     } catch (err: any) {
