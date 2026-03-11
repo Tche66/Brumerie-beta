@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -31,19 +33,22 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }
+
+// ─── Clé sessionStorage pour survivre au rechargement post-redirect ───────────
+const SK_GOOGLE = 'brumerie_google_redirect';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile]  = useState<User | null>(null);
-  const [loading, setLoading]          = useState(true);
+  // loading démarre à true SI on attend un redirect Google OU si Firebase charge
+  const [loading, setLoading] = useState(true);
 
-  // ── Charger profil Firestore ─────────────────────────────────
+  // ── Charger profil ──────────────────────────────────────────
   const loadUserProfile = useCallback(async (uid: string): Promise<boolean> => {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
@@ -51,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = snap.data();
       if (data.isBanned) {
         await firebaseSignOut(auth);
-        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
+        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
         return false;
       }
       setUserProfile({
@@ -67,23 +72,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch { return false; }
   }, []); // eslint-disable-line
 
-  // ── Créer ou charger un compte Google ───────────────────────
+  // ── Créer ou charger profil Google ──────────────────────────
   const handleGoogleUser = useCallback(async (user: FirebaseUser) => {
     const exists = await loadUserProfile(user.uid);
     if (!exists) {
       const newUser: User = {
         id: user.uid, uid: user.uid,
-        email:        user.email        || '',
-        name:         user.displayName  || '',
-        phone:        '',
-        role:         'buyer',
-        neighborhood: '',
-        isVerified:   false,
-        photoURL:     user.photoURL     || '',
+        email: user.email || '', name: user.displayName || '',
+        phone: '', role: 'buyer', neighborhood: '',
+        isVerified: false, photoURL: user.photoURL || '',
         bookmarkedProductIds: [],
-        createdAt:    serverTimestamp() as any,
-        publicationCount: 0,
-        publicationLimit: 50,
+        createdAt: serverTimestamp() as any,
+        publicationCount: 0, publicationLimit: 50,
       };
       await setDoc(doc(db, 'users', user.uid), newUser);
       setUserProfile(newUser);
@@ -92,28 +92,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [loadUserProfile]);
 
-  // ── Inscription email ────────────────────────────────────────
+  // ── Inscription ─────────────────────────────────────────────
   async function signUp(email: string, password: string, userData: Partial<User> & { referredBy?: string }) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid  = cred.user.uid;
+    const { user } = await createUserWithEmailAndPassword(auth, email, password);
     const newUser: User = {
-      id: uid, uid, email,
-      name:         userData.name         || '',
-      phone:        userData.phone        || '',
-      role:         userData.role         || 'buyer',
-      neighborhood: userData.neighborhood || '',
-      isVerified:   false,
-      bookmarkedProductIds: [],
-      createdAt:    serverTimestamp() as any,
-      publicationCount: 0,
-      publicationLimit: 50,
+      id: user.uid, uid: user.uid, email,
+      name: userData.name || '', phone: userData.phone || '',
+      role: userData.role || 'buyer', neighborhood: userData.neighborhood || '',
+      isVerified: false, bookmarkedProductIds: [],
+      createdAt: serverTimestamp() as any,
+      publicationCount: 0, publicationLimit: 50,
       ...(userData.referredBy ? { referredByCode: userData.referredBy } : {}),
     };
-    await setDoc(doc(db, 'users', uid), newUser);
+    await setDoc(doc(db, 'users', user.uid), newUser);
     setUserProfile(newUser);
-    await ensureReferralCode(uid, userData.name || '');
+    await ensureReferralCode(user.uid, userData.name || '');
     if (userData.referredBy) {
-      try { await applyReferral(uid, userData.referredBy); } catch {}
+      try { await applyReferral(user.uid, userData.referredBy); } catch {}
     }
     sendWelcomeEmail(email, userData.name || '');
   }
@@ -122,53 +117,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   }
 
-  // ── Connexion Google — POPUP UNIQUEMENT ─────────────────────
-  // authDomain = brumerie-app.firebaseapp.com → popup fonctionne partout
-  // Ne pas utiliser signInWithRedirect → race condition insoluble avec React
+  // ── Connexion Google ─────────────────────────────────────────
+  // Sur mobile : signInWithRedirect (popup bloquée par Chrome Android)
+  // Sur desktop : signInWithPopup
+  // Le redirect recharge la page → on stocke un flag pour maintenir loading=true
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    const cred = await signInWithPopup(auth, provider);
-    await handleGoogleUser(cred.user);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      sessionStorage.setItem(SK_GOOGLE, '1');
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    // Desktop : popup directe sans await intermédiaire
+    const { user } = await signInWithPopup(auth, provider);
+    await handleGoogleUser(user);
   }
 
   async function signOut() {
     await firebaseSignOut(auth);
     setUserProfile(null);
   }
-
-  async function resetPassword(email: string) {
-    await sendPasswordResetEmail(auth, email);
-  }
-
+  async function resetPassword(email: string) { await sendPasswordResetEmail(auth, email); }
   async function requestOTP(email: string, name: string): Promise<{ devCode?: string }> {
-    const result = await sendOTPEmail(email, name);
-    return result.devCode ? { devCode: result.devCode } : {};
+    const r = await sendOTPEmail(email, name);
+    return r.devCode ? { devCode: r.devCode } : {};
   }
-
   async function verifyOTP(email: string, code: string): Promise<'valid' | 'expired' | 'invalid'> {
     return verifyOTPRemote(email, code);
   }
-
   async function refreshUserProfile() {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Écoute de l'état auth Firebase ──────────────────────────
+  // ── Init : traiter redirect Google PUIS écouter onAuthStateChanged ──────────
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-      setCurrentUser(user);
-      if (user) {
-        await loadUserProfile(user.uid) ||
-          (user.providerData?.some(p => p.providerId === 'google.com')
-            ? await handleGoogleUser(user)
-            : null);
-      } else {
-        setUserProfile(null);
+    const pendingRedirect = sessionStorage.getItem(SK_GOOGLE) === '1';
+
+    const init = async () => {
+      // CAS 1 : on revient d'un redirect Google
+      if (pendingRedirect) {
+        try {
+          const result = await getRedirectResult(auth);
+          if (result?.user) {
+            await handleGoogleUser(result.user);
+            setCurrentUser(result.user);
+          }
+        } catch (e: any) {
+          console.error('[Auth] getRedirectResult:', e?.code, e?.message);
+        } finally {
+          sessionStorage.removeItem(SK_GOOGLE);
+        }
+        // Dans les deux cas (succès ou échec), on arrête le loading
+        setLoading(false);
       }
-      setLoading(false);
-    });
-    return unsub;
+
+      // CAS 2 : écouter les changements d'état suivants
+      const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+        // Si on vient de traiter le redirect, onAuthStateChanged se déclenche aussi
+        // mais le profil est déjà dans le state → on ignore juste le loading
+        if (pendingRedirect) {
+          setCurrentUser(user);
+          return; // loading déjà mis à false ci-dessus
+        }
+        setCurrentUser(user);
+        if (user) {
+          await loadUserProfile(user.uid) ||
+            (user.providerData?.some(p => p.providerId === 'google.com')
+              ? await handleGoogleUser(user) : null);
+        } else {
+          setUserProfile(null);
+        }
+        setLoading(false);
+      });
+
+      return unsub;
+    };
+
+    let unsub: (() => void) | undefined;
+    init().then(fn => { unsub = fn; });
+    return () => { unsub?.(); };
   }, [handleGoogleUser, loadUserProfile]);
 
   return (

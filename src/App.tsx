@@ -654,9 +654,8 @@ function AppContent() {
     import('firebase/firestore').then(({ doc, getDoc }) => {
       import('@/config/firebase').then(({ db }) => {
         getDoc(doc(db, 'system', 'settings')).then((snap: any) => {
-          if (snap.exists() && snap.data().maintenanceMode) {
-            setMaintenance({ active: true, message: snap.data().maintenanceMessage || '🔧 Maintenance en cours.' });
-          }
+          if (snap.exists() && snap.data().maintenanceMode)
+            setMaintenance({ active: true, message: snap.data().maintenanceMessage || 'Maintenance en cours.' });
         }).catch(() => {});
       });
     });
@@ -674,46 +673,44 @@ function AppContent() {
     );
   }
 
-  // Firebase charge → spinner
+  // Firebase charge OU on traite un redirect Google → spinner
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
+          <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Chargement…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Chargement…</p>
         </div>
       </div>
     );
   }
 
-  // Pas connecté
+  // Pas connecté → page connexion ou visiteur
   if (!currentUser) {
     if (showAuth) return <AuthGate />;
     return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
   }
 
-  // Connecté mais profil pas encore chargé
+  // Connecté, profil en cours de chargement
   if (!userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Profil…</p>
         </div>
       </div>
     );
   }
 
-  // Rôle manquant (nouveau compte Google)
+  // Rôle manquant → sélection
   if (!userProfile.role) {
     return (
       <RoleSelectPage
         userName={userProfile.name}
-        onSelect={async (role) => {
-          await updateUserProfile(currentUser.uid, { role });
-          window.location.reload();
-        }}
+        onSelect={async (role) => { await updateUserProfile(currentUser.uid, { role }); window.location.reload(); }}
       />
     );
   }
