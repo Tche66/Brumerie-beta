@@ -486,6 +486,87 @@ export function subscribeOrdersAsSeller(
   });
 }
 
+// ── Annuler la livraison (vendeur ou acheteur) ────────────────
+// Peut être appelé quand status est ready, picked, cod_confirmed
+export async function cancelDelivery(
+  orderId: string,
+  cancelledBy: 'buyer' | 'seller',
+  reason: string,
+): Promise<void> {
+  const snap = await getDoc(doc(ordersCol, orderId));
+  if (!snap.exists()) return;
+  const order = { id: snap.id, ...snap.data() } as any;
+
+  // Revenir au statut précédent selon le type de commande
+  // Si annulation avant pickup → revenir à 'confirmed' ou 'cod_pending' pour chercher un autre livreur
+  // Si annulation après pickup (livreur a déjà le colis) → disputed
+  const wasPickedUp = order.status === 'picked';
+  const newStatus = wasPickedUp ? 'disputed' : (order.isCOD ? 'cod_pending' : 'confirmed');
+
+  await updateDoc(doc(ordersCol, orderId), {
+    status: newStatus,
+    delivererId: null,
+    delivererName: null,
+    delivererPhone: null,
+    deliveryFee: null,
+    deliveryAssignedAt: null,
+    deliveryPickedAt: null,
+    deliveryCancelledAt: serverTimestamp(),
+    deliveryCancelledBy: cancelledBy,
+    deliveryCancelReason: reason,
+    // Conserver le code QR pour pouvoir réassigner un nouveau livreur
+  });
+
+  const cancellerName = cancelledBy === 'buyer' ? order.buyerName : order.sellerName;
+  const otherUserId   = cancelledBy === 'buyer' ? order.sellerId : order.buyerId;
+  const otherName     = cancelledBy === 'buyer' ? order.sellerName : order.buyerName;
+  const delivererId   = order.delivererId;
+
+  // Notifier l'autre partie
+  await notifyBoth({
+    sellerId: order.sellerId,
+    sellerMsg: {
+      title: wasPickedUp ? '⚠️ Litige signalé' : '🔄 Livreur retiré',
+      body: wasPickedUp
+        ? `${cancellerName} a annulé la livraison alors que le colis était déjà récupéré. Litige ouvert.`
+        : `${cancellerName} a annulé le livreur. Vous pouvez en choisir un autre.`,
+      convData: { orderId, productId: order.productId },
+    },
+    buyerId: order.buyerId,
+    buyerMsg: {
+      title: wasPickedUp ? '⚠️ Litige signalé' : '🔄 Livreur retiré',
+      body: wasPickedUp
+        ? `${cancellerName} a annulé la livraison alors que le colis était déjà récupéré. Litige ouvert.`
+        : `${cancellerName} a annulé le livreur. Un nouveau livreur sera assigné.`,
+      convData: { orderId, productId: order.productId },
+    },
+  });
+
+  // Notifier le livreur
+  if (delivererId) {
+    await createNotification(delivererId, 'system',
+      '❌ Mission annulée',
+      `La mission "${order.productTitle}" a été annulée par ${cancellerName}. Motif : ${reason}`,
+      { orderId }
+    );
+  }
+
+  // Si litige (colis déjà récupéré), créer un report
+  if (wasPickedUp) {
+    await addDoc(collection(db, 'reports'), {
+      type: 'delivery_cancel_after_pickup',
+      orderId,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      delivererId,
+      reason,
+      cancelledBy,
+      createdAt: serverTimestamp(),
+      resolved: false,
+    });
+  }
+}
+
 // ── Helper interne — notifier les 2 parties ────────────────
 async function notifyBoth(params: {
   sellerId: string; sellerMsg: { title: string; body: string; convData: any };

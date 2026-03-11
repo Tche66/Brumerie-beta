@@ -10,6 +10,7 @@ import {
   toggleDelivererAvailability,
 } from '@/services/deliveryService';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
+import { EditDelivererProfilePage } from '@/pages/EditDelivererProfilePage';
 import { QRScanner } from '@/components/QRScanner';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
@@ -74,7 +75,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   ];
 
   if (showEditProfile) {
-    return <BecomeDelivererPage onBack={() => setShowEditProfile(false)} onDone={() => { setShowEditProfile(false); refreshUserProfile(); }}/>;
+    return (
+      <EditDelivererProfilePage
+        onBack={() => setShowEditProfile(false)}
+        onSaved={() => { setShowEditProfile(false); refreshUserProfile(); }}
+      />
+    );
   }
 
   // ── QR Scanner : livreur scanne QR du vendeur ──
@@ -302,13 +308,13 @@ function MissionCard({ order, onScanVendeur, onChatSeller, onChatBuyer }: {
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
           📷 Scanner QR Vendeur
         </button>
-        <button onClick={onChatSeller} title="Contacter le vendeur"
-          className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">
-          🏪💬
+        <button onClick={onChatBuyer} title="Chat acheteur"
+          className="px-3 py-3 rounded-xl bg-blue-50 font-black text-[9px] text-blue-600 active:scale-95 flex flex-col items-center gap-0.5">
+          <span>👤</span><span>Acheteur</span>
         </button>
-        <button onClick={onChatBuyer} title="Contacter l'acheteur"
-          className="px-4 py-3 rounded-xl bg-blue-50 font-black text-[11px] text-blue-600 active:scale-95">
-          👤💬
+        <button onClick={onChatSeller} title="Chat vendeur"
+          className="px-3 py-3 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95 flex flex-col items-center gap-0.5">
+          <span>🏪</span><span>Vendeur</span>
         </button>
       </div>
     </div>
@@ -346,13 +352,13 @@ function OngoingCard({ order, onShowQR, onChatBuyer, onChatSeller }: {
           style={{ background: 'linear-gradient(135deg,#d97706,#f59e0b)' }}>
           📲 Afficher mon QR
         </button>
-        <button onClick={onChatBuyer} title="Contacter l'acheteur"
-          className="px-4 py-3 rounded-xl bg-blue-50 font-black text-[11px] text-blue-600 active:scale-95">
-          👤💬
+        <button onClick={onChatBuyer} title="Chat acheteur"
+          className="px-3 py-3 rounded-xl bg-blue-50 font-black text-[9px] text-blue-600 active:scale-95 flex flex-col items-center gap-0.5">
+          <span>👤</span><span>Acheteur</span>
         </button>
-        <button onClick={onChatSeller} title="Contacter le vendeur"
-          className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">
-          🏪💬
+        <button onClick={onChatSeller} title="Chat vendeur"
+          className="px-3 py-3 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95 flex flex-col items-center gap-0.5">
+          <span>🏪</span><span>Vendeur</span>
         </button>
       </div>
     </div>

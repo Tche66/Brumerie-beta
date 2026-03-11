@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import {
   subscribeToOrder, confirmPaymentReceived, submitProof,
-  confirmDelivery, openOrderDispute, getCountdown,
+  confirmDelivery, openOrderDispute, getCountdown, cancelDelivery,
   subscribeOrdersAsBuyer, subscribeOrdersAsSeller, checkExpiredOrders,
   confirmCODReady, confirmCODDelivered,
   markReadyToDeliver, validateDeliveryCode,
@@ -274,6 +274,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   // QR
   const [showSellerQR, setShowSellerQR] = useState(false);      // Vendeur affiche son QR au livreur
   const [showBuyerScanner, setShowBuyerScanner] = useState(false); // Acheteur scanne QR livreur
+  const [showCancelDelivery, setShowCancelDelivery] = useState(false); // Modal annulation livraison
+  const [cancelReason, setCancelReason] = useState('');
 
 
   useEffect(() => {
@@ -424,6 +426,14 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                       className="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-500 font-black text-[10px] active:scale-95">
                       Changer
                     </button>
+                    {/* Annuler livraison */}
+                    {['ready','cod_confirmed','picked'].includes(order.status) && (
+                      <button
+                        onClick={() => setShowCancelDelivery(true)}
+                        className="px-3 py-2.5 rounded-xl bg-red-50 text-red-500 font-black text-[10px] active:scale-95">
+                        Annuler
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -831,6 +841,47 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           onDone={() => setShowRatingModal(false)}
           onSkip={() => setShowRatingModal(false)}
         />
+      )}
+
+      {/* Modal annulation livraison */}
+      {showCancelDelivery && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] flex items-end justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-5" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
+            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto"/>
+            <div className="text-center">
+              <p className="text-3xl mb-2">{(order as any).status === 'picked' ? '⚠️' : '🔄'}</p>
+              <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">Annuler le livreur</h3>
+              {(order as any).status === 'picked' && (
+                <div className="mt-3 bg-red-50 rounded-2xl p-4 border border-red-100">
+                  <p className="text-[11px] text-red-700 font-bold">
+                    ⚠️ Attention : le livreur a déjà récupéré le colis. L&apos;annulation va ouvrir un litige automatiquement.
+                  </p>
+                </div>
+              )}
+              {(order as any).status !== 'picked' && (
+                <p className="text-[11px] text-slate-500 mt-2">
+                  Le livreur sera notifié. Tu pourras en choisir un autre.
+                </p>
+              )}
+            </div>
+            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+              placeholder="Motif de l'annulation (obligatoire)..." rows={3}
+              className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-[13px] border-2 border-transparent focus:border-red-400 outline-none resize-none"/>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => act(() => cancelDelivery(orderId, isBuyer ? 'buyer' : 'seller', cancelReason))
+                  .then(() => { setShowCancelDelivery(false); setCancelReason(''); setDelivererInfo(null); })}
+                disabled={!cancelReason.trim() || loading}
+                className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-red-500 shadow-lg active:scale-95 disabled:opacity-50 transition-all">
+                {(order as any).status === 'picked' ? '⚠️ Annuler et ouvrir un litige' : '🔄 Annuler le livreur'}
+              </button>
+              <button onClick={() => { setShowCancelDelivery(false); setCancelReason(''); }}
+                className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+                Retour
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal signalement */}

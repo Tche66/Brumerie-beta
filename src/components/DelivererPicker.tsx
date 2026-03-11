@@ -20,8 +20,9 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
   const [sending, setSending]       = useState(false);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
 
-  const fromZone = order.sellerNeighborhood || (order as any).neighborhood || '';
-  const toZone   = order.buyerNeighborhood  || (order as any).neighborhood || '';
+  // Guard défensif — order peut être undefined si Firestore pas encore chargé
+  const fromZone = (order as any)?.sellerNeighborhood || (order as any)?.neighborhood || '';
+  const toZone   = (order as any)?.buyerNeighborhood  || (order as any)?.neighborhood || '';
 
   useEffect(() => {
     getAvailableDeliverers(fromZone).then(list => {
