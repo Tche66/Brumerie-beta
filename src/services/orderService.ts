@@ -228,6 +228,9 @@ export async function markReadyToDeliver(orderId: string): Promise<string> {
     },
   });
 
+  // Alerter TOUS les livreurs Brumerie
+  await notifyAllDeliverers(orderId, order);
+
   return deliveryCode;
 }
 
@@ -471,6 +474,27 @@ async function notifyBoth(params: {
     showLocalPushNotification(params.sellerMsg.title, params.sellerMsg.body, { type: 'system' }),
     showLocalPushNotification(params.buyerMsg.title,  params.buyerMsg.body,  { type: 'system' }),
   ]);
+}
+
+// ── Notifier tous les livreurs Brumerie ─────────────────
+export async function notifyAllDeliverers(orderId: string, order: Order): Promise<void> {
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'users'),
+      where('role', '==', 'livreur')
+    ));
+    await Promise.all(
+      snap.docs.map(d =>
+        createNotification(d.id, 'system',
+          '\u{1F6F5} Nouvelle mission disponible',
+          `Commande "${order.productTitle}" — ${order.sellerName} (${order.productPrice.toLocaleString('fr-FR')} FCFA). Connecte-toi pour accepter.`,
+          { orderId, productId: order.productId }
+        )
+      )
+    );
+  } catch (e) {
+    console.error('notifyAllDeliverers error:', e);
+  }
 }
 
 // ── Helper countdown ──────────────────────────────────────
