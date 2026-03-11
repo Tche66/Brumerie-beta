@@ -15,6 +15,40 @@ interface Props {
   onClose: () => void;
 }
 
+
+// ── Bouton copier le code ────────────────────────────────────────
+function CopyButton({ code }: { code: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback pour navigateurs sans clipboard API
+      const el = document.createElement('input');
+      el.value = code;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  return (
+    <button onClick={handleCopy}
+      className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90"
+      style={{ background: copied ? '#16A34A' : 'rgba(255,255,255,0.2)' }}
+      title="Copier le code">
+      {copied
+        ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      }
+    </button>
+  );
+}
+
 export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, instruction, onClose }: Props) {
   const qrUrl = getQRCodeUrl(qrPayload, 260);
 
@@ -45,11 +79,14 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
           className="rounded-xl"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
         />
-        {/* Code alphanumérique de secours */}
+        {/* Code alphanumérique + bouton copier */}
         <div className="mt-4 pt-4 border-t border-slate-100 w-full text-center">
-          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1">Code de secours</p>
-          <div className="bg-slate-900 rounded-xl px-5 py-2 inline-block">
-            <span className="text-xl font-black text-yellow-300 tracking-[0.35em] font-mono">{code}</span>
+          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2">Code de secours</p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="bg-slate-900 rounded-xl px-5 py-2">
+              <span className="text-xl font-black text-yellow-300 tracking-[0.35em] font-mono">{code}</span>
+            </div>
+            <CopyButton code={code} />
           </div>
         </div>
       </div>

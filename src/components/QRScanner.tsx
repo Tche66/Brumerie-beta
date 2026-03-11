@@ -52,12 +52,16 @@ export function QRScanner({ expectedType, expectedOrderId, expectedCode, onSucce
 
   const handleManualValidate = () => {
     const code = manualCode.trim().toUpperCase();
-    if (code.length !== 6) { setManualError('Le code fait 6 caractères'); return; }
-    // Si on a le code attendu, vérifier localement
-    if (expectedCode && code !== expectedCode.toUpperCase()) {
-      setManualError('Code incorrect — réessaie');
-      return;
+    if (code.length !== 6) { setManualError('Le code doit faire 6 caractères'); return; }
+    // Vérifier localement si on a le code attendu
+    if (expectedCode) {
+      if (code !== expectedCode.trim().toUpperCase()) {
+        setManualError('Code incorrect — vérifie le code affiché par ' +
+          (expectedType === 'pickup' ? 'le vendeur' : 'le livreur'));
+        return;
+      }
     }
+    // Code valide (ou pas de vérification locale possible → Firestore validera)
     stopRef.current?.();
     onSuccess(code);
   };

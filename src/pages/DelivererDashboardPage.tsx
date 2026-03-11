@@ -61,10 +61,18 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   };
 
   const handlePickupScanned = async (code: string, order: Order) => {
-    setShowScanPickup(null);
     if (!currentUser) return;
+    const expectedCode = (order as any).deliveryCode || '';
+    // Vérifier le code si on l'a (QR ou saisie manuelle)
+    if (expectedCode && code.toUpperCase() !== expectedCode.toUpperCase()) {
+      alert('Code incorrect — demande le bon code au vendeur');
+      return;
+    }
+    setShowScanPickup(null);
     const result = await confirmPickupByDeliverer(order.id, order);
     if (!result.success) alert(result.error);
+    // Feedback visuel
+    else setTab('ongoing');
   };
 
   const TABS: { id: Tab; label: string; icon: string; badge?: number }[] = [
@@ -89,6 +97,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
       <QRScanner
         expectedType="pickup"
         expectedOrderId={showScanPickup.id}
+        expectedCode={(showScanPickup as any).deliveryCode}
         onSuccess={(code) => handlePickupScanned(code, showScanPickup)}
         onClose={() => setShowScanPickup(null)}
       />

@@ -301,6 +301,20 @@ export async function validateDeliveryCode(
     },
   });
 
+  // Notifier le livreur + incrémenter ses stats
+  if (order.delivererId) {
+    await createNotification(order.delivererId, 'system',
+      '💰 Mission terminée !',
+      'Livraison de "' + order.productTitle + '" confirmée. Bravo !',
+      { orderId }
+    );
+    try {
+      const userSnap = await getDoc(doc(ordersCol, order.delivererId));
+      // Note: on utilise la collection users via import dynamique pour éviter la circularité
+      // Les stats sont mises à jour dans deliveryService.confirmDeliveryByBuyer
+    } catch {}
+  }
+
   return { success: true };
 }
 

@@ -609,7 +609,8 @@ useEffect(() => {
           <DelivererDashboardPage
             onNavigate={handleNavigate}
             onChat={async (targetId: string, targetName: string) => {
-              await handleOpenChatWithSeller(targetId, targetName);
+              // Passer targetId comme productId pour que chaque conv soit unique
+              await handleOpenChatWithSeller(targetId, targetName, targetId, 'Contact Brumerie');
             }}
           />
         )}
