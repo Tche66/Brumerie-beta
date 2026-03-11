@@ -650,6 +650,7 @@ function AppContent() {
   const [showAuth, setShowAuth] = React.useState(false);
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
 
+  // Maintenance check
   React.useEffect(() => {
     import('firebase/firestore').then(({ doc, getDoc }) => {
       import('@/config/firebase').then(({ db }) => {
@@ -660,6 +661,11 @@ function AppContent() {
       });
     });
   }, []);
+
+  // Quand connecté → effacer le flag showAuth
+  React.useEffect(() => {
+    if (currentUser) setShowAuth(false);
+  }, [currentUser]);
 
   if (maintenance?.active && currentUser?.uid !== ((import.meta as any).env?.VITE_ADMIN_UID || '__none__')) {
     return (
@@ -673,7 +679,7 @@ function AppContent() {
     );
   }
 
-  // Firebase charge OU on traite un redirect Google → spinner
+  // Spinner pendant chargement Firebase
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -686,7 +692,7 @@ function AppContent() {
     );
   }
 
-  // Pas connecté → page connexion ou visiteur
+  // Pas connecté
   if (!currentUser) {
     if (showAuth) return <AuthGate />;
     return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
@@ -699,13 +705,13 @@ function AppContent() {
         <div className="flex flex-col items-center gap-4">
           <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Profil…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion…</p>
         </div>
       </div>
     );
   }
 
-  // Rôle manquant → sélection
+  // Rôle manquant
   if (!userProfile.role) {
     return (
       <RoleSelectPage
