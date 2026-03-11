@@ -5,7 +5,15 @@ import admin from 'firebase-admin';
 
 function getAdmin() {
   if (admin.apps.length > 0) return admin;
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT manquant dans Vercel env vars');
+  }
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch(e) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT JSON invalide: ' + e.message);
+  }
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   return admin;
 }
@@ -134,7 +142,8 @@ export default async function handler(req, res) {
     return sendHtml(htmlOk(`Connecté en tant que <strong>${profile.name || profile.email}</strong>`));
 
   } catch (err) {
-    console.error('[GoogleCallback] Error:', err);
-    return sendHtml(htmlErr('Erreur serveur. Réessaie.'));
+    console.error('[GoogleCallback] Error:', err?.message, err?.code, err?.stack?.slice(0,200));
+    const detail = err?.message || err?.code || String(err);
+    return sendHtml(htmlErr(`Erreur serveur: ${detail.slice(0,120)}`));
   }
 }
