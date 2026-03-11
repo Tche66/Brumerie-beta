@@ -15,6 +15,9 @@ import { hasReviewed } from '@/services/reviewService';
 import { PaymentLogo } from '@/components/PaymentLogo';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
+import { DelivererPicker } from '@/components/DelivererPicker';
+import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
+import { getDelivererById } from '@/services/deliveryService';
 
 interface OrderStatusPageProps {
   orderId?: string;
@@ -261,6 +264,9 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   const [disputeReason, setDisputeReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showDelivererPicker, setShowDelivererPicker] = useState(false);
+  const [viewDelivererId, setViewDelivererId] = useState<string | null>(null);
+  const [delivererInfo, setDelivererInfo] = useState<any>(null);
 
   useEffect(() => {
     const unsub = subscribeToOrder(orderId, (o) => {
@@ -268,6 +274,12 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
     });
     return unsub;
   }, [orderId]);
+
+  useEffect(() => {
+    if ((order as any)?.delivererId) {
+      getDelivererById((order as any).delivererId).then(d => setDelivererInfo(d));
+    }
+  }, [(order as any)?.delivererId]);
 
   if (!order || !currentUser) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -355,6 +367,106 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             {isSeller && <span className="text-[8px] text-green-500 font-bold">← Toi</span>}
           </div>
         </div>
+
+        {/* ── BLOC LIVREUR ── */}
+        {(() => {
+          const ord = order as any;
+          const hasDeliverer = !!ord.delivererId;
+          const canAddDeliverer = !hasDeliverer && !['delivered','cancelled'].includes(order.status);
+          return (
+            <>
+              {/* Livreur assigné */}
+              {hasDeliverer && delivererInfo && (
+                <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
+                  <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest mb-2">🛵 Livreur assigné</p>
+                  <div className="flex items-center gap-3">
+                    {delivererInfo.photoURL
+                      ? <img src={delivererInfo.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"/>
+                      : <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-lg flex-shrink-0">🛵</div>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-900 text-[13px]">
+                        {delivererInfo.deliveryPartnerName || delivererInfo.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500">📍 {(delivererInfo.deliveryZones||[]).join(' · ')}</p>
+                    </div>
+                    <button
+                      onClick={() => setViewDelivererId(ord.delivererId)}
+                      className="px-3 py-2 rounded-xl bg-white border border-orange-200 text-[10px] font-black text-orange-600 active:scale-95">
+                      Profil
+                    </button>
+                  </div>
+                  {/* Contact livreur */}
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => onOpenChatWithSeller?.(ord.delivererId, delivererInfo.deliveryPartnerName || delivererInfo.name)}
+                      className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white font-black text-[10px] uppercase tracking-widest active:scale-95">
+                      💬 Contacter
+                    </button>
+                    {delivererInfo.phone && (
+                      <a href={"https://wa.me/" + delivererInfo.phone.replace(/\D/g,'')}
+                        target="_blank" rel="noopener noreferrer"
+                        className="px-4 py-2.5 rounded-xl bg-green-500 text-white font-black text-[12px] active:scale-95">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="inline"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+                      </a>
+                    )}
+                    {/* Changer de livreur */}
+                    <button
+                      onClick={() => setShowDelivererPicker(true)}
+                      className="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-500 font-black text-[10px] active:scale-95">
+                      Changer
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Pas encore de livreur — proposer d'en ajouter un */}
+              {canAddDeliverer && (
+                <button
+                  onClick={() => setShowDelivererPicker(true)}
+                  className="w-full py-4 rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50 font-black text-[11px] text-orange-600 uppercase tracking-widest active:scale-95 transition-all">
+                  🛵 Choisir un livreur Brumerie
+                </button>
+              )}
+
+              {/* DelivererPicker overlay */}
+              {showDelivererPicker && (
+                <DelivererPicker
+                  orderId={orderId}
+                  fromNeighborhood={(order as any).sellerNeighborhood || (order as any).neighborhood || ''}
+                  toNeighborhood={(order as any).buyerNeighborhood || (order as any).neighborhood || ''}
+                  proposedBy={isBuyer ? 'buyer' : 'seller'}
+                  buyerName={order.buyerName}
+                  sellerName={order.sellerName}
+                  productTitle={order.productTitle}
+                  productImage={order.productImage}
+                  onDone={async (delivererId, fee) => {
+                    setShowDelivererPicker(false);
+                    await updateDoc(doc(db, 'orders', orderId), {
+                      delivererId,
+                      deliveryFee: fee,
+                    });
+                    const d = await getDelivererById(delivererId);
+                    setDelivererInfo(d);
+                  }}
+                  onClose={() => setShowDelivererPicker(false)}
+                />
+              )}
+
+              {/* Profil livreur overlay */}
+              {viewDelivererId && (
+                <DelivererProfilePage
+                  delivererId={viewDelivererId}
+                  onBack={() => setViewDelivererId(null)}
+                  onContact={(d) => {
+                    setViewDelivererId(null);
+                    onOpenChatWithSeller?.(d.id, d.deliveryPartnerName || d.name);
+                  }}
+                />
+              )}
+            </>
+          );
+        })()}
 
         {/* Compte à rebours vendeur */}
         {order.status === 'proof_sent' && isSeller && (

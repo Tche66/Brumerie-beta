@@ -17,6 +17,7 @@ interface Props {
   productImage?: string;
   onDone: (delivererId: string, fee: number) => void;
   onClose: () => void;
+  onContactDeliverer?: (delivererId: string, delivererName: string) => void;
 }
 
 const DEFAULT_DELIVERER_KEY = 'brumerie_default_deliverer';
@@ -24,7 +25,7 @@ const DEFAULT_DELIVERER_KEY = 'brumerie_default_deliverer';
 export function DelivererPicker({
   orderId, fromNeighborhood, toNeighborhood,
   proposedBy, buyerName, sellerName, productTitle, productImage,
-  onDone, onClose,
+  onDone, onClose, onContactDeliverer,
 }: Props) {
   const [deliverers, setDeliverers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,12 +71,14 @@ export function DelivererPicker({
     setSending(true);
     try {
       const fee = getFee(selected);
-      await createDeliveryRequest({
-        orderId, delivererId: selected.id,
-        proposedBy, fromNeighborhood, toNeighborhood,
-        estimatedFee: fee, buyerName, sellerName,
-        productTitle, productImage,
-      });
+      if (orderId) {
+        await createDeliveryRequest({
+          orderId, delivererId: selected.id,
+          proposedBy, fromNeighborhood, toNeighborhood,
+          estimatedFee: fee, buyerName, sellerName,
+          productTitle, productImage,
+        });
+      }
       onDone(selected.id, fee);
     } catch (e) { console.error(e); }
     finally { setSending(false); }
@@ -191,13 +194,12 @@ export function DelivererPicker({
                     Profil
                   </button>
 
-                  {sel && !isDef && (
-                    <button
-                      onClick={() => setAsDefault(d)}
-                      className="px-3 py-2.5 rounded-xl bg-amber-50 text-amber-700 font-black text-[10px] active:scale-95">
-                      ⭐ Défaut
-                    </button>
-                  )}
+                  <button
+                    onClick={() => isDef ? (localStorage.removeItem(DEFAULT_DELIVERER_KEY), setDefaultId(null)) : setAsDefault(d)}
+                    title={isDef ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    className={"px-3 py-2.5 rounded-xl font-black text-[14px] active:scale-95 " + (isDef ? "bg-amber-100 text-amber-600" : "bg-slate-50 text-slate-300")}>
+                    ⭐
+                  </button>
                 </div>
               </div>
             );
@@ -211,7 +213,14 @@ export function DelivererPicker({
             Annuler
           </button>
           <button
-            onClick={handleConfirm}
+            onClick={async () => {
+              if (onContactDeliverer && selected) {
+                await handleConfirm();
+                onContactDeliverer(selected.id, selected.deliveryPartnerName || selected.name);
+              } else {
+                await handleConfirm();
+              }
+            }}
             disabled={!selected || sending || !selected.deliveryAvailable}
             className="flex-1 py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-30 active:scale-95 transition-all"
             style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
@@ -221,7 +230,7 @@ export function DelivererPicker({
                   Envoi...
                 </span>
               : selected
-                ? `📨 Contacter ${selected.deliveryPartnerName || 'ce livreur'}`
+                ? (onContactDeliverer ? `💬 Contacter ${selected.deliveryPartnerName || 'le livreur'}` : `📨 Contacter ${selected.deliveryPartnerName || 'ce livreur'}`)
                 : 'Choisir un livreur'
             }
           </button>

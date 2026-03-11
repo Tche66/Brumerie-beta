@@ -165,6 +165,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         setChosenDeliverer({ id: delivererId, fee });
         setShowDelivererPicker(false);
       }}
+      onContactDeliverer={(id, name) => {
+        // Pas de chat direct ici — OrderStatus gère ça après commande passée
+      }}
       onClose={() => setShowDelivererPicker(false)}
     />
   ) : null;

@@ -9,11 +9,11 @@ import type { User } from '@/types';
 interface Props {
   delivererId: string;
   onBack: () => void;
-  onChoose?: (deliverer: User, fee: number) => void; // undefined = mode consultation seule
+  onChoose?: (deliverer: User, fee: number) => void;
   fromNeighborhood?: string;
   toNeighborhood?: string;
-  // Pour proposition vendeur → livreur
   onProposeToSeller?: (deliverer: User) => void;
+  onContact?: (deliverer: User) => void; // ouvrir chat ou WhatsApp
 }
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -30,7 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export function DelivererProfilePage({
-  delivererId, onBack, onChoose, fromNeighborhood, toNeighborhood, onProposeToSeller,
+  delivererId, onBack, onChoose, fromNeighborhood, toNeighborhood, onProposeToSeller, onContact,
 }: Props) {
   const [deliverer, setDeliverer] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,7 +167,7 @@ export function DelivererProfilePage({
       </div>
 
       {/* Footer CTA */}
-      {(onChoose || onProposeToSeller) && (
+      {(onChoose || onProposeToSeller || onContact) && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-5 py-4 flex flex-col gap-2"
           style={{ maxWidth: 480, margin: '0 auto', left: '50%', transform: 'translateX(-50%)' }}>
 
@@ -190,6 +190,25 @@ export function DelivererProfilePage({
               style={{ background: 'linear-gradient(135deg,#D4500F,#f97316)' }}>
               📨 Proposer au vendeur
             </button>
+          )}
+          {onContact && (
+            <button
+              onClick={() => onContact(deliverer)}
+              className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.15em] text-white shadow-xl active:scale-[0.98] transition-all"
+              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+              💬 Contacter ce livreur
+            </button>
+          )}
+          {/* WhatsApp si pas de chat dispo */}
+          {!onContact && deliverer.phone && (
+            <a
+              href={"https://wa.me/" + deliverer.phone.replace(/\D/g, '')}
+              target="_blank" rel="noopener noreferrer"
+              className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.15em] text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.97 0C5.362 0 0 5.373 0 11.993c0 2.114.554 4.09 1.523 5.802L.014 24l6.376-1.673A11.906 11.906 0 0011.97 24c6.607 0 11.969-5.373 11.969-11.993C23.939 5.373 18.577 0 11.97 0zm0 21.886a9.844 9.844 0 01-5.024-1.373l-.36-.215-3.736.98.997-3.648-.235-.374A9.848 9.848 0 012.12 11.993C2.12 6.53 6.52 2.12 11.97 2.12c5.448 0 9.85 4.41 9.85 9.873 0 5.463-4.402 9.893-9.85 9.893z"/></svg>
+              WhatsApp
+            </a>
           )}
         </div>
       )}

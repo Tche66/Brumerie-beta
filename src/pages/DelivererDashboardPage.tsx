@@ -143,7 +143,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               <RequestCard key={req.id} req={req}
                 onAccept={() => handleRespond(req, true)}
                 onReject={() => handleRespond(req, false)}
-                onChat={() => onChat(req.orderId, req.buyerName)}/>
+                onChatSeller={() => onChat(req.sellerId || req.orderId, req.sellerName)}/>
             ))}
           </div>
         )}
@@ -159,7 +159,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             ) : ongoing.map(req => (
               <OngoingCard key={req.id} req={req}
                 onPickup={() => handlePickup(req)}
-                onChat={() => onChat(req.orderId, req.buyerName)}/>
+                onChatSeller={() => onChat(req.sellerId || req.orderId, req.sellerName)}/>
             ))}
           </div>
         )}
@@ -240,11 +240,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 
 // ── Sous-composants ───────────────────────────────────────────────
 
-function RequestCard({ req, onAccept, onReject, onChat }: {
+function RequestCard({ req, onAccept, onReject, onChatSeller }: {
   req: DeliveryRequest;
   onAccept: () => void;
   onReject: () => void;
-  onChat: () => void;
+  onChatSeller: () => void;
 }) {
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-500">
@@ -269,7 +269,8 @@ function RequestCard({ req, onAccept, onReject, onChat }: {
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
           ✅ Accepter
         </button>
-        <button onClick={onChat}
+        <button onClick={onChatSeller}
+          title="Contacter le vendeur"
           className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">
           💬
         </button>
@@ -282,10 +283,11 @@ function RequestCard({ req, onAccept, onReject, onChat }: {
   );
 }
 
-function OngoingCard({ req, onPickup, onChat }: {
+function OngoingCard({ req, onPickup, onChatBuyer, onChatSeller }: {
   req: DeliveryRequest;
   onPickup: () => void;
-  onChat: () => void;
+  onChatBuyer: () => void;
+  onChatSeller: () => void;
 }) {
   const isPicked = req.status === 'picked';
   return (
@@ -315,9 +317,13 @@ function OngoingCard({ req, onPickup, onChat }: {
             En route 🛵
           </div>
         )}
-        <button onClick={onChat}
-          className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600">
-          💬
+      <button onClick={onChatBuyer} title="Contacter l'acheteur"
+          className="px-4 py-3 rounded-xl bg-blue-50 font-black text-[11px] text-blue-600 active:scale-95">
+          👤💬
+        </button>
+        <button onClick={onChatSeller} title="Contacter le vendeur"
+          className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">
+          🏪💬
         </button>
       </div>
     </div>

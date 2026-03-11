@@ -600,7 +600,9 @@ useEffect(() => {
         {activePage === 'deliverer-dashboard' && (
           <DelivererDashboardPage
             onNavigate={handleNavigate}
-            onChat={(_userId: string, _userName: string) => { navigate('messages'); }}
+            onChat={async (targetId: string, targetName: string) => {
+              await handleOpenChatWithSeller(targetId, targetName);
+            }}
           />
         )}
       </main>

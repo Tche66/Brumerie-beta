@@ -59,7 +59,9 @@ export async function createDeliveryRequest(data: {
   toNeighborhood: string;
   estimatedFee: number;
   buyerName: string;
+  buyerId?: string;
   sellerName: string;
+  sellerId?: string;
   productTitle: string;
   productImage?: string;
 }): Promise<string> {

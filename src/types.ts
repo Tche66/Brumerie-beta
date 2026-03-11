@@ -364,15 +364,18 @@ export interface DeliveryRequest {
   id: string;
   orderId: string;
   delivererId: string;
-  proposedBy: 'buyer' | 'seller' | 'admin';
-  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  proposedBy: 'buyer' | 'seller' | 'admin' | 'livreur';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'pending_seller' | 'rejected_by_seller' | 'picked';
   fromNeighborhood: string;
   toNeighborhood: string;
   estimatedFee: number;
   buyerName: string;
+  buyerId?: string;
   sellerName: string;
+  sellerId?: string;
   productTitle: string;
   productImage?: string;
   createdAt?: any;
   respondedAt?: any;
+  pickedAt?: any;
 }
