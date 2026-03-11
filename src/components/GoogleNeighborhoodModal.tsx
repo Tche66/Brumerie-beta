@@ -48,7 +48,8 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
       await updateUserProfile(currentUser.uid, {
         neighborhood: neighborhood.trim(),
         phone,
-      });
+        needsOnboarding: false,  // effacer le flag
+      } as any);
 
       if (referralCode.trim()) {
         const ok = await applyReferral(currentUser.uid, referralCode.trim().toUpperCase());

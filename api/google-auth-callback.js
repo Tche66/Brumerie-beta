@@ -114,7 +114,8 @@ export default async function handler(req, res) {
     // 4. Créer profil Firestore si absent
     const userRef  = firestore.collection('users').doc(firebaseUid);
     const userSnap = await userRef.get();
-    if (!userSnap.exists) {
+    const isNewUser = !userSnap.exists;
+    if (isNewUser) {
       await userRef.set({
         id: firebaseUid, uid: firebaseUid,
         email: profile.email, name: profile.name || '',
@@ -123,7 +124,12 @@ export default async function handler(req, res) {
         bookmarkedProductIds: [],
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         publicationCount: 0, publicationLimit: 50,
+        needsOnboarding: true,   // ← flag onboarding
+        authProvider: 'google',  // ← provider tracé
       });
+    } else if (!userSnap.data().neighborhood || !userSnap.data().phone) {
+      // User Google existant mais onboarding incomplet
+      await userRef.update({ needsOnboarding: true, authProvider: 'google' });
     }
 
     // 5. Firebase Custom Token

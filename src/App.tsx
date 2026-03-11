@@ -228,17 +228,18 @@ useEffect(() => {
     }
   }, [currentUser]);
 
-  // ── useEffect #2a — modal quartier pour user Google sans neighborhood ─
+  // ── useEffect #2a — onboarding Google (quartier + WhatsApp + parrainage) ──
   useEffect(() => {
     if (!currentUser || !userProfile) return;
-    // Déclencher uniquement si pas de quartier ET connexion récente (pas d'email custom)
-    const isGoogleUser = currentUser.providerData?.some(p => p.providerId === 'google.com');
-    if (isGoogleUser && !userProfile.neighborhood) {
-      // Délai court pour laisser l'app se charger
-      const t = setTimeout(() => setShowNeighborhoodModal(true), 800);
+    // needsOnboarding = flag posé par google-auth-callback
+    // Aussi déclencher si phone ou neighborhood manquant (sécurité)
+    const needsOnboarding = (userProfile as any).needsOnboarding
+      || ((userProfile as any).authProvider === 'google' && (!userProfile.neighborhood || !userProfile.phone));
+    if (needsOnboarding) {
+      const t = setTimeout(() => setShowNeighborhoodModal(true), 600);
       return () => clearTimeout(t);
     }
-  }, [currentUser?.uid, userProfile?.neighborhood]);
+  }, [currentUser?.uid, (userProfile as any)?.needsOnboarding, userProfile?.neighborhood, userProfile?.phone]);
 
   // ── useEffect #2b — deep link ?product=ID au démarrage ─────────
   useEffect(() => {
