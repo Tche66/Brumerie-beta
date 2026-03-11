@@ -185,6 +185,8 @@ export async function confirmPaymentReceived(orderId: string): Promise<void> {
       convData: { orderId, productId: order.productId },
     },
   });
+  // Alerter tous les livreurs dès confirmation vendeur
+  await notifyAllDeliverers(orderId, order);
 }
 
 

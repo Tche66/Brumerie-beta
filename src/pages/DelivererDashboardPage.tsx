@@ -7,6 +7,7 @@ import {
   subscribeDeliveryRequests, respondToDeliveryRequest,
   confirmPickup, toggleDelivererAvailability, getDelivererHistory,
 } from '@/services/deliveryService';
+import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
 import type { DeliveryRequest } from '@/types';
 
 interface Props { onNavigate: (page: string) => void; onChat: (userId: string, userName: string) => void; }
@@ -20,6 +21,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const [history, setHistory] = useState<DeliveryRequest[]>([]);
   const [available, setAvailable] = useState(userProfile?.deliveryAvailable ?? true);
   const [toggling, setToggling] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -69,6 +71,15 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     { id: 'earnings',  label: 'Gains',       icon: '💰' },
     { id: 'profile',   label: 'Mon profil',  icon: '👤' },
   ];
+
+  if (showEditProfile) {
+    return (
+      <BecomeDelivererPage
+        onBack={() => setShowEditProfile(false)}
+        onDone={() => { setShowEditProfile(false); refreshUserProfile(); }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-32">

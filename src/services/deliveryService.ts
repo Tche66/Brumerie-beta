@@ -192,3 +192,69 @@ export async function completeDelivery(
     });
   }
 }
+
+// ── Récupérer un livreur par UID ─────────────────────────────
+export async function getDelivererById(uid: string): Promise<User | null> {
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (!snap.exists()) return null;
+  return { ...snap.data(), id: snap.id } as User;
+}
+
+// ── Livreur propose une livraison au vendeur (commande déjà existante ou non) ──
+export async function proposeDeliveryToSeller(data: {
+  orderId: string;
+  delivererId: string;
+  delivererName: string;
+  delivererPhone: string;
+  sellerId: string;
+  buyerName: string;
+  sellerName: string;
+  productTitle: string;
+  productImage?: string;
+  fromNeighborhood: string;
+  toNeighborhood: string;
+  proposedFee: number;
+}): Promise<string> {
+  const ref = await addDoc(collection(db, 'deliveryRequests'), {
+    ...data,
+    estimatedFee: data.proposedFee,
+    proposedBy: 'livreur',
+    status: 'pending_seller',
+    createdAt: serverTimestamp(),
+  });
+  // Notifier le vendeur
+  await addDoc(collection(db, 'notifications'), {
+    userId: data.sellerId,
+    type: 'system',
+    title: '🛵 Un livreur vous propose ses services',
+    body: data.delivererName + ' propose de livrer "' + data.productTitle + '" pour ' + data.proposedFee.toLocaleString('fr-FR') + ' FCFA.',
+    data: { requestId: ref.id, orderId: data.orderId },
+    read: false,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+// ── Vendeur accepte/refuse la proposition d'un livreur ───────
+export async function respondToDelivererProposal(
+  requestId: string,
+  orderId: string,
+  delivererId: string,
+  delivererName: string,
+  delivererPhone: string,
+  accepted: boolean
+): Promise<void> {
+  await updateDoc(doc(db, 'deliveryRequests', requestId), {
+    status: accepted ? 'accepted' : 'rejected_by_seller',
+    respondedAt: serverTimestamp(),
+  });
+  if (accepted && orderId) {
+    await updateDoc(doc(db, 'orders', orderId), {
+      delivererId,
+      delivererName,
+      delivererPhone,
+      status: 'delivery_accepted',
+      deliveryAcceptedAt: serverTimestamp(),
+    });
+  }
+}

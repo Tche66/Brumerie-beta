@@ -44,6 +44,7 @@ import { NetworkBanner } from '@/components/NetworkBanner';
 import { OfferModal } from '@/components/OfferModal';
 import { GoogleNeighborhoodModal } from '@/components/GoogleNeighborhoodModal';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
+import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
 
 type Page =
@@ -52,7 +53,7 @@ type Page =
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin'
-  | 'become-deliverer' | 'deliverer-dashboard';
+  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {
@@ -588,6 +589,12 @@ useEffect(() => {
           <BecomeDelivererPage
             onBack={goBack}
             onDone={() => navigate('deliverer-dashboard')}
+          />
+        )}
+        {activePage === 'deliverer-profile' && selectedDelivererId && (
+          <DelivererProfilePage
+            delivererId={selectedDelivererId}
+            onBack={goBack}
           />
         )}
         {activePage === 'deliverer-dashboard' && (
