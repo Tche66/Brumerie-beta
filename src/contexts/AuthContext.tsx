@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   User as FirebaseUser,
   createUserWithEmailAndPassword,
@@ -10,7 +10,6 @@ import {
   GoogleAuthProvider,
   signInWithRedirect,
   signInWithPopup,
-  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -40,14 +39,25 @@ export function useAuth() {
   return ctx;
 }
 
-const RKEY = 'brumerie_g_redir';
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  // ref pour signaler à onAuthStateChanged de ne pas finir le loading
-  const redirectPending = useRef(localStorage.getItem(RKEY) === '1');
+
+  // ── Stocker la config Firebase pour auth-callback.html ──────
+  useEffect(() => {
+    try {
+      const cfg = {
+        apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGE_SENDER_ID,
+        appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+      };
+      localStorage.setItem('brumerie_fb_cfg', JSON.stringify(cfg));
+    } catch {}
+  }, []);
 
   const loadProfile = useCallback(async (uid: string): Promise<boolean> => {
     try {
@@ -61,12 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUserProfile({
         ...d,
-        bookmarkedProductIds: d.bookmarkedProductIds || [],
-        defaultPaymentMethods: d.defaultPaymentMethods || [],
-        deliveryPriceSameZone: d.deliveryPriceSameZone || 0,
+        bookmarkedProductIds:   d.bookmarkedProductIds   || [],
+        defaultPaymentMethods:  d.defaultPaymentMethods  || [],
+        deliveryPriceSameZone:  d.deliveryPriceSameZone  || 0,
         deliveryPriceOtherZone: d.deliveryPriceOtherZone || 0,
         managesDelivery: d.managesDelivery || false,
-        contactCount: d.contactCount || 0,
+        contactCount:    d.contactCount    || 0,
       } as User);
       return true;
     } catch (e) {
@@ -123,10 +133,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' });
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      localStorage.setItem(RKEY, '1');
-      redirectPending.current = true;
+      // Sur mobile : redirect — Firebase revient sur /auth-callback.html
+      // qui appelle getRedirectResult() dans un contexte propre sans React
       await signInWithRedirect(auth, provider);
     } else {
+      // Sur desktop : popup directe, pas de redirect
       const { user } = await signInWithPopup(auth, provider);
       await handleGoogleUser(user);
     }
@@ -148,16 +159,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentUser) await loadProfile(currentUser.uid);
   }
 
+  // ── Init — flux simple : onAuthStateChanged only ─────────────
+  // getRedirectResult n'est PLUS appelé ici — c'est auth-callback.html qui s'en charge
+  // Quand l'app recharge depuis /?google_ok=1 ou /?google_new=1,
+  // Firebase a déjà une session active → onAuthStateChanged retourne le user directement
   useEffect(() => {
-    // ÉTAPE 1 — onAuthStateChanged s'abonne immédiatement
-    // Si redirectPending=true, il met à jour currentUser MAIS ne finit pas loading
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      if (redirectPending.current) {
-        // On est en train de traiter un redirect — juste stocker le user, ne pas finir loading
-        setCurrentUser(user);
-        return;
-      }
-      // Flux normal
+    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       setCurrentUser(user);
       if (user) {
         const ok = await loadProfile(user.uid);
@@ -169,37 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     });
-
-    // ÉTAPE 2 — Si on revient d'un redirect Google, appeler getRedirectResult
-    if (redirectPending.current) {
-      getRedirectResult(auth)
-        .then(async (result) => {
-          localStorage.removeItem(RKEY);
-          redirectPending.current = false;
-          if (result?.user) {
-            setCurrentUser(result.user);
-            await handleGoogleUser(result.user);
-          } else {
-            // Pas de résultat redirect — vérifier si Firebase a quand même un user
-            const fbUser = auth.currentUser;
-            if (fbUser) {
-              setCurrentUser(fbUser);
-              const ok = await loadProfile(fbUser.uid);
-              if (!ok) await handleGoogleUser(fbUser);
-            }
-          }
-        })
-        .catch((e) => {
-          console.warn('[Auth] getRedirectResult error:', e?.code, e?.message);
-          localStorage.removeItem(RKEY);
-          redirectPending.current = false;
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }
-
-    return () => unsubAuth();
+    return unsub;
   }, [handleGoogleUser, loadProfile]);
 
   return (

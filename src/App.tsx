@@ -113,13 +113,13 @@ function RoleSwitchModal({ currentRole, onConfirm, onCancel }: {
 
 // ── AppShell — rendu uniquement si authentifié ────────────────
 // TOUS les hooks sont déclarés ici, AUCUN return conditionnel avant eux
-function AppShell() {
+function AppShell({ initialPage }: { initialPage?: Page }) {
   const { currentUser, userProfile } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
   const { showOnboarding, doneOnboarding } = useOnboarding();
 
   // ── État de navigation ──
-  const [activePage, setActivePage]               = useState<Page>('home');
+  const [activePage, setActivePage]               = useState<Page>(initialPage || 'home');
   const [pageKey, setPageKey]                      = useState(0); // force re-mount pour animation
   const [selectedProduct, setSelectedProduct]     = useState<Product | null>(null);
   const [productHistory, setProductHistory]       = useState<Product[]>([]);
@@ -642,13 +642,19 @@ useEffect(() => {
 }
 
 // ── AppContent — dispatcher auth / app ───────────────────────
-// Ce composant ne contient AUCUN hook — juste du routing conditionnel
-
-
 function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
   const [showAuth, setShowAuth] = React.useState(false);
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
+
+  // Détecter retour de auth-callback.html (connexion Google mobile)
+  const urlParams = new URLSearchParams(window.location.search);
+  const googleOk  = urlParams.get('google_ok')  === '1';
+  const googleNew = urlParams.get('google_new') === '1';
+
+  React.useEffect(() => {
+    if (googleOk || googleNew) window.history.replaceState({}, '', window.location.pathname);
+  }, []); // eslint-disable-line
 
   // Maintenance check
   React.useEffect(() => {
@@ -661,11 +667,6 @@ function AppContent() {
       });
     });
   }, []);
-
-  // Quand connecté → effacer le flag showAuth
-  React.useEffect(() => {
-    if (currentUser) setShowAuth(false);
-  }, [currentUser]);
 
   if (maintenance?.active && currentUser?.uid !== ((import.meta as any).env?.VITE_ADMIN_UID || '__none__')) {
     return (
@@ -721,7 +722,9 @@ function AppContent() {
     );
   }
 
-  return <AppShell />;
+  // Retour Google : google_new → profil, google_ok → accueil
+  const googleInitPage: Page | undefined = googleNew ? 'profile' : (googleOk ? 'home' : undefined);
+  return <AppShell initialPage={googleInitPage} />;
 }
 
 
