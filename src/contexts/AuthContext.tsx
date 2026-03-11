@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   User as FirebaseUser,
   createUserWithEmailAndPassword,
@@ -33,53 +33,58 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
 
-// Flag sessionStorage : mis à 1 juste avant signInWithRedirect, retiré après getRedirectResult
-const REDIRECT_KEY = 'brumerie_google_redirect';
+const RKEY = 'brumerie_g_redir';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfile]  = useState<User | null>(null);
-  // Si on revient d'un redirect Google, loading reste true jusqu'à ce que
-  // getRedirectResult ait fini — on ne laisse JAMAIS passer loading=false trop tôt
+  const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // ref pour signaler à onAuthStateChanged de ne pas finir le loading
+  const redirectPending = useRef(localStorage.getItem(RKEY) === '1');
 
-  const loadUserProfile = useCallback(async (uid: string): Promise<boolean> => {
+  const loadProfile = useCallback(async (uid: string): Promise<boolean> => {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
       if (!snap.exists()) return false;
-      const data = snap.data();
-      if (data.isBanned) {
+      const d = snap.data();
+      if (d.isBanned) {
         await firebaseSignOut(auth);
-        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu.');
+        localStorage.setItem('ban_reason', d.banReason || 'Compte suspendu.');
         return false;
       }
       setUserProfile({
-        ...data,
-        bookmarkedProductIds:   data.bookmarkedProductIds   || [],
-        defaultPaymentMethods:  data.defaultPaymentMethods  || [],
-        deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
-        deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
-        managesDelivery: data.managesDelivery || false,
-        contactCount:    data.contactCount    || 0,
+        ...d,
+        bookmarkedProductIds: d.bookmarkedProductIds || [],
+        defaultPaymentMethods: d.defaultPaymentMethods || [],
+        deliveryPriceSameZone: d.deliveryPriceSameZone || 0,
+        deliveryPriceOtherZone: d.deliveryPriceOtherZone || 0,
+        managesDelivery: d.managesDelivery || false,
+        contactCount: d.contactCount || 0,
       } as User);
       return true;
-    } catch { return false; }
-  }, []); // eslint-disable-line
+    } catch (e) {
+      console.error('[Auth] loadProfile:', e);
+      return false;
+    }
+  }, []);
 
   const handleGoogleUser = useCallback(async (user: FirebaseUser) => {
-    const exists = await loadUserProfile(user.uid);
+    const exists = await loadProfile(user.uid);
     if (!exists) {
       const newUser: User = {
         id: user.uid, uid: user.uid,
-        email: user.email || '', name: user.displayName || '',
+        email: user.email || '',
+        name: user.displayName || '',
         phone: '', role: 'buyer', neighborhood: '',
-        isVerified: false, photoURL: user.photoURL || '',
+        isVerified: false,
+        photoURL: user.photoURL || '',
         bookmarkedProductIds: [],
         createdAt: serverTimestamp() as any,
         publicationCount: 0, publicationLimit: 50,
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ensureReferralCode(user.uid, newUser.name);
       sendWelcomeEmail(newUser.email, newUser.name);
     }
-  }, [loadUserProfile]);
+  }, [loadProfile]);
 
   async function signUp(email: string, password: string, userData: Partial<User> & { referredBy?: string }) {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -118,8 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     provider.setCustomParameters({ prompt: 'select_account' });
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
-      // Poser le flag AVANT le redirect — la page va recharger
-      sessionStorage.setItem(REDIRECT_KEY, '1');
+      localStorage.setItem(RKEY, '1');
+      redirectPending.current = true;
       await signInWithRedirect(auth, provider);
     } else {
       const { user } = await signInWithPopup(auth, provider);
@@ -127,7 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function signOut() { await firebaseSignOut(auth); setUserProfile(null); }
+  async function signOut() {
+    await firebaseSignOut(auth);
+    setUserProfile(null);
+  }
   async function resetPassword(email: string) { await sendPasswordResetEmail(auth, email); }
   async function requestOTP(email: string, name: string): Promise<{ devCode?: string }> {
     const r = await sendOTPEmail(email, name);
@@ -137,50 +145,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return verifyOTPRemote(email, code);
   }
   async function refreshUserProfile() {
-    if (currentUser) await loadUserProfile(currentUser.uid);
+    if (currentUser) await loadProfile(currentUser.uid);
   }
 
   useEffect(() => {
-    const isRedirectReturn = sessionStorage.getItem(REDIRECT_KEY) === '1';
-
-    // ── CAS REDIRECT GOOGLE ──────────────────────────────────────────
-    // On est de retour après un signInWithRedirect
-    // Il faut appeler getRedirectResult() pour finaliser la session Firebase
-    // ET ne pas laisser onAuthStateChanged mettre loading=false avant que ce soit fini
-    if (isRedirectReturn) {
-      // On traite le redirect en priorité absolue
-      getRedirectResult(auth)
-        .then(async (result) => {
-          if (result?.user) {
-            setCurrentUser(result.user);
-            await handleGoogleUser(result.user);
-          }
-          // Qu'il y ait un résultat ou non, on finit le loading
-          sessionStorage.removeItem(REDIRECT_KEY);
-          setLoading(false);
-        })
-        .catch((e) => {
-          console.warn('[Auth] getRedirectResult error:', e?.code, e?.message);
-          sessionStorage.removeItem(REDIRECT_KEY);
-          setLoading(false);
-        });
-
-      // On enregistre onAuthStateChanged mais il NE DOIT PAS mettre loading=false
-      // car getRedirectResult s'en charge
-      const unsub = onAuthStateChanged(auth, (user) => {
-        // Juste mettre à jour currentUser silencieusement
+    // ÉTAPE 1 — onAuthStateChanged s'abonne immédiatement
+    // Si redirectPending=true, il met à jour currentUser MAIS ne finit pas loading
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      if (redirectPending.current) {
+        // On est en train de traiter un redirect — juste stocker le user, ne pas finir loading
         setCurrentUser(user);
-        if (!user) setUserProfile(null);
-        // NE PAS appeler setLoading(false) ici — getRedirectResult s'en charge
-      });
-      return unsub;
-    }
-
-    // ── CAS NORMAL (pas de redirect) ────────────────────────────────
-    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+        return;
+      }
+      // Flux normal
       setCurrentUser(user);
       if (user) {
-        const ok = await loadUserProfile(user.uid);
+        const ok = await loadProfile(user.uid);
         if (!ok && user.providerData?.some(p => p.providerId === 'google.com')) {
           await handleGoogleUser(user);
         }
@@ -190,8 +170,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return unsub;
-  }, [handleGoogleUser, loadUserProfile]);
+    // ÉTAPE 2 — Si on revient d'un redirect Google, appeler getRedirectResult
+    if (redirectPending.current) {
+      getRedirectResult(auth)
+        .then(async (result) => {
+          localStorage.removeItem(RKEY);
+          redirectPending.current = false;
+          if (result?.user) {
+            setCurrentUser(result.user);
+            await handleGoogleUser(result.user);
+          } else {
+            // Pas de résultat redirect — vérifier si Firebase a quand même un user
+            const fbUser = auth.currentUser;
+            if (fbUser) {
+              setCurrentUser(fbUser);
+              const ok = await loadProfile(fbUser.uid);
+              if (!ok) await handleGoogleUser(fbUser);
+            }
+          }
+        })
+        .catch((e) => {
+          console.warn('[Auth] getRedirectResult error:', e?.code, e?.message);
+          localStorage.removeItem(RKEY);
+          redirectPending.current = false;
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+
+    return () => unsubAuth();
+  }, [handleGoogleUser, loadProfile]);
 
   return (
     <AuthContext.Provider value={{

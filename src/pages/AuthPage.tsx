@@ -67,23 +67,23 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   const handleGoogle = async () => {
     setError('');
     setLoading(true);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     try {
       await signInWithGoogle();
-      // onAuthStateChanged prend la main → AppContent redirige vers l'app
+      // Mobile : la page va recharger → pas de finally
+      // Desktop : signInWithPopup → onAuthStateChanged prend la main
+      if (!isMobile) setLoading(false);
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        // Annulation volontaire → pas d'erreur affichée
+        // Annulation volontaire → pas d'erreur
       } else if (code === 'auth/popup-blocked') {
-        setError('Popup bloquée par ton navigateur. Autorise les popups pour ce site.');
+        setError('Popup bloquée. Autorise les popups pour ce site.');
       } else if (code === 'auth/network-request-failed') {
         setError('Erreur réseau. Vérifie ta connexion.');
-      } else if (code === 'auth/internal-error') {
-        setError('Erreur Google. Vérifie que les popups sont autorisées et réessaie.');
       } else {
-        setError('Erreur (' + code + '). Réessaie.');
+        setError('Erreur Google (' + code + '). Réessaie.');
       }
-    } finally {
       setLoading(false);
     }
   };

@@ -56,7 +56,7 @@ function AuthGate() {
   const { userProfile, currentUser } = useAuth();
   const [showPrivacy, setShowPrivacy] = React.useState(false);
   const [privacyMode, setPrivacyMode] = React.useState<'privacy' | 'terms'>('privacy');
-  const _banReason = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ban_reason') : null;
+  const _banReason = typeof localStorage !== 'undefined' ? localStorage.getItem('ban_reason') : null;
 
   const handleNavigate = (page: string) => {
     if (page === 'privacy') { setPrivacyMode('privacy'); setShowPrivacy(true); }
