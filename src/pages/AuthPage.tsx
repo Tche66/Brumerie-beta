@@ -65,29 +65,27 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
 
   // ── Connexion / Inscription Google ──────────────────────────
   const handleGoogle = async () => {
-    setError(''); setLoading(true);
+    setError('');
+    setLoading(true);
     try {
-      // signInWithGoogle gère popup (desktop) vs redirect (mobile) automatiquement
       await signInWithGoogle();
-      // Si popup → onAuthStateChanged prend la main
-      // Si redirect → la page recharge, loading reste true jusqu'à redirection
+      // onAuthStateChanged prend la main → AppContent redirige vers l'app
     } catch (err: any) {
-      console.error('[Google Auth] code:', err.code, '| message:', err.message);
-      // Afficher TOUJOURS l'erreur pour diagnostiquer
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        setError('Connexion annulée. Réessaie.');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up bloquée — essaie depuis Chrome directement.');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError('Domaine non autorisé dans Firebase. Ajoute brumerie-beta.vercel.app dans Authentication > Paramètres > Domaines autorisés.');
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Google non activé dans Firebase. Active-le dans Authentication > Méthode de connexion.');
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Erreur réseau. Vérifie ta connexion internet.');
+      const code = err?.code || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        // Annulation volontaire → pas d'erreur affichée
+      } else if (code === 'auth/popup-blocked') {
+        setError('Popup bloquée par ton navigateur. Autorise les popups pour ce site.');
+      } else if (code === 'auth/network-request-failed') {
+        setError('Erreur réseau. Vérifie ta connexion.');
+      } else if (code === 'auth/internal-error') {
+        setError('Erreur Google. Vérifie que les popups sont autorisées et réessaie.');
       } else {
-        setError('Erreur Google (' + (err.code || 'inconnue') + '): ' + (err.message || 'Réessaie.'));
+        setError('Erreur (' + code + '). Réessaie.');
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── Envoyer OTP ───────────────────────────────────────────────

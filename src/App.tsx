@@ -650,23 +650,18 @@ function AppContent() {
   const [showAuth, setShowAuth] = React.useState(false);
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
 
-  // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {
     import('firebase/firestore').then(({ doc, getDoc }) => {
       import('@/config/firebase').then(({ db }) => {
         getDoc(doc(db, 'system', 'settings')).then((snap: any) => {
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data.maintenanceMode) {
-              setMaintenance({ active: true, message: data.maintenanceMessage || '🔧 Brumerie est en maintenance. Revenez bientôt !' });
-            }
+          if (snap.exists() && snap.data().maintenanceMode) {
+            setMaintenance({ active: true, message: snap.data().maintenanceMessage || '🔧 Maintenance en cours.' });
           }
         }).catch(() => {});
       });
     });
   }, []);
 
-  // Mode maintenance — bloquer tous sauf admin
   if (maintenance?.active && currentUser?.uid !== ((import.meta as any).env?.VITE_ADMIN_UID || '__none__')) {
     return (
       <div className="min-h-screen flex items-center justify-center px-8" style={{ background: '#0F172A' }}>
@@ -679,7 +674,7 @@ function AppContent() {
     );
   }
 
-  // Chargement Firebase en cours (incluant traitement redirect Google)
+  // Firebase charge → spinner
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -691,26 +686,26 @@ function AppContent() {
     );
   }
 
-  // Firebase a répondu — pas de user connecté
+  // Pas connecté
   if (!currentUser) {
     if (showAuth) return <AuthGate />;
     return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
   }
 
-  // User connecté mais profil Firestore pas encore chargé → spinner court
+  // Connecté mais profil pas encore chargé
   if (!userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Chargement du profil…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion…</p>
         </div>
       </div>
     );
   }
 
-  // Connecté mais rôle manquant (nouveau compte Google) → sélection du rôle
+  // Rôle manquant (nouveau compte Google)
   if (!userProfile.role) {
     return (
       <RoleSelectPage
@@ -723,7 +718,6 @@ function AppContent() {
     );
   }
 
-  // ✅ Tout bon → application complète
   return <AppShell />;
 }
 

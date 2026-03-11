@@ -9,8 +9,6 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -47,34 +45,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Charger profil Firestore ─────────────────────────────────
   const loadUserProfile = useCallback(async (uid: string): Promise<boolean> => {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (!snap.exists()) return false;
-    const data = snap.data();
-    if (data.isBanned) {
-      await firebaseSignOut(auth);
-      setUserProfile(null);
-      sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
-      return false;
-    }
-    setUserProfile({
-      ...data,
-      bookmarkedProductIds:   data.bookmarkedProductIds   || [],
-      defaultPaymentMethods:  data.defaultPaymentMethods  || [],
-      deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
-      deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
-      managesDelivery: data.managesDelivery || false,
-      contactCount:    data.contactCount    || 0,
-    } as User);
-    return true;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (!snap.exists()) return false;
+      const data = snap.data();
+      if (data.isBanned) {
+        await firebaseSignOut(auth);
+        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
+        return false;
+      }
+      setUserProfile({
+        ...data,
+        bookmarkedProductIds:   data.bookmarkedProductIds   || [],
+        defaultPaymentMethods:  data.defaultPaymentMethods  || [],
+        deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
+        deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
+        managesDelivery: data.managesDelivery || false,
+        contactCount:    data.contactCount    || 0,
+      } as User);
+      return true;
+    } catch { return false; }
+  }, []); // eslint-disable-line
 
   // ── Créer ou charger un compte Google ───────────────────────
   const handleGoogleUser = useCallback(async (user: FirebaseUser) => {
-    const uid = user.uid;
-    const exists = await loadUserProfile(uid);
+    const exists = await loadUserProfile(user.uid);
     if (!exists) {
       const newUser: User = {
-        id: uid, uid,
+        id: user.uid, uid: user.uid,
         email:        user.email        || '',
         name:         user.displayName  || '',
         phone:        '',
@@ -87,18 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         publicationCount: 0,
         publicationLimit: 50,
       };
-      await setDoc(doc(db, 'users', uid), newUser);
+      await setDoc(doc(db, 'users', user.uid), newUser);
       setUserProfile(newUser);
-      ensureReferralCode(uid, newUser.name);
+      ensureReferralCode(user.uid, newUser.name);
       sendWelcomeEmail(newUser.email, newUser.name);
     }
   }, [loadUserProfile]);
 
   // ── Inscription email ────────────────────────────────────────
-  async function signUp(
-    email: string, password: string,
-    userData: Partial<User> & { referredBy?: string }
-  ) {
+  async function signUp(email: string, password: string, userData: Partial<User> & { referredBy?: string }) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const uid  = cred.user.uid;
     const newUser: User = {
@@ -118,31 +113,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserProfile(newUser);
     await ensureReferralCode(uid, userData.name || '');
     if (userData.referredBy) {
-      try { await applyReferral(uid, userData.referredBy); }
-      catch (e) { console.error('[Referral]', e); }
+      try { await applyReferral(uid, userData.referredBy); } catch {}
     }
     sendWelcomeEmail(email, userData.name || '');
   }
 
-  // ── Connexion email ──────────────────────────────────────────
   async function signIn(email: string, password: string) {
     await signInWithEmailAndPassword(auth, email, password);
   }
 
-  // ── Connexion Google ─────────────────────────────────────────
+  // ── Connexion Google — POPUP UNIQUEMENT ─────────────────────
+  // authDomain = brumerie-app.firebaseapp.com → popup fonctionne partout
+  // Ne pas utiliser signInWithRedirect → race condition insoluble avec React
   async function signInWithGoogle() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      await signInWithRedirect(auth, provider);
-      return;
-    }
     const cred = await signInWithPopup(auth, provider);
     await handleGoogleUser(cred.user);
   }
 
-  // ── Déconnexion ──────────────────────────────────────────────
   async function signOut() {
     await firebaseSignOut(auth);
     setUserProfile(null);
@@ -154,8 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function requestOTP(email: string, name: string): Promise<{ devCode?: string }> {
     const result = await sendOTPEmail(email, name);
-    if (result.devCode) return { devCode: result.devCode };
-    return {};
+    return result.devCode ? { devCode: result.devCode } : {};
   }
 
   async function verifyOTP(email: string, code: string): Promise<'valid' | 'expired' | 'invalid'> {
@@ -166,58 +154,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (currentUser) await loadUserProfile(currentUser.uid);
   }
 
-  // ── Initialisation auth : redirect Google + écoute état ─────
+  // ── Écoute de l'état auth Firebase ──────────────────────────
   useEffect(() => {
-    const init = async () => {
-      // Étape 1 — Récupérer le résultat du redirect Google si applicable
-      // Cette étape DOIT être faite avant onAuthStateChanged
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          // Redirect Google réussi → créer/charger le profil
-          await handleGoogleUser(result.user);
-          setCurrentUser(result.user);
-          setLoading(false);
-          // Étape 2 — Écouter les changements suivants (déconnexion, etc.)
-          return onAuthStateChanged(auth, async (user) => {
-            setCurrentUser(user);
-            if (!user) { setUserProfile(null); setLoading(false); }
-            // Si user toujours connecté, profil déjà chargé → rien à faire
-          });
-        }
-      } catch (e: any) {
-        console.error('[Auth] getRedirectResult:', e?.code, e?.message);
+    const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
+      setCurrentUser(user);
+      if (user) {
+        await loadUserProfile(user.uid) ||
+          (user.providerData?.some(p => p.providerId === 'google.com')
+            ? await handleGoogleUser(user)
+            : null);
+      } else {
+        setUserProfile(null);
       }
-
-      // Étape 2 — Pas de redirect → écouter l'état normal Firebase
-      return onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
-        setCurrentUser(user);
-        if (user) {
-          await loadUserProfile(user.uid) ||
-            // Profil absent (ex: nouveau Google sans redirect) → créer
-            (user.providerData?.some(p => p.providerId === 'google.com') && await handleGoogleUser(user));
-        } else {
-          setUserProfile(null);
-        }
-        setLoading(false);
-      });
-    };
-
-    let unsub: (() => void) | undefined;
-    init().then(fn => { unsub = fn; });
-    return () => { unsub?.(); };
+      setLoading(false);
+    });
+    return unsub;
   }, [handleGoogleUser, loadUserProfile]);
 
-  const value: AuthContextType = {
-    currentUser, userProfile, loading,
-    signUp, signIn, signOut, resetPassword, refreshUserProfile,
-    requestOTP, verifyOTP, signInWithGoogle,
-  };
-
-  // On rend children même pendant loading pour que AppContent puisse
-  // afficher son propre spinner et lire sessionStorage correctement
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      currentUser, userProfile, loading,
+      signUp, signIn, signOut, resetPassword, refreshUserProfile,
+      requestOTP, verifyOTP, signInWithGoogle,
+    }}>
       {children}
     </AuthContext.Provider>
   );
