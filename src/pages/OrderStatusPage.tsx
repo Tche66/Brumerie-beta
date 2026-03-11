@@ -412,10 +412,10 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                       💬 Contacter
                     </button>
                     {delivererInfo.phone && (
-                      <a href={"https://wa.me/" + delivererInfo.phone.replace(/\D/g,'')}
-                        target="_blank" rel="noopener noreferrer"
-                        className="px-4 py-2.5 rounded-xl bg-green-500 text-white font-black text-[12px] active:scale-95">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="inline"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/></svg>
+                      <a href={"tel:" + delivererInfo.phone.replace(/\D/g, '')}
+                        className="px-4 py-2.5 rounded-xl bg-green-500 text-white font-black text-[12px] active:scale-95 flex items-center gap-1">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        Appel
                       </a>
                     )}
                     {/* Changer de livreur */}
@@ -523,12 +523,13 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
         ══════════════════════════════════════════════════ */}
 
         {/* VENDEUR — Étape 1 : confirmer mise en livraison */}
+        {/* ══ COD — VENDEUR : Étape 1 — Prêt à livrer → génère QR escrow ══ */}
         {isSeller && order.status === 'cod_pending' && (
           <div className="space-y-3 pt-2">
             <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-              <p className="text-[10px] font-black text-blue-800 uppercase mb-1">🤝 Nouvelle commande à livrer</p>
+              <p className="text-[10px] font-black text-blue-800 uppercase mb-1">🤝 Nouvelle commande COD</p>
               <p className="text-[11px] text-blue-700 font-bold leading-relaxed">
-                L'acheteur paiera à la réception. Confirmez dès que vous êtes prêt à livrer.
+                L'acheteur paiera à la réception. Quand tu es prêt, clique pour générer le QR de livraison.
               </p>
             </div>
             <button onClick={() => act(() => confirmCODReady(orderId))} disabled={loading}
@@ -536,7 +537,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
               {loading
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
-                : '📦 Je mets en livraison →'}
+                : '📦 Prêt — Générer le QR de livraison'}
             </button>
             <button onClick={() => setShowDisputeForm(true)}
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-orange-600 bg-orange-50 border border-orange-100 active:scale-95 transition-all">
@@ -545,46 +546,89 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           </div>
         )}
 
-        {/* VENDEUR — Étape 2 : en attente de confirmation acheteur */}
-        {isSeller && order.status === 'cod_confirmed' && (
-          <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-            <p className="text-[10px] font-black text-green-800 uppercase mb-1">🚚 Livraison en cours</p>
-            <p className="text-[11px] text-green-700 font-bold">
-              En attente de la confirmation de réception par l'acheteur. Le paiement sera encaissé à la livraison.
-            </p>
+        {/* ══ COD — VENDEUR : Étape 2 — QR généré, montrer au livreur ══ */}
+        {isSeller && order.status === 'cod_confirmed' && order.deliveryCode && (
+          <div className="space-y-3 pt-2">
+            {showSellerQR && (
+              <QRDisplay
+                title="Mon QR Vendeur"
+                subtitle="Fais scanner par le livreur"
+                code={order.deliveryCode}
+                qrPayload={(order as any).qrPickupPayload || buildQRPayload('pickup', orderId, order.deliveryCode)}
+                color="#115E2E"
+                emoji="📦"
+                instruction="Le livreur scanne ce QR quand il vient récupérer le colis — confirme la prise en charge."
+                onClose={() => setShowSellerQR(false)}
+              />
+            )}
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+              <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-2">📦 En attente du livreur</p>
+              <p className="text-[11px] text-green-700 mb-3">
+                Montre ton QR au livreur quand il arrive. L'acheteur recevra son QR de réception.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowSellerQR(true)}
+                  className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  📲 Afficher mon QR
+                </button>
+                <div className="flex-1 bg-slate-900 rounded-xl flex items-center justify-center py-1">
+                  <span className="text-[18px] font-black text-yellow-300 tracking-[0.3em] font-mono">{order.deliveryCode}</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ACHETEUR — Étape 1 : attente livraison */}
+        {/* ══ COD — ACHETEUR : Étape 1 — Attente livraison ══ */}
         {isBuyer && order.status === 'cod_pending' && (
           <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
             <p className="text-[10px] font-black text-blue-800 uppercase mb-1">🤝 Paiement à la livraison</p>
             <p className="text-[11px] text-blue-700 font-bold leading-relaxed">
-              Commande confirmée ! Le vendeur va préparer la livraison. Vous paierez <span className="text-blue-900">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> à la réception.
+              Commande confirmée ! Le vendeur prépare la livraison. Tu paieras <span className="text-blue-900">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au livreur à la réception.
             </p>
           </div>
         )}
 
-        {/* ACHETEUR — Étape 2 : confirmer réception + paiement */}
+        {/* ══ COD — ACHETEUR : Étape 2 — Scanner QR livreur ou saisir code → confirme paiement ══ */}
         {isBuyer && order.status === 'cod_confirmed' && (
           <div className="space-y-3 pt-2">
+            {showBuyerScanner && (
+              <QRScanner
+                expectedType="delivery"
+                expectedOrderId={orderId}
+                onSuccess={async (_code) => {
+                  setShowBuyerScanner(false);
+                  await act(async () => {
+                    await confirmCODDelivered(orderId);
+                    try { await updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+                    setShowRatingModal(true);
+                  });
+                }}
+                onClose={() => setShowBuyerScanner(false)}
+              />
+            )}
             <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-              <p className="text-[10px] font-black text-green-800 uppercase mb-1">🚚 Votre commande arrive !</p>
+              <p className="text-[10px] font-black text-green-800 uppercase mb-1">🚚 Ton article arrive !</p>
               <p className="text-[11px] text-green-700 font-bold leading-relaxed">
-                {order.sellerName} a confirmé l'envoi. Payez <span className="text-green-900 font-black">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au livreur et confirmez la réception.
+                Scanne le QR du livreur à la réception, puis paie <span className="text-green-900">{totalDisplay.toLocaleString('fr-FR')} FCFA</span>.
               </p>
             </div>
-            <button onClick={() => act(async () => {
-              await confirmCODDelivered(orderId);
-              try { await updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
-              setShowRatingModal(true);
-            })} disabled={loading}
-              className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
-              {loading
-                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
-                : "J'ai reçu et payé ✓"}
+            {/* Option 1 : Scanner QR */}
+            <button onClick={() => setShowBuyerScanner(true)}
+              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+              📷 Scanner le QR du livreur
             </button>
+            {/* Option 2 : Saisir code de secours + confirmer manuellement */}
+            <DeliveryCodeInput orderId={orderId} order={order}
+              onValidated={async () => {
+                await confirmCODDelivered(orderId);
+                try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+                setShowRatingModal(true);
+              }}
+            />
             <button onClick={() => setShowDisputeForm(true)}
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-orange-600 bg-orange-50 border border-orange-100 active:scale-95 transition-all">
               Signaler un problème

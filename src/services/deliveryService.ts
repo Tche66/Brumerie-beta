@@ -88,7 +88,7 @@ export async function confirmPickupByDeliverer(
   if (!snap.exists()) return { success: false, error: 'Commande introuvable' };
   const current = snap.data();
 
-  if (current.status !== 'ready') {
+  if (!['ready', 'cod_confirmed'].includes(current.status)) {
     return { success: false, error: 'La commande n\'est pas encore prête' };
   }
 

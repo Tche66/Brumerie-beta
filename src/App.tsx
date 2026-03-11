@@ -551,7 +551,15 @@ useEffect(() => {
           <NotificationsPage
             onBack={goBack}
             onOpenConversation={async (convId) => { await handleStartChat(convId); }}
-            onOpenOrder={(orderId) => { setSelectedOrderId(orderId); handleBottomNavNavigate('orders'); }}
+            onOpenOrder={(orderId) => {
+              setSelectedOrderId(orderId);
+              if (userProfile?.role === 'livreur') {
+                // Livreur → aller sur son dashboard, pas sur 'Mes Commandes'
+                navigate('deliverer-dashboard');
+              } else {
+                handleBottomNavNavigate('orders');
+              }
+            }}
           />
         )}
         {activePage === 'order-flow' && orderFlowProduct && (

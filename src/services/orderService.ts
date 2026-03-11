@@ -107,31 +107,44 @@ export async function submitProof(
   });
 }
 
-// ── COD : Vendeur confirme qu'il est prêt à livrer ────────────
-export async function confirmCODReady(orderId: string): Promise<void> {
+// ── COD : Vendeur confirme qu'il est prêt à livrer → génère QR escrow ──
+export async function confirmCODReady(orderId: string): Promise<string> {
   const snap = await getDoc(doc(ordersCol, orderId));
-  if (!snap.exists()) return;
+  if (!snap.exists()) return '';
   const order = { id: snap.id, ...snap.data() } as Order;
+
+  // Générer le code escrow (même système que mobile money)
+  const deliveryCode = generateDeliveryCode();
+  const qrPickupPayload   = 'brumerie://pickup/'   + orderId + '/' + deliveryCode;
+  const qrDeliveryPayload = 'brumerie://delivery/' + orderId + '/' + deliveryCode;
 
   await updateDoc(doc(ordersCol, orderId), {
     status: 'cod_confirmed' as OrderStatus,
+    deliveryCode,
+    qrPickupPayload,
+    qrDeliveryPayload,
+    deliveryCodeGeneratedAt: serverTimestamp(),
     codReadyAt: serverTimestamp(),
   });
 
   await notifyBoth({
     sellerId: order.sellerId,
     sellerMsg: {
-      title: `📦 Livraison en cours`,
-      body: `Vous avez confirmé la mise en livraison de "${order.productTitle}". Attendez la confirmation de réception.`,
+      title: '📦 Code livraison généré !',
+      body: 'Ton code : ' + deliveryCode + ' — Montre ton QR au livreur quand il vient récupérer.',
       convData: { orderId, productId: order.productId },
     },
     buyerId: order.buyerId,
     buyerMsg: {
-      title: `🚚 Votre commande arrive !`,
-      body: `${order.sellerName} a confirmé l'envoi de "${order.productTitle}". Confirmez la réception et payez à la livraison.`,
+      title: '🚚 Ta commande arrive !',
+      body: order.sellerName + ' a confirmé. Code de réception : ' + deliveryCode + '. Scanne le QR du livreur à la livraison.',
       convData: { orderId, productId: order.productId },
     },
   });
+
+  await notifyAllDeliverers(orderId, order);
+
+  return deliveryCode;
 }
 
 // ── COD : Acheteur confirme réception + paiement effectué ─────
