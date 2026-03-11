@@ -292,7 +292,7 @@ function MissionCard({ order, onScanVendeur, onChatSeller, onChatBuyer }: {
         <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1">📦 Étape 1 — Récupérer le colis</p>
         <p className="text-[11px] text-green-600">
           Va chez le vendeur et scanne son QR pour confirmer la prise en charge.
-          {(order as any).isCOD ? ' 💡 Paiement COD — l'acheteur te paiera à la livraison.' : ''}
+          {(order as any).isCOD && <span> 💡 COD — l&apos;acheteur te paiera à la livraison.</span>}
         </p>
       </div>
 
