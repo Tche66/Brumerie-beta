@@ -1,42 +1,49 @@
-// src/pages/DelivererDashboardPage.tsx
-// Interface principale du livreur — 4 onglets
+// src/pages/DelivererDashboardPage.tsx — v17 simplifié
+// Dashboard livreur : 4 onglets | Scan QR vendeur | Affiche QR pour acheteur
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  subscribeDeliveryRequests, respondToDeliveryRequest,
-  confirmPickup, toggleDelivererAvailability, getDelivererHistory,
+  subscribeDelivererOrders,
+  confirmPickupByDeliverer,
+  confirmDeliveryByBuyer,
+  toggleDelivererAvailability,
 } from '@/services/deliveryService';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
-import type { DeliveryRequest } from '@/types';
+import { QRScanner } from '@/components/QRScanner';
+import { QRDisplay } from '@/components/QRDisplay';
+import { buildQRPayload } from '@/utils/qrCode';
+import type { Order } from '@/types';
 
-interface Props { onNavigate: (page: string) => void; onChat: (userId: string, userName: string) => void; }
+interface Props {
+  onNavigate: (page: string) => void;
+  onChat: (userId: string, userName: string) => void;
+}
 
 type Tab = 'available' | 'ongoing' | 'earnings' | 'profile';
 
 export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
-  const [tab, setTab] = useState<Tab>('available');
-  const [requests, setRequests] = useState<DeliveryRequest[]>([]);
-  const [history, setHistory] = useState<DeliveryRequest[]>([]);
+  const [tab, setTab]             = useState<Tab>('available');
+  const [orders, setOrders]       = useState<Order[]>([]);
   const [available, setAvailable] = useState(userProfile?.deliveryAvailable ?? true);
-  const [toggling, setToggling] = useState(false);
-  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [toggling, setToggling]   = useState(false);
+
+  // QR actions
+  const [showScanPickup, setShowScanPickup]       = useState<Order | null>(null); // Scanner QR vendeur
+  const [showQRDelivery, setShowQRDelivery]       = useState<Order | null>(null); // Afficher mon QR pour acheteur
+  const [showEditProfile, setShowEditProfile]     = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
-    const unsub = subscribeDeliveryRequests(currentUser.uid, setRequests);
-    return unsub;
+    return subscribeDelivererOrders(currentUser.uid, setOrders);
   }, [currentUser?.uid]);
 
-  useEffect(() => {
-    if (tab === 'earnings' && currentUser) {
-      getDelivererHistory(currentUser.uid).then(setHistory);
-    }
-  }, [tab, currentUser?.uid]);
-
-  const pending   = requests.filter(r => r.status === 'pending');
-  const ongoing   = requests.filter(r => ['accepted', 'picked'].includes(r.status));
+  // Missions disponibles = commandes 'ready' avec delivererId == moi ou pas encore assigné
+  // En v17, le livreur est assigné par le vendeur/acheteur → il voit ses missions
+  const myPending  = orders.filter(o => o.status === 'ready');
+  const myOngoing  = orders.filter(o => o.status === 'picked');
+  const myDone     = orders.filter(o => o.status === 'delivered');
   const totalGains = userProfile?.totalEarnings || 0;
   const totalCount = userProfile?.totalDeliveries || 0;
 
@@ -50,33 +57,49 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     setToggling(false);
   };
 
-  const handleRespond = async (req: DeliveryRequest, accepted: boolean) => {
-    if (!userProfile) return;
-    await respondToDeliveryRequest(
-      req.id, req.orderId,
-      currentUser!.uid,
-      userProfile.deliveryPartnerName || userProfile.name,
-      userProfile.phone || '',
-      accepted
-    );
-  };
-
-  const handlePickup = async (req: DeliveryRequest) => {
-    await confirmPickup(req.id, req.orderId);
+  const handlePickupScanned = async (code: string, order: Order) => {
+    setShowScanPickup(null);
+    if (!currentUser) return;
+    const result = await confirmPickupByDeliverer(order.id, order);
+    if (!result.success) alert(result.error);
   };
 
   const TABS: { id: Tab; label: string; icon: string; badge?: number }[] = [
-    { id: 'available', label: 'Disponible', icon: '📦', badge: pending.length },
-    { id: 'ongoing',   label: 'En cours',   icon: '🛵', badge: ongoing.length },
-    { id: 'earnings',  label: 'Gains',       icon: '💰' },
-    { id: 'profile',   label: 'Mon profil',  icon: '👤' },
+    { id: 'available', label: 'Missions', icon: '📦', badge: myPending.length },
+    { id: 'ongoing',   label: 'En cours', icon: '🛵', badge: myOngoing.length },
+    { id: 'earnings',  label: 'Gains',    icon: '💰' },
+    { id: 'profile',   label: 'Profil',   icon: '👤' },
   ];
 
   if (showEditProfile) {
+    return <BecomeDelivererPage onBack={() => setShowEditProfile(false)} onDone={() => { setShowEditProfile(false); refreshUserProfile(); }}/>;
+  }
+
+  // ── QR Scanner : livreur scanne QR du vendeur ──
+  if (showScanPickup) {
     return (
-      <BecomeDelivererPage
-        onBack={() => setShowEditProfile(false)}
-        onDone={() => { setShowEditProfile(false); refreshUserProfile(); }}
+      <QRScanner
+        expectedType="pickup"
+        expectedOrderId={showScanPickup.id}
+        onSuccess={(code) => handlePickupScanned(code, showScanPickup)}
+        onClose={() => setShowScanPickup(null)}
+      />
+    );
+  }
+
+  // ── QR Display : livreur montre son QR à l'acheteur ──
+  if (showQRDelivery) {
+    const ord = showQRDelivery as any;
+    return (
+      <QRDisplay
+        title="Mon QR de livraison"
+        subtitle="Montre ce QR à l'acheteur"
+        code={ord.deliveryCode || '------'}
+        qrPayload={ord.qrDeliveryPayload || buildQRPayload('delivery', showQRDelivery.id, ord.deliveryCode || '')}
+        color="#D97706"
+        emoji="🛵"
+        instruction="L'acheteur va scanner ce QR avec son téléphone pour confirmer la réception."
+        onClose={() => setShowQRDelivery(null)}
       />
     );
   }
@@ -94,7 +117,6 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               📍 {(userProfile?.deliveryZones || []).join(' · ')}
             </p>
           </div>
-          {/* Toggle disponibilité */}
           <button onClick={handleToggle} disabled={toggling}
             className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${
               available ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
@@ -103,14 +125,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           </button>
         </div>
 
-        {/* Onglets */}
         <div className="flex gap-1 bg-slate-100 rounded-2xl p-1">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all relative ${
                 tab === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>
-              <span>{t.icon}</span>
-              <br/>
+              <span>{t.icon}</span><br/>
               <span>{t.label}</span>
               {t.badge && t.badge > 0 ? (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -124,7 +144,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 
       <div className="px-4 pt-4">
 
-        {/* ── ONGLET DISPONIBLE ── */}
+        {/* ── ONGLET MISSIONS (assigned, pas encore picked) ── */}
         {tab === 'available' && (
           <div className="flex flex-col gap-3">
             {!available && (
@@ -133,33 +153,40 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-amber-600 text-[11px]">Active ta disponibilité pour recevoir des missions</p>
               </div>
             )}
-            {pending.length === 0 ? (
+            {myPending.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">📭</div>
-                <p className="font-black text-slate-400 text-[13px]">Pas de nouvelles demandes</p>
-                <p className="text-slate-400 text-[11px] mt-1">Les missions dans tes quartiers apparaîtront ici</p>
+                <p className="font-black text-slate-400 text-[13px]">Aucune mission en attente</p>
+                <p className="text-slate-400 text-[11px] mt-1">Tes missions assignées apparaîtront ici</p>
               </div>
-            ) : pending.map(req => (
-              <RequestCard key={req.id} req={req}
-                onAccept={() => handleRespond(req, true)}
-                onReject={() => handleRespond(req, false)}
-                onChatSeller={() => onChat(req.sellerId || req.orderId, req.sellerName)}/>
+            ) : myPending.map(order => (
+              <MissionCard
+                key={order.id}
+                order={order}
+                onScanVendeur={() => setShowScanPickup(order)}
+                onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
+              />
             ))}
           </div>
         )}
 
-        {/* ── ONGLET EN COURS ── */}
+        {/* ── ONGLET EN COURS (picked → livraison) ── */}
         {tab === 'ongoing' && (
           <div className="flex flex-col gap-3">
-            {ongoing.length === 0 ? (
+            {myOngoing.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">🛵</div>
                 <p className="font-black text-slate-400 text-[13px]">Aucune livraison en cours</p>
               </div>
-            ) : ongoing.map(req => (
-              <OngoingCard key={req.id} req={req}
-                onPickup={() => handlePickup(req)}
-                onChatSeller={() => onChat(req.sellerId || req.orderId, req.sellerName)}/>
+            ) : myOngoing.map(order => (
+              <OngoingCard
+                key={order.id}
+                order={order}
+                onShowQR={() => setShowQRDelivery(order)}
+                onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
+                onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+              />
             ))}
           </div>
         )}
@@ -177,21 +204,20 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">FCFA gagnés</p>
               </div>
             </div>
-
             <p className="font-black text-slate-500 text-[10px] uppercase tracking-widest">Historique</p>
-            {history.length === 0 ? (
+            {myDone.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-slate-400 text-[12px]">Tes livraisons complétées apparaîtront ici</p>
               </div>
-            ) : history.map(req => (
-              <div key={req.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+            ) : myDone.map(order => (
+              <div key={order.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-lg">✅</div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-900 text-[12px] truncate">{req.productTitle}</p>
-                  <p className="text-[10px] text-slate-400">{req.fromNeighborhood} → {req.toNeighborhood}</p>
+                  <p className="font-black text-slate-900 text-[12px] truncate">{order.productTitle}</p>
+                  <p className="text-[10px] text-slate-400">{order.sellerNeighborhood} → {order.buyerNeighborhood}</p>
                 </div>
                 <p className="font-black text-green-600 text-[13px] whitespace-nowrap">
-                  +{req.estimatedFee.toLocaleString('fr-FR')} F
+                  +{((order as any).deliveryFee || 0).toLocaleString('fr-FR')} F
                 </p>
               </div>
             ))}
@@ -205,11 +231,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Mon service</p>
               <p className="font-black text-slate-900 text-base mb-1">{userProfile?.deliveryPartnerName}</p>
               <p className="text-[12px] text-slate-500 mb-3">{userProfile?.deliveryBio || 'Aucune description'}</p>
-              <p className="text-[11px] font-bold text-green-700">
-                📍 {(userProfile?.deliveryZones || []).join(' · ')}
-              </p>
+              <p className="text-[11px] font-bold text-green-700">📍 {(userProfile?.deliveryZones || []).join(' · ')}</p>
             </div>
-
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Mes tarifs</p>
               {(userProfile?.deliveryRates || []).map((r, i) => (
@@ -221,15 +244,13 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 </div>
               ))}
             </div>
-
-            <button onClick={() => onNavigate('become-deliverer')}
+            <button onClick={() => setShowEditProfile(true)}
               className="w-full py-4 bg-slate-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-600 active:scale-95 transition-all">
-              ✏️ Modifier mon profil livreur
+              ✏️ Modifier mon profil
             </button>
-
             <button onClick={() => onNavigate('settings')}
               className="w-full py-4 bg-slate-100 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-600 active:scale-95 transition-all">
-              ⚙️ Paramètres compte
+              ⚙️ Paramètres
             </button>
           </div>
         )}
@@ -238,86 +259,89 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   );
 }
 
-// ── Sous-composants ───────────────────────────────────────────────
-
-function RequestCard({ req, onAccept, onReject, onChatSeller }: {
-  req: DeliveryRequest;
-  onAccept: () => void;
-  onReject: () => void;
+// ── Mission Card — Colis à récupérer chez le vendeur ─────────────
+function MissionCard({ order, onScanVendeur, onChatSeller, onChatBuyer }: {
+  order: Order;
+  onScanVendeur: () => void;
   onChatSeller: () => void;
+  onChatBuyer: () => void;
 }) {
+  const ord = order as any;
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-green-500">
       <div className="flex items-start gap-3 mb-3">
-        {req.productImage
-          ? <img src={req.productImage} alt="" className="w-12 h-12 rounded-xl object-cover"/>
+        {ord.productImage
+          ? <img src={ord.productImage} alt="" className="w-12 h-12 rounded-xl object-cover"/>
           : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-xl">📦</div>
         }
         <div className="flex-1 min-w-0">
-          <p className="font-black text-slate-900 text-[13px] truncate">{req.productTitle}</p>
-          <p className="text-[11px] text-slate-500">{req.fromNeighborhood} → {req.toNeighborhood}</p>
-          <p className="text-[11px] text-slate-400">Vendeur : {req.sellerName}</p>
+          <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
+          <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
+          <p className="text-[11px] text-slate-400">Vendeur : {order.sellerName}</p>
         </div>
         <div className="text-right">
-          <p className="font-black text-green-600 text-[15px]">{req.estimatedFee.toLocaleString('fr-FR')}</p>
+          <p className="font-black text-green-600 text-[15px]">{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p>
           <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
         </div>
       </div>
+
+      {/* Étape 1 : scanner QR du vendeur pour récupérer le colis */}
+      <div className="bg-green-50 rounded-xl p-3 mb-3">
+        <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1">📦 Étape 1 — Récupérer le colis</p>
+        <p className="text-[11px] text-green-600">Va chez le vendeur et scanne son QR pour confirmer la prise en charge.</p>
+      </div>
+
       <div className="flex gap-2">
-        <button onClick={onAccept}
+        <button onClick={onScanVendeur}
           className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-          ✅ Accepter
+          📷 Scanner QR Vendeur
         </button>
-        <button onClick={onChatSeller}
-          title="Contacter le vendeur"
+        <button onClick={onChatSeller} title="Contacter le vendeur"
           className="px-4 py-3 rounded-xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">
-          💬
+          🏪💬
         </button>
-        <button onClick={onReject}
-          className="px-4 py-3 rounded-xl bg-red-50 font-black text-[11px] text-red-500 active:scale-95">
-          ✕
+        <button onClick={onChatBuyer} title="Contacter l'acheteur"
+          className="px-4 py-3 rounded-xl bg-blue-50 font-black text-[11px] text-blue-600 active:scale-95">
+          👤💬
         </button>
       </div>
     </div>
   );
 }
 
-function OngoingCard({ req, onPickup, onChatBuyer, onChatSeller }: {
-  req: DeliveryRequest;
-  onPickup: () => void;
+// ── Ongoing Card — Livraison en route ─────────────────────────────
+function OngoingCard({ order, onShowQR, onChatBuyer, onChatSeller }: {
+  order: Order;
+  onShowQR: () => void;
   onChatBuyer: () => void;
   onChatSeller: () => void;
 }) {
-  const isPicked = req.status === 'picked';
+  const ord = order as any;
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-amber-400">
       <div className="flex items-center gap-3 mb-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${isPicked ? 'bg-amber-100' : 'bg-green-100'}`}>
-          {isPicked ? '🛵' : '📦'}
-        </div>
+        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl">🛵</div>
         <div className="flex-1">
-          <p className="font-black text-slate-900 text-[13px]">{req.productTitle}</p>
-          <p className="text-[11px] text-slate-400">{req.fromNeighborhood} → {req.toNeighborhood}</p>
-          <p className="text-[10px] font-bold mt-0.5" style={{ color: isPicked ? '#d97706' : '#16a34a' }}>
-            {isPicked ? '🛵 Colis récupéré — en route' : '✅ Mission acceptée'}
-          </p>
+          <p className="font-black text-slate-900 text-[13px]">{order.productTitle}</p>
+          <p className="text-[11px] text-slate-400">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
+          <p className="text-[10px] font-bold text-amber-600 mt-0.5">🛵 Colis récupéré — en route</p>
         </div>
       </div>
+
+      {/* Étape 2 : montrer QR à l'acheteur */}
+      <div className="bg-amber-50 rounded-xl p-3 mb-3">
+        <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">✅ Étape 2 — Livrer à l'acheteur</p>
+        <p className="text-[11px] text-amber-600">À l'arrivée, affiche ton QR à l'acheteur pour qu'il le scanne et confirme.</p>
+      </div>
+
       <div className="flex gap-2">
-        {!isPicked && (
-          <button onClick={onPickup}
-            className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
-            style={{ background: 'linear-gradient(135deg,#d97706,#f59e0b)' }}>
-            📦 Colis récupéré
-          </button>
-        )}
-        {isPicked && (
-          <div className="flex-1 py-3 rounded-xl bg-amber-50 text-center font-black text-[11px] text-amber-700 uppercase tracking-widest">
-            En route 🛵
-          </div>
-        )}
-      <button onClick={onChatBuyer} title="Contacter l'acheteur"
+        <button onClick={onShowQR}
+          className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+          style={{ background: 'linear-gradient(135deg,#d97706,#f59e0b)' }}>
+          📲 Afficher mon QR
+        </button>
+        <button onClick={onChatBuyer} title="Contacter l'acheteur"
           className="px-4 py-3 rounded-xl bg-blue-50 font-black text-[11px] text-blue-600 active:scale-95">
           👤💬
         </button>

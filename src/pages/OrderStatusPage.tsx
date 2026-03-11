@@ -17,7 +17,10 @@ import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { DelivererPicker } from '@/components/DelivererPicker';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
-import { getDelivererById } from '@/services/deliveryService';
+import { getDelivererById, confirmDeliveryByBuyer } from '@/services/deliveryService';
+import { QRScanner } from '@/components/QRScanner';
+import { QRDisplay } from '@/components/QRDisplay';
+import { buildQRPayload } from '@/utils/qrCode';
 
 interface OrderStatusPageProps {
   orderId?: string;
@@ -91,7 +94,7 @@ function DeliveryCodeInput({ orderId, order, onValidated }: {
       <div className="bg-yellow-50 rounded-2xl p-4 border border-yellow-200">
         <p className="text-[10px] font-black text-yellow-800 uppercase tracking-widest mb-1">Code de confirmation</p>
         <p className="text-[11px] text-yellow-800 font-bold">
-          Le vendeur t'a donné un code à 6 caractères. Saisis-le pour confirmer la réception.
+          Pas de caméra ? Entre le code à 6 caractères donné par le livreur.
         </p>
       </div>
       <input
@@ -111,7 +114,7 @@ function DeliveryCodeInput({ orderId, order, onValidated }: {
         style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
         {loading
           ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
-          : '✅ Valider le code — Confirmer la réception'}
+          : '✅ Valider — Confirmer la réception'}
       </button>
       <p className="text-[10px] text-slate-400 text-center font-bold">
         En validant ce code, tu confirmes avoir reçu l'article en bon état.
@@ -122,16 +125,17 @@ function DeliveryCodeInput({ orderId, order, onValidated }: {
 
 // ── Badge statut ───────────────────────────────────────────
 function StatusBadge({ status }: { status: OrderStatus }) {
-  const map: Record<OrderStatus, { label: string; bg: string; color: string }> = {
-    initiated:  { label: 'Initié',           bg: '#FEF3C7', color: '#92400E' },
-    proof_sent: { label: 'Preuve envoyée',    bg: '#DBEAFE', color: '#1D4ED8' },
-    confirmed:  { label: 'Paiement confirmé', bg: '#D1FAE5', color: '#065F46' },
-    delivered:  { label: 'Livré ✓',          bg: '#DCFCE7', color: '#166534' },
-    disputed:   { label: '⚠️ Litige',         bg: '#FFEDD5', color: '#9A3412' },
-    cancelled:  { label: 'Annulé',            bg: '#F3F4F6', color: '#374151' },
-    cod_pending:   { label: '🤝 Payer à livraison', bg: '#EFF6FF', color: '#1D4ED8' },
-    cod_confirmed: { label: '🚚 En livraison',      bg: '#F0FDF4', color: '#166534' },
-    ready:        { label: '📦 Prêt à livrer',     bg: '#FEF9C3', color: '#854D0E' },
+  const map: Record<string, { label: string; bg: string; color: string }> = {
+    initiated:     { label: 'Initié',               bg: '#FEF3C7', color: '#92400E' },
+    proof_sent:    { label: 'Preuve envoyée',        bg: '#DBEAFE', color: '#1D4ED8' },
+    confirmed:     { label: 'Paiement confirmé',     bg: '#D1FAE5', color: '#065F46' },
+    ready:         { label: '📦 Prêt à livrer',      bg: '#FEF9C3', color: '#854D0E' },
+    picked:        { label: '🛵 En route',            bg: '#FEF3C7', color: '#92400E' },
+    delivered:     { label: 'Livré ✓',               bg: '#DCFCE7', color: '#166534' },
+    disputed:      { label: '⚠️ Litige',              bg: '#FFEDD5', color: '#9A3412' },
+    cancelled:     { label: 'Annulé',                bg: '#F3F4F6', color: '#374151' },
+    cod_pending:   { label: '🤝 Payer à livraison',  bg: '#EFF6FF', color: '#1D4ED8' },
+    cod_confirmed: { label: '🚚 En livraison',        bg: '#F0FDF4', color: '#166534' },
   };
   const s = map[status] || map.initiated;
   return (
@@ -267,6 +271,10 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   const [showDelivererPicker, setShowDelivererPicker] = useState(false);
   const [viewDelivererId, setViewDelivererId] = useState<string | null>(null);
   const [delivererInfo, setDelivererInfo] = useState<any>(null);
+  // QR
+  const [showSellerQR, setShowSellerQR] = useState(false);      // Vendeur affiche son QR au livreur
+  const [showBuyerScanner, setShowBuyerScanner] = useState(false); // Acheteur scanne QR livreur
+
 
   useEffect(() => {
     const unsub = subscribeToOrder(orderId, (o) => {
@@ -432,22 +440,10 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               {/* DelivererPicker overlay */}
               {showDelivererPicker && (
                 <DelivererPicker
-                  orderId={orderId}
-                  fromNeighborhood={(order as any).sellerNeighborhood || (order as any).neighborhood || ''}
-                  toNeighborhood={(order as any).buyerNeighborhood || (order as any).neighborhood || ''}
-                  proposedBy={isBuyer ? 'buyer' : 'seller'}
-                  buyerName={order.buyerName}
-                  sellerName={order.sellerName}
-                  productTitle={order.productTitle}
-                  productImage={order.productImage}
-                  onDone={async (delivererId, fee) => {
+                  order={order}
+                  onDone={(deliverer, fee) => {
                     setShowDelivererPicker(false);
-                    await updateDoc(doc(db, 'orders', orderId), {
-                      delivererId,
-                      deliveryFee: fee,
-                    });
-                    const d = await getDelivererById(delivererId);
-                    setDelivererInfo(d);
+                    setDelivererInfo(deliverer);
                   }}
                   onClose={() => setShowDelivererPicker(false)}
                 />
@@ -481,9 +477,10 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             { label: '✅ Reçu & payé',               done: order.status === 'delivered' },
           ] : [
             { label: '🛍️ Commande initiée',              done: true },
-            { label: '📸 Preuve envoyée',                done: ['proof_sent','confirmed','delivered','disputed'].includes(order.status) },
-            { label: '✅ Paiement confirmé',             done: ['confirmed','delivered'].includes(order.status) },
-            { label: '📦 Livraison confirmée',           done: order.status === 'delivered' },
+            { label: '📸 Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
+            { label: '✅ Paiement confirmé', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
+            { label: '🛵 En route',          done: ['picked','delivered'].includes(order.status) },
+            { label: '📦 Livré',             done: order.status === 'delivered' },
           ]).map((s, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-green-500' : 'bg-slate-100'}`}>
@@ -669,31 +666,89 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           </div>
         )}
 
-        {/* ── VENDEUR — Voit son code livraison ── */}
+        {/* ── VENDEUR — QR + code livraison à montrer au livreur ── */}
         {isSeller && order.status === 'ready' && order.deliveryCode && (
           <div className="space-y-3 pt-2">
-            <div className="bg-yellow-50 rounded-2xl p-5 border-2 border-yellow-200 text-center">
-              <p className="text-[10px] font-black text-yellow-800 uppercase tracking-widest mb-3">Ton code de livraison</p>
-              <div className="bg-slate-900 rounded-2xl px-6 py-4 inline-block mb-3">
-                <span className="text-3xl font-black text-yellow-300 tracking-[0.4em] font-mono">
-                  {order.deliveryCode}
-                </span>
-              </div>
-              <p className="text-[10px] text-yellow-700 font-bold">
-                🔐 Donne ce code à l'acheteur UNIQUEMENT à la livraison physique
+            {showSellerQR && (
+              <QRDisplay
+                title="Mon QR Vendeur"
+                subtitle="Fais scanner par le livreur"
+                code={order.deliveryCode}
+                qrPayload={(order as any).qrPickupPayload || buildQRPayload('pickup', orderId, order.deliveryCode)}
+                color="#115E2E"
+                emoji="📦"
+                instruction="Le livreur va scanner ce QR quand il vient récupérer le colis. Valide la prise en charge."
+                onClose={() => setShowSellerQR(false)}
+              />
+            )}
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+              <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-2">📦 Prêt à livrer</p>
+              <p className="text-[11px] text-green-700 mb-3">
+                Le livreur va venir récupérer ton colis. Montre-lui ton QR ou donne-lui le code.
               </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowSellerQR(true)}
+                  className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  📲 Afficher mon QR
+                </button>
+                <div className="flex-1 bg-slate-900 rounded-xl flex items-center justify-center py-1">
+                  <span className="text-[18px] font-black text-yellow-300 tracking-[0.3em] font-mono">{order.deliveryCode}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* ── ACHETEUR — Saisie du code livraison ── */}
-        {isBuyer && order.status === 'ready' && (
-          <DeliveryCodeInput orderId={orderId} order={order}
-            onValidated={() => {
-              try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
-              setShowRatingModal(true);
-            }}
-          />
+        {/* ── ACHETEUR — Scanner QR livreur OU saisie manuelle ── */}
+        {isBuyer && ['ready', 'picked'].includes(order.status) && (
+          <div className="space-y-3 pt-2">
+            {showBuyerScanner && (
+              <QRScanner
+                expectedType="delivery"
+                expectedOrderId={orderId}
+                onSuccess={async (code) => {
+                  setShowBuyerScanner(false);
+                  const result = await confirmDeliveryByBuyer(orderId, order);
+                  if (result.success) {
+                    try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+                    setShowRatingModal(true);
+                  }
+                }}
+                onClose={() => setShowBuyerScanner(false)}
+              />
+            )}
+            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+              <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">
+                {order.status === 'picked' ? '🛵 Livraison en route !' : '⏳ En attente du livreur'}
+              </p>
+              <p className="text-[11px] text-blue-700 mb-3">
+                {order.status === 'picked'
+                  ? 'Le livreur arrive. Scanne son QR ou entre le code pour confirmer la réception.'
+                  : 'Le vendeur a préparé ton colis. Le livreur va venir le récupérer.'}
+              </p>
+              {order.status === 'picked' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowBuyerScanner(true)}
+                    className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                    📷 Scanner QR Livreur
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Saisie manuelle code de secours */}
+            {order.status === 'picked' && (
+              <DeliveryCodeInput orderId={orderId} order={order}
+                onValidated={() => {
+                  try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+                  setShowRatingModal(true);
+                }}
+              />
+            )}
+          </div>
         )}
 
         {order.status === 'disputed' && (

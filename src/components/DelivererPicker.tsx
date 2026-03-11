@@ -1,101 +1,56 @@
-// src/components/DelivererPicker.tsx
-// Bottom sheet : liste des livreurs + consultation profil + choix + livreur par défaut
+// src/components/DelivererPicker.tsx — v17
+// Bottom sheet : choisir un livreur + l'assigner en un clic
 
 import React, { useState, useEffect } from 'react';
-import { getAvailableDeliverers, calcDeliveryFee, createDeliveryRequest } from '@/services/deliveryService';
+import { getAvailableDeliverers, calcDeliveryFee, assignDeliverer } from '@/services/deliveryService';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
-import type { User } from '@/types';
+import type { User, Order } from '@/types';
 
 interface Props {
-  orderId: string;
-  fromNeighborhood: string;
-  toNeighborhood: string;
-  proposedBy: 'buyer' | 'seller' | 'admin';
-  buyerName: string;
-  sellerName: string;
-  productTitle: string;
-  productImage?: string;
-  onDone: (delivererId: string, fee: number) => void;
+  order: Order;
+  onDone: (deliverer: User, fee: number) => void;
   onClose: () => void;
   onContactDeliverer?: (delivererId: string, delivererName: string) => void;
 }
 
-const DEFAULT_DELIVERER_KEY = 'brumerie_default_deliverer';
-
-export function DelivererPicker({
-  orderId, fromNeighborhood, toNeighborhood,
-  proposedBy, buyerName, sellerName, productTitle, productImage,
-  onDone, onClose, onContactDeliverer,
-}: Props) {
+export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: Props) {
   const [deliverers, setDeliverers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<User | null>(null);
-  const [sending, setSending] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [selected, setSelected]     = useState<User | null>(null);
+  const [sending, setSending]       = useState(false);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
-  const [defaultId, setDefaultId] = useState<string | null>(null);
+
+  const fromZone = order.sellerNeighborhood || (order as any).neighborhood || '';
+  const toZone   = order.buyerNeighborhood  || (order as any).neighborhood || '';
 
   useEffect(() => {
-    // Charger livreur par défaut depuis localStorage
-    try {
-      const saved = localStorage.getItem(DEFAULT_DELIVERER_KEY);
-      if (saved) setDefaultId(saved);
-    } catch {}
-
-    getAvailableDeliverers(fromNeighborhood).then(list => {
+    getAvailableDeliverers(fromZone).then(list => {
       setDeliverers(list);
-      // Pré-sélectionner le livreur par défaut si disponible
-      if (list.length > 0) {
-        try {
-          const savedId = localStorage.getItem(DEFAULT_DELIVERER_KEY);
-          if (savedId) {
-            const def = list.find(d => d.id === savedId);
-            if (def) setSelected(def);
-          }
-        } catch {}
-      }
       setLoading(false);
     });
-  }, [fromNeighborhood]);
+  }, [fromZone]);
 
-  const getFee = (d: User) => calcDeliveryFee(d, fromNeighborhood, toNeighborhood);
-
-  const setAsDefault = (d: User) => {
-    try {
-      localStorage.setItem(DEFAULT_DELIVERER_KEY, d.id);
-      setDefaultId(d.id);
-    } catch {}
-  };
+  const getFee = (d: User) => calcDeliveryFee(d, fromZone, toZone);
 
   const handleConfirm = async () => {
     if (!selected) return;
     setSending(true);
     try {
       const fee = getFee(selected);
-      if (orderId) {
-        await createDeliveryRequest({
-          orderId, delivererId: selected.id,
-          proposedBy, fromNeighborhood, toNeighborhood,
-          estimatedFee: fee, buyerName, sellerName,
-          productTitle, productImage,
-        });
-      }
-      onDone(selected.id, fee);
+      await assignDeliverer({ orderId: order.id, deliverer: selected, fee, order });
+      onDone(selected, fee);
     } catch (e) { console.error(e); }
     finally { setSending(false); }
   };
 
-  // Afficher profil complet
   if (viewProfile) {
     return (
       <DelivererProfilePage
         delivererId={viewProfile}
-        fromNeighborhood={fromNeighborhood}
-        toNeighborhood={toNeighborhood}
+        fromNeighborhood={fromZone}
+        toNeighborhood={toZone}
         onBack={() => setViewProfile(null)}
-        onChoose={(deliverer, fee) => {
-          setSelected(deliverer);
-          setViewProfile(null);
-        }}
+        onChoose={(deliverer, fee) => { setSelected(deliverer); setViewProfile(null); }}
       />
     );
   }
@@ -111,11 +66,10 @@ export function DelivererPicker({
         <div className="mb-4 flex-shrink-0">
           <h2 className="font-black text-slate-900 text-[18px] mb-1">Choisir un livreur</h2>
           <p className="text-[11px] text-slate-500">
-            {fromNeighborhood} → {toNeighborhood}
+            {fromZone || 'Zone vendeur'} → {toZone || 'Zone acheteur'}
           </p>
         </div>
 
-        {/* Liste livreurs */}
         <div className="flex-1 overflow-y-auto flex flex-col gap-3 mb-4">
           {loading && (
             <div className="text-center py-10">
@@ -126,7 +80,7 @@ export function DelivererPicker({
           {!loading && deliverers.length === 0 && (
             <div className="text-center py-10">
               <div className="text-4xl mb-3">😕</div>
-              <p className="font-black text-slate-400 text-[12px]">Aucun livreur disponible dans ce quartier</p>
+              <p className="font-black text-slate-400 text-[12px]">Aucun livreur disponible</p>
               <p className="text-slate-400 text-[11px] mt-1">Essaie plus tard ou contacte le vendeur directement</p>
             </div>
           )}
@@ -134,14 +88,10 @@ export function DelivererPicker({
           {deliverers.map(d => {
             const fee = getFee(d);
             const sel = selected?.id === d.id;
-            const isDef = defaultId === d.id;
-
             return (
               <div key={d.id}
                 className={'rounded-2xl border-2 p-4 transition-all ' +
                   (sel ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white')}>
-
-                {/* Ligne principale */}
                 <div className="flex items-center gap-3 mb-3">
                   <button onClick={() => setViewProfile(d.id)} className="flex-shrink-0">
                     {d.photoURL
@@ -150,24 +100,11 @@ export function DelivererPicker({
                     }
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-black text-slate-900 text-[13px]">{d.deliveryPartnerName || d.name}</p>
-                      {isDef && (
-                        <span className="bg-amber-100 text-amber-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">
-                          Par défaut
-                        </span>
-                      )}
-                      {d.deliveryAvailable && (
-                        <span className="bg-green-100 text-green-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">
-                          Dispo
-                        </span>
-                      )}
-                    </div>
+                    <p className="font-black text-slate-900 text-[13px]">{d.deliveryPartnerName || d.name}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">📍 {(d.deliveryZones || []).join(' · ')}</p>
                     {d.totalDeliveries ? (
                       <p className="text-[10px] text-green-600 font-bold">
-                        ✅ {d.totalDeliveries} livraisons
-                        {d.rating ? ` · ⭐ ${d.rating.toFixed(1)}` : ''}
+                        ✅ {d.totalDeliveries} livraisons{d.rating ? ` · ⭐ ${d.rating.toFixed(1)}` : ''}
                       </p>
                     ) : null}
                   </div>
@@ -176,29 +113,15 @@ export function DelivererPicker({
                     <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
                   </div>
                 </div>
-
-                {/* Actions */}
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelected(sel ? null : d)}
+                  <button onClick={() => setSelected(sel ? null : d)}
                     className={'flex-1 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 ' +
-                      (sel
-                        ? 'bg-green-600 text-white'
-                        : 'bg-slate-100 text-slate-700')}>
+                      (sel ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700')}>
                     {sel ? '✓ Sélectionné' : 'Sélectionner'}
                   </button>
-
-                  <button
-                    onClick={() => setViewProfile(d.id)}
+                  <button onClick={() => setViewProfile(d.id)}
                     className="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-[10px] active:scale-95">
                     Profil
-                  </button>
-
-                  <button
-                    onClick={() => isDef ? (localStorage.removeItem(DEFAULT_DELIVERER_KEY), setDefaultId(null)) : setAsDefault(d)}
-                    title={isDef ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    className={"px-3 py-2.5 rounded-xl font-black text-[14px] active:scale-95 " + (isDef ? "bg-amber-100 text-amber-600" : "bg-slate-50 text-slate-300")}>
-                    ⭐
                   </button>
                 </div>
               </div>
@@ -206,21 +129,13 @@ export function DelivererPicker({
           })}
         </div>
 
-        {/* Footer */}
         <div className="flex gap-3 flex-shrink-0">
           <button onClick={onClose}
             className="px-6 py-4 rounded-2xl bg-slate-100 font-black text-[11px] uppercase tracking-widest text-slate-600 active:scale-95">
             Annuler
           </button>
           <button
-            onClick={async () => {
-              if (onContactDeliverer && selected) {
-                await handleConfirm();
-                onContactDeliverer(selected.id, selected.deliveryPartnerName || selected.name);
-              } else {
-                await handleConfirm();
-              }
-            }}
+            onClick={handleConfirm}
             disabled={!selected || sending || !selected.deliveryAvailable}
             className="flex-1 py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-30 active:scale-95 transition-all"
             style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
@@ -230,7 +145,7 @@ export function DelivererPicker({
                   Envoi...
                 </span>
               : selected
-                ? (onContactDeliverer ? `💬 Contacter ${selected.deliveryPartnerName || 'le livreur'}` : `📨 Contacter ${selected.deliveryPartnerName || 'ce livreur'}`)
+                ? `✅ Assigner ${selected.deliveryPartnerName || 'ce livreur'}`
                 : 'Choisir un livreur'
             }
           </button>

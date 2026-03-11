@@ -28,6 +28,8 @@ export async function createOrder(params: {
   paymentInfo: PaymentInfo;
   deliveryType: 'delivery' | 'in_person';
   isCOD?: boolean;
+  sellerNeighborhood?: string;
+  buyerNeighborhood?: string;
 }): Promise<string> {
   const { brumerieFee, sellerReceives } = calcOrderFees(params.productPrice);
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
@@ -208,9 +210,15 @@ export async function markReadyToDeliver(orderId: string): Promise<string> {
 
   const deliveryCode = generateDeliveryCode();
 
+  // QR Payloads
+  const qrPickupPayload   = 'brumerie://pickup/'   + orderId + '/' + deliveryCode;
+  const qrDeliveryPayload = 'brumerie://delivery/' + orderId + '/' + deliveryCode;
+
   await updateDoc(doc(ordersCol, orderId), {
     status: 'ready' as OrderStatus,
     deliveryCode,
+    qrPickupPayload,
+    qrDeliveryPayload,
     deliveryCodeGeneratedAt: serverTimestamp(),
   });
 
@@ -245,7 +253,7 @@ export async function validateDeliveryCode(
   if (!snap.exists()) return { success: false, error: 'Commande introuvable' };
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  if (order.status !== 'ready') {
+  if (!['ready', 'picked'].includes(order.status)) {
     return { success: false, error: 'Commande non prête pour la livraison' };
   }
 

@@ -91,6 +91,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryFee,
         paymentInfo,
         deliveryType,
+        sellerNeighborhood: product.neighborhood || '',
+        buyerNeighborhood: userProfile.neighborhood || '',
       });
       setOrderId(id);
       setStep('proof');
@@ -119,6 +121,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryFee,
         paymentInfo: codPaymentInfo,
         deliveryType,
+        sellerNeighborhood: product.neighborhood || '',
+        buyerNeighborhood: userProfile.neighborhood || '',
       });
       setOrderId(id);
       setStep('cod_confirm');

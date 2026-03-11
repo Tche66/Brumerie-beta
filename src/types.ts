@@ -215,18 +215,20 @@ export interface PaymentInfo {
 
 // ─── COMMANDES ────────────────────────────────────────────
 export type OrderStatus =
-  | 'initiated'          // Commande créée, attente paiement acheteur
-  | 'proof_sent'         // Preuve de paiement envoyée
-  | 'confirmed'          // Vendeur confirme réception paiement
-  | 'ready'              // Vendeur prêt à livrer → code généré
-  | 'delivery_requested' // Livreur assigné, en attente de prise en charge
-  | 'delivery_accepted'  // Livreur a accepté la mission
-  | 'delivery_picked'    // Livreur a récupéré le colis
-  | 'delivered'          // Acheteur a validé le code → livré
+  // ── Paiement mobile ──────────────────────────
+  | 'initiated'      // Commande créée — acheteur doit payer
+  | 'proof_sent'     // Acheteur a envoyé la preuve de paiement
+  | 'confirmed'      // Vendeur a confirmé le paiement reçu
+  // ── Livraison (commun paiement mobile + COD) ─
+  | 'ready'          // Vendeur prêt → code + QR généré → livreur notifié
+  | 'picked'         // Livreur a récupéré le colis (scan QR vendeur)
+  | 'delivered'      // Acheteur a validé → livraison terminée
+  // ── Paiement à la livraison ──────────────────
+  | 'cod_pending'    // Commande COD créée — vendeur doit confirmer
+  | 'cod_confirmed'  // Vendeur prêt à livrer (COD)
+  // ── Fin de vie ───────────────────────────────
   | 'disputed'
-  | 'cancelled'
-  | 'cod_pending'
-  | 'cod_confirmed';
+  | 'cancelled';
 
 export interface OrderProof {
   screenshotUrl: string;
@@ -360,22 +362,3 @@ export interface DeliveryRate {
   price: number;      // FCFA
 }
 
-export interface DeliveryRequest {
-  id: string;
-  orderId: string;
-  delivererId: string;
-  proposedBy: 'buyer' | 'seller' | 'admin' | 'livreur';
-  status: 'pending' | 'accepted' | 'rejected' | 'completed' | 'pending_seller' | 'rejected_by_seller' | 'picked';
-  fromNeighborhood: string;
-  toNeighborhood: string;
-  estimatedFee: number;
-  buyerName: string;
-  buyerId?: string;
-  sellerName: string;
-  sellerId?: string;
-  productTitle: string;
-  productImage?: string;
-  createdAt?: any;
-  respondedAt?: any;
-  pickedAt?: any;
-}
