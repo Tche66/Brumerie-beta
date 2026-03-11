@@ -70,9 +70,13 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     }
     setShowScanPickup(null);
     const result = await confirmPickupByDeliverer(order.id, order);
-    if (!result.success) alert(result.error);
-    // Feedback visuel
-    else setTab('ongoing');
+    if (!result.success) {
+      alert(result.error);
+    } else {
+      // Firestore va mettre à jour status → 'picked' → onSnapshot → myOngoing se rechargera
+      // On bascule vers l'onglet 'ongoing' avec un léger délai pour laisser Firestore propager
+      setTimeout(() => setTab('ongoing'), 400);
+    }
   };
 
   const TABS: { id: Tab; label: string; icon: string; badge?: number }[] = [

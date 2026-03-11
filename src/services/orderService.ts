@@ -266,7 +266,10 @@ export async function validateDeliveryCode(
   if (!snap.exists()) return { success: false, error: 'Commande introuvable' };
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  if (!['ready', 'picked'].includes(order.status)) {
+  // 'picked' = livreur a récupéré le colis, acheteur confirme réception
+  // 'cod_confirmed' = paiement COD validé par vendeur, en attente livreur
+  // 'ready' = prêt pour livraison standard
+  if (!['ready', 'picked', 'cod_confirmed'].includes(order.status)) {
     return { success: false, error: 'Commande non prête pour la livraison' };
   }
 

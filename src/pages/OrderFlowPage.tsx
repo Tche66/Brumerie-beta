@@ -548,6 +548,96 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   </>
   );
 
+
+  // ── ÉTAPE PROOF : Upload preuve de paiement ─────────────────
+  if (step === 'proof') return (
+    <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
+      {/* Header */}
+      <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
+        <div className="w-11 h-11 bg-green-50 rounded-2xl flex items-center justify-center">
+          <span className="text-xl">📎</span>
+        </div>
+        <div>
+          <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Preuve de paiement</h1>
+          <p className="text-[10px] text-slate-400">Envoie une capture d&apos;écran de ton virement</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+
+        {/* Confirmation montant */}
+        <div className="bg-green-50 rounded-2xl p-4 flex items-center gap-3 border border-green-100">
+          <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div>
+            <p className="font-black text-green-800 text-[13px]">Paiement enregistré</p>
+            <p className="text-[11px] text-green-700">
+              {(effectivePrice + (deliveryType === 'delivery' ? sellerDelivery.otherZone : 0)).toLocaleString('fr-FR')} FCFA — en attente de ta preuve
+            </p>
+          </div>
+        </div>
+
+        {/* Upload screenshot */}
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            Capture d&apos;écran du virement *
+          </p>
+          {screenshotPreview ? (
+            <div className="relative rounded-2xl overflow-hidden">
+              <img src={screenshotPreview} alt="preuve" className="w-full rounded-2xl object-contain max-h-72"/>
+              <button
+                onClick={() => { setScreenshotPreview(''); setScreenshotFile(null); }}
+                className="absolute top-3 right-3 w-8 h-8 bg-slate-900/70 rounded-full flex items-center justify-center">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-full py-12 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center gap-3 active:scale-95 transition-all bg-slate-50">
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div className="text-center">
+                <p className="font-black text-slate-700 text-[13px]">Choisir une image</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">JPG, PNG — capture de ton virement Wave/OM</p>
+              </div>
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setScreenshotFile(f);
+              const r = new FileReader();
+              r.onload = ev => setScreenshotPreview(ev.target?.result as string);
+              r.readAsDataURL(f);
+            }}
+          />
+        </div>
+
+        <p className="text-[10px] text-slate-400 text-center font-bold leading-relaxed">
+          Le vendeur sera notifié dès réception de ta preuve et confirmera la commande.
+        </p>
+      </div>
+
+      <div className="px-5 py-4 border-t border-slate-100 space-y-3">
+        <button onClick={handleSubmitProof} disabled={!screenshotPreview || loading}
+          className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-95 transition-all disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+          {loading
+            ? <div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Envoi...</div>
+            : '📤 Envoyer la preuve →'}
+        </button>
+        <button onClick={() => setStep('payment_details')}
+          className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+          ← Retour aux détails de paiement
+        </button>
+      </div>
+    </div>
+  );
+
   // ── ÉTAPE COD : Confirmation réception à la livraison ───
   if (step === 'cod_confirm') return (<>
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
