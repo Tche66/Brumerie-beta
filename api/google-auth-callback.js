@@ -61,6 +61,11 @@ export default async function handler(req, res) {
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri  = `https://brumerie-beta.vercel.app/api/google-auth-callback`;
 
+    if (!clientId || !clientSecret) {
+      console.error('[GoogleCallback] Missing env vars:', { clientId: !!clientId, clientSecret: !!clientSecret });
+      return sendHtml(htmlErr('Variables GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET manquantes dans Vercel.'));
+    }
+
     // 1. Échanger le code OAuth contre un access_token Google
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -69,8 +74,8 @@ export default async function handler(req, res) {
     });
     const tokenData = await tokenRes.json();
     if (tokenData.error) {
-      console.error('[GoogleCallback] token error:', tokenData.error);
-      return sendHtml(htmlErr('Erreur vérification Google.'));
+      console.error('[GoogleCallback] token error:', tokenData.error, tokenData.error_description);
+      return sendHtml(htmlErr(`Erreur OAuth: ${tokenData.error} — ${tokenData.error_description || ''}. Vérifie GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans Vercel.`));
     }
 
     // 2. Profil Google
