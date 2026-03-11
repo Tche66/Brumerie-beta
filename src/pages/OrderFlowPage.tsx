@@ -149,6 +149,26 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   const method = MOBILE_PAYMENT_METHODS.find(m => m.id === paymentInfo?.method);
 
+  // ── DelivererPicker — rendu conditionnel ─────────────────────
+  const delivererPickerModal = showDelivererPicker && product ? (
+    <DelivererPicker
+      orderId=""
+      fromNeighborhood={product.neighborhood || ''}
+      toNeighborhood={userProfile?.neighborhood || ''}
+      proposedBy="buyer"
+      buyerName={userProfile?.name || ''}
+      sellerName={product.sellerName || ''}
+      productTitle={product.title}
+      productImage={product.images?.[0]}
+      onDone={(delivererId, fee) => {
+        setChosenDeliverer({ id: delivererId, fee });
+        setShowDelivererPicker(false);
+      }}
+      onClose={() => setShowDelivererPicker(false)}
+    />
+  ) : null;
+
+
   // ── ÉTAPE 1 : Récapitulatif ────────────────────────────
   if (step === 'recap') return (
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
@@ -355,6 +375,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         )}
       </div>
     </div>
+    {delivererPickerModal}
   );
 
   // ── ÉTAPE 2 : Coordonnées paiement ─────────────────────
@@ -427,6 +448,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
+    {delivererPickerModal}
   );
 
   if (step === 'payment_details') return (
@@ -512,6 +534,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
+    {delivererPickerModal}
   );
 
   // ── ÉTAPE COD : Confirmation réception à la livraison ───
@@ -586,23 +609,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
-        {/* ── DelivererPicker — modal sélection livreur ── */}
-        {showDelivererPicker && product && (
-          <DelivererPicker
-            orderId=""
-            fromNeighborhood={product.neighborhood || ''}
-            toNeighborhood={userProfile?.neighborhood || ''}
-            proposedBy="buyer"
-            buyerName={userProfile?.name || ''}
-            sellerName={product.sellerName || ''}
-            productTitle={product.title}
-            productImage={product.images?.[0]}
-            onDone={(delivererId, fee) => {
-              setChosenDeliverer({ id: delivererId, fee });
-              setShowDelivererPicker(false);
-            }}
-            onClose={() => setShowDelivererPicker(false)}
-          />
-        )}
+    {delivererPickerModal}
   );
 }
