@@ -203,7 +203,7 @@ export async function checkAndNotifyExpiringBadge(userId: string): Promise<void>
     await upd(d(database, 'users', userId), { isVerified: false, verifiedUntil: null });
     await createNotification(userId, 'system',
       '🏅 Badge expiré',
-      'Ton badge Vendeur Vérifié a expiré. Renouvelle-le (1 000 FCFA/mois) pour continuer à vendre en priorité.',
+      'Ton badge Vendeur Vérifié a expiré. Renouvelle-le (3 000 FCFA/mois) pour continuer à vendre en priorité.',
     );
     return;
   }

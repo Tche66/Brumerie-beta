@@ -187,19 +187,21 @@ function StoryViewer({
         {/* Boutons action */}
         {story.sellerId !== currentUserId && (
           <div className="absolute bottom-0 left-0 right-0 p-4 flex gap-2"
-            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28, opacity: zoomed ? 0 : 1, transition: 'opacity 0.2s', pointerEvents: zoomed ? 'none' : 'auto' }}>
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', paddingBottom: 28, opacity: 1, transition: 'opacity 0.2s', pointerEvents: zoomed ? 'none' : 'auto' }}>
             {story.productRef ? (
               <>
                 <button
                   onClick={() => { onClose(); onOffer?.(story); }}
-                  className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
+                  className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)', boxShadow: '0 8px 24px rgba(17,94,46,0.5)', opacity: 1 }}>
                   💬 Faire une offre
                 </button>
               </>
             ) : (
               <button
                 onClick={() => { onClose(); onContact?.(story.sellerId, story.sellerName); }}
-                className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-white/20 backdrop-blur-sm active:scale-95 transition-all border border-white/30">
+                className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
                 💬 Contacter le vendeur
               </button>
             )}

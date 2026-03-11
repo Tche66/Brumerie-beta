@@ -164,7 +164,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D9BF0" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
             label="Badge Vendeur Vérifié"
-            sublabel={userProfile?.isVerified ? 'Ton badge est actif' : 'Boost ta crédibilité pour 2 000 FCFA'}
+            sublabel={userProfile?.isVerified ? 'Ton badge est actif' : 'Boost ta crédibilité pour 3 000 FCFA'}
             onClick={() => onNavigate('verification')}
             badge={userProfile?.isVerified ? '✓ ACTIF' : undefined}
             badgeBlue
@@ -306,7 +306,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </div>
 
         <p className="text-center text-[9px] font-black text-slate-300 mt-10 mb-4 uppercase tracking-[0.3em]">
-          Brumerie ® 2025 · Abidjan 
+          Brumerie ® 2026 · Abidjan 
         </p>
       </div>
 

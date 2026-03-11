@@ -757,7 +757,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
           <>
             <div className="bg-white rounded-2xl p-4 space-y-4">
               {[
-                { label: 'Prix badge vérifié (FCFA)', key: 'verificationPrice', default: 1000 },
+                { label: 'Prix badge vérifié (FCFA)', key: 'verificationPrice', default: 3000 },
               ].map(({ label, key, default: def }) => (
                 <div key={key}>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{label}</p>
@@ -830,7 +830,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 <input
                   value={settingsDraft.badgePaymentLink ?? globalSettings.badgePaymentLink ?? ''}
                   onChange={e => setSettingsDraft((s: any) => ({ ...s, badgePaymentLink: e.target.value }))}
-                  placeholder="wave://send?phone=+225...&amount=1000&note=BadgeVerifie"
+                  placeholder="wave://send?phone=+225...&amount=3000&note=BadgeVerifie"
                   className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
                 />
               </div>

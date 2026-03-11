@@ -154,7 +154,7 @@ export function GuidePage({ onBack }: GuidePageProps) {
             <Step n={1} text="5 annonces actives simultanées." />
             <Step n={2} text="5 messages chat par jour." />
             <Step n={3} text="0 boost disponible (les boosts s'achètent séparément)." />
-            <Tip text="Pour plus de capacité, passe au plan Vérifié (1 000 FCFA/mois)." color="blue" />
+            <Tip text="Pour plus de capacité, passe au plan Vérifié (3 000 FCFA/mois)." color="blue" />
           </Block>
           <Block icon="📸" title="Publier une annonce">
             <Step n={1} text="Clique sur le bouton + en bas de l'écran." />
@@ -174,7 +174,7 @@ export function GuidePage({ onBack }: GuidePageProps) {
             <p>Un boost propulse ton annonce en tête de liste pour une durée limitée :</p>
             <Step n={1} text="24h — 500 FCFA" />
             <Step n={2} text="48h — 800 FCFA" />
-            <Step n={3} text="7 jours — 2 000 FCFA" />
+            <Step n={3} text="7 jours — 3 000 FCFA" />
             <p>Paiement via Wave (lien direct). Va sur ton Dashboard → Mes annonces → Booster.</p>
           </Block>
           <Block icon="📊" title="Tableau de bord vendeur">
@@ -188,7 +188,7 @@ export function GuidePage({ onBack }: GuidePageProps) {
 
         {/* ══ VENDEUR VÉRIFIÉ ══ */}
         {section === 'seller_verified' && (<>
-          <Block icon="✅" title="Badge Vendeur Vérifié — 1 000 FCFA/mois">
+          <Block icon="✅" title="Badge Vendeur Vérifié — 3 000 FCFA/mois">
             <p>Le badge Vérifié prouve que Brumerie a contrôlé ton identité. Il inspire confiance aux acheteurs et booste ta visibilité.</p>
             <p>Avantages :</p>
             <Step n={1} text="Badge ✅ visible sur toutes tes annonces et ton profil." />
@@ -200,7 +200,7 @@ export function GuidePage({ onBack }: GuidePageProps) {
           </Block>
           <Block icon="📋" title="Comment obtenir le badge ?">
             <Step n={1} text="Va dans Paramètres → Badge Vérifié → Demander la vérification." />
-            <Step n={2} text="Effectue le paiement de 1 000 FCFA via le lien de paiement affiché." />
+            <Step n={2} text="Effectue le paiement de 3 000 FCFA via le lien de paiement affiché." />
             <Step n={3} text="Contacte Brumerie sur WhatsApp avec ta preuve de paiement." />
             <Step n={4} text="Prépare une photo de ton visage + une pièce d'identité (CNI, passeport, permis, carte électorale ou carte étudiant)." />
             <Step n={5} text="Brumerie valide ton identité et active le badge sous 24h." />

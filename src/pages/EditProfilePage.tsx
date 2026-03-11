@@ -1,5 +1,5 @@
 // src/pages/EditProfilePage.tsx — Sprint 5 : paiement + livraison vendeur, simplifié acheteur
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -64,7 +64,15 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
   // ── Champs communs ────────────────────────────────────────
   const [name, setName] = useState(userProfile?.name || '');
+  const [phone, setPhone] = useState(userProfile?.phone || '');
   const [neighborhood, setNeighborhood] = useState(userProfile?.neighborhood || '');
+
+  // Sync si userProfile charge après le montage (connexion Google)
+  useEffect(() => {
+    if (userProfile?.name && !name) setName(userProfile.name);
+    if (userProfile?.phone && !phone) setPhone(userProfile.phone);
+    if (userProfile?.neighborhood && !neighborhood) setNeighborhood(userProfile.neighborhood);
+  }, [userProfile?.phone, userProfile?.name, userProfile?.neighborhood]);
   const [isCustomNeighborhood, setIsCustomNeighborhood] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -125,7 +133,9 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
         photoURL = await uploadToCloudinary(photoFile, 'brumerie_avatars');
       }
 
-      const updateData: any = { name: name.trim(), neighborhood, photoURL };
+      const digits = phone.replace(/\D/g, '');
+      const formattedPhone = digits ? (digits.startsWith('225') ? '+' + digits : '+225' + digits) : '';
+      const updateData: any = { name: name.trim(), neighborhood, photoURL, phone: formattedPhone };
       // Bio accessible à tous les vendeurs
       if (isSeller) {
         updateData.bio = bio.trim();
@@ -211,6 +221,20 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               <input type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder={isSeller ? 'Ex: Boutique de Marie' : 'Ex: Koffi'}
                 className="w-full px-5 py-4 bg-white rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-green-500 outline-none"/>
+            </div>
+
+            {/* ── Numéro WhatsApp ── */}
+            <div>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Numéro WhatsApp</label>
+              <div className="flex gap-2">
+                <div className="flex items-center px-4 py-4 bg-slate-100 rounded-2xl text-sm font-bold text-slate-500 whitespace-nowrap">
+                  🇨🇮 +225
+                </div>
+                <input type="tel" value={phone.replace(/^\+225/, '').replace(/^225/, '')}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="05 00 00 00 00"
+                  className="flex-1 px-5 py-4 bg-white rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-green-500 outline-none" />
+              </div>
             </div>
 
             {/* ── Email — lecture seule (modifier dans Paramètres > Sécurité) ── */}

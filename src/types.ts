@@ -41,7 +41,7 @@ export const BRUMERIE_FEE_PERCENT = 0; // MVP — pas de commission
 export const SUPPORT_EMAIL = 'support@brumerie.com';
 export const CONTACT_EMAIL = 'contact@brumerie.com';
 export const SUPPORT_WHATSAPP = '2250586867693';
-export const VERIFICATION_PRICE = 1000; // FCFA/mois — badge VÉRIFIÉ
+export const VERIFICATION_PRICE = 3000; // FCFA/mois — badge VÉRIFIÉ
 export const PREMIUM_PRICE = 5000;      // FCFA/mois — badge PREMIUM (futur)
 
 // Limites par plan

@@ -53,7 +53,7 @@ export async function getAdminStats(): Promise<{
     activeProducts: productsData.filter(p => p.status === 'active').length,
     totalOrders: orders.size,
     totalBoostRevenue,
-    totalVerifRevenue: verifiedCount * 1000,
+    totalVerifRevenue: verifiedCount * 3000,
     newUsersToday: usersData.filter(u => {
       const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
       return ms !== null && ms > todayTs.toMillis();

@@ -10,7 +10,7 @@ interface VerificationPageProps { onBack: () => void; }
 export function VerificationPage({ onBack }: VerificationPageProps) {
   const { userProfile } = useAuth();
   const [sent, setSent] = useState(false);
-  const [verificationPrice, setVerificationPrice] = useState(1000); // par défaut 1000 FCFA
+  const [verificationPrice, setVerificationPrice] = useState(3000); // par défaut 3000 FCFA
 
   // Lire le prix dynamique depuis Firestore (modifiable par l'admin)
   useEffect(() => {
