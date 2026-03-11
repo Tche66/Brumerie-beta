@@ -43,13 +43,16 @@ import { NetworkBanner } from '@/components/NetworkBanner';
 
 import { OfferModal } from '@/components/OfferModal';
 import { GoogleNeighborhoodModal } from '@/components/GoogleNeighborhoodModal';
+import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
+import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
   | 'product-detail' | 'seller-profile' | 'chat'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
-  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin';
+  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin'
+  | 'become-deliverer' | 'deliverer-dashboard';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {

@@ -4,7 +4,7 @@ import React from 'react';
 interface BottomNavProps {
   activePage: string;
   onNavigate: (page: string) => void;
-  role?: 'buyer' | 'seller';
+  role?: 'buyer' | 'seller' | 'livreur';
   unreadMessages?: number;
 }
 
@@ -41,6 +41,11 @@ const PlusIcon = () => (
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
+const TruckIcon = (active: boolean, color: string) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? color : '#94A3B8'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+);
 const SettingsIcon = (active: boolean, color: string) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? color : '#94A3B8'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="3"/>
@@ -71,7 +76,26 @@ function NavBtn({ id, label, icon, active, onClick, badge }: {
 export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0 }: BottomNavProps) {
   const C = '#16A34A'; // vert vendeur
   const CB = '#3B82F6'; // bleu acheteur
+  const CO = '#D97706'; // orange livreur
   const isBuyer = role === 'buyer';
+  const isDeliverer = role === 'livreur';
+
+  if (isDeliverer) return (
+    <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
+      style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
+      <div className="flex items-center justify-around h-16 px-2">
+        <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
+          icon={HomeIcon(activePage === 'home', CO)}/>
+        <NavBtn id="deliverer-dashboard" label="Missions" active={activePage === 'deliverer-dashboard'} onClick={() => onNavigate('deliverer-dashboard')}
+          icon={TruckIcon(activePage === 'deliverer-dashboard', CO)}/>
+        <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
+          badge={unreadMessages} icon={MsgIcon(activePage === 'messages', CO)}/>
+        <NavBtn id="settings" label="Paramètres" active={activePage === 'settings'} onClick={() => onNavigate('settings')}
+          icon={SettingsIcon(activePage === 'settings', CO)}/>
+      </div>
+      <div className="h-safe-area-inset-bottom"/>
+    </nav>
+  );
 
   return (
     <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"

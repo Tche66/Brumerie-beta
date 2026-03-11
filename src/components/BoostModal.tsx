@@ -111,7 +111,7 @@ export function BoostModal({ product, onClose, onBoosted }: BoostModalProps) {
               </p>
               {/* Deeplink Wave — ouvre l'app Wave avec montant pré-rempli */}
               <a
-                href={waveLinks[selected] || `wave://send?phone=+22505868676 93&amount=${plan.price}&note=Boost+Brumerie+${plan.duration}`}
+                href={waveLinks[selected] || `wave://send?phone=+2250586867693&amount=${plan.price}&note=Boost+Brumerie+${plan.duration}`}
                 className="block w-full py-4 rounded-2xl font-black text-[13px] uppercase tracking-widest text-white active:scale-95 transition-all mb-3 shadow-lg"
                 style={{ background: 'linear-gradient(135deg, #1AA3FF, #0070D1)' }}
                 onClick={() => setTimeout(() => setStep('confirm'), 3000)}>

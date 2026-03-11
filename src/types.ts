@@ -74,7 +74,7 @@ export interface User {
   phone?: string;
   neighborhood?: string;
   photoURL?: string;
-  role: 'buyer' | 'seller';
+  role: 'buyer' | 'seller' | 'livreur';
   isVerified?: boolean;
   isPremium?: boolean;
   tier?: 'simple' | 'verified' | 'premium';   // Plan actuel du vendeur
@@ -100,6 +100,13 @@ export interface User {
   // ─── Livreur partenaire ───────────────────────────────────
   deliveryPartnerName?: string;   // ex: "Kouassi Express"
   deliveryPartnerPhone?: string;  // ex: "+225 07 12 34 56" (WhatsApp)
+  // Champs spécifiques au rôle livreur
+  deliveryZones?: string[];        // Max 2 quartiers couverts
+  deliveryRates?: DeliveryRate[];  // Tarifs propres du livreur
+  deliveryBio?: string;            // ex: "Livraison rapide Cocody/Plateau"
+  deliveryAvailable?: boolean;     // Disponible ou pas
+  totalDeliveries?: number;        // Nb livraisons effectuées
+  totalEarnings?: number;          // Gains cumulés (FCFA)
   createdAt?: any;
   // Sprint 7 — Boutique personnalisable
   shopThemeColor?: string;   // ex: '#16A34A'
@@ -208,11 +215,14 @@ export interface PaymentInfo {
 
 // ─── COMMANDES ────────────────────────────────────────────
 export type OrderStatus =
-  | 'initiated'       // Commande créée, attente paiement acheteur
-  | 'proof_sent'      // Preuve de paiement envoyée
-  | 'confirmed'       // Vendeur confirme réception paiement
-  | 'ready'           // Vendeur Prêt à livrer → code généré
-  | 'delivered'       // Acheteur a validé le code → livré
+  | 'initiated'          // Commande créée, attente paiement acheteur
+  | 'proof_sent'         // Preuve de paiement envoyée
+  | 'confirmed'          // Vendeur confirme réception paiement
+  | 'ready'              // Vendeur prêt à livrer → code généré
+  | 'delivery_requested' // Livreur assigné, en attente de prise en charge
+  | 'delivery_accepted'  // Livreur a accepté la mission
+  | 'delivery_picked'    // Livreur a récupéré le colis
+  | 'delivered'          // Acheteur a validé le code → livré
   | 'disputed'
   | 'cancelled'
   | 'cod_pending'
@@ -260,6 +270,14 @@ export interface Order {
   buyerReviewed?: boolean;
   sellerReviewed?: boolean;
   reviewsUnlocked?: boolean;     // true dès que le code est validé
+  // ─── Livraison partenaire ──────────────────────────────
+  delivererId?: string;          // UID du livreur assigné
+  delivererName?: string;
+  delivererPhone?: string;
+  delivererProposedBy?: 'buyer' | 'seller' | 'admin'; // qui a proposé le livreur
+  deliveryRequestedAt?: any;
+  deliveryAcceptedAt?: any;
+  deliveryPickedAt?: any;
 }
 
 // ─── NOTATION Sprint 7 ───────────────────────────────────
@@ -334,3 +352,27 @@ export interface ProductBoost {
 export const ADMIN_UID = (typeof import.meta !== 'undefined' && (import.meta as any).env)
   ? (import.meta as any).env.VITE_ADMIN_UID || ''
   : '';
+
+// ─── LIVREUR ──────────────────────────────────────────────
+export interface DeliveryRate {
+  fromZone: string;   // quartier de départ
+  toZone: string;     // quartier d'arrivée ('same' = même quartier)
+  price: number;      // FCFA
+}
+
+export interface DeliveryRequest {
+  id: string;
+  orderId: string;
+  delivererId: string;
+  proposedBy: 'buyer' | 'seller' | 'admin';
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  fromNeighborhood: string;
+  toNeighborhood: string;
+  estimatedFee: number;
+  buyerName: string;
+  sellerName: string;
+  productTitle: string;
+  productImage?: string;
+  createdAt?: any;
+  respondedAt?: any;
+}
