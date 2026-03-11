@@ -584,6 +584,18 @@ useEffect(() => {
         {activePage === 'admin' && (
           <AdminPage onBack={goBack} />
         )}
+        {activePage === 'become-deliverer' && (
+          <BecomeDelivererPage
+            onBack={goBack}
+            onDone={() => navigate('deliverer-dashboard')}
+          />
+        )}
+        {activePage === 'deliverer-dashboard' && (
+          <DelivererDashboardPage
+            onNavigate={handleNavigate}
+            onChat={(_userId: string, _userName: string) => { navigate('messages'); }}
+          />
+        )}
       </main>
 
       {MAIN_PAGES.includes(activePage) && (

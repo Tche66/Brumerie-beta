@@ -177,6 +177,24 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             badge={(userProfile?.referralCount || 0) >= 10 ? 'ACTIF' : undefined}
             badgeBlue={(userProfile?.referralCount || 0) >= 10}
           />
+          {/* Livreur partenaire */}
+          {userProfile?.role !== 'livreur' ? (
+            <SettingItem
+              icon={<span style={{ fontSize: 20 }}>🛵</span>}
+              label="Devenir Livreur Partenaire"
+              sublabel="Livre dans ton quartier et gagne de l'argent"
+              onClick={() => onNavigate('become-deliverer')}
+            />
+          ) : (
+            <SettingItem
+              icon={<span style={{ fontSize: 20 }}>🛵</span>}
+              label="Mon espace livreur"
+              sublabel="Voir mes missions et mes gains"
+              onClick={() => onNavigate('deliverer-dashboard')}
+              badge="ACTIF"
+              badgeBlue
+            />
+          )}
           {/* Boutique personnalisable — vérifié/premium uniquement */}
           {(userProfile?.isVerified || userProfile?.isPremium) && (
             <SettingItem

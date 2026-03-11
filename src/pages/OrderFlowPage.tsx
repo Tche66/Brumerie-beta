@@ -170,7 +170,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
 
   // ── ÉTAPE 1 : Récapitulatif ────────────────────────────
-  if (step === 'recap') return (
+  if (step === 'recap') return (<>
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
@@ -376,10 +376,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
     </div>
     {delivererPickerModal}
+  </>
   );
 
   // ── ÉTAPE 2 : Coordonnées paiement ─────────────────────
-  if (step === 'availability_check') return (
+  if (step === 'availability_check') return (<>
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={() => setStep('recap')} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
@@ -449,9 +450,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
     </div>
     {delivererPickerModal}
+  </>
   );
 
-  if (step === 'payment_details') return (
+  if (step === 'payment_details') return (<>
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <button onClick={() => setStep('recap')} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
@@ -535,10 +537,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
     </div>
     {delivererPickerModal}
+  </>
   );
 
   // ── ÉTAPE COD : Confirmation réception à la livraison ───
-  if (step === 'cod_confirm') return (
+  if (step === 'cod_confirm') return (<>
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center">
@@ -610,5 +613,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
     </div>
     {delivererPickerModal}
+  </>
   );
 }
