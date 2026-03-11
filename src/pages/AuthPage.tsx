@@ -13,8 +13,9 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   const { signIn, signUp, resetPassword, requestOTP, verifyOTP, signInWithGoogle } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [step, setStep]       = useState<Step>('form');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [googleStep, setGoogleStep] = useState<'idle'|'waiting'|'done'>('idle');
+  const [error, setError]       = useState('');
   const [success, setSuccess] = useState('');
 
   // Champs
@@ -66,24 +67,22 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   // ── Connexion / Inscription Google ──────────────────────────
   const handleGoogle = async () => {
     setError('');
+    setGoogleStep('waiting');
     setLoading(true);
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     try {
       await signInWithGoogle();
-      // Mobile : la page va recharger → pas de finally
-      // Desktop : signInWithPopup → onAuthStateChanged prend la main
-      if (!isMobile) setLoading(false);
+      setGoogleStep('done');
     } catch (err: any) {
-      const code = err?.code || '';
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        // Annulation volontaire → pas d'erreur
-      } else if (code === 'auth/popup-blocked') {
-        setError('Popup bloquée. Autorise les popups pour ce site.');
-      } else if (code === 'auth/network-request-failed') {
-        setError('Erreur réseau. Vérifie ta connexion.');
+      const code = err.message || err.code || '';
+      if (code.includes('timeout')) {
+        setError('Délai dépassé. Vérifie que tu as bien choisi ton compte Google dans l\'onglet ouvert.');
+      } else if (code.includes('expired')) {
+        setError('Session expirée. Réessaie.');
       } else {
-        setError('Erreur Google (' + code + '). Réessaie.');
+        setError('Erreur Google : ' + (err.message || 'Réessaie.'));
       }
+      setGoogleStep('idle');
+    } finally {
       setLoading(false);
     }
   };
@@ -389,14 +388,18 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 py-5 rounded-[2.5rem] border-2 border-slate-200 bg-white font-black text-[13px] text-slate-800 uppercase tracking-[0.15em] active:scale-[0.98] transition-all shadow-sm hover:border-slate-300 hover:shadow-md disabled:opacity-40 mb-6"
         >
-          {loading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-              Redirection Google...
-            </>
+          {googleStep === 'waiting' ? (
+            <div className="flex flex-col items-center gap-1 w-full">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-slate-300 border-t-green-600 rounded-full animate-spin" />
+                <span>En attente de Google…</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-normal normal-case tracking-normal">
+                Choisis ton compte dans l'onglet ouvert
+              </span>
+            </div>
           ) : (
             <>
-              {/* Logo Google SVG officiel */}
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

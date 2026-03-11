@@ -56,7 +56,7 @@ function AuthGate() {
   const { userProfile, currentUser } = useAuth();
   const [showPrivacy, setShowPrivacy] = React.useState(false);
   const [privacyMode, setPrivacyMode] = React.useState<'privacy' | 'terms'>('privacy');
-  const _banReason = typeof localStorage !== 'undefined' ? localStorage.getItem('ban_reason') : null;
+  const _banReason = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ban_reason') : null;
 
   const handleNavigate = (page: string) => {
     if (page === 'privacy') { setPrivacyMode('privacy'); setShowPrivacy(true); }
@@ -113,13 +113,13 @@ function RoleSwitchModal({ currentRole, onConfirm, onCancel }: {
 
 // ── AppShell — rendu uniquement si authentifié ────────────────
 // TOUS les hooks sont déclarés ici, AUCUN return conditionnel avant eux
-function AppShell({ initialPage }: { initialPage?: Page }) {
+function AppShell() {
   const { currentUser, userProfile } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
   const { showOnboarding, doneOnboarding } = useOnboarding();
 
   // ── État de navigation ──
-  const [activePage, setActivePage]               = useState<Page>(initialPage || 'home');
+  const [activePage, setActivePage]               = useState<Page>('home');
   const [pageKey, setPageKey]                      = useState(0); // force re-mount pour animation
   const [selectedProduct, setSelectedProduct]     = useState<Product | null>(null);
   const [productHistory, setProductHistory]       = useState<Product[]>([]);
@@ -642,32 +642,31 @@ useEffect(() => {
 }
 
 // ── AppContent — dispatcher auth / app ───────────────────────
+// Ce composant ne contient AUCUN hook — juste du routing conditionnel
+
+
 function AppContent() {
   const { currentUser, userProfile, loading } = useAuth();
   const [showAuth, setShowAuth] = React.useState(false);
   const [maintenance, setMaintenance] = React.useState<{active:boolean;message:string}|null>(null);
 
-  // Détecter retour de auth-callback.html (connexion Google mobile)
-  const urlParams = new URLSearchParams(window.location.search);
-  const googleOk  = urlParams.get('google_ok')  === '1';
-  const googleNew = urlParams.get('google_new') === '1';
-
-  React.useEffect(() => {
-    if (googleOk || googleNew) window.history.replaceState({}, '', window.location.pathname);
-  }, []); // eslint-disable-line
-
-  // Maintenance check
+  // Vérifier le mode maintenance au démarrage
   React.useEffect(() => {
     import('firebase/firestore').then(({ doc, getDoc }) => {
       import('@/config/firebase').then(({ db }) => {
         getDoc(doc(db, 'system', 'settings')).then((snap: any) => {
-          if (snap.exists() && snap.data().maintenanceMode)
-            setMaintenance({ active: true, message: snap.data().maintenanceMessage || 'Maintenance en cours.' });
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.maintenanceMode) {
+              setMaintenance({ active: true, message: data.maintenanceMessage || '🔧 Brumerie est en maintenance. Revenez bientôt !' });
+            }
+          }
         }).catch(() => {});
       });
     });
   }, []);
 
+  // Mode maintenance — bloquer tous sauf admin
   if (maintenance?.active && currentUser?.uid !== ((import.meta as any).env?.VITE_ADMIN_UID || '__none__')) {
     return (
       <div className="min-h-screen flex items-center justify-center px-8" style={{ background: '#0F172A' }}>
@@ -680,53 +679,59 @@ function AppContent() {
     );
   }
 
-  // Spinner pendant chargement Firebase
+  // Pendant le chargement initial Firebase
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Chargement…</p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Chargement…</p>
         </div>
       </div>
     );
   }
 
-  // Pas connecté
-  if (!currentUser) {
-    if (showAuth) return <AuthGate />;
-    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
-  }
-
-  // Connecté, profil en cours de chargement
-  if (!userProfile) {
+  // currentUser existe mais profil pas encore chargé (ex: après redirect Google)
+  // → spinner pendant que Firestore charge le profil
+  if (currentUser && !userProfile) {
+    console.log('[App] currentUser exists but no userProfile yet, uid:', currentUser.uid);
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
-          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion…</p>
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion Google…</p>
+          <p className="text-[9px] text-slate-300">uid: {currentUser.uid.slice(0,8)}…</p>
         </div>
       </div>
     );
   }
 
-  // Rôle manquant
-  if (!userProfile.role) {
+  // Pas connecté → mode visiteur avec accès limité
+  // Le visiteur peut voir l'accueil, les articles et les profils vendeurs
+  // Mais est invité à se connecter pour les actions
+  if (!currentUser) {
+    // showAuth = true → forcer l'affichage de la page de connexion
+    if (showAuth) return <AuthGate />;
+    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
+  }
+
+  // Connecté mais rôle manquant → sélection du rôle
+  if (userProfile && !userProfile.role) {
     return (
       <RoleSelectPage
         userName={userProfile.name}
-        onSelect={async (role) => { await updateUserProfile(currentUser.uid, { role }); window.location.reload(); }}
+        onSelect={async (role) => {
+          await updateUserProfile(currentUser.uid, { role });
+          window.location.reload();
+        }}
       />
     );
   }
 
-  // Retour Google : google_new → profil, google_ok → accueil
-  const googleInitPage: Page | undefined = googleNew ? 'profile' : (googleOk ? 'home' : undefined);
-  return <AppShell initialPage={googleInitPage} />;
+  // Authentifié + rôle ok → application complète
+  return <AppShell />;
 }
-
 
 export default function App() {
   // Débloquer AudioContext iOS au premier touch

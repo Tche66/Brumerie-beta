@@ -1,4 +1,4 @@
-// netlify/functions/send-email.js
+// api/send-email.js — Vercel
 // Gère TOUT l'OTP : génération, stockage en mémoire, envoi Brevo, vérification
 // Aucune dépendance Firestore = aucun problème de règles Firebase
 
