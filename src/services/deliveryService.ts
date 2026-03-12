@@ -61,20 +61,50 @@ export async function assignDeliverer(params: {
 }): Promise<void> {
   const { orderId, deliverer, fee, order } = params;
 
+  // Lire le statut actuel depuis Firestore pour décider du nouveau statut
+  const snap = await getDoc(doc(db, 'orders', orderId));
+  if (!snap.exists()) return;
+  const current = snap.data();
+
+  // Générer le code de livraison immédiatement à l'assignation
+  const deliveryCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const qrPickupPayload   = 'brumerie://pickup/'   + orderId + '/' + deliveryCode;
+  const qrDeliveryPayload = 'brumerie://delivery/' + orderId + '/' + deliveryCode;
+
+  // Nouveau statut selon le type de commande
+  // Si paiement mobile confirmé → ready (code généré, livreur peut opérer)
+  // Si COD déjà validé vendeur → cod_confirmed (livreur visible en "En cours")
+  // Si encore en attente vendeur → status inchangé (confirmed / cod_pending)
+  let newStatus = current.status;
+  if (current.status === 'confirmed') newStatus = 'ready';
+  if (current.status === 'cod_confirmed') newStatus = 'cod_confirmed'; // déjà bon
+
   await updateDoc(doc(db, 'orders', orderId), {
     delivererId: deliverer.id,
     delivererName: deliverer.deliveryPartnerName || deliverer.name,
     delivererPhone: deliverer.phone || '',
     deliveryFee: fee,
     deliveryAssignedAt: serverTimestamp(),
-    // status reste 'ready' — le livreur va scanner pour passer à 'picked'
+    status: newStatus,
+    deliveryCode,
+    qrPickupPayload,
+    qrDeliveryPayload,
+    deliveryCodeGeneratedAt: serverTimestamp(),
   });
 
-  // Notifier le livreur
+  // Notifier le livreur avec le code
   await createNotification(
     deliverer.id, 'system',
     '🛵 Nouvelle mission !',
-    `Livraison "${order.productTitle}" — ${order.sellerName}. Ouvre le QR du vendeur pour récupérer le colis.`,
+    `Livraison "${order.productTitle}" — ${order.sellerName}. Code : ${deliveryCode}. Va chercher le colis chez le vendeur.`,
+    { orderId, productId: order.productId }
+  );
+
+  // Notifier le vendeur que le livreur est assigné
+  await createNotification(
+    order.sellerId, 'system',
+    '✅ Livreur assigné',
+    `${deliverer.deliveryPartnerName || deliverer.name} va récupérer "${order.productTitle}". Code : ${deliveryCode}.`,
     { orderId, productId: order.productId }
   );
 }
@@ -177,6 +207,51 @@ export function subscribeDelivererOrders(
       const tb = (b as any).createdAt?.toMillis?.() || 0;
       return tb - ta;
     });
+    callback(orders);
+  });
+}
+
+
+// ── Commandes ouvertes dans la zone du livreur (Missions disponibles) ──
+// Toutes les commandes avec deliveryType='delivery', sans livreur assigné,
+// dans les zones couvertes par ce livreur
+export function subscribeOpenOrdersInZone(
+  zones: string[],
+  callback: (orders: Order[]) => void,
+): Unsubscribe {
+  if (!zones || zones.length === 0) {
+    callback([]);
+    return () => {};
+  }
+
+  // Firestore ne permet pas de faire OR sur un champ → on subscribe sur les statuts
+  // qui indiquent qu'une commande est disponible pour un livreur
+  const q = query(
+    collection(db, 'orders'),
+    where('deliveryType', '==', 'delivery'),
+    where('delivererId', '==', null),
+  );
+
+  return onSnapshot(q, snap => {
+    const orders = snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as Order))
+      .filter(o => {
+        // Commande doit être dans un état où un livreur peut prendre
+        const validStatus = ['confirmed', 'ready', 'cod_confirmed'].includes(o.status);
+        // Zone vendeur ou acheteur doit correspondre à une zone du livreur
+        const sellerZone = (o as any).sellerNeighborhood || '';
+        const buyerZone  = (o as any).buyerNeighborhood  || '';
+        const inZone = zones.some(z =>
+          z === sellerZone || z === buyerZone ||
+          sellerZone.includes(z) || z.includes(sellerZone)
+        );
+        return validStatus && inZone;
+      })
+      .sort((a, b) => {
+        const ta = (a as any).createdAt?.toMillis?.() || 0;
+        const tb = (b as any).createdAt?.toMillis?.() || 0;
+        return tb - ta;
+      });
     callback(orders);
   });
 }

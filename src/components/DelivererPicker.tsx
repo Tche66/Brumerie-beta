@@ -2,7 +2,8 @@
 // Bottom sheet : choisir un livreur + l'assigner en un clic
 
 import React, { useState, useEffect } from 'react';
-import { getAvailableDeliverers, calcDeliveryFee, assignDeliverer } from '@/services/deliveryService';
+import { getAvailableDeliverers, assignDeliverer } from '@/services/deliveryService';
+import type { DeliveryRate } from '@/types';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import type { User, Order } from '@/types';
 
@@ -17,6 +18,8 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
   const [deliverers, setDeliverers] = useState<User[]>([]);
   const [loading, setLoading]       = useState(true);
   const [selected, setSelected]     = useState<User | null>(null);
+  const [selectedRate, setSelectedRate] = useState<DeliveryRate | null>(null);
+  const [customFee, setCustomFee]   = useState<number | null>(null);
   const [sending, setSending]       = useState(false);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
 
@@ -31,13 +34,47 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
     });
   }, [fromZone]);
 
-  const getFee = (d: User) => calcDeliveryFee(d, fromZone, toZone);
+  // Retourne tous les tarifs d'un livreur triés par pertinence
+  const getRatesForDeliverer = (d: User): DeliveryRate[] => {
+    const rates = (d.deliveryRates || []) as DeliveryRate[];
+    // D'abord les tarifs exacts, puis les approximatifs
+    const exact   = rates.filter(r => (r.fromZone === fromZone && r.toZone === toZone) || (r.fromZone === toZone && r.toZone === fromZone));
+    const zone    = rates.filter(r => !exact.includes(r) && (r.fromZone === fromZone || r.toZone === toZone || r.fromZone === toZone || r.toZone === fromZone));
+    const other   = rates.filter(r => !exact.includes(r) && !zone.includes(r));
+    return [...exact, ...zone, ...other];
+  };
+
+  const getDefaultFee = (d: User): number => {
+    const rates = getRatesForDeliverer(d);
+    return rates[0]?.price ?? 1000;
+  };
+
+  const getFee = (): number => {
+    if (customFee !== null) return customFee;
+    if (selectedRate) return selectedRate.price;
+    if (selected) return getDefaultFee(selected);
+    return 0;
+  };
+
+  const handleSelectDeliverer = (d: User) => {
+    if (selected?.id === d.id) {
+      setSelected(null);
+      setSelectedRate(null);
+      setCustomFee(null);
+    } else {
+      setSelected(d);
+      // Auto-sélectionner le premier tarif pertinent
+      const rates = getRatesForDeliverer(d);
+      setSelectedRate(rates[0] || null);
+      setCustomFee(null);
+    }
+  };
 
   const handleConfirm = async () => {
     if (!selected) return;
     setSending(true);
     try {
-      const fee = getFee(selected);
+      const fee = getFee();
       await assignDeliverer({ orderId: order.id, deliverer: selected, fee, order });
       onDone(selected, fee);
     } catch (e) { console.error(e); }
@@ -87,12 +124,19 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
           )}
 
           {deliverers.map(d => {
-            const fee = getFee(d);
             const sel = selected?.id === d.id;
+            const rates = getRatesForDeliverer(d);
+            const hasMultipleRates = rates.length > 1;
+            const displayFee = sel
+              ? getFee()
+              : getDefaultFee(d);
+
             return (
               <div key={d.id}
                 className={'rounded-2xl border-2 p-4 transition-all ' +
                   (sel ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-white')}>
+
+                {/* Header livreur */}
                 <div className="flex items-center gap-3 mb-3">
                   <button onClick={() => setViewProfile(d.id)} className="flex-shrink-0">
                     {d.photoURL
@@ -105,17 +149,62 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
                     <p className="text-[10px] text-slate-400 mt-0.5">📍 {(d.deliveryZones || []).join(' · ')}</p>
                     {d.totalDeliveries ? (
                       <p className="text-[10px] text-green-600 font-bold">
-                        ✅ {d.totalDeliveries} livraisons{d.rating ? ` · ⭐ ${d.rating.toFixed(1)}` : ''}
+                        ✅ {d.totalDeliveries} livraison{d.totalDeliveries > 1 ? 's' : ''}{d.rating ? ` · ⭐ ${d.rating.toFixed(1)}` : ''}
                       </p>
                     ) : null}
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-black text-green-600 text-[16px]">{fee.toLocaleString('fr-FR')}</p>
+                    <p className="font-black text-green-600 text-[16px]">{displayFee.toLocaleString('fr-FR')}</p>
                     <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
                   </div>
                 </div>
+
+                {/* Sélecteur de tarif — visible seulement si sélectionné ET plusieurs tarifs */}
+                {sel && hasMultipleRates && (
+                  <div className="bg-white rounded-xl p-3 mb-3 border border-green-200">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                      Choisir le tarif
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {rates.map((r, i) => {
+                        const isSelected = selectedRate?.fromZone === r.fromZone &&
+                                           selectedRate?.toZone === r.toZone &&
+                                           selectedRate?.price === r.price;
+                        return (
+                          <button key={i} onClick={() => { setSelectedRate(r); setCustomFee(null); }}
+                            className={'w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-bold transition-all active:scale-95 ' +
+                              (isSelected ? 'bg-green-600 text-white' : 'bg-slate-50 text-slate-700 border border-slate-200')}>
+                            <span>
+                              {r.toZone === 'same' ? 'Même quartier' : `${r.fromZone || '?'} → ${r.toZone || '?'}`}
+                            </span>
+                            <span className={'font-black ' + (isSelected ? 'text-white' : 'text-green-600')}>
+                              {r.price.toLocaleString('fr-FR')} F
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {/* Tarif personnalisé */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="number"
+                          placeholder="Autre montant..."
+                          value={customFee ?? ''}
+                          onChange={e => {
+                            const v = parseInt(e.target.value);
+                            setCustomFee(isNaN(v) ? null : v);
+                            if (!isNaN(v)) setSelectedRate(null);
+                          }}
+                          className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-bold outline-none focus:border-green-400"
+                        />
+                        <span className="text-[10px] text-slate-400 font-bold">FCFA</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Boutons sélection + profil */}
                 <div className="flex gap-2">
-                  <button onClick={() => setSelected(sel ? null : d)}
+                  <button onClick={() => handleSelectDeliverer(d)}
                     className={'flex-1 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 ' +
                       (sel ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-700')}>
                     {sel ? '✓ Sélectionné' : 'Sélectionner'}
@@ -143,10 +232,10 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
             {sending
               ? <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
-                  Envoi...
+                  Assignation...
                 </span>
               : selected
-                ? `✅ Assigner ${selected.deliveryPartnerName || 'ce livreur'}`
+                ? `✅ Assigner ${selected.deliveryPartnerName || 'ce livreur'} — ${getFee().toLocaleString('fr-FR')} F`
                 : 'Choisir un livreur'
             }
           </button>

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   subscribeDelivererOrders,
+  subscribeOpenOrdersInZone,
   confirmDeliveryByBuyer,
   toggleDelivererAvailability,
 } from '@/services/deliveryService';
@@ -29,21 +30,33 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const [toggling, setToggling]   = useState(false);
 
   // QR actions
-  const [showScanPickup, setShowScanPickup] = useState<Order | null>(null);
   const [showQRDelivery, setShowQRDelivery]       = useState<Order | null>(null); // Afficher mon QR pour acheteur
   const [showEditProfile, setShowEditProfile]     = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
-    return subscribeDelivererOrders(currentUser.uid, setOrders);
+    const unsub1 = subscribeDelivererOrders(currentUser.uid, setOrders);
+    return unsub1;
   }, [currentUser?.uid]);
 
-  // MISSIONS  = en attente que le vendeur génère le code (status 'confirmed')
-  // EN COURS  = code généré → livreur peut agir (ready / cod_confirmed / picked)
-  // TERMINÉES = delivered
-  const myPending  = orders.filter(o => o.status === 'confirmed');
+  // Missions ouvertes dans les zones du livreur
+  useEffect(() => {
+    const zones = userProfile?.deliveryZones || [];
+    if (zones.length === 0) return;
+    const unsub = subscribeOpenOrdersInZone(zones, setOpenOrders);
+    return unsub;
+  }, [JSON.stringify(userProfile?.deliveryZones)]);
+
+  // MISSIONS = commandes ouvertes dans sa zone (pas encore assignées)
+  //            + ses commandes assignées en attente de code (confirmed)
+  const myAssignedPending = orders.filter(o => o.status === 'confirmed');
+  // Dédupliquer : openOrders peut contenir ses commandes assigned
+  const myOpenOrders = openOrders.filter(o => o.id && !orders.some(mo => mo.id === o.id));
+  const allMissions  = [...myAssignedPending, ...myOpenOrders];
+  // EN COURS  = code généré → livreur peut agir
   const myOngoing  = orders.filter(o => ['ready', 'cod_confirmed', 'picked'].includes(o.status));
   const myDone     = orders.filter(o => o.status === 'delivered');
+  const myPending  = allMissions; // alias pour le badge
   const totalGains = userProfile?.totalEarnings || 0;
   const totalCount = userProfile?.totalDeliveries || 0;
 
@@ -57,10 +70,9 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     setToggling(false);
   };
 
-  // handlePickupScanned supprimé — logique simplifiée v17.2
 
   const TABS: { id: Tab; label: string; icon: string; badge?: number }[] = [
-    { id: 'available', label: 'Missions', icon: '📦', badge: myPending.length },
+    { id: 'available', label: 'Missions', icon: '📦', badge: allMissions.length },
     { id: 'ongoing',   label: 'En cours', icon: '🛵', badge: myOngoing.length },
     { id: 'earnings',  label: 'Gains',    icon: '💰' },
     { id: 'profile',   label: 'Profil',   icon: '👤' },
@@ -144,25 +156,41 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-amber-600 text-[11px]">Active ta disponibilité pour recevoir des missions</p>
               </div>
             )}
-            {myPending.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-5xl mb-4">📭</div>
-                <p className="font-black text-slate-400 text-[13px]">Aucune mission en attente</p>
-                <p className="text-slate-400 text-[11px] mt-1">Tes missions assignées apparaîtront ici</p>
+            {/* Commandes assignées à moi en attente de code */}
+            {myAssignedPending.length > 0 && (
+              <div className="mb-2">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi</p>
+                {myAssignedPending.map(order => (
+                  <MissionCard key={order.id} order={order} isAssigned={true}
+                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                  />
+                ))}
               </div>
-            ) : myPending.map(order => (
-              <MissionCard
-                key={order.id}
-                order={order}
-                onScanVendeur={() => setShowScanPickup(order)}
-                onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
-                onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-              />
-            ))}
+            )}
+            {/* Commandes ouvertes dans ma zone */}
+            {myOpenOrders.length > 0 && (
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Dans ta zone</p>
+                {myOpenOrders.map(order => (
+                  <MissionCard key={order.id} order={order} isAssigned={false}
+                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                  />
+                ))}
+              </div>
+            )}
+            {allMissions.length === 0 && (
+              <div className="text-center py-16">
+                <div className="text-5xl mb-4">📦</div>
+                <p className="font-black text-slate-400 text-[13px]">Aucune mission disponible</p>
+                <p className="text-[10px] text-slate-400 mt-2">Les commandes de ta zone apparaîtront ici</p>
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── ONGLET EN COURS (picked → livraison) ── */}
+        {/* ── ONGLET EN COURS (ready / cod_confirmed / picked) ── */}
         {tab === 'ongoing' && (
           <div className="flex flex-col gap-3">
             {myOngoing.length === 0 ? (
@@ -251,46 +279,67 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 }
 
 // ── Mission Card — Colis à récupérer chez le vendeur ─────────────
-// MissionCard — en attente que le vendeur génère le code (status 'confirmed')
-function MissionCard({ order, onChatSeller, onChatBuyer }: {
+// MissionCard — deux variantes : assignée (code en route) vs ouverte (pas encore assignée)
+function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
   order: Order;
+  isAssigned: boolean;
   onChatSeller: () => void;
   onChatBuyer: () => void;
 }) {
   const ord = order as any;
+  const borderColor = isAssigned ? 'border-amber-400' : 'border-slate-300';
+
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-amber-400">
+    <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 mb-3 ${borderColor}`}>
+      {/* Header */}
       <div className="flex items-start gap-3 mb-3">
         {ord.productImage
-          ? <img src={ord.productImage} alt="" className="w-12 h-12 rounded-xl object-cover"/>
-          : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-xl">📦</div>
+          ? <img src={ord.productImage} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>
+          : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-xl flex-shrink-0">📦</div>
         }
         <div className="flex-1 min-w-0">
           <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
           <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
-          <p className="text-[11px] text-slate-400">Vendeur : {order.sellerName}</p>
+          <p className="text-[10px] text-slate-400">Vendeur : {order.sellerName}</p>
+          {ord.isCOD && <p className="text-[10px] font-bold text-blue-600 mt-0.5">💵 COD — paiement à la livraison</p>}
         </div>
-        <div className="text-right">
-          <p className="font-black text-green-600 text-[15px]">{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p>
-          <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
+        <div className="text-right flex-shrink-0">
+          {isAssigned && ord.deliveryFee > 0 ? (
+            <>
+              <p className="font-black text-green-600 text-[15px]">{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p>
+              <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
+            </>
+          ) : (
+            <p className="text-[10px] text-slate-400 font-bold">Tarif libre</p>
+          )}
         </div>
       </div>
-      <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
-        <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">⏳ En attente du code</p>
-        <p className="text-[11px] text-amber-700">
-          Le vendeur doit valider la commande et générer le code. Tu recevras une notification dès que c&apos;est prêt.
-        </p>
-        {(order as any).isCOD && (
-          <p className="text-[10px] font-bold text-amber-600 mt-1">💡 COD — l&apos;acheteur te paiera cash à la livraison.</p>
-        )}
-      </div>
+
+      {/* Statut */}
+      {isAssigned ? (
+        <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
+          <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">⏳ Tu es assigné — attente code</p>
+          <p className="text-[10px] text-amber-700">
+            Le vendeur va valider et tu recevras le code directement dans &quot;En cours&quot;.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-slate-50 rounded-xl p-3 mb-3 border border-slate-200">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">📦 Mission disponible</p>
+          <p className="text-[10px] text-slate-500">
+            Cette commande est dans ta zone. Contacte le vendeur ou l&apos;acheteur pour te proposer.
+          </p>
+        </div>
+      )}
+
+      {/* Boutons */}
       <div className="flex gap-2">
         <button onClick={onChatBuyer}
-          className="flex-1 py-3 rounded-xl bg-blue-50 font-black text-[10px] text-blue-600 active:scale-95 flex items-center justify-center gap-1.5">
+          className="flex-1 py-2.5 rounded-xl bg-blue-50 font-black text-[10px] text-blue-600 active:scale-95 flex items-center justify-center gap-1.5">
           <span>👤</span> Acheteur
         </button>
         <button onClick={onChatSeller}
-          className="flex-1 py-3 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 active:scale-95 flex items-center justify-center gap-1.5">
+          className="flex-1 py-2.5 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 active:scale-95 flex items-center justify-center gap-1.5">
           <span>🏪</span> Vendeur
         </button>
       </div>
