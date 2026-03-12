@@ -73,6 +73,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
       const { updateDoc, doc } = await import('firebase/firestore');
       const { db } = await import('@/config/firebase');
       await updateDoc(doc(db, 'users', currentUser.uid), {
+        role: 'livreur',
         deliveryVehicle: vehicle,
         deliveryStatus: status,
         deliveryAge: Number(age),

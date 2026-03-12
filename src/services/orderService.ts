@@ -158,6 +158,19 @@ export async function confirmCODDelivered(orderId: string): Promise<void> {
     deliveredAt: serverTimestamp(),
   });
 
+  // Incrémenter stats livreur (COD path)
+  if ((order as any).delivererId) {
+    const delivererId = (order as any).delivererId;
+    const uSnap = await getDoc(doc(collection(db, 'users'), delivererId));
+    if (uSnap.exists()) {
+      const d = uSnap.data();
+      await updateDoc(doc(collection(db, 'users'), delivererId), {
+        totalDeliveries: (d.totalDeliveries || 0) + 1,
+        totalEarnings: (d.totalEarnings || 0) + ((order as any).deliveryFee || 0),
+      });
+    }
+  }
+
   await notifyBoth({
     sellerId: order.sellerId,
     sellerMsg: {

@@ -710,11 +710,15 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <p className="text-[11px] text-green-700">
                 {(order as any).sellerPaymentConfirmed
                   ? 'Le vendeur a confirmé ton paiement. Scanne le QR du livreur à la réception.'
+                  : (order as any).delivererCashCollected
+                  ? '💵 Le livreur a collecté ton paiement cash. Scanne son QR pour confirmer la réception.'
+                  : ord.isCOD
+                  ? 'Le livreur collectera ton paiement cash à la réception, puis tu scanneras son QR.'
                   : 'Une fois le paiement vendeur effectué, le vendeur le validera et tu pourras confirmer la réception.'}
               </p>
             </div>
             {/* Scanner visible uniquement après confirmation vendeur */}
-            {(order as any).sellerPaymentConfirmed && (
+            {((order as any).sellerPaymentConfirmed || (order as any).delivererCashCollected) && (
               <button onClick={() => setShowBuyerScanner(true)}
                 className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
                 style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>

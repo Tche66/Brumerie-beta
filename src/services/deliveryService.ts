@@ -12,16 +12,32 @@ import { createNotification } from './notificationService';
 
 // ── Livreurs disponibles pour une zone ──────────────────────────
 export async function getAvailableDeliverers(fromZone: string): Promise<User[]> {
-  // Si zone vide → retourner tous les livreurs dispo (fallback)
-  const constraints: any[] = [
+  // Query principale : livreurs avec role='livreur' ET disponibles
+  const mainConstraints: any[] = [
     where('role', '==', 'livreur'),
     where('deliveryAvailable', '==', true),
   ];
   if (fromZone) {
-    constraints.push(where('deliveryZones', 'array-contains', fromZone));
+    mainConstraints.push(where('deliveryZones', 'array-contains', fromZone));
   }
-  const snap = await getDocs(query(collection(db, 'users'), ...constraints));
-  return snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
+  const snap1 = await getDocs(query(collection(db, 'users'), ...mainConstraints));
+  const results1 = snap1.docs.map(d => ({ ...d.data(), id: d.id } as User));
+
+  // Fallback : users avec deliveryAvailable=true sans forcément role='livreur'
+  // (migration — anciens livreurs inscrits avant le fix du role)
+  const fallbackConstraints: any[] = [
+    where('deliveryAvailable', '==', true),
+    where('deliveryCGUAccepted', '==', true),
+  ];
+  if (fromZone) {
+    fallbackConstraints.push(where('deliveryZones', 'array-contains', fromZone));
+  }
+  const snap2 = await getDocs(query(collection(db, 'users'), ...fallbackConstraints));
+  const results2 = snap2.docs
+    .map(d => ({ ...d.data(), id: d.id } as User))
+    .filter(u => !results1.some(r => r.id === u.id)); // dédupliquer
+
+  return [...results1, ...results2];
 }
 
 // ── Tous les livreurs (admin) ────────────────────────────────────

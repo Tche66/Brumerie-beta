@@ -58,8 +58,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const myOngoing  = orders.filter(o => ['ready', 'cod_confirmed', 'picked'].includes(o.status));
   const myDone     = orders.filter(o => o.status === 'delivered');
   const myPending  = allMissions; // alias pour le badge
-  const totalGains = userProfile?.totalEarnings || 0;
-  const totalCount = userProfile?.totalDeliveries || 0;
+  // Recalcul live depuis les commandes réelles (plus fiable que userProfile stale)
+  const myDoneOrders = orders.filter(o => o.status === 'delivered');
+  const totalGains = myDoneOrders.reduce((sum, o) => sum + ((o as any).deliveryFee || 0), 0)
+    || userProfile?.totalEarnings || 0;
+  const totalCount = myDoneOrders.length || userProfile?.totalDeliveries || 0;
 
   const handleToggle = async () => {
     if (!currentUser) return;
@@ -348,6 +351,48 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
   );
 }
 
+
+// ── CashCollectButton — livreur confirme avoir collecté le cash COD ──
+function CashCollectButton({ orderId }: { orderId: string }) {
+  const [loading, setLoading] = React.useState(false);
+  const [done, setDone]       = React.useState(false);
+
+  const handleCollect = async () => {
+    setLoading(true);
+    try {
+      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('@/config/firebase');
+      await updateDoc(doc(db, 'orders', orderId), {
+        delivererCashCollected: true,
+        delivererCashCollectedAt: serverTimestamp(),
+      });
+      setDone(true);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  if (done) return (
+    <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
+      <span className="text-lg">✅</span>
+      <p className="text-[11px] font-black text-green-700">Cash collecté — acheteur peut valider</p>
+    </div>
+  );
+
+  return (
+    <button onClick={handleCollect} disabled={loading}
+      className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 transition-all"
+      style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+      {loading
+        ? <span className="flex items-center justify-center gap-2">
+            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
+            Confirmation...
+          </span>
+        : '💵 J'ai collecté le paiement cash'
+      }
+    </button>
+  );
+}
+
 // ── ActiveDeliveryCard — EN COURS (ready / cod_confirmed / picked) ─
 // Affiche le code directement — le livreur le transmet à l'acheteur
 function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
@@ -413,6 +458,17 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
       ) : (
         <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
           <p className="text-[11px] text-amber-700 font-bold">⏳ Code en cours de génération...</p>
+        </div>
+      )}
+
+      {/* Bouton collecte cash COD — visible si COD + picked + pas encore collecté */}
+      {ord.isCOD && order.status === 'picked' && !ord.delivererCashCollected && (
+        <CashCollectButton orderId={order.id} />
+      )}
+      {ord.isCOD && ord.delivererCashCollected && (
+        <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
+          <span className="text-lg">✅</span>
+          <p className="text-[11px] font-black text-green-700">Cash collecté — l&apos;acheteur peut valider la réception</p>
         </div>
       )}
 
