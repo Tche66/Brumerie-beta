@@ -732,71 +732,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           </div>
         )}
 
-        {/* ══ COD ESPÈCES — VENDEUR : picked → Autoriser ou Bloquer l'encaissement ══ */}
-        {isSeller && order.status === 'picked' && (order as any).isCOD && (
-          <div className="space-y-3 pt-2">
-            {!(order as any).sellerAuthorizedCashCollection && !(order as any).sellerBlockedCashCollection && (
-              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
-                <div>
-                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
-                    💵 Le livreur est en route — autorises-tu l&apos;encaissement ?
-                  </p>
-                  <p className="text-[11px] text-amber-700 leading-relaxed">
-                    Le livreur va collecter <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span> auprès de l&apos;acheteur.
-                    Autorise-le à encaisser, ou bloque si tu as un doute.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-                      const { db } = await import('@/config/firebase');
-                      await updateDoc(doc(db, 'orders', orderId), {
-                        sellerAuthorizedCashCollection: true,
-                        sellerCashAuthAt: serverTimestamp(),
-                      });
-                    }}
-                    className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
-                    style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-                    ✅ Autoriser
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const { updateDoc, doc } = await import('firebase/firestore');
-                      const { db } = await import('@/config/firebase');
-                      await updateDoc(doc(db, 'orders', orderId), {
-                        sellerBlockedCashCollection: true,
-                      });
-                    }}
-                    className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-red-600 bg-red-50 border border-red-200 active:scale-95">
-                    🚫 Bloquer
-                  </button>
-                </div>
-                <p className="text-[9px] text-amber-600 text-center">
-                  Le livreur doit contacter le vendeur en cas de blocage.
-                </p>
-              </div>
-            )}
-            {(order as any).sellerAuthorizedCashCollection && (
-              <div className="bg-green-50 rounded-2xl p-4 border border-green-200 flex items-center gap-3">
-                <span className="text-2xl">✅</span>
-                <div>
-                  <p className="font-black text-green-800 text-[12px]">Encaissement autorisé</p>
-                  <p className="text-[10px] text-green-600">Le livreur peut collecter le paiement.</p>
-                </div>
-              </div>
-            )}
-            {(order as any).sellerBlockedCashCollection && (
-              <div className="bg-red-50 rounded-2xl p-4 border border-red-200 flex items-center gap-3">
-                <span className="text-2xl">🚫</span>
-                <div>
-                  <p className="font-black text-red-800 text-[12px]">Encaissement bloqué</p>
-                  <p className="text-[10px] text-red-600">Le livreur ne peut pas encaisser. Il devrait vous contacter.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Système Autoriser/Bloquer supprimé — flux simplifié */}
 
         {/* ══ COD ESPÈCES — VENDEUR : delivered → Confirmer réception argent + noter livreur ══ */}
         {isSeller && order.status === 'delivered' && (order as any).isCOD && (

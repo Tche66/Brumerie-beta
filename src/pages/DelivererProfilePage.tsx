@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDelivererById } from '@/services/deliveryService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 import { subscribeDelivererReviews } from '@/services/reviewService';
 import type { Review } from '@/types';
 import { calcDeliveryFee } from '@/services/deliveryService';
@@ -37,6 +39,7 @@ export function DelivererProfilePage({
   const [deliverer, setDeliverer] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [liveDeliveryCount, setLiveDeliveryCount] = useState<number | null>(null);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
 
@@ -54,6 +57,15 @@ export function DelivererProfilePage({
       setReviewCount(count);
     });
     return unsub;
+  }, [delivererId]);
+
+  useEffect(() => {
+    // Compter les livraisons réelles depuis Firestore (plus fiable que userProfile.totalDeliveries)
+    getDocs(query(
+      collection(db, 'orders'),
+      where('delivererId', '==', delivererId),
+      where('status', '==', 'delivered'),
+    )).then(snap => setLiveDeliveryCount(snap.size)).catch(() => {});
   }, [delivererId]);
 
   if (loading) return (
@@ -119,7 +131,7 @@ export function DelivererProfilePage({
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <StatCard value={deliverer.totalDeliveries || 0} label="Livraisons" color="green" />
+          <StatCard value={liveDeliveryCount ?? deliverer.totalDeliveries ?? 0} label="Livraisons" color="green" />
           <StatCard value={avgRating > 0 ? avgRating.toFixed(1) : '—'} label="Note" color="amber" suffix={avgRating > 0 ? '★' : ''} />
           <StatCard value={reviewCount} label="Avis" color="blue" />
         </div>

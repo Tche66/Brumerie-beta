@@ -357,11 +357,20 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
 // ── PickupConfirmButton — livreur confirme avoir récupéré le colis (cod_confirmed → picked) ──
 function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order }) {
   const [loading, setLoading] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+
+  if (done || order.status === 'picked') return (
+    <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
+      <span className="text-lg">✅</span>
+      <p className="text-[11px] font-black text-green-700">Colis récupéré — en route vers l&apos;acheteur</p>
+    </div>
+  );
 
   const handlePickup = async () => {
     setLoading(true);
     try {
       await confirmPickupByDeliverer(orderId, order);
+      setDone(true);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -512,65 +521,25 @@ function DeliveryDetailModal({ order, onClose }: { order: Order; onClose: () => 
   );
 }
 
-// ── CodCashBlock — affiche statut autorisation vendeur + bouton cash ──
+// ── CodCashBlock — bouton collecte cash COD + signalement ──
 function CodCashBlock({ order }: { order: Order }) {
   const ord = order as any;
   const sellerPhone = ord.sellerPhone || '';
 
-  // Pas encore de réponse vendeur
-  if (!ord.sellerAuthorizedCashCollection && !ord.sellerBlockedCashCollection) {
-    return (
-      <div className="bg-amber-50 rounded-xl p-4 mb-3 border border-amber-200 space-y-3">
-        <div className="flex items-start gap-2">
-          <span className="text-xl">⏳</span>
-          <div>
-            <p className="font-black text-amber-800 text-[12px]">En attente du vendeur</p>
-            <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
-              Le vendeur doit autoriser l&apos;encaissement. Contacte-le si besoin.
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {sellerPhone ? (
-            <a href={`tel:${sellerPhone}`}
-              className="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95"
-              style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-              📞 Appeler le vendeur
-            </a>
-          ) : null}
-          <DisputeButton orderId={order.id} />
-        </div>
+  return (
+    <div className="space-y-2">
+      <CashCollectButton orderId={order.id} />
+      <div className="flex gap-2">
+        {sellerPhone ? (
+          <a href={`tel:${sellerPhone}`}
+            className="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-green-700 bg-green-50 border border-green-200 flex items-center justify-center gap-1.5 active:scale-95">
+            📞 Vendeur
+          </a>
+        ) : null}
+        <DisputeButton orderId={order.id} />
       </div>
-    );
-  }
-
-  // Vendeur a bloqué
-  if (ord.sellerBlockedCashCollection) {
-    return (
-      <div className="bg-red-50 rounded-xl p-4 mb-3 border border-red-200 space-y-2">
-        <div className="flex items-start gap-2">
-          <span className="text-xl">🚫</span>
-          <div>
-            <p className="font-black text-red-800 text-[12px]">Encaissement bloqué par le vendeur</p>
-            <p className="text-[10px] text-red-600 mt-0.5">Ne collecte pas le paiement. Contacte le vendeur ou signale un problème.</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {sellerPhone ? (
-            <a href={`tel:${sellerPhone}`}
-              className="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95"
-              style={{ background: '#DC2626' }}>
-              📞 Appeler le vendeur
-            </a>
-          ) : null}
-          <DisputeButton orderId={order.id} />
-        </div>
-      </div>
-    );
-  }
-
-  // Vendeur a autorisé → bouton collecte
-  return <CashCollectButton orderId={order.id} />;
+    </div>
+  );
 }
 
 // ── DisputeButton — signaler un problème ──

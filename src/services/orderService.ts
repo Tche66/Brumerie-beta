@@ -26,6 +26,9 @@ export async function createOrder(params: {
   productPrice: number;
   deliveryFee?: number;
   paymentInfo: PaymentInfo;
+  sellerPaymentMethods?: PaymentInfo[];   // tous les numéros du vendeur
+  sellerPhone?: string;                   // téléphone direct du vendeur
+  buyerPhone?: string;                    // téléphone direct de l'acheteur
   deliveryType: 'delivery' | 'in_person';
   isCOD?: boolean;
   sellerNeighborhood?: string;

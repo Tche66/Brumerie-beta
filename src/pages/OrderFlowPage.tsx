@@ -27,6 +27,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
+  const [sellerPhone, setSellerPhone] = useState<string>('');
   const [sellerDelivery, setSellerDelivery] = useState<{ sameZone: number; otherZone: number }>({ sameZone: 0, otherZone: 0 });
   const [loadingSellerInfo, setLoadingSellerInfo] = useState(true);
   const [transactionRef, setTransactionRef] = useState('');
@@ -58,6 +59,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         if (snap.exists()) {
           const data = snap.data();
           setSellerPayments(data.defaultPaymentMethods || []);
+          setSellerPhone(data.phone || data.whatsapp || '');
           setSellerDelivery({
             sameZone: data.deliveryPriceSameZone || 0,
             otherZone: data.deliveryPriceOtherZone || 0,
@@ -87,6 +89,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         productPrice: effectivePrice,
         deliveryFee,
         paymentInfo,
+        sellerPaymentMethods: sellerPayments,
+        sellerPhone: sellerPhone,
+        buyerPhone: userProfile.phone || '',
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
@@ -117,6 +122,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         productPrice: effectivePrice,
         deliveryFee,
         paymentInfo: codPaymentInfo,
+        sellerPaymentMethods: sellerPayments,
+        sellerPhone: sellerPhone,
+        buyerPhone: userProfile.phone || '',
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
