@@ -632,7 +632,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
 
   const ord2 = order as any;
   const statusLabel = order.status === 'picked'
-    ? { icon: '🛵', text: 'En route vers l'acheteur', color: 'text-green-600', bg: 'border-green-500' }
+    ? { icon: '🛵', text: "En route vers l'acheteur", color: 'text-green-600', bg: 'border-green-500' }
     : (order.status === 'cod_confirmed' || order.status === 'ready') && ord2.isCOD
     ? { icon: '💵', text: 'COD — récupère le paiement chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
     : order.status === 'cod_confirmed'
