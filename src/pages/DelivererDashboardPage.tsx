@@ -387,7 +387,7 @@ function CashCollectButton({ orderId }: { orderId: string }) {
             <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
             Confirmation...
           </span>
-        : '💵 J'ai collecté le paiement cash'
+        : '💵 J\'ai collecté le paiement cash'
       }
     </button>
   );
