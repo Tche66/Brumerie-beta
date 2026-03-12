@@ -347,7 +347,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         )}
       </div>
     </div>
-    {delivererPickerModal}
   </>
   );
 
@@ -421,7 +420,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
-    {delivererPickerModal}
   </>
   );
 
@@ -504,7 +502,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
-    {delivererPickerModal}
   </>
   );
 
@@ -670,7 +667,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         </button>
       </div>
     </div>
-    {delivererPickerModal}
   </>
   );
 }
