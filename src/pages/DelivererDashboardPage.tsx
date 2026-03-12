@@ -7,6 +7,7 @@ import {
   subscribeDelivererOrders,
   subscribeOpenOrdersInZone,
   confirmDeliveryByBuyer,
+  confirmPickupByDeliverer,
   toggleDelivererAvailability,
 } from '@/services/deliveryService';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
@@ -352,6 +353,34 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
 }
 
 
+
+// ── PickupConfirmButton — livreur confirme avoir récupéré le colis (cod_confirmed → picked) ──
+function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order }) {
+  const [loading, setLoading] = React.useState(false);
+
+  const handlePickup = async () => {
+    setLoading(true);
+    try {
+      await confirmPickupByDeliverer(orderId, order);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <button onClick={handlePickup} disabled={loading}
+      className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 transition-all"
+      style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+      {loading
+        ? <span className="flex items-center justify-center gap-2">
+            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
+            Confirmation...
+          </span>
+        : '📦 J'ai récupéré le colis chez le vendeur'
+      }
+    </button>
+  );
+}
+
 // ── CashCollectButton — livreur confirme avoir collecté le cash COD ──
 function CashCollectButton({ orderId }: { orderId: string }) {
   const [loading, setLoading] = React.useState(false);
@@ -462,6 +491,11 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
       )}
 
       {/* Bouton collecte cash COD — visible si COD + picked + pas encore collecté */}
+      {/* Bouton récupération colis — cod_confirmed → picked */}
+      {ord.isCOD && order.status === 'cod_confirmed' && (
+        <PickupConfirmButton orderId={order.id} order={order} />
+      )}
+      {/* Bouton collecte cash — picked + pas encore collecté */}
       {ord.isCOD && order.status === 'picked' && !ord.delivererCashCollected && (
         <CashCollectButton orderId={order.id} />
       )}

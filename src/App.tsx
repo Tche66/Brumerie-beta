@@ -596,7 +596,11 @@ useEffect(() => {
         {activePage === 'become-deliverer' && (
           <BecomeDelivererPage
             onBack={goBack}
-            onDone={() => navigate('deliverer-dashboard')}
+            onDone={async () => {
+              // Forcer rechargement profil pour que role='livreur' soit pris en compte
+              await refreshUserProfile();
+              navigate('deliverer-dashboard');
+            }}
           />
         )}
         {activePage === 'deliverer-profile' && selectedDelivererId && (

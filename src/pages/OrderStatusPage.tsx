@@ -712,7 +712,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   ? 'Le vendeur a confirmé ton paiement. Scanne le QR du livreur à la réception.'
                   : (order as any).delivererCashCollected
                   ? '💵 Le livreur a collecté ton paiement cash. Scanne son QR pour confirmer la réception.'
-                  : ord.isCOD
+                  : (order as any).isCOD
                   ? 'Le livreur collectera ton paiement cash à la réception, puis tu scanneras son QR.'
                   : 'Une fois le paiement vendeur effectué, le vendeur le validera et tu pourras confirmer la réception.'}
               </p>
