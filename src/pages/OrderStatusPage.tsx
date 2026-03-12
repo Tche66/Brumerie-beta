@@ -261,6 +261,116 @@ function ProofUploadInline({ orderId, order }: { orderId: string; order: Order }
 }
 
 // ── Détail d'une commande ─────────────────────────────────
+
+// ── SellerPaymentMethods — méthodes de paiement cliquables avec numéro vendeur ──
+function SellerPaymentMethods({ order }: { order: Order }) {
+  const [selectedMethod, setSelectedMethod] = React.useState<string | null>(null);
+  const [paid, setPaid] = React.useState(false);
+  const [paidAmount] = React.useState((order as any).productPrice || order.price || 0);
+  const sellerMethods: import('@/types').PaymentInfo[] = (order as any).sellerPaymentMethods
+    || ((order as any).paymentInfo ? [(order as any).paymentInfo] : []);
+
+  if (paid) return (
+    <div className="bg-green-50 rounded-xl p-3 border border-green-200">
+      <p className="text-[11px] font-black text-green-700">
+        ✅ Tu as déclaré avoir envoyé {paidAmount.toLocaleString('fr-FR')} FCFA au vendeur via {selectedMethod}.
+      </p>
+      <p className="text-[9px] text-green-600 mt-1">Le vendeur validera la réception de ton paiement.</p>
+    </div>
+  );
+
+  const methodsToShow = MOBILE_PAYMENT_METHODS.map(m => {
+    const found = sellerMethods.find(sm => sm.method === m.id);
+    return { ...m, phone: found?.phone || null, holderName: found?.holderName || null, waveLink: found?.waveLink || null };
+  });
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Choisir un moyen de paiement</p>
+      <div className="grid grid-cols-2 gap-2">
+        {methodsToShow.map(m => (
+          <button key={m.id}
+            onClick={() => setSelectedMethod(selectedMethod === m.id ? null : m.id)}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border transition-all active:scale-95 text-left ${
+              selectedMethod === m.id
+                ? 'border-green-400 bg-green-50 shadow-sm'
+                : 'border-amber-100 bg-white'
+            }`}>
+            <img src={m.logo} alt={m.name}
+              className="w-6 h-6 rounded object-contain flex-shrink-0"
+              onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+            />
+            <span className="text-[10px] font-black text-slate-700 truncate">{m.name}</span>
+          </button>
+        ))}
+        <button
+          onClick={() => setSelectedMethod(selectedMethod === 'cash' ? null : 'cash')}
+          className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border transition-all active:scale-95 text-left ${
+            selectedMethod === 'cash'
+              ? 'border-amber-400 bg-amber-50 shadow-sm'
+              : 'border-amber-100 bg-white'
+          }`}>
+          <span className="text-lg">💵</span>
+          <span className="text-[10px] font-black text-slate-700">Espèces</span>
+        </button>
+      </div>
+
+      {/* Numéro vendeur pour la méthode sélectionnée */}
+      {selectedMethod && selectedMethod !== 'cash' && (() => {
+        const m = methodsToShow.find(x => x.id === selectedMethod);
+        if (!m) return null;
+        const phone = m.phone || (order as any).paymentInfo?.phone;
+        const holder = m.holderName || (order as any).paymentInfo?.holderName;
+        if (!phone) return (
+          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+            <p className="text-[10px] text-slate-500 text-center">
+              Numéro non renseigné — contacte le vendeur directement.
+            </p>
+          </div>
+        );
+        return (
+          <div className="bg-white rounded-xl p-4 border border-green-200 space-y-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase">{m.name} · {(order as any).sellerName}</p>
+                <p className="font-black text-slate-900 text-[18px] tracking-widest mt-1">{phone}</p>
+                {holder && <p className="text-[10px] text-slate-500">{holder}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {m.waveLink ? (
+                  <a href={m.waveLink} target="_blank" rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95 text-center"
+                    style={{ background: m.color }}>
+                    Ouvrir
+                  </a>
+                ) : null}
+                <button onClick={() => navigator.clipboard?.writeText(phone)}
+                  className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
+                  Copier
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setPaid(true)}
+              className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+              style={{ background: `linear-gradient(135deg,${m.color},${m.color}CC)` }}>
+              ✅ Paiement envoyé — {paidAmount.toLocaleString('fr-FR')} FCFA via {m.name}
+            </button>
+          </div>
+        );
+      })()}
+
+      {selectedMethod === 'cash' && (
+        <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+          <p className="text-[10px] text-amber-700 font-bold">
+            💵 Règlement en espèces directement lors de la remise de l&apos;article.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: string; onBack: () => void; onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void }) {
   const { currentUser, userProfile } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
@@ -411,7 +521,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   {/* Contact livreur */}
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => onOpenChatWithSeller?.(ord.delivererId, delivererInfo.deliveryPartnerName || delivererInfo.name)}
+                      onClick={() => onOpenChatWithSeller?.(ord.delivererId, delivererInfo.deliveryPartnerName || delivererInfo.name, ord.delivererId, 'Livraison ' + (order.productTitle || ''))}
                       className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white font-black text-[10px] uppercase tracking-widest active:scale-95">
                       💬 Contacter
                     </button>
@@ -799,23 +909,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                       </div>
                     </div>
                   )}
-                  {/* Modes de paiement */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {MOBILE_PAYMENT_METHODS.map(m => (
-                      <div key={m.id}
-                        className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
-                        <img src={m.logo} alt={m.name}
-                          className="w-6 h-6 rounded object-contain flex-shrink-0"
-                          onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
-                        />
-                        <span className="text-[10px] font-black text-slate-700 truncate">{m.name}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
-                      <span className="text-lg">💵</span>
-                      <span className="text-[10px] font-black text-slate-700">Espèces</span>
-                    </div>
-                  </div>
+                  {/* Modes de paiement cliquables — affiche numéro vendeur */}
+                  <SellerPaymentMethods order={order} />
                 </div>
               </div>
             )}

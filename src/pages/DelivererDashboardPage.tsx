@@ -382,6 +382,136 @@ function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order
 }
 
 
+
+// ── DeliveryDetailModal — infos complètes de la livraison ──
+function DeliveryDetailModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const ord = order as any;
+  const createdAt = ord.createdAt?.toDate?.() || (ord.createdAt ? new Date(ord.createdAt) : null);
+  const pickedAt = ord.deliveryPickedAt?.toDate?.() || null;
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl"
+        style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
+        <div className="px-6 pt-5 pb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="font-black text-slate-900 text-[16px] uppercase tracking-tight">📋 Détails livraison</p>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-black active:scale-90">✕</button>
+          </div>
+
+          {/* Article */}
+          <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+            {ord.productImage
+              ? <img src={ord.productImage} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0"/>
+              : <div className="w-14 h-14 rounded-xl bg-slate-200 flex items-center justify-center text-2xl flex-shrink-0">📦</div>
+            }
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
+              <p className="text-[11px] text-green-600 font-black mt-0.5">
+                {(ord.productPrice || order.price || 0).toLocaleString('fr-FR')} FCFA
+              </p>
+              <p className="text-[9px] text-slate-400 mt-0.5 uppercase font-bold">
+                {ord.isCOD ? '💵 Paiement à la livraison (COD)' : '📱 Paiement mobile money'}
+              </p>
+            </div>
+          </div>
+
+          {/* Montants */}
+          <div className="bg-green-50 rounded-2xl p-4 space-y-2 border border-green-100">
+            <p className="text-[9px] font-black text-green-800 uppercase tracking-widest">💰 Montants</p>
+            <div className="flex justify-between">
+              <p className="text-[11px] text-slate-600">Prix article</p>
+              <p className="font-black text-slate-900 text-[12px]">{(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA</p>
+            </div>
+            <div className="flex justify-between border-t border-green-100 pt-2">
+              <p className="text-[11px] font-black text-green-700">Tes frais de livraison</p>
+              <p className="font-black text-green-700 text-[14px]">{(ord.deliveryFee || 0).toLocaleString('fr-FR')} FCFA</p>
+            </div>
+          </div>
+
+          {/* Trajet */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 space-y-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">📍 Trajet</p>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 rounded-full bg-green-500"/>
+                <div className="w-0.5 h-8 bg-slate-200"/>
+                <div className="w-3 h-3 rounded-full bg-blue-500"/>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Collecte chez le vendeur</p>
+                  <p className="font-black text-slate-900 text-[12px]">{ord.sellerNeighborhood || '—'}</p>
+                  {ord.sellerName && <p className="text-[10px] text-slate-500">{ord.sellerName}</p>}
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Livraison chez l&apos;acheteur</p>
+                  <p className="font-black text-slate-900 text-[12px]">{ord.buyerNeighborhood || '—'}</p>
+                  {ord.buyerName && <p className="text-[10px] text-slate-500">{ord.buyerName}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contacts */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-100 space-y-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">📞 Contacts</p>
+            {ord.sellerPhone && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Vendeur</p>
+                  <p className="font-black text-slate-900 text-[12px]">{ord.sellerPhone}</p>
+                </div>
+                <a href={"tel:" + ord.sellerPhone.replace(/\D/g, '')}
+                  className="px-4 py-2 rounded-xl font-black text-[10px] text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  📞 Appel
+                </a>
+              </div>
+            )}
+            {ord.buyerPhone && (
+              <div className="flex items-center justify-between border-t border-slate-50 pt-3">
+                <div>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Acheteur</p>
+                  <p className="font-black text-slate-900 text-[12px]">{ord.buyerPhone}</p>
+                </div>
+                <a href={"tel:" + ord.buyerPhone.replace(/\D/g, '')}
+                  className="px-4 py-2 rounded-xl font-black text-[10px] text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                  📞 Appel
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Dates */}
+          {(createdAt || pickedAt) && (
+            <div className="bg-slate-50 rounded-2xl p-4 space-y-1.5">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">🕐 Chronologie</p>
+              {createdAt && (
+                <div className="flex justify-between">
+                  <p className="text-[10px] text-slate-500">Commande passée</p>
+                  <p className="text-[10px] font-bold text-slate-700">
+                    {createdAt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
+              {pickedAt && (
+                <div className="flex justify-between">
+                  <p className="text-[10px] text-slate-500">Colis récupéré</p>
+                  <p className="text-[10px] font-bold text-slate-700">
+                    {pickedAt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CodCashBlock — affiche statut autorisation vendeur + bouton cash ──
 function CodCashBlock({ order }: { order: Order }) {
   const ord = order as any;
@@ -522,6 +652,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
   const ord = order as any;
   const code = ord.deliveryCode || '';
   const [copied, setCopied] = React.useState(false);
+  const [showDetail, setShowDetail] = React.useState(false);
 
   const copyCode = async () => {
     try { await navigator.clipboard.writeText(code); }
@@ -574,7 +705,18 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
             L&apos;acheteur saisit ce code sur Brumerie pour confirmer la réception. La livraison est validée automatiquement.
           </p>
         </div>
-      ) : (
+      ) : null}
+
+      {/* Bouton voir détails complets */}
+      <button onClick={() => setShowDetail(true)}
+        className="w-full py-2.5 rounded-xl bg-slate-50 font-black text-[10px] uppercase tracking-widest text-slate-500 border border-slate-100 active:scale-95 mb-2">
+        📋 Voir les détails de la livraison
+      </button>
+
+      {/* Modal détails livraison */}
+      {showDetail && <DeliveryDetailModal order={order} onClose={() => setShowDetail(false)} />}
+
+      {!code && (
         <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
           <p className="text-[11px] text-amber-700 font-bold">⏳ Code en cours de génération...</p>
         </div>

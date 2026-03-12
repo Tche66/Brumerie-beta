@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDelivererById } from '@/services/deliveryService';
+import { subscribeDelivererReviews } from '@/services/reviewService';
+import type { Review } from '@/types';
 import { calcDeliveryFee } from '@/services/deliveryService';
 import type { User } from '@/types';
 
@@ -34,12 +36,24 @@ export function DelivererProfilePage({
 }: Props) {
   const [deliverer, setDeliverer] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
     getDelivererById(delivererId).then(d => {
       setDeliverer(d);
       setLoading(false);
     });
+  }, [delivererId]);
+
+  useEffect(() => {
+    const unsub = subscribeDelivererReviews(delivererId, (revs, avg, count) => {
+      setReviews(revs);
+      setAvgRating(avg);
+      setReviewCount(count);
+    });
+    return unsub;
   }, [delivererId]);
 
   if (loading) return (
@@ -106,8 +120,8 @@ export function DelivererProfilePage({
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <StatCard value={deliverer.totalDeliveries || 0} label="Livraisons" color="green" />
-          <StatCard value={deliverer.rating ? deliverer.rating.toFixed(1) : '—'} label="Note" color="amber" suffix={deliverer.rating ? '★' : ''} />
-          <StatCard value={deliverer.reviewCount || 0} label="Avis" color="blue" />
+          <StatCard value={avgRating > 0 ? avgRating.toFixed(1) : '—'} label="Note" color="amber" suffix={avgRating > 0 ? '★' : ''} />
+          <StatCard value={reviewCount} label="Avis" color="blue" />
         </div>
 
         {/* Infos pratiques */}
@@ -149,19 +163,47 @@ export function DelivererProfilePage({
           </div>
         )}
 
-        {/* Avis (placeholder — à relier aux reviews Firestore) */}
+        {/* Avis clients — live Firestore */}
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
-            Avis clients ({deliverer.reviewCount || 0})
-          </p>
-          {(!deliverer.reviewCount || deliverer.reviewCount === 0) ? (
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              Avis clients ({reviewCount})
+            </p>
+            {avgRating > 0 && (
+              <div className="flex items-center gap-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span className="font-black text-amber-600 text-[12px]">{avgRating.toFixed(1)}/5</span>
+              </div>
+            )}
+          </div>
+          {reviewCount === 0 ? (
             <p className="text-[11px] text-slate-400 text-center py-4">
               Pas encore d'avis — sois le premier à travailler avec ce livreur !
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500 text-center py-2">
-              ⭐ Note moyenne : {deliverer.rating?.toFixed(1)}/5
-            </p>
+            <div className="space-y-3">
+              {reviews.slice(0, 5).map(r => (
+                <div key={r.id} className="flex items-start gap-3 pb-3 border-b border-slate-50 last:border-0">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[12px] font-black text-green-700 flex-shrink-0 uppercase">
+                    {r.fromUserName?.[0] || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-black text-slate-700 text-[11px] truncate">{r.fromUserName}</p>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} width="9" height="9" viewBox="0 0 24 24"
+                            fill={s <= r.rating ? '#FBBF24' : '#E2E8F0'}>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                          </svg>
+                        ))}
+                      </div>
+                    </div>
+                    {r.comment && <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{r.comment}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -204,19 +246,29 @@ export function DelivererProfilePage({
             </button>
           )}
           {onContact && (
-            <button
-              onClick={() => onContact(deliverer)}
-              className="w-full mt-2 py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all"
-              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
-              💬 Contacter ce livreur
-            </button>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => onContact(deliverer)}
+                className="flex-1 py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all"
+                style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                💬 Contacter ce livreur
+              </button>
+              {deliverer.phone && (
+                <a href={"tel:" + deliverer.phone.replace(/\D/g, '')}
+                  className="px-5 py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  📞
+                </a>
+              )}
+            </div>
           )}
           {/* WhatsApp standalone si pas de bouton "Choisir" et pas de contact */}
           {!onChoose && !onContact && deliverer.phone && (
+            <div className="flex gap-3">
             <a
               href={"https://wa.me/" + deliverer.phone.replace(/\D/g, '')}
               target="_blank" rel="noopener noreferrer"
-              className="w-full py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.97 0C5.362 0 0 5.373 0 11.993c0 2.114.554 4.09 1.523 5.802L.014 24l6.376-1.673A11.906 11.906 0 0011.97 24c6.607 0 11.969-5.373 11.969-11.993C23.939 5.373 18.577 0 11.97 0zm0 21.886a9.844 9.844 0 01-5.024-1.373l-.36-.215-3.736.98.997-3.648-.235-.374A9.848 9.848 0 012.12 11.993C2.12 6.53 6.52 2.12 11.97 2.12c5.448 0 9.85 4.41 9.85 9.873 0 5.463-4.402 9.893-9.85 9.893z"/></svg>
               WhatsApp
