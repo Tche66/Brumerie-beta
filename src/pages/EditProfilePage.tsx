@@ -360,16 +360,10 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               {/* Prix de livraison si activé */}
               {managesDelivery && (
                 <div className="bg-white rounded-2xl p-4 space-y-3 border border-slate-100">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tarif de livraison (FCFA)</p>
-                  <div>
-                    <label className="text-[9px] text-slate-400 font-bold block mb-1.5">🚚 Livraison Abidjan</label>
-                    <div className="relative">
-                      <input type="number" value={deliveryPriceSameZone}
-                        onChange={e => setDeliveryPriceSameZone(e.target.value)}
-                        placeholder="Ex: 1000"
-                        className="w-full px-4 py-3 bg-slate-50 rounded-xl text-[12px] font-black border-2 border-transparent focus:border-green-500 outline-none"/>
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 font-bold">FCFA</span>
-                    </div>
+                  <div className="bg-green-50 rounded-xl p-3 border border-green-100">
+                    <p className="text-[10px] font-bold text-green-700">
+                      💡 Le prix de livraison est fixé directement par le livreur partenaire lors de l&apos;assignation.
+                    </p>
                   </div>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pt-2">Livreur partenaire</p>
                   <input type="text" value={deliveryPartnerName}

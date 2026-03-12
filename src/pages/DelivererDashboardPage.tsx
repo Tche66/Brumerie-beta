@@ -26,6 +26,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
   const [tab, setTab]             = useState<Tab>('available');
   const [orders, setOrders]       = useState<Order[]>([]);
+  const [openOrders, setOpenOrders] = useState<Order[]>([]);
   const [available, setAvailable] = useState(userProfile?.deliveryAvailable ?? true);
   const [toggling, setToggling]   = useState(false);
 

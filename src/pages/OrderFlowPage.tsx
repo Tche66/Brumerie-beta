@@ -8,7 +8,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { PaymentLogo } from '@/components/PaymentLogo';
-import { DelivererPicker } from '@/components/DelivererPicker';
 
 interface OrderFlowPageProps {
   product: Product;
@@ -26,8 +25,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [orderId, setOrderId] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash_on_delivery');
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
-  const [showDelivererPicker, setShowDelivererPicker] = useState(false);
-  const [chosenDeliverer, setChosenDeliverer] = useState<{ id: string; fee: number } | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
   const [sellerDelivery, setSellerDelivery] = useState<{ sameZone: number; otherZone: number }>({ sameZone: 0, otherZone: 0 });
@@ -76,7 +73,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
     if (!currentUser || !userProfile || !paymentInfo) return;
     setLoading(true);
     try {
-      const deliveryFee = deliveryType === 'delivery' ? sellerDelivery.otherZone : 0;
+      const deliveryFee = 0; // Sera fixé par le livreur lors de l'assignation
       const id = await createOrder({
         buyerId: currentUser.uid,
         buyerName: userProfile.name,
@@ -105,7 +102,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
     if (!currentUser || !userProfile) return;
     setLoading(true);
     try {
-      const deliveryFee = deliveryType === 'delivery' ? sellerDelivery.otherZone : 0;
+      const deliveryFee = 0; // Sera fixé par le livreur lors de l'assignation
       const codPaymentInfo: any = { method: 'cash_on_delivery', phone: '', holderName: '' };
       const id = await createOrder({
         buyerId: currentUser.uid,
@@ -154,27 +151,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   const method = MOBILE_PAYMENT_METHODS.find(m => m.id === paymentInfo?.method);
 
-  // ── DelivererPicker — rendu conditionnel ─────────────────────
-  const delivererPickerModal = showDelivererPicker && product ? (
-    <DelivererPicker
-      orderId=""
-      fromNeighborhood={product.neighborhood || ''}
-      toNeighborhood={userProfile?.neighborhood || ''}
-      proposedBy="buyer"
-      buyerName={userProfile?.name || ''}
-      sellerName={product.sellerName || ''}
-      productTitle={product.title}
-      productImage={product.images?.[0]}
-      onDone={(delivererId, fee) => {
-        setChosenDeliverer({ id: delivererId, fee });
-        setShowDelivererPicker(false);
-      }}
-      onContactDeliverer={(id, name) => {
-        // Pas de chat direct ici — OrderStatus gère ça après commande passée
-      }}
-      onClose={() => setShowDelivererPicker(false)}
-    />
-  ) : null;
+  // Livreur choisi par vendeur après validation commande
 
 
   // ── ÉTAPE 1 : Récapitulatif ────────────────────────────
@@ -216,17 +193,17 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                 )}
               </div>
             </div>
-            {deliveryType === 'delivery' && sellerDelivery.otherZone > 0 && (
+            {deliveryType === 'delivery' && (
               <div className="flex justify-between items-center">
                 <span className="text-[12px] text-slate-500 font-medium">Frais de livraison</span>
-                <span className="font-bold text-slate-600 text-[12px]">+ {sellerDelivery.otherZone.toLocaleString('fr-FR')} FCFA</span>
+                <span className="text-slate-400 text-[11px] font-medium">Fixé par le livreur</span>
               </div>
             )}
             <div className="h-px bg-slate-200 my-2" />
             <div className="flex justify-between items-center">
               <span className="text-[12px] font-black text-slate-800 uppercase">Total à envoyer</span>
               <span className="font-black text-green-700 text-[15px]">
-                {(effectivePrice + (deliveryType === 'delivery' ? sellerDelivery.otherZone : 0)).toLocaleString('fr-FR')} FCFA
+                {effectivePrice.toLocaleString('fr-FR')} FCFA
               </span>
             </div>
           </div>
@@ -254,22 +231,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           {deliveryType === 'delivery' && (
             <div className="mt-3">
               {chosenDeliverer ? (
-                <div className="flex items-center gap-3 bg-green-50 border-2 border-green-200 rounded-2xl p-4">
-                  <span className="text-2xl">🛵</span>
-                  <div className="flex-1">
-                    <p className="font-black text-green-800 text-[12px]">Livreur sélectionné</p>
-                    <p className="text-[11px] text-green-600">Frais : {chosenDeliverer.fee.toLocaleString('fr-FR')} FCFA</p>
+                <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
+                    <p className="text-[11px] font-bold text-slate-500 text-center">
+                      🛵 Un livreur vous sera proposé par le vendeur une fois la commande validée.
+                    </p>
                   </div>
-                  <button onClick={() => setShowDelivererPicker(true)}
-                    className="text-[10px] font-bold text-green-600 bg-green-100 px-3 py-1.5 rounded-xl">
-                    Changer
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => setShowDelivererPicker(true)}
-                  className="w-full py-4 border-2 border-dashed border-green-300 rounded-2xl flex items-center justify-center gap-2 text-green-700 font-black text-[12px] active:scale-95 transition-all">
-                  🛵 Choisir un livreur partenaire (optionnel)
-                </button>
               )}
             </div>
           )}
@@ -476,14 +442,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           style={{ background: `linear-gradient(135deg, ${method?.color}15, ${method?.color}30)` }}>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Montant à envoyer</p>
           <p className="text-4xl font-black text-slate-900">
-            {(effectivePrice + (deliveryType === 'delivery' ? sellerDelivery.otherZone : 0)).toLocaleString('fr-FR')}
+            {effectivePrice.toLocaleString('fr-FR')}
           </p>
           <p className="text-lg font-black text-slate-600">FCFA</p>
-          {deliveryType === 'delivery' && sellerDelivery.otherZone > 0 && (
-            <p className="text-[10px] text-slate-500 font-bold mt-1">
-              Article {effectivePrice.toLocaleString('fr-FR')} + Livraison {sellerDelivery.otherZone.toLocaleString('fr-FR')} FCFA
-            </p>
-          )}
+
         </div>
 
         {/* Coordonnées */}
@@ -573,7 +535,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <div>
             <p className="font-black text-green-800 text-[13px]">Paiement enregistré</p>
             <p className="text-[11px] text-green-700">
-              {(effectivePrice + (deliveryType === 'delivery' ? sellerDelivery.otherZone : 0)).toLocaleString('fr-FR')} FCFA — en attente de ta preuve
+              {effectivePrice.toLocaleString('fr-FR')} FCFA — en attente de ta preuve
             </p>
           </div>
         </div>

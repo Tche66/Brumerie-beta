@@ -19,6 +19,7 @@ import { DelivererPicker } from '@/components/DelivererPicker';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { getDelivererById, confirmDeliveryByBuyer } from '@/services/deliveryService';
 import { QRScanner } from '@/components/QRScanner';
+import { BuyerPaymentBlock } from '@/components/BuyerPaymentBlock';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
 
@@ -773,14 +774,20 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 onClose={() => setShowBuyerScanner(false)}
               />
             )}
+
+            {/* ── Paiement vendeur depuis la page commande ── */}
+            {order.status === 'ready' && !(order as any).buyerPaymentSent && (
+              <BuyerPaymentBlock order={order} orderId={orderId} />
+            )}
+
             <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
               <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">
                 {order.status === 'picked' ? '🛵 Livraison en route !' : '⏳ En attente du livreur'}
               </p>
               <p className="text-[11px] text-blue-700 mb-3">
                 {order.status === 'picked'
-                  ? 'Le livreur arrive. Scanne son QR ou entre le code pour confirmer la réception.'
-                  : 'Le vendeur a préparé ton colis. Le livreur va venir le récupérer.'}
+                  ? 'Le livreur arrive. Entre le code pour confirmer la réception.'
+                  : 'Paye le vendeur ci-dessus puis le livreur viendra récupérer ton colis.'}
               </p>
               {order.status === 'picked' && (
                 <div className="flex gap-2">
