@@ -280,7 +280,14 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               icon={<span style={{ fontSize: 20 }}>🛵</span>}
               label="Passer en mode Livreur"
               sublabel="Accéder à ton espace missions et gains"
-              onClick={() => onNavigate('deliverer-dashboard')}
+              onClick={async () => {
+                if (currentUser && userProfile?.role !== 'livreur') {
+                  const { doc, updateDoc } = await import('firebase/firestore');
+                  const { db } = await import('@/config/firebase');
+                  await updateDoc(doc(db, 'users', currentUser.uid), { role: 'livreur' });
+                }
+                onNavigate('deliverer-dashboard');
+              }}
               badge="LIVREUR"
               badgeBlue
             />

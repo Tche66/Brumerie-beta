@@ -235,15 +235,7 @@ export function subscribeOpenOrdersInZone(
   zones: string[],
   callback: (orders: Order[]) => void,
 ): Unsubscribe {
-  if (!zones || zones.length === 0) {
-    callback([]);
-    return () => {};
-  }
-
-  // Firestore ne permet pas de faire OR sur un champ → on subscribe sur les statuts
-  // qui indiquent qu'une commande est disponible pour un livreur
-  // Query large : deliveryType=delivery + statuts valides (pas de filtre delivererId en Firestore
-  // car les docs sans le champ ne sont pas retournés par == null)
+  // Toutes les missions disponibles — pas de filtre de zone en Firestore
   const q = query(
     collection(db, 'orders'),
     where('deliveryType', '==', 'delivery'),
@@ -254,17 +246,9 @@ export function subscribeOpenOrdersInZone(
     const orders = snap.docs
       .map(d => ({ id: d.id, ...d.data() } as Order))
       .filter(o => {
-        // Pas de livreur assigné (champ absent OU null OU chaîne vide)
+        // Pas de livreur assigné
         const hasNoDeliverer = !o.delivererId;
-        // Zone vendeur ou acheteur doit correspondre à une zone du livreur
-        const sellerZone = (o as any).sellerNeighborhood || '';
-        const buyerZone  = (o as any).buyerNeighborhood  || '';
-        const inZone = zones.some(z =>
-          z === sellerZone || z === buyerZone ||
-          sellerZone.includes(z) || z.includes(sellerZone) ||
-          buyerZone.includes(z) || z.includes(buyerZone)
-        );
-        return hasNoDeliverer && inZone;
+        return hasNoDeliverer;
       })
       .sort((a, b) => {
         const ta = (a as any).createdAt?.toMillis?.() || 0;

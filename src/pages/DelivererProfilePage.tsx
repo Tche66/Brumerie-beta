@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getDelivererById } from '@/services/deliveryService';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { subscribeDelivererReviews } from '@/services/reviewService';
 import type { Review } from '@/types';
@@ -60,14 +60,17 @@ export function DelivererProfilePage({
   }, [delivererId]);
 
   useEffect(() => {
-    // Compter les livraisons réelles depuis Firestore
-    getDocs(query(
+    // Écoute temps réel des livraisons terminées
+    const { onSnapshot, query, collection, where } = require('firebase/firestore');
+    const q = query(
       collection(db, 'orders'),
       where('delivererId', '==', delivererId),
-    )).then(snap => {
-      const count = snap.docs.filter(d => d.data().status === 'delivered').length;
+    );
+    const unsub = onSnapshot(q, (snap: any) => {
+      const count = snap.docs.filter((d: any) => d.data().status === 'delivered').length;
       setLiveDeliveryCount(count);
-    }).catch(() => {});
+    }, () => {});
+    return unsub;
   }, [delivererId]);
 
   if (loading) return (

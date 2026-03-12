@@ -176,7 +176,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             {/* Commandes ouvertes dans ma zone */}
             {myOpenOrders.length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Dans ta zone</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Toutes les missions disponibles</p>
                 {myOpenOrders.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={false}
                     onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
@@ -630,8 +630,11 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const ord2 = order as any;
   const statusLabel = order.status === 'picked'
-    ? { icon: '🛵', text: 'Colis récupéré — en route', color: 'text-green-600', bg: 'border-green-500' }
+    ? { icon: '🛵', text: 'En route vers l'acheteur', color: 'text-green-600', bg: 'border-green-500' }
+    : (order.status === 'cod_confirmed' || order.status === 'ready') && ord2.isCOD
+    ? { icon: '💵', text: 'COD — récupère le paiement chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
     : order.status === 'cod_confirmed'
     ? { icon: '💵', text: 'COD — va chercher le colis', color: 'text-blue-600', bg: 'border-blue-400' }
     : { icon: '📦', text: 'Va chercher le colis chez le vendeur', color: 'text-amber-600', bg: 'border-amber-400' };
@@ -692,7 +695,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
       )}
 
       {/* COD espèces seulement : bouton "Paiement récupéré chez le vendeur" → picked */}
-      {ord.isCOD && (ord.paymentInfo?.method === 'cash_on_delivery' || ord.paymentInfo?.method === 'especes' || !ord.paymentInfo?.method) && order.status === 'cod_confirmed' && (
+      {ord.isCOD && ['cod_confirmed', 'ready'].includes(order.status) && (
         <CashPickupButton orderId={order.id} order={order} />
       )}
       {/* COD espèces : cash collecté → attendre scan acheteur */}
