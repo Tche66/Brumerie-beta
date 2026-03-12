@@ -274,6 +274,17 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             sublabel={isBuyer ? 'Publie tes articles et gère ta boutique' : 'Repasser en mode exploration'}
             onClick={() => onNavigate(isBuyer ? 'switch-to-seller' : 'switch-to-buyer')}
           />
+          {/* Mode livreur — UNIQUEMENT si déjà inscrit comme livreur partenaire */}
+          {userProfile?.role === 'livreur' && (
+            <SettingItem
+              icon={<span style={{ fontSize: 20 }}>🛵</span>}
+              label="Passer en mode Livreur"
+              sublabel="Accéder à ton espace missions et gains"
+              onClick={() => onNavigate('deliverer-dashboard')}
+              badge="LIVREUR"
+              badgeBlue
+            />
+          )}
         </SettingSection>
 
         {/* Informations */}

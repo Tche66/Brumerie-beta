@@ -621,10 +621,33 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               />
             )}
             <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-              <p className="text-[10px] font-black text-green-800 uppercase mb-1">🚚 Ton article arrive !</p>
-              <p className="text-[11px] text-green-700 font-bold leading-relaxed">
-                Scanne le QR du livreur à la réception, puis paie <span className="text-green-900">{totalDisplay.toLocaleString('fr-FR')} FCFA</span>.
+              <p className="text-[10px] font-black text-green-800 uppercase mb-2">🚚 Ton article arrive !</p>
+              <p className="text-[11px] text-green-700 font-bold leading-relaxed mb-3">
+                Scanne le QR du livreur à la réception, puis paie{' '}
+                <span className="text-green-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au livreur.
               </p>
+              {/* Modes de paiement COD */}
+              <div>
+                <p className="text-[9px] font-black text-green-700 uppercase tracking-widest mb-2">
+                  Prépare ton paiement
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {MOBILE_PAYMENT_METHODS.map(m => (
+                    <div key={m.id}
+                      className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-green-100">
+                      <img src={m.logo} alt={m.name}
+                        className="w-6 h-6 rounded object-contain flex-shrink-0"
+                        onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+                      />
+                      <span className="text-[10px] font-black text-slate-700 truncate">{m.name}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-green-100">
+                    <span className="text-lg">💵</span>
+                    <span className="text-[10px] font-black text-slate-700">Espèces</span>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Option 1 : Scanner QR */}
             <button onClick={() => setShowBuyerScanner(true)}
