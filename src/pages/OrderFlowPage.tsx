@@ -230,13 +230,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           {/* ── Livreur partenaire (si livraison choisie) ── */}
           {deliveryType === 'delivery' && (
             <div className="mt-3">
-              {chosenDeliverer ? (
-                <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
-                    <p className="text-[11px] font-bold text-slate-500 text-center">
-                      🛵 Un livreur vous sera proposé par le vendeur une fois la commande validée.
-                    </p>
-                  </div>
-              )}
+              <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
+                <p className="text-[11px] font-bold text-slate-500 text-center">
+                  🛵 Un livreur vous sera proposé par le vendeur une fois la commande validée.
+                </p>
+              </div>
             </div>
           )}
         </div>
