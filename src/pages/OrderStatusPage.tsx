@@ -29,18 +29,18 @@ interface OrderStatusPageProps {
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
 }
 
-// ── Bouton WhatsApp avec numéro du vendeur ────────────────────
-function WhatsAppButton({ order, orderId }: { order: Order; orderId: string }) {
+// ── Bouton Appel avec numéro du vendeur ────────────────────
+function AppelButton({ order, orderId }: { order: Order; orderId: string }) {
   const [sellerPhone, setSellerPhone] = React.useState<string>('');
 
   React.useEffect(() => {
-    // Récupérer le numéro WhatsApp du vendeur depuis Firestore
+    // Récupérer le numéro Appel du vendeur depuis Firestore
     import('firebase/firestore').then(({ getDoc, doc }) =>
       import('@/config/firebase').then(({ db }) =>
         getDoc(doc(db, 'users', order.sellerId)).then(snap => {
           if (snap.exists()) {
             const d = snap.data();
-            const phone = d.whatsappNumber || d.phone || '';
+            const phone = d.telNumber || d.phone || '';
             setSellerPhone(phone.replace(/\D/g, ''));
           }
         })
@@ -58,17 +58,16 @@ function WhatsAppButton({ order, orderId }: { order: Order; orderId: string }) {
 
   if (!sellerPhone) return (
     <div className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 bg-slate-100">
-      WhatsApp N/D
+      Appel N/D
     </div>
   );
 
   return (
-    <a href={'https://wa.me/' + sellerPhone + '?text=' + msg}
-      target="_blank" rel="noopener noreferrer"
+    <a href={'tel:' + sellerPhone}
       className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
-      style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      WhatsApp
+      style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+      Appeler
     </a>
   );
 }
@@ -322,7 +321,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
 
       <div className="px-5 py-6 space-y-5">
 
-        {/* ── BOUTONS CONTACT — Chat intégré + WhatsApp ── */}
+        {/* ── BOUTONS CONTACT — Chat intégré + Appel ── */}
         {isBuyer && !['delivered', 'cancelled'].includes(order.status) && (
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -332,7 +331,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               Chat
             </button>
-            <WhatsAppButton order={order} orderId={orderId} />
+            <AppelButton order={order} orderId={orderId} />
           </div>
         )}
         {isSeller && !['delivered', 'cancelled'].includes(order.status) && (
@@ -572,11 +571,13 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 onClose={() => setShowSellerQR(false)}
               />
             )}
-            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-              <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-2">📦 En attente du livreur</p>
-              <p className="text-[11px] text-green-700 mb-3">
-                Montre ton QR au livreur quand il arrive. L'acheteur recevra son QR de réception.
-              </p>
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100 space-y-3">
+              <div>
+                <p className="text-[10px] font-black text-green-700 uppercase tracking-widest mb-1">📦 En attente du livreur</p>
+                <p className="text-[11px] text-green-700">
+                  Montre ton QR au livreur quand il arrive. L&apos;acheteur recevra son QR de réception.
+                </p>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowSellerQR(true)}
@@ -588,6 +589,33 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   <span className="text-[18px] font-black text-yellow-300 tracking-[0.3em] font-mono">{order.deliveryCode}</span>
                 </div>
               </div>
+              {/* Bouton confirmation paiement reçu de l'acheteur */}
+              {!(order as any).sellerPaymentConfirmed && (
+                <div className="border-t border-green-200 pt-3">
+                  <p className="text-[9px] font-black text-green-700 uppercase tracking-widest mb-2">
+                    💰 L&apos;acheteur a payé ?
+                  </p>
+                  <button
+                    onClick={async () => {
+                      const { updateDoc, doc } = await import('firebase/firestore');
+                      const { db } = await import('@/config/firebase');
+                      await updateDoc(doc(db, 'orders', orderId), { sellerPaymentConfirmed: true });
+                    }}
+                    className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+                    ✅ Confirmer réception du paiement
+                  </button>
+                  <p className="text-[9px] text-green-600 text-center mt-1">
+                    L&apos;acheteur pourra ensuite scanner le QR du livreur.
+                  </p>
+                </div>
+              )}
+              {(order as any).sellerPaymentConfirmed && (
+                <div className="border-t border-green-200 pt-3 flex items-center gap-2">
+                  <span className="text-green-600 text-lg">✅</span>
+                  <p className="text-[11px] font-black text-green-700">Paiement confirmé — acheteur peut scanner le livreur</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -620,41 +648,79 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 onClose={() => setShowBuyerScanner(false)}
               />
             )}
-            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-              <p className="text-[10px] font-black text-green-800 uppercase mb-2">🚚 Ton article arrive !</p>
-              <p className="text-[11px] text-green-700 font-bold leading-relaxed mb-3">
-                Scanne le QR du livreur à la réception, puis paie{' '}
-                <span className="text-green-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au livreur.
-              </p>
-              {/* Modes de paiement COD */}
-              <div>
-                <p className="text-[9px] font-black text-green-700 uppercase tracking-widest mb-2">
-                  Prépare ton paiement
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {MOBILE_PAYMENT_METHODS.map(m => (
-                    <div key={m.id}
-                      className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-green-100">
-                      <img src={m.logo} alt={m.name}
-                        className="w-6 h-6 rounded object-contain flex-shrink-0"
-                        onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
-                      />
-                      <span className="text-[10px] font-black text-slate-700 truncate">{m.name}</span>
+            {/* A) Paiement vendeur — numéro + modes de paiement */}
+            {!(order as any).sellerPaymentConfirmed && (
+              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
+                <div>
+                  <p className="text-[10px] font-black text-amber-800 uppercase mb-1">💳 Étape 1 — Payer le vendeur</p>
+                  <p className="text-[11px] text-amber-700 mb-3">
+                    Paie <span className="font-black text-amber-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au vendeur avant réception.
+                    Les frais du livreur sont séparés.
+                  </p>
+                  {/* Numéro vendeur si disponible */}
+                  {(order as any).paymentInfo?.phone && (
+                    <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase">Vendeur · {(order as any).sellerName}</p>
+                        <p className="font-black text-slate-900 text-[14px] tracking-widest mt-0.5">
+                          {(order as any).paymentInfo.phone}
+                        </p>
+                        <p className="text-[10px] text-slate-500">{(order as any).paymentInfo.holderName}</p>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {(order as any).paymentInfo?.waveLink ? (
+                          <a href={(order as any).paymentInfo.waveLink}
+                            target="_blank" rel="noopener noreferrer"
+                            className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95"
+                            style={{ background: '#1BA6F9' }}>
+                            Wave
+                          </a>
+                        ) : null}
+                        <button onClick={() => navigator.clipboard?.writeText((order as any).paymentInfo.phone)}
+                          className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
+                          Copier
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-green-100">
-                    <span className="text-lg">💵</span>
-                    <span className="text-[10px] font-black text-slate-700">Espèces</span>
+                  )}
+                  {/* Modes de paiement */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {MOBILE_PAYMENT_METHODS.map(m => (
+                      <div key={m.id}
+                        className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
+                        <img src={m.logo} alt={m.name}
+                          className="w-6 h-6 rounded object-contain flex-shrink-0"
+                          onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
+                        />
+                        <span className="text-[10px] font-black text-slate-700 truncate">{m.name}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
+                      <span className="text-lg">💵</span>
+                      <span className="text-[10px] font-black text-slate-700">Espèces</span>
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* B) Scanner QR — visible seulement après confirmation paiement vendeur */}
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+              <p className="text-[10px] font-black text-green-800 uppercase mb-1">🚚 Étape 2 — Confirmer la réception</p>
+              <p className="text-[11px] text-green-700">
+                {(order as any).sellerPaymentConfirmed
+                  ? 'Le vendeur a confirmé ton paiement. Scanne le QR du livreur à la réception.'
+                  : 'Une fois le paiement vendeur effectué, le vendeur le validera et tu pourras confirmer la réception.'}
+              </p>
             </div>
-            {/* Option 1 : Scanner QR */}
-            <button onClick={() => setShowBuyerScanner(true)}
-              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
-              style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
-              📷 Scanner le QR du livreur
-            </button>
+            {/* Scanner visible uniquement après confirmation vendeur */}
+            {(order as any).sellerPaymentConfirmed && (
+              <button onClick={() => setShowBuyerScanner(true)}
+                className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+                📷 Scanner le QR du livreur
+              </button>
+            )}
             {/* Option 2 : Saisir code de secours + confirmer manuellement */}
             <DeliveryCodeInput orderId={orderId} order={order}
               onValidated={async () => {

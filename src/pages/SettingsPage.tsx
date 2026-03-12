@@ -275,7 +275,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             onClick={() => onNavigate(isBuyer ? 'switch-to-seller' : 'switch-to-buyer')}
           />
           {/* Mode livreur — UNIQUEMENT si déjà inscrit comme livreur partenaire */}
-          {userProfile?.role === 'livreur' && (
+          {(userProfile?.role === 'livreur' || userProfile?.deliveryAvailable !== undefined) && (
             <SettingItem
               icon={<span style={{ fontSize: 20 }}>🛵</span>}
               label="Passer en mode Livreur"
