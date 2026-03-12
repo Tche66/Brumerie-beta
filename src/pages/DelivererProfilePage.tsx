@@ -60,12 +60,14 @@ export function DelivererProfilePage({
   }, [delivererId]);
 
   useEffect(() => {
-    // Compter les livraisons réelles depuis Firestore (plus fiable que userProfile.totalDeliveries)
+    // Compter les livraisons réelles depuis Firestore
     getDocs(query(
       collection(db, 'orders'),
       where('delivererId', '==', delivererId),
-      where('status', '==', 'delivered'),
-    )).then(snap => setLiveDeliveryCount(snap.size)).catch(() => {});
+    )).then(snap => {
+      const count = snap.docs.filter(d => d.data().status === 'delivered').length;
+      setLiveDeliveryCount(count);
+    }).catch(() => {});
   }, [delivererId]);
 
   if (loading) return (

@@ -354,15 +354,15 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
 
 
 
-// ── PickupConfirmButton — livreur confirme avoir récupéré le colis (cod_confirmed → picked) ──
-function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order }) {
+// ── CashPickupButton — COD espèces uniquement : livreur confirme avoir récupéré le paiement chez le vendeur ──
+function CashPickupButton({ orderId, order }: { orderId: string; order: Order }) {
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState(false);
 
   if (done || order.status === 'picked') return (
     <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
       <span className="text-lg">✅</span>
-      <p className="text-[11px] font-black text-green-700">Colis récupéré — en route vers l&apos;acheteur</p>
+      <p className="text-[11px] font-black text-green-700">Paiement récupéré — en route vers l&apos;acheteur</p>
     </div>
   );
 
@@ -378,13 +378,13 @@ function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order
   return (
     <button onClick={handlePickup} disabled={loading}
       className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 transition-all"
-      style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+      style={{ background: 'linear-gradient(135deg,#D4500F,#ea580c)' }}>
       {loading
         ? <span className="flex items-center justify-center gap-2">
             <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
             Confirmation...
           </span>
-        : <span>📦 Colis récupéré chez le vendeur</span>
+        : <span>💵 Paiement récupéré chez le vendeur</span>
       }
     </button>
   );
@@ -691,12 +691,11 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
         </div>
       )}
 
-      {/* Bouton collecte cash COD — visible si COD + picked + pas encore collecté */}
-      {/* Bouton récupération colis — cod_confirmed → picked */}
-      {ord.isCOD && order.status === 'cod_confirmed' && (
-        <PickupConfirmButton orderId={order.id} order={order} />
+      {/* COD espèces seulement : bouton "Paiement récupéré chez le vendeur" → picked */}
+      {ord.isCOD && (ord.paymentInfo?.method === 'cash_on_delivery' || ord.paymentInfo?.method === 'especes' || !ord.paymentInfo?.method) && order.status === 'cod_confirmed' && (
+        <CashPickupButton orderId={order.id} order={order} />
       )}
-      {/* Bouton collecte cash — picked + pas encore collecté */}
+      {/* COD espèces : cash collecté → attendre scan acheteur */}
       {ord.isCOD && order.status === 'picked' && !ord.delivererCashCollected && (
         <CashCollectButton orderId={order.id} />
       )}
