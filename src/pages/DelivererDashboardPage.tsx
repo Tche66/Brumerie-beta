@@ -375,7 +375,7 @@ function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order
             <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
             Confirmation...
           </span>
-        : '📦 J'ai récupéré le colis chez le vendeur'
+        : <span>📦 Colis récupéré chez le vendeur</span>
       }
     </button>
   );
