@@ -39,7 +39,10 @@ export async function submitReview(params: {
 
   // Marquer la commande comme notée
   try {
-    const orderField = params.role === 'buyer_to_seller' ? 'buyerReviewed' : 'sellerReviewed';
+    const orderField = params.role === 'buyer_to_seller' ? 'buyerReviewed'
+      : params.role === 'seller_to_buyer' ? 'sellerReviewed'
+      : params.role === 'buyer_to_deliverer' ? 'buyerRatedDeliverer'
+      : 'sellerRatedDeliverer';
     await updateDoc(doc(db, 'orders', params.orderId), { [orderField]: true });
   } catch { /* silencieux */ }
 
@@ -76,6 +79,22 @@ export function subscribeSellerReviews(
       ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10
       : 0;
 
+    callback(reviews, avg, count);
+  }, () => callback([], 0, 0));
+}
+
+export function subscribeDelivererReviews(
+  delivererId: string,
+  callback: (reviews: Review[], avgRating: number, count: number) => void,
+): () => void {
+  const q = query(reviewsCol, where('toUserId', '==', delivererId));
+  return onSnapshot(q, snap => {
+    const reviews = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
+    reviews.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    const count = reviews.length;
+    const avg = count > 0
+      ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / count) * 10) / 10
+      : 0;
     callback(reviews, avg, count);
   }, () => callback([], 0, 0));
 }

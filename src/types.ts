@@ -257,6 +257,16 @@ export interface Order {
   status: OrderStatus;
   deliveryType: 'delivery' | 'in_person';
   isCOD?: boolean; // Paiement à la livraison
+  // COD autorisation encaissement
+  sellerAuthorizedCashCollection?: boolean;  // vendeur autorise le livreur à encaisser
+  sellerBlockedCashCollection?: boolean;     // vendeur bloque l'encaissement
+  sellerCashAuthAt?: any;
+  // Notation livreur
+  buyerRatedDeliverer?: boolean;
+  sellerRatedDeliverer?: boolean;
+  // Confirmation réception argent vendeur (COD)
+  sellerReceivedCash?: boolean;
+  sellerReceivedCashAt?: any;
   reminderSentAt?: any;
   autoDisputeAt?: any;
   proofSentAt?: any;
@@ -283,7 +293,7 @@ export interface Order {
 }
 
 // ─── NOTATION Sprint 7 ───────────────────────────────────
-export type RatingRole = 'buyer_to_seller' | 'seller_to_buyer';
+export type RatingRole = 'buyer_to_seller' | 'seller_to_buyer' | 'buyer_to_deliverer' | 'seller_to_deliverer';
 
 export interface Review {
   id: string;

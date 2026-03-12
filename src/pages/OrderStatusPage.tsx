@@ -268,6 +268,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   const [disputeReason, setDisputeReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showDelivererRatingModal, setShowDelivererRatingModal] = useState(false);
+  const [showSellerDelivererRatingModal, setShowSellerDelivererRatingModal] = useState(false);
   const [showDelivererPicker, setShowDelivererPicker] = useState(false);
   const [viewDelivererId, setViewDelivererId] = useState<string | null>(null);
   const [delivererInfo, setDelivererInfo] = useState<any>(null);
@@ -620,6 +622,120 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           </div>
         )}
 
+        {/* ══ COD ESPÈCES — VENDEUR : picked → Autoriser ou Bloquer l'encaissement ══ */}
+        {isSeller && order.status === 'picked' && (order as any).isCOD && (
+          <div className="space-y-3 pt-2">
+            {!(order as any).sellerAuthorizedCashCollection && !(order as any).sellerBlockedCashCollection && (
+              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
+                <div>
+                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
+                    💵 Le livreur est en route — autorises-tu l&apos;encaissement ?
+                  </p>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Le livreur va collecter <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span> auprès de l&apos;acheteur.
+                    Autorise-le à encaisser, ou bloque si tu as un doute.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
+                      const { db } = await import('@/config/firebase');
+                      await updateDoc(doc(db, 'orders', orderId), {
+                        sellerAuthorizedCashCollection: true,
+                        sellerCashAuthAt: serverTimestamp(),
+                      });
+                    }}
+                    className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                    ✅ Autoriser
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const { updateDoc, doc } = await import('firebase/firestore');
+                      const { db } = await import('@/config/firebase');
+                      await updateDoc(doc(db, 'orders', orderId), {
+                        sellerBlockedCashCollection: true,
+                      });
+                    }}
+                    className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-red-600 bg-red-50 border border-red-200 active:scale-95">
+                    🚫 Bloquer
+                  </button>
+                </div>
+                <p className="text-[9px] text-amber-600 text-center">
+                  Le livreur doit contacter le vendeur en cas de blocage.
+                </p>
+              </div>
+            )}
+            {(order as any).sellerAuthorizedCashCollection && (
+              <div className="bg-green-50 rounded-2xl p-4 border border-green-200 flex items-center gap-3">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p className="font-black text-green-800 text-[12px]">Encaissement autorisé</p>
+                  <p className="text-[10px] text-green-600">Le livreur peut collecter le paiement.</p>
+                </div>
+              </div>
+            )}
+            {(order as any).sellerBlockedCashCollection && (
+              <div className="bg-red-50 rounded-2xl p-4 border border-red-200 flex items-center gap-3">
+                <span className="text-2xl">🚫</span>
+                <div>
+                  <p className="font-black text-red-800 text-[12px]">Encaissement bloqué</p>
+                  <p className="text-[10px] text-red-600">Le livreur ne peut pas encaisser. Il devrait vous contacter.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ COD ESPÈCES — VENDEUR : delivered → Confirmer réception argent + noter livreur ══ */}
+        {isSeller && order.status === 'delivered' && (order as any).isCOD && (
+          <div className="space-y-3 pt-2">
+            {!(order as any).sellerReceivedCash && (
+              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
+                <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
+                  💵 As-tu reçu ton argent du livreur ?
+                </p>
+                <p className="text-[11px] text-amber-700">
+                  La livraison est confirmée. Le livreur doit te remettre <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span>.
+                </p>
+                <button
+                  onClick={async () => {
+                    const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
+                    const { db } = await import('@/config/firebase');
+                    await updateDoc(doc(db, 'orders', orderId), {
+                      sellerReceivedCash: true,
+                      sellerReceivedCashAt: serverTimestamp(),
+                    });
+                    setShowSellerDelivererRatingModal(true);
+                  }}
+                  className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  💰 Confirmer — j&apos;ai reçu mon argent
+                </button>
+              </div>
+            )}
+            {(order as any).sellerReceivedCash && (
+              <div className="bg-green-50 rounded-2xl p-4 border border-green-200 flex items-center gap-3">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <p className="font-black text-green-800 text-[12px]">Argent reçu — transaction clôturée</p>
+                  {!(order as any).sellerRatedDeliverer && (
+                    <button
+                      onClick={() => setShowSellerDelivererRatingModal(true)}
+                      className="mt-2 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 font-black text-[10px] uppercase tracking-widest active:scale-95">
+                      ⭐ Noter le livreur
+                    </button>
+                  )}
+                  {(order as any).sellerRatedDeliverer && (
+                    <p className="text-[10px] text-green-600 mt-1">Livreur noté ✓</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ══ COD — ACHETEUR : Étape 1 — Attente livraison ══ */}
         {isBuyer && order.status === 'cod_pending' && (
           <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
@@ -918,9 +1034,33 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
         )}
 
         {order.status === 'delivered' && (
-          <div className="bg-green-50 rounded-2xl p-5 border border-green-100 text-center">
-            <p className="text-3xl mb-2">🎉</p>
-            <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">Transaction terminée !</p>
+          <div className="bg-green-50 rounded-2xl p-5 border border-green-100 space-y-3">
+            <div className="text-center">
+              <p className="text-3xl mb-2">🎉</p>
+              <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">Transaction terminée !</p>
+            </div>
+            {/* Acheteur : noter vendeur + livreur */}
+            {isBuyer && (
+              <div className="space-y-2 pt-1">
+                {!(order as any).buyerReviewed && (
+                  <button onClick={() => setShowRatingModal(true)}
+                    className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+                    ⭐ Noter le vendeur
+                  </button>
+                )}
+                {(order as any).buyerReviewed && <p className="text-[10px] text-green-600 text-center font-bold">Vendeur noté ✓</p>}
+                {(order as any).delivererId && !(order as any).buyerRatedDeliverer && (
+                  <button onClick={() => setShowDelivererRatingModal(true)}
+                    className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 active:scale-95">
+                    ⭐ Noter le livreur
+                  </button>
+                )}
+                {(order as any).delivererId && (order as any).buyerRatedDeliverer && (
+                  <p className="text-[10px] text-green-600 text-center font-bold">Livreur noté ✓</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -938,8 +1078,50 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           toUserId={order.sellerId}
           toUserName={order.sellerName}
           role="buyer_to_seller"
-          onDone={() => setShowRatingModal(false)}
-          onSkip={() => setShowRatingModal(false)}
+          onDone={() => {
+            setShowRatingModal(false);
+            // Après noter le vendeur, proposer de noter le livreur si applicable
+            if ((order as any).delivererId) setTimeout(() => setShowDelivererRatingModal(true), 500);
+          }}
+          onSkip={() => {
+            setShowRatingModal(false);
+            if ((order as any).delivererId) setTimeout(() => setShowDelivererRatingModal(true), 500);
+          }}
+        />
+      )}
+
+      {/* Modal notation livreur — acheteur */}
+      {showDelivererRatingModal && currentUser && (order as any).delivererId && isBuyer && !(order as any).buyerRatedDeliverer && (
+        <RatingModal
+          orderId={orderId}
+          productId={order.productId}
+          productTitle={order.productTitle}
+          productImage={order.productImage}
+          fromUserId={currentUser.uid}
+          fromUserName={order.buyerName}
+          fromUserPhoto={(order as any).buyerPhoto || undefined}
+          toUserId={(order as any).delivererId}
+          toUserName={(order as any).delivererName || 'Livreur'}
+          role="buyer_to_deliverer"
+          onDone={() => setShowDelivererRatingModal(false)}
+          onSkip={() => setShowDelivererRatingModal(false)}
+        />
+      )}
+
+      {/* Modal notation livreur — vendeur (après confirmation réception argent) */}
+      {showSellerDelivererRatingModal && currentUser && (order as any).delivererId && isSeller && !(order as any).sellerRatedDeliverer && (
+        <RatingModal
+          orderId={orderId}
+          productId={order.productId}
+          productTitle={order.productTitle}
+          productImage={order.productImage}
+          fromUserId={currentUser.uid}
+          fromUserName={order.sellerName}
+          toUserId={(order as any).delivererId}
+          toUserName={(order as any).delivererName || 'Livreur'}
+          role="seller_to_deliverer"
+          onDone={() => setShowSellerDelivererRatingModal(false)}
+          onSkip={() => setShowSellerDelivererRatingModal(false)}
         />
       )}
 

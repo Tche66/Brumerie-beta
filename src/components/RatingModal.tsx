@@ -20,8 +20,15 @@ export function RatingModal({ orderId, productId, productTitle, productImage,
   const [error, setError] = useState('');
 
   const isBuyerRating = role === 'buyer_to_seller';
-  const quickLabels = isBuyerRating
+  const isDelivererRating = role === 'buyer_to_deliverer' || role === 'seller_to_deliverer';
+  const titleLabel = role === 'buyer_to_seller' ? '⭐ Notez le vendeur'
+    : role === 'seller_to_buyer' ? "⭐ Notez l'acheteur"
+    : role === 'buyer_to_deliverer' ? '⭐ Notez le livreur'
+    : '⭐ Notez le livreur';
+  const quickLabels = role === 'buyer_to_seller'
     ? ['Super vendeur !', 'Produit conforme', 'Livraison rapide', 'Très sérieux', 'Je recommande']
+    : role === 'buyer_to_deliverer' || role === 'seller_to_deliverer'
+    ? ['Livraison rapide', 'Très professionnel', 'Ponctuel', 'Bien emballé', 'Je recommande']
     : ['Acheteur sérieux', 'Paiement rapide', 'Très sympa', 'Communication claire', 'Parfait'];
 
   const stars = [1,2,3,4,5];
@@ -74,7 +81,7 @@ export function RatingModal({ orderId, productId, productTitle, productImage,
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-                {isBuyerRating ? '⭐ Notez le vendeur' : "⭐ Notez l'acheteur"}
+                {titleLabel}
               </p>
               <p className="font-black text-slate-900 text-[15px] truncate">{toUserName}</p>
               <p className="text-[10px] text-slate-400 truncate">{productTitle}</p>

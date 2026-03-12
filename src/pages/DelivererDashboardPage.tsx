@@ -381,6 +381,96 @@ function PickupConfirmButton({ orderId, order }: { orderId: string; order: Order
   );
 }
 
+
+// ── CodCashBlock — affiche statut autorisation vendeur + bouton cash ──
+function CodCashBlock({ order }: { order: Order }) {
+  const ord = order as any;
+  const sellerPhone = ord.sellerPhone || '';
+
+  // Pas encore de réponse vendeur
+  if (!ord.sellerAuthorizedCashCollection && !ord.sellerBlockedCashCollection) {
+    return (
+      <div className="bg-amber-50 rounded-xl p-4 mb-3 border border-amber-200 space-y-3">
+        <div className="flex items-start gap-2">
+          <span className="text-xl">⏳</span>
+          <div>
+            <p className="font-black text-amber-800 text-[12px]">En attente du vendeur</p>
+            <p className="text-[10px] text-amber-700 mt-0.5 leading-relaxed">
+              Le vendeur doit autoriser l&apos;encaissement. Contacte-le si besoin.
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {sellerPhone ? (
+            <a href={`tel:${sellerPhone}`}
+              className="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95"
+              style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+              📞 Appeler le vendeur
+            </a>
+          ) : null}
+          <DisputeButton orderId={order.id} />
+        </div>
+      </div>
+    );
+  }
+
+  // Vendeur a bloqué
+  if (ord.sellerBlockedCashCollection) {
+    return (
+      <div className="bg-red-50 rounded-xl p-4 mb-3 border border-red-200 space-y-2">
+        <div className="flex items-start gap-2">
+          <span className="text-xl">🚫</span>
+          <div>
+            <p className="font-black text-red-800 text-[12px]">Encaissement bloqué par le vendeur</p>
+            <p className="text-[10px] text-red-600 mt-0.5">Ne collecte pas le paiement. Contacte le vendeur ou signale un problème.</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {sellerPhone ? (
+            <a href={`tel:${sellerPhone}`}
+              className="flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95"
+              style={{ background: '#DC2626' }}>
+              📞 Appeler le vendeur
+            </a>
+          ) : null}
+          <DisputeButton orderId={order.id} />
+        </div>
+      </div>
+    );
+  }
+
+  // Vendeur a autorisé → bouton collecte
+  return <CashCollectButton orderId={order.id} />;
+}
+
+// ── DisputeButton — signaler un problème ──
+function DisputeButton({ orderId }: { orderId: string }) {
+  const [loading, setLoading] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+
+  if (done) return (
+    <div className="flex-1 py-2.5 rounded-xl bg-slate-100 flex items-center justify-center">
+      <p className="text-[10px] font-black text-slate-500">Signalé ✓</p>
+    </div>
+  );
+
+  return (
+    <button onClick={async () => {
+      setLoading(true);
+      try {
+        const { updateDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('@/config/firebase');
+        await updateDoc(doc(db, 'orders', orderId), { status: 'disputed', disputeReason: 'Livreur — problème encaissement COD' });
+        setDone(true);
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
+    }} disabled={loading}
+      className="flex-1 py-2.5 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 uppercase tracking-widest active:scale-95 disabled:opacity-50">
+      🚨 Signaler
+    </button>
+  );
+}
+
 // ── CashCollectButton — livreur confirme avoir collecté le cash COD ──
 function CashCollectButton({ orderId }: { orderId: string }) {
   const [loading, setLoading] = React.useState(false);
