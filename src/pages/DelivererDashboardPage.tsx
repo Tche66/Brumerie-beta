@@ -1,7 +1,7 @@
 // src/pages/DelivererDashboardPage.tsx — v17 simplifié
 // Dashboard livreur : 4 onglets | Scan QR vendeur | Affiche QR pour acheteur
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   subscribeDelivererOrders,
@@ -32,6 +32,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 
   // QR actions
   const [showScanPickup, setShowScanPickup]       = useState<Order | null>(null); // Scanner QR vendeur
+  const [pendingPickup, setPendingPickup]          = useState(false); // Attend Firestore après pickup
   const [showQRDelivery, setShowQRDelivery]       = useState<Order | null>(null); // Afficher mon QR pour acheteur
   const [showEditProfile, setShowEditProfile]     = useState(false);
 
@@ -43,12 +44,23 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   // Missions disponibles = commandes 'ready' avec delivererId == moi ou pas encore assigné
   // En v17, le livreur est assigné par le vendeur/acheteur → il voit ses missions
   // Missions à récupérer : commande prête, peu importe le type de paiement
-  const myPending  = orders.filter(o => ['ready', 'cod_confirmed'].includes(o.status));
+  // 'confirmed' = commande confirmée, livreur assigné mais vendeur pas encore cliqué 'Prêt'
+  // 'ready' = vendeur a cliqué Prêt, code généré, livreur peut scanner
+  // 'cod_confirmed' = COD validé par vendeur
+  const myPending  = orders.filter(o => ['confirmed', 'ready', 'cod_confirmed'].includes(o.status));
   // En route : colis récupéré chez vendeur
   const myOngoing  = orders.filter(o => o.status === 'picked');
   const myDone     = orders.filter(o => o.status === 'delivered');
   const totalGains = userProfile?.totalEarnings || 0;
   const totalCount = userProfile?.totalDeliveries || 0;
+
+  // Auto-basculer vers 'ongoing' dès que Firestore retourne une commande 'picked'
+  useEffect(() => {
+    if (pendingPickup && myOngoing.length > 0) {
+      setPendingPickup(false);
+      setTab('ongoing');
+    }
+  }, [myOngoing.length, pendingPickup]);
 
   const handleToggle = async () => {
     if (!currentUser) return;
@@ -73,9 +85,10 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     if (!result.success) {
       alert(result.error);
     } else {
-      // Firestore va mettre à jour status → 'picked' → onSnapshot → myOngoing se rechargera
-      // On bascule vers l'onglet 'ongoing' avec un léger délai pour laisser Firestore propager
-      setTimeout(() => setTab('ongoing'), 400);
+      // Marquer qu'on attend une commande 'picked' de Firestore
+      setPendingPickup(true);
+      // Fallback : si Firestore met du temps (réseau lent), basculer quand même
+      setTimeout(() => { setPendingPickup(false); setTab('ongoing'); }, 3000);
     }
   };
 
@@ -197,8 +210,18 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           <div className="flex flex-col gap-3">
             {myOngoing.length === 0 ? (
               <div className="text-center py-16">
-                <div className="text-5xl mb-4">🛵</div>
-                <p className="font-black text-slate-400 text-[13px]">Aucune livraison en cours</p>
+                {pendingPickup ? (
+                  <>
+                    <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mx-auto mb-4"/>
+                    <p className="font-black text-green-600 text-[13px]">Confirmation en cours...</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Mise à jour Firestore</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl mb-4">🛵</div>
+                    <p className="font-black text-slate-400 text-[13px]">Aucune livraison en cours</p>
+                  </>
+                )}
               </div>
             ) : myOngoing.map(order => (
               <OngoingCard
@@ -315,11 +338,19 @@ function MissionCard({ order, onScanVendeur, onChatSeller, onChatBuyer }: {
         </p>
       </div>
 
+      {/* Si status='confirmed', vendeur n'a pas encore cliqué 'Prêt' → code pas généré */}
+      {order.status === 'confirmed' && (
+        <div className="bg-amber-50 rounded-xl p-3 mb-2 border border-amber-100">
+          <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">⏳ En attente</p>
+          <p className="text-[11px] text-amber-600 mt-0.5">Le vendeur doit confirmer la commande avant que tu puisses récupérer le colis.</p>
+        </div>
+      )}
       <div className="flex gap-2">
         <button onClick={onScanVendeur}
-          className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+          disabled={order.status === 'confirmed'}
+          className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-          📷 Scanner QR Vendeur
+          {order.status === 'confirmed' ? '⏳ En attente du vendeur' : '📷 Scanner QR Vendeur'}
         </button>
         <button onClick={onChatBuyer} title="Chat acheteur"
           className="px-3 py-3 rounded-xl bg-blue-50 font-black text-[9px] text-blue-600 active:scale-95 flex flex-col items-center gap-0.5">
