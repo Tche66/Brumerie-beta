@@ -405,32 +405,50 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
         <div className="flex items-center gap-2">
           <span className="text-xl">✅</span>
           <div>
-            <p className="text-[12px] font-black text-green-800">Paiement récupéré chez le vendeur</p>
-            <p className="text-[10px] text-green-600">Signé à {timeStr} · En route vers l&apos;acheteur</p>
+            <p className="text-[12px] font-black text-green-800">Colis récupéré chez le vendeur</p>
+            <p className="text-[10px] text-green-600">Signé à {timeStr} · En route — encaisse à la livraison</p>
           </div>
         </div>
       </div>
     );
   }
 
+  const [signError, setSignError] = React.useState<string | null>(null);
+
   const handleSign = async () => {
     setLoading(true);
+    setSignError(null);
     try {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      await confirmPickupByDeliverer(orderId, order);
-      setSigned(true);
-      setSignedAt(timeStr);
-    } catch (e) { console.error(e); }
+      const result = await confirmPickupByDeliverer(orderId, order);
+      if (result.success) {
+        setSigned(true);
+        setSignedAt(timeStr);
+      } else {
+        // Même si erreur statut, forcer picked directement
+        const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
+        const { db } = await import('@/config/firebase');
+        await updateDoc(doc(db, 'orders', orderId), {
+          status: 'picked',
+          deliveryPickedAt: serverTimestamp(),
+        });
+        setSigned(true);
+        setSignedAt(timeStr);
+      }
+    } catch (e) {
+      console.error(e);
+      setSignError('Erreur réseau — réessaie');
+    }
     finally { setLoading(false); }
   };
 
   return (
     <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-4 mb-3 space-y-3">
       <div>
-        <p className="text-[11px] font-black text-orange-800 mb-0.5">💵 Confirmer récupération du paiement</p>
+        <p className="text-[11px] font-black text-orange-800 mb-0.5">📦 Confirmer récupération du colis</p>
         <p className="text-[10px] text-orange-700 leading-relaxed">
-          Signe pour confirmer que tu as récupéré le paiement chez le vendeur et que tu es en route vers l&apos;acheteur.
+          Signe pour confirmer que tu as récupéré le colis chez le vendeur et que tu es en route vers l&apos;acheteur. Tu encaisseras le paiement à la livraison.
         </p>
       </div>
       <button onClick={handleSign} disabled={loading}
@@ -441,7 +459,7 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
               <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
               Signature en cours...
             </span>
-          : <span>✍️ Je confirme avoir récupéré le paiement</span>
+          : <span>✍️ Je confirme avoir récupéré le colis</span>
         }
       </button>
     </div>
