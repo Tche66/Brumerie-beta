@@ -48,9 +48,11 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
   const vInfo = VEHICLES.find(v => v.id === vehicle);
   const needsLicense = vInfo?.needsLicense ?? false;
 
+  const isDeliveryCompany = status === 'service';
+
   const toggleZone = (z: string) => {
     if (zones.includes(z)) setZones(zones.filter(x => x !== z));
-    else if (zones.length < 2) setZones([...zones, z]);
+    else if (isDeliveryCompany || zones.length < 2) setZones([...zones, z]);
   };
 
   const updateRate = (i: number, field: keyof DeliveryRate, val: string | number) => {
@@ -206,23 +208,50 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
           <div className="flex flex-col gap-4">
             <div className="text-center mb-2">
               <div className="text-4xl mb-2">📍</div>
-              <h2 className="font-black text-slate-900 text-lg mb-1">Tes quartiers</h2>
-              <p className="text-slate-500 text-[11px]">Maximum 2 quartiers</p>
-              <p className="text-green-600 font-black text-[12px] mt-1">{zones.length}/2 selectionne{zones.length > 1 ? 's' : ''}</p>
+              <h2 className="font-black text-slate-900 text-lg mb-1">Zones couvertes</h2>
+              <p className="text-slate-500 text-[11px]">
+                {isDeliveryCompany ? 'Toutes les villes que ton service couvre (illimité)' : 'Maximum 2 quartiers'}
+              </p>
+              <p className="text-green-600 font-black text-[12px] mt-1">
+                {zones.length}{!isDeliveryCompany && '/2'} zone{zones.length > 1 ? 's' : ''} sélectionnée{zones.length > 1 ? 's' : ''}
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {NEIGHBORHOODS.map(n => {
-                const sel = zones.includes(n);
-                const dis = !sel && zones.length >= 2;
-                return (
-                  <button key={n} onClick={() => !dis && toggleZone(n)}
-                    className={'py-4 px-3 rounded-2xl border-2 text-[11px] font-bold transition-all ' +
-                      (sel ? 'bg-green-600 border-green-600 text-white shadow-lg'
-                        : dis ? 'bg-slate-50 border-slate-100 text-slate-300'
-                        : 'bg-white border-slate-200 text-slate-700 active:scale-95')}>
-                    {n}
+            {/* Barre de recherche — entreprises uniquement */}
+            {isDeliveryCompany && (
+              <input
+                type="text"
+                placeholder="🔍 Rechercher une ville ou quartier..."
+                value={zoneSearch || ''}
+                onChange={e => setZoneSearch(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 rounded-2xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"
+              />
+            )}
+            {/* Zones sélectionnées en haut */}
+            {zones.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {zones.map(z => (
+                  <button key={z} onClick={() => toggleZone(z)}
+                    className="flex items-center gap-1.5 bg-green-600 text-white rounded-xl px-3 py-1.5 text-[10px] font-black active:scale-95 transition-all">
+                    {z} <span className="opacity-70">✕</span>
                   </button>
-                );
+                ))}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {NEIGHBORHOODS
+                .filter(n => !isDeliveryCompany || !zoneSearch || n.toLowerCase().includes((zoneSearch || '').toLowerCase()))
+                .map(n => {
+                  const sel = zones.includes(n);
+                  const disabled = !sel && !isDeliveryCompany && zones.length >= 2;
+                  return (
+                    <button key={n} onClick={() => !disabled && toggleZone(n)}
+                      className={'py-4 px-3 rounded-2xl border-2 text-[11px] font-bold transition-all ' +
+                        (sel ? 'bg-green-600 border-green-600 text-white shadow-lg'
+                          : disabled ? 'bg-slate-50 border-slate-100 text-slate-300'
+                          : 'bg-white border-slate-200 text-slate-700 active:scale-95')}>
+                      {n}
+                    </button>
+                  );
               })}
             </div>
           </div>

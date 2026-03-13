@@ -207,21 +207,23 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
       {/* Ancrage local — vendeurs dans le même quartier */}
       {!searchTerm && userProfile?.neighborhood && neighborhoodSellerCount > 0 && (
-        <div className="mx-5 mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl"
+        <button
+          onClick={() => setFilters(f => ({ ...f, neighborhood: userProfile.neighborhood }))}
+          className="mx-5 mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl w-[calc(100%-2.5rem)] active:scale-[0.98] transition-all"
           style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', border: '1.5px solid #BBF7D0' }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: '#16A34A22' }}>
             <span style={{ fontSize: 18 }}>📍</span>
           </div>
-          <div>
+          <div className="flex-1 text-left">
             <p className="font-black text-slate-900 text-[12px] leading-tight">
               {neighborhoodSellerCount} vendeur{neighborhoodSellerCount > 1 ? 's' : ''} actif{neighborhoodSellerCount > 1 ? 's' : ''} à {userProfile.neighborhood}
             </p>
             <p className="text-[10px] font-bold text-green-700 mt-0.5">
-              Des articles près de chez toi disponibles maintenant
+              Appuie pour voir leurs articles →
             </p>
           </div>
-        </div>
+        </button>
       )}
 
       {/* Hero */}

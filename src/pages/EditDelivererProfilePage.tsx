@@ -22,10 +22,14 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
   const [available, setAvailable] = useState(userProfile?.deliveryAvailable ?? true);
   const [loading,   setLoading]   = useState(false);
   const [saved,     setSaved]     = useState(false);
+  const [zoneSearch, setZoneSearch] = useState('');
+
+  // Entreprise de livraison = zones illimitées
+  const isDeliveryCompany = (userProfile as any)?.deliveryStatus === 'service';
 
   const toggleZone = (z: string) => {
     if (zones.includes(z)) setZones(zones.filter(x => x !== z));
-    else if (zones.length < 3) setZones([...zones, z]);
+    else if (isDeliveryCompany || zones.length < 3) setZones([...zones, z]);
   };
 
   const setRate = (i: number, field: keyof DeliveryRate, val: string | number) => {
@@ -109,22 +113,36 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
         <div className="bg-white rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zones couvertes</p>
-            <p className="text-[10px] font-bold text-green-600">{zones.length}/3 sélectionnées</p>
+            <p className="text-[10px] font-bold text-green-600">
+              {zones.length}{!isDeliveryCompany && '/3'} sélectionnée{zones.length > 1 ? 's' : ''}
+            </p>
           </div>
+          {/* Barre de recherche — entreprises uniquement */}
+          {isDeliveryCompany && (
+            <input
+              type="text"
+              value={zoneSearch}
+              onChange={e => setZoneSearch(e.target.value)}
+              placeholder="🔍 Rechercher une ville ou quartier..."
+              className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none mb-3"
+            />
+          )}
           <div className="flex flex-wrap gap-2">
             {(NEIGHBORHOODS || [
               'Cocody','Plateau','Marcory','Treichville','Adjamé','Yopougon',
               'Abobo','Koumassi','Port-Bouët','Attécoubé','Jacqueville','Dabou',
-            ]).map(n => {
-              const sel = zones.includes(n);
-              const dis = !sel && zones.length >= 3;
-              return (
-                <button key={n} onClick={() => !dis && toggleZone(n)}
-                  className={'px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ' +
-                    (sel ? 'bg-green-600 text-white' : dis ? 'bg-slate-100 text-slate-300' : 'bg-slate-100 text-slate-600 active:scale-95')}>
-                  {n}
-                </button>
-              );
+            ])
+              .filter(n => !isDeliveryCompany || !zoneSearch || n.toLowerCase().includes(zoneSearch.toLowerCase()))
+              .map(n => {
+                const sel = zones.includes(n);
+                const dis = !sel && !isDeliveryCompany && zones.length >= 3;
+                return (
+                  <button key={n} onClick={() => !dis && toggleZone(n)}
+                    className={'px-3 py-1.5 rounded-xl text-[11px] font-black transition-all ' +
+                      (sel ? 'bg-green-600 text-white' : dis ? 'bg-slate-100 text-slate-300' : 'bg-slate-100 text-slate-600 active:scale-95')}>
+                    {n}
+                  </button>
+                );
             })}
           </div>
         </div>

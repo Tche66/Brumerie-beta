@@ -332,6 +332,31 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
                 )}
               </div>
 
+              {/* Numéro de téléphone du vendeur */}
+              {seller.phone && (
+                <div className="flex items-center gap-2 mt-3">
+                  <a href={`tel:${seller.phone}`}
+                    className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 active:scale-95 transition-all">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.07 1.18 2 2 0 012.03 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+                    </svg>
+                    <span className="font-black text-slate-700 text-[12px]">{seller.phone}</span>
+                  </a>
+                </div>
+              )}
+
+              {/* Bouton Contacter — chat intégré (visible ici aussi, sous le profil) */}
+              {!isGuest && onStartChat && seller && currentUser?.uid !== sellerId && (
+                <button
+                  onClick={() => onStartChat(seller.uid, seller.name)}
+                  className="mt-3 flex items-center gap-2 bg-green-600 text-white px-5 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-green-200">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                  </svg>
+                  Contacter le vendeur
+                </button>
+              )}
+
               {/* Bio — visible pour tous les vendeurs */}
               {(seller as any).bio && (
                 <p className="text-[12px] text-slate-600 font-medium leading-relaxed text-center px-4 mt-4 max-w-xs">

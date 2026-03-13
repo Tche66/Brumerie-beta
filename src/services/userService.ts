@@ -86,3 +86,14 @@ export async function toggleVerifiedBadge(userId: string, isVerified: boolean): 
     throw error;
   }
 }
+
+// ── Récupérer tous les vendeurs actifs (pour sélecteur livreur) ──
+export async function getAllActiveSellers(): Promise<User[]> {
+  const { collection, getDocs, query, where } = await import('firebase/firestore');
+  const { db } = await import('@/config/firebase');
+  const snap = await getDocs(query(
+    collection(db, 'users'),
+    where('role', 'in', ['seller', 'both']),
+  ));
+  return snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id } as User));
+}

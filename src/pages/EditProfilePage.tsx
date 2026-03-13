@@ -7,6 +7,7 @@ import { verifyBeforeUpdateEmail, reauthenticateWithCredential, EmailAuthProvide
 import { NEIGHBORHOODS, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { PaymentLogo } from '@/components/PaymentLogo';
 import { compressImage } from '@/utils/helpers';
+import { getAllActiveSellers } from '@/services/userService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 
 interface EditProfilePageProps { onBack: () => void; onSaved: () => void; }
@@ -84,6 +85,20 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
     String((userProfile as any)?.deliveryPriceSameZone || '')
   );
   const [deliveryPartnerName, setDeliveryPartnerName] = useState((userProfile as any)?.deliveryPartnerName || '');
+  // Sélecteur de vendeur partenaire
+  const [allSellers, setAllSellers] = useState<any[]>([]);
+  const [sellerSearch, setSellerSearch] = useState('');
+  const [selectedPartnerSeller, setSelectedPartnerSeller] = useState<any>(
+    (userProfile as any)?.partnerSellerId ? {
+      id: (userProfile as any).partnerSellerId,
+      name: (userProfile as any).partnerSellerName || '',
+    } : null
+  );
+  useEffect(() => {
+    if (managesDelivery) {
+      getAllActiveSellers().then(sellers => setAllSellers(sellers));
+    }
+  }, [managesDelivery]);
   const [deliveryPartnerPhone, setDeliveryPartnerPhone] = useState((userProfile as any)?.deliveryPartnerPhone || '');
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [socialLinks, setSocialLinks] = useState({
@@ -147,6 +162,10 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
           updateData.deliveryPriceOtherZone = Number(deliveryPriceSameZone) || 0;
           if (deliveryPartnerName.trim()) updateData.deliveryPartnerName = deliveryPartnerName.trim();
           if (deliveryPartnerPhone.trim()) updateData.deliveryPartnerPhone = deliveryPartnerPhone.trim();
+          if (selectedPartnerSeller) {
+            updateData.partnerSellerId = selectedPartnerSeller.id;
+            updateData.partnerSellerName = selectedPartnerSeller.name;
+          }
         }
         // Liens sociaux réservés aux vérifié + premium
         if (userProfile?.isVerified || userProfile?.isPremium) {
