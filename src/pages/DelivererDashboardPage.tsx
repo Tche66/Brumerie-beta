@@ -644,6 +644,60 @@ function DisputeButton({ orderId }: { orderId: string }) {
   );
 }
 
+// ── BuyerPaidDirectlyButton — raccourci : acheteur a payé le vendeur directement ──
+function BuyerPaidDirectlyButton({ orderId, order }: { orderId: string; order: Order }) {
+  const [loading, setLoading] = React.useState(false);
+  const [confirm, setConfirm] = React.useState(false);
+  const ord = order as any;
+
+  if (!confirm) return (
+    <button onClick={() => setConfirm(true)}
+      className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-300 font-black text-[10px] text-slate-500 uppercase tracking-widest active:scale-95 mb-2">
+      💳 L&apos;acheteur a payé le vendeur directement
+    </button>
+  );
+
+  return (
+    <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-3 space-y-2 mb-2">
+      <p className="text-[10px] font-black text-blue-800">Confirmer le paiement direct ?</p>
+      <p className="text-[9px] text-blue-700">L&apos;acheteur a payé le vendeur par Wave / mobile money. Tu n&apos;encaisses pas le cash. La course se termine pour toi.</p>
+      <div className="flex gap-2">
+        <button onClick={() => setConfirm(false)}
+          className="flex-1 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
+          Annuler
+        </button>
+        <button onClick={async () => {
+          setLoading(true);
+          try {
+            await updateDoc(doc(db, 'orders', orderId), {
+              buyerPaidSellerDirectly: true,
+              buyerPaidSellerDirectlyAt: serverTimestamp(),
+            });
+            const { createNotification } = await import('@/services/notificationService');
+            await Promise.all([
+              createNotification(ord.buyerId, 'system',
+                '✅ Paiement direct confirmé',
+                `Le livreur confirme que tu as payé le vendeur directement pour "${ord.productTitle}".`,
+                { orderId, productId: ord.productId }
+              ),
+              createNotification(ord.sellerId, 'system',
+                '✅ Paiement direct confirmé',
+                `Le livreur confirme que l\'acheteur t\'a payé directement pour "${ord.productTitle}". Confirme la réception du paiement.`,
+                { orderId, productId: ord.productId }
+              ),
+            ]);
+          } catch (e) { console.error(e); }
+          finally { setLoading(false); }
+        }} disabled={loading}
+          className="flex-1 py-2 rounded-xl font-black text-[9px] text-white active:scale-95 disabled:opacity-50"
+          style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
+          {loading ? '...' : '✅ Confirmer'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── CODStepsBlock — flux 3 étapes séquentiel pour COD espèces (après picked) ──
 function CODStepsBlock({ orderId, order }: { orderId: string; order: Order }) {
   const [loadingStep2, setLoadingStep2] = React.useState(false);
@@ -835,9 +889,22 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
       {ord.isCOD && ['cod_confirmed', 'ready', 'confirmed'].includes(order.status) && (
         <CashPickupButton orderId={order.id} order={order} />
       )}
-      {/* COD espèces : cash collecté → attendre scan acheteur */}
+      {/* COD espèces : flux 3 étapes + raccourci si acheteur a déjà payé autrement */}
       {ord.isCOD && order.status === 'picked' && (
-        <CODStepsBlock orderId={order.id} order={order} />
+        <>
+          {/* Raccourci : acheteur a payé le vendeur directement */}
+          {!ord.delivererCashCollected && !ord.buyerPaidSellerDirectly && (
+            <BuyerPaidDirectlyButton orderId={order.id} order={order} />
+          )}
+          {ord.buyerPaidSellerDirectly ? (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2 mb-3">
+              <span>✅</span>
+              <p className="text-[10px] font-black text-green-700">Acheteur a payé le vendeur — course terminée</p>
+            </div>
+          ) : (
+            <CODStepsBlock orderId={order.id} order={order} />
+          )}
+        </>
       )}
 
       {/* Boutons contact */}

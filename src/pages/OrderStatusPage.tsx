@@ -631,7 +631,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
         <div className="space-y-3">
           {(order.isCOD ? [
             { label: '🤝 Commande confirmée',        done: true },
-            { label: '🚚 En cours de livraison',     done: ['cod_confirmed','delivered'].includes(order.status) },
+            { label: '🚚 En cours de livraison',     done: ['cod_confirmed','picked','delivered'].includes(order.status) },
             { label: '✅ Reçu & payé',               done: order.status === 'delivered' },
           ] : [
             { label: '🛍️ Commande initiée',              done: true },
@@ -776,10 +776,13 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             {!(order as any).sellerReceivedCash && (
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
                 <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
-                  💵 As-tu reçu ton argent du livreur ?
+                  {(order as any).buyerPaidSellerDirectly ? '💳 Paiement direct confirmé par le livreur' : '💵 As-tu reçu ton argent du livreur ?'}
                 </p>
                 <p className="text-[11px] text-amber-700">
-                  La livraison est confirmée. Le livreur doit te remettre <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span>.
+                  {(order as any).buyerPaidSellerDirectly
+                    ? `L'acheteur t'a payé directement. Confirme la réception de ${(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA.`
+                    : <>La livraison est confirmée. Le livreur doit te remettre <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span>.</>
+                  }
                 </p>
                 <button
                   onClick={async () => {
@@ -1060,7 +1063,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             )}
 
             {/* ── Paiement vendeur depuis la page commande ── */}
-            {order.status === 'ready' && !(order as any).buyerPaymentSent && (
+            {['ready', 'picked'].includes(order.status) && !(order as any).sellerPaymentConfirmed && (
               <BuyerPaymentBlock order={order} orderId={orderId} />
             )}
 
@@ -1181,10 +1184,17 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   {isRealCOD && (
                     <div className="border-t border-slate-100 pt-2 space-y-1">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Étapes livreur</p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">{ord.delivererCashCollected ? '✅' : '⏳'}</span>
-                        <p className="text-[10px] text-slate-600">Paiement encaissé à la livraison</p>
-                      </div>
+                      {ord.buyerPaidSellerDirectly ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px]">✅</span>
+                          <p className="text-[10px] text-slate-600">Acheteur a payé le vendeur directement</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px]">{ord.delivererCashCollected ? '✅' : '⏳'}</span>
+                          <p className="text-[10px] text-slate-600">Paiement encaissé à la livraison</p>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px]">{ord.sellerCashReturned ? '✅' : '⏳'}</span>
                         <p className="text-[10px] text-slate-600">Part vendeur remise au vendeur</p>
