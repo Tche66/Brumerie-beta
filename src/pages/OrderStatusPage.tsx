@@ -783,8 +783,6 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 </p>
                 <button
                   onClick={async () => {
-                    const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-                    const { db } = await import('@/config/firebase');
                     await updateDoc(doc(db, 'orders', orderId), {
                       sellerReceivedCash: true,
                       sellerReceivedCashAt: serverTimestamp(),
@@ -793,7 +791,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   }}
                   className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
                   style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-                  💰 Confirmer — j&apos;ai reçu mon argent
+                  💰 Confirmer — j&apos;ai reçu mon argent du livreur
                 </button>
               </div>
             )}
@@ -851,38 +849,50 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
                 <div>
                   <p className="text-[10px] font-black text-amber-800 uppercase mb-1">💳 Étape 1 — Payer le vendeur</p>
-                  <p className="text-[11px] text-amber-700 mb-3">
-                    Paie <span className="font-black text-amber-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au vendeur avant réception.
-                    Les frais du livreur sont séparés.
-                  </p>
-                  {/* Numéro vendeur si disponible */}
-                  {(order as any).paymentInfo?.phone && (
-                    <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between mb-3">
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Vendeur · {(order as any).sellerName}</p>
-                        <p className="font-black text-slate-900 text-[14px] tracking-widest mt-0.5">
-                          {(order as any).paymentInfo.phone}
-                        </p>
-                        <p className="text-[10px] text-slate-500">{(order as any).paymentInfo.holderName}</p>
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        {(order as any).paymentInfo?.waveLink ? (
-                          <a href={(order as any).paymentInfo.waveLink}
-                            target="_blank" rel="noopener noreferrer"
-                            className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95"
-                            style={{ background: '#1BA6F9' }}>
-                            Wave
-                          </a>
-                        ) : null}
-                        <button onClick={() => navigator.clipboard?.writeText((order as any).paymentInfo.phone)}
-                          className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
-                          Copier
-                        </button>
-                      </div>
+                  {(order.status === 'picked' && (order as any).isCOD) ? (
+                    // Livreur en route COD → message informatif uniquement
+                    <div className="bg-orange-50 rounded-xl p-3 border border-orange-200">
+                      <p className="text-[11px] text-orange-800 font-bold mb-1">🛵 Le livreur est en route</p>
+                      <p className="text-[10px] text-orange-700 leading-relaxed">
+                        Le livreur collecte le paiement à la livraison.
+                        Si tu veux payer autrement, contacte le vendeur maintenant.
+                      </p>
                     </div>
+                  ) : (
+                    // Pas encore en route → afficher les moyens de paiement
+                    <>
+                      <p className="text-[11px] text-amber-700 mb-3">
+                        Paie <span className="font-black text-amber-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au vendeur avant réception.
+                        Les frais du livreur sont séparés.
+                      </p>
+                      {(order as any).paymentInfo?.phone && (
+                        <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase">Vendeur · {(order as any).sellerName}</p>
+                            <p className="font-black text-slate-900 text-[14px] tracking-widest mt-0.5">
+                              {(order as any).paymentInfo.phone}
+                            </p>
+                            <p className="text-[10px] text-slate-500">{(order as any).paymentInfo.holderName}</p>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            {(order as any).paymentInfo?.waveLink ? (
+                              <a href={(order as any).paymentInfo.waveLink}
+                                target="_blank" rel="noopener noreferrer"
+                                className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95"
+                                style={{ background: '#1BA6F9' }}>
+                                Wave
+                              </a>
+                            ) : null}
+                            <button onClick={() => navigator.clipboard?.writeText((order as any).paymentInfo.phone)}
+                              className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
+                              Copier
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <SellerPaymentMethods order={order} />
+                    </>
                   )}
-                  {/* Modes de paiement cliquables — affiche numéro vendeur */}
-                  <SellerPaymentMethods order={order} />
                 </div>
               </div>
             )}
@@ -1103,8 +1113,20 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
         {order.status === 'delivered' && (
           <div className="bg-green-50 rounded-2xl p-5 border border-green-100 space-y-3">
             <div className="text-center">
-              <p className="text-3xl mb-2">🎉</p>
-              <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">Transaction terminée !</p>
+              {/* Pour COD : clôturé seulement après sellerReceivedCash */}
+              {(order as any).isCOD && !(order as any).sellerReceivedCash ? (
+                <p className="text-2xl mb-1">⏳</p>
+              ) : (
+                <p className="text-3xl mb-2">🎉</p>
+              )}
+              <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">
+                {(order as any).isCOD && !(order as any).sellerReceivedCash
+                  ? 'En attente confirmation vendeur'
+                  : 'Transaction terminée !'}
+              </p>
+              {(order as any).isCOD && !(order as any).sellerReceivedCash && (
+                <p className="text-[10px] text-slate-500 mt-1">Le vendeur doit confirmer avoir reçu son argent pour clôturer la course.</p>
+              )}
             </div>
             {/* Résumé mode de paiement utilisé */}
             {(() => {
@@ -1157,6 +1179,24 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                       <p className="text-[12px] font-black text-green-700">{totalPaid.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                   </div>
+                  {/* Détail COD : étapes livreur */}
+                  {isRealCOD && (
+                    <div className="border-t border-slate-100 pt-2 space-y-1">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Étapes livreur</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px]">{ord.delivererCashCollected ? '✅' : '⏳'}</span>
+                        <p className="text-[10px] text-slate-600">Paiement encaissé à la livraison</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px]">{ord.sellerCashReturned ? '✅' : '⏳'}</span>
+                        <p className="text-[10px] text-slate-600">Part vendeur remise au vendeur</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px]">{ord.sellerReceivedCash ? '✅' : '⏳'}</span>
+                        <p className="text-[10px] text-slate-600">Vendeur a confirmé réception</p>
+                      </div>
+                    </div>
+                  )}
                   {/* Preuve */}
                   {proofUrl && !isRealCOD && (
                     <div>

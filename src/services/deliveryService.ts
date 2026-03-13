@@ -143,19 +143,24 @@ export async function confirmPickupByDeliverer(
     deliveryPickedAt: serverTimestamp(),
   });
 
-  // Notifier vendeur + acheteur
-  await Promise.all([
-    createNotification(order.sellerId, 'system',
-      '🛵 Colis récupéré !',
-      `${current.delivererName} a récupéré "${order.productTitle}". Livraison en cours.`,
-      { orderId, productId: order.productId }
-    ),
-    createNotification(order.buyerId, 'system',
+  const isCOD = current.isCOD;
+
+  // Notifier le vendeur immédiatement
+  await createNotification(order.sellerId, 'system',
+    '🛵 Colis récupéré !',
+    `${current.delivererName} a récupéré "${order.productTitle}". Livraison en cours.`,
+    { orderId, productId: order.productId }
+  );
+
+  // Pour COD : notifier l'acheteur seulement quand le cash sera collecté (CashCollectButton)
+  // Pour mobile money : notifier immédiatement
+  if (!isCOD) {
+    await createNotification(order.buyerId, 'system',
       '🚀 Ton article est en route !',
       `${current.delivererName} transporte "${order.productTitle}" vers toi.`,
       { orderId, productId: order.productId }
-    ),
-  ]);
+    );
+  }
 
   return { success: true };
 }

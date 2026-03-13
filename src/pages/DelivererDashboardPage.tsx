@@ -652,10 +652,25 @@ function CashCollectButton({ orderId }: { orderId: string }) {
   const handleCollect = async () => {
     setLoading(true);
     try {
+      // Lire les infos de la commande pour la notif
+      const { getDoc, doc: fDoc } = await import('firebase/firestore');
+      const snap = await getDoc(fDoc(db, 'orders', orderId));
+      const ord = snap.exists() ? snap.data() : null;
+
       await updateDoc(doc(db, 'orders', orderId), {
         delivererCashCollected: true,
         delivererCashCollectedAt: serverTimestamp(),
       });
+
+      // Notifier l'acheteur que le livreur est en route (différé pour COD)
+      if (ord) {
+        const { createNotification } = await import('@/services/notificationService');
+        await createNotification(ord.buyerId, 'system',
+          '🚀 Ton article est en route !',
+          `Le livreur arrive avec "${ord.productTitle}". Prépare-toi à recevoir.`,
+          { orderId, productId: ord.productId }
+        );
+      }
       setDone(true);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -771,14 +786,8 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
         <CashPickupButton orderId={order.id} order={order} />
       )}
       {/* COD espèces : cash collecté → attendre scan acheteur */}
-      {ord.isCOD && order.status === 'picked' && !ord.delivererCashCollected && (
-        <CashCollectButton orderId={order.id} />
-      )}
-      {ord.isCOD && ord.delivererCashCollected && (
-        <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
-          <span className="text-lg">✅</span>
-          <p className="text-[11px] font-black text-green-700">Cash collecté — l&apos;acheteur peut valider la réception</p>
-        </div>
+      {ord.isCOD && order.status === 'picked' && (
+        <CODStepsBlock orderId={order.id} order={order} />
       )}
 
       {/* Boutons contact */}
