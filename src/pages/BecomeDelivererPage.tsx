@@ -38,17 +38,29 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
   const [loading, setLoading]   = useState(false);
   const [name, setName]         = useState(userProfile?.deliveryPartnerName || '');
   const [age, setAge]           = useState('');
-  const [vehicle, setVehicle]   = useState<VehicleType | ''>('');
+  const [vehicles, setVehicles] = useState<VehicleType[]>([]);
   const [hasLicense, setHasLicense] = useState<boolean | null>(null);
+  // Pour compatibilité save
+  const vehicle = vehicles[0] || '';
   const [status, setStatus]     = useState<DelivererStatus | ''>('');
   const [zones, setZones]       = useState<string[]>([]);
+  const [zoneSearch, setZoneSearch] = useState('');
   const [rates, setRates]       = useState<DeliveryRate[]>([{ fromZone: '', toZone: '', price: 500 }]);
   const [bio, setBio]           = useState('');
 
-  const vInfo = VEHICLES.find(v => v.id === vehicle);
-  const needsLicense = vInfo?.needsLicense ?? false;
-
+  // ⚠️ isDeliveryCompany déclaré EN PREMIER car utilisé dans les fonctions suivantes
   const isDeliveryCompany = status === 'service';
+
+  const toggleVehicle = (id: VehicleType) => {
+    if (isDeliveryCompany) {
+      setVehicles(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+      setHasLicense(null);
+    } else {
+      setVehicles([id]);
+      setHasLicense(null);
+    }
+  };
+  const needsLicense = !isDeliveryCompany && VEHICLES.find(v => v.id === vehicle)?.needsLicense === true;
 
   const toggleZone = (z: string) => {
     if (zones.includes(z)) setZones(zones.filter(x => x !== z));
@@ -76,9 +88,10 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
       const { db } = await import('@/config/firebase');
       await updateDoc(doc(db, 'users', currentUser.uid), {
         role: 'livreur',
-        deliveryVehicle: vehicle,
+        deliveryVehicle: vehicles[0] || '',
         deliveryStatus: status,
         deliveryAge: Number(age),
+        deliveryVehicles: vehicles,
         deliveryHasLicense: hasLicense,
         deliveryCGUAccepted: true,
         deliveryCGUAcceptedAt: new Date().toISOString(),
@@ -100,7 +113,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
   const canProceedIdentity =
     name.trim().length > 0 &&
     age !== '' && Number(age) >= 18 &&
-    vehicle !== '' && status !== '' &&
+    vehicles.length > 0 && status !== '' &&
     (!needsLicense || hasLicense === true);
 
   return (
@@ -170,7 +183,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                     className={'py-4 px-3 rounded-2xl border-2 text-center transition-all active:scale-95 ' +
                       (vehicle === v.id ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50')}>
                     <div className="text-2xl mb-1">{v.icon}</div>
-                    <p className={'text-[11px] font-black ' + (vehicle === v.id ? 'text-green-800' : 'text-slate-700')}>{v.label}</p>
+                    <p className={'text-[11px] font-black ' + (vehicles.includes(v.id as VehicleType) ? 'text-green-800' : 'text-slate-700')}>{v.label}</p>
                     {v.needsLicense && <p className="text-[9px] text-slate-400 mt-0.5">Permis requis</p>}
                   </button>
                 ))}
@@ -216,12 +229,12 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                 {zones.length}{!isDeliveryCompany && '/2'} zone{zones.length > 1 ? 's' : ''} sélectionnée{zones.length > 1 ? 's' : ''}
               </p>
             </div>
-            {/* Barre de recherche — entreprises uniquement */}
+            {/* Barre de recherche zones — entreprises uniquement */}
             {isDeliveryCompany && (
               <input
                 type="text"
-                placeholder="🔍 Rechercher une ville ou quartier..."
-                value={zoneSearch || ''}
+                placeholder="🔍 Rechercher une ville..."
+                value={zoneSearch}
                 onChange={e => setZoneSearch(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 rounded-2xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"
               />
@@ -321,7 +334,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
             <div className="bg-green-50 rounded-2xl p-4 space-y-2">
               <p className="text-[9px] font-black text-green-700 uppercase tracking-widest">Resume</p>
               <div className="flex items-center gap-2">
-                <span className="text-xl">{VEHICLES.find(v => v.id === vehicle)?.icon}</span>
+                <span className="text-xl">{vehicles.map(v => VEHICLES.find(x => x.id === v)?.icon).join(' ')}</span>
                 <p className="font-black text-slate-900 text-[13px]">{name}</p>
               </div>
               <p className="text-[11px] text-slate-500">

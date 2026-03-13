@@ -92,6 +92,13 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const [banUserId, setBanUserId] = useState('');
   const [orderNote, setOrderNote] = useState('');
   const [orderTarget, setOrderTarget] = useState('');
+  // Hero config
+  const [heroTextInput, setHeroTextInput] = useState('Trouve ton bonheur à Babi 🤩');
+  const [heroBannerFile, setHeroBannerFile] = useState<File | null>(null);
+  const [heroBannerPreview, setHeroBannerPreview] = useState('');
+  const [heroBannerHours, setHeroBannerHours] = useState('48');
+  const [heroSaving, setHeroSaving] = useState(false);
+
   const [bannerMsg, setBannerMsg] = useState('');
   const [bannerType, setBannerType] = useState<'info' | 'warning' | 'promo'>('promo');
   const [bannerHours, setBannerHours] = useState('24');
@@ -114,6 +121,13 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const logAction = useCallback(async (action: string, targetId: string, details?: string) => {
     if (currentUser?.uid) await logAdminAction(currentUser.uid, action, targetId, details);
   }, [currentUser]);
+
+  // Charger hero config actuel
+  useEffect(() => {
+    getDoc(doc(db, 'system', 'homeConfig')).then((snap) => {
+      if (snap.exists() && (snap.data() as any).heroText) setHeroTextInput((snap.data() as any).heroText);
+    });
+  }, []);
 
   // Auto-setup system/config si absent (nécessaire pour les règles Firestore isAdmin())
   useEffect(() => {
@@ -253,6 +267,27 @@ export function AdminPage({ onBack }: AdminPageProps) {
       showToast(`🔔 Envoyé à ${result.sent} users (${result.errors} erreurs)`);
     } catch { showToast('❌ Erreur broadcast'); } finally { setBusy(null); }
   };
+  const saveHeroConfig = async () => {
+    setHeroSaving(true);
+    try {
+      const updateData: any = { heroText: heroTextInput.trim() };
+      if (heroBannerFile) {
+        const { uploadToCloudinary } = await import('@/utils/uploadImage');
+        const { Timestamp } = await import('firebase/firestore');
+        const url = await uploadToCloudinary(heroBannerFile, 'brumerie_hero');
+        updateData.heroBannerUrl = url;
+        const expiry = new Date();
+        expiry.setHours(expiry.getHours() + parseInt(heroBannerHours || '48'));
+        updateData.heroBannerExpiry = Timestamp.fromDate(expiry);
+      }
+      await setDoc(doc(db, 'system', 'homeConfig'), updateData, { merge: true });
+      showToast('✅ Hero mis à jour !');
+      setHeroBannerFile(null);
+      setHeroBannerPreview('');
+    } catch (e) { showToast('❌ Erreur sauvegarde'); }
+    finally { setHeroSaving(false); }
+  };
+
   const handlePublishBanner = async () => {
     if (!bannerMsg.trim()) { showToast('⚠️ Message requis'); return; }
     setBusy('banner');
@@ -689,6 +724,48 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 ))}
               </div>
             )}
+            {/* ── HERO ACCUEIL ── */}
+            <div className="bg-white/5 rounded-2xl p-5 space-y-3 mb-2">
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">🏠 Texte Hero Accueil</p>
+              <textarea
+                value={heroTextInput}
+                onChange={e => setHeroTextInput(e.target.value.slice(0, 80))}
+                rows={2}
+                placeholder="Trouve ton bonheur à Babi 🤩"
+                className="w-full px-4 py-3 bg-white/10 rounded-xl text-[12px] text-white border-2 border-transparent focus:border-green-500 outline-none resize-none"
+              />
+              <p className="text-slate-500 text-[10px]">{heroTextInput.length}/80 caractères</p>
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Bannière image (optionnel)</p>
+                <p className="text-[9px] text-slate-400 mb-2">Remplace le fond vert pendant la durée définie, puis revient automatiquement au texte.</p>
+                <label className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-3 cursor-pointer active:scale-95 transition-all">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span className="text-[11px] text-white font-bold">{heroBannerFile ? heroBannerFile.name : 'Choisir une image...'}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files?.[0];
+                    if (f) { setHeroBannerFile(f); setHeroBannerPreview(URL.createObjectURL(f)); }
+                  }} />
+                </label>
+                {heroBannerPreview && <img src={heroBannerPreview} className="w-full rounded-xl mt-2 max-h-24 object-cover" alt="preview"/>}
+                {heroBannerFile && (
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <p className="text-[9px] text-slate-400">Durée :</p>
+                    {[['24','24h'],['48','48h'],['72','72h'],['168','7j']].map(([h, label]) => (
+                      <button key={h} onClick={() => setHeroBannerHours(h)}
+                        className={`text-[9px] font-black px-3 py-1 rounded-lg ${heroBannerHours === h ? 'bg-green-500 text-white' : 'bg-white/10 text-slate-400'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button onClick={saveHeroConfig} disabled={heroSaving}
+                className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-[0.98] transition-all disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                {heroSaving ? '⏳ Sauvegarde...' : '💾 Sauvegarder Hero'}
+              </button>
+            </div>
+
             <div className="bg-white/5 rounded-2xl p-4 space-y-4">
               <p className="text-white font-black text-[13px]">Nouvelle annonce</p>
               <div className="flex gap-2">

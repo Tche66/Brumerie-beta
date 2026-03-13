@@ -446,6 +446,8 @@ useEffect(() => {
             onLogoClick={handleLogoClick}
             onNotificationsClick={() => navigate('notifications')}
             onOpenChatWithSeller={handleOpenChatWithSeller}
+            onNavigateToVerification={() => navigate('verification')}
+            onNavigateToChat={() => navigate('messages')}
             onOrderFromStory={async (productRef, sellerId, sellerName) => {
               try {
                 const snap = await getDoc(doc(db, 'products', productRef.id));
@@ -582,6 +584,8 @@ useEffect(() => {
             orderId={selectedOrderId || undefined}
             onBack={goBack}
             onOpenChatWithSeller={handleOpenChatWithSeller}
+            onNavigateToVerification={() => navigate('verification')}
+            onNavigateToChat={() => navigate('messages')}
           />
         )}
         {activePage === 'referral' && (

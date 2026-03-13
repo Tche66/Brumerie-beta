@@ -16,6 +16,8 @@ const ALL_CATEGORIES = [
 ];
 import { subscribeBoostedProductIds } from '@/services/boostService';
 import { StoriesBar } from '@/components/StoriesBar';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
 
 interface HomePageProps {
@@ -26,35 +28,48 @@ interface HomePageProps {
   onNotificationsClick?: () => void;
   onLogoClick?: () => void;
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
+  onNavigateToVerification?: () => void;
+  onNavigateToChat?: () => void;
   onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
   onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
 }
 
 
-const TrustBadges = () => (
+interface HeroBadgesProps {
+  onNavigateToVerification?: () => void;
+  onNavigateToChat?: () => void;
+  isGuest?: boolean;
+  onGuestAction?: (reason: string) => void;
+}
+
+const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGuestAction }: HeroBadgesProps) => (
   <div className="flex gap-2 mt-5 flex-wrap">
-    <div className="trust-badge">
+    <button
+      onClick={() => isGuest ? onGuestAction?.('verification') : onNavigateToVerification?.()}
+      className="trust-badge active:scale-95 transition-all cursor-pointer">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
       </svg>
       Identité vérifiable
-    </div>
-    <div className="trust-badge">
+    </button>
+    <button
+      onClick={() => isGuest ? onGuestAction?.('chat') : onNavigateToChat?.()}
+      className="trust-badge active:scale-95 transition-all cursor-pointer">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
       Chat Direct
-    </div>
-    <div className="trust-badge">
+    </button>
+    <div className="trust-badge opacity-75">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
       </svg>
-      Mobile Money très bientôt
+      Mobile Money escrow bientôt 🔒
     </div>
   </div>
 );
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory }: HomePageProps) {
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +82,31 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   // Écouter les produits boostés
   useEffect(() => {
     return subscribeBoostedProductIds(setBoostedIds);
+  }, []);
+
+  // ── Texte hero modifiable depuis admin ──
+  const [heroText, setHeroText] = useState('Trouve ton bonheur à Babi 🤩');
+  const [heroBannerUrl, setHeroBannerUrl] = useState('');
+  const [heroBannerExpiry, setHeroBannerExpiry] = useState<number | null>(null);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'system', 'homeConfig'), (snap) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        if (d.heroText) setHeroText(d.heroText);
+        if (d.heroBannerUrl) {
+          const expiry = d.heroBannerExpiry?.toMillis?.() || 0;
+          if (expiry === 0 || expiry > Date.now()) {
+            setHeroBannerUrl(d.heroBannerUrl);
+            setHeroBannerExpiry(expiry || null);
+          } else {
+            setHeroBannerUrl(''); // bannière expirée → retour texte
+          }
+        } else {
+          setHeroBannerUrl('');
+        }
+      }
+    });
+    return unsub;
   }, []);
 
   // ✅ Favoris directement depuis userProfile — toujours à jour
@@ -229,26 +269,42 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       {/* Hero */}
       {!searchTerm && (
         <div className="px-5 pt-6 animate-fade-in">
-          <div className="rounded-[3rem] p-8 overflow-hidden relative shadow-2xl shadow-green-100"
+          <div className="rounded-[3rem] overflow-hidden relative shadow-2xl shadow-green-100"
             style={{ background: 'linear-gradient(135deg, #16A34A 0%, #115E2E 100%)' }}>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-bold text-white uppercase tracking-[0.2em]">
-                  🇨🇮 Abidjan · En direct
-                </span>
+            {/* Bannière image admin — si active remplace le fond vert */}
+            {heroBannerUrl ? (
+              <div className="relative">
+                <img src={heroBannerUrl} alt="Bannière Brumerie" className="w-full object-cover" style={{ maxHeight: 220 }} />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-white font-black text-[11px] uppercase tracking-[0.2em] mb-1">🇨🇮 Abidjan · En direct</p>
+                  <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '1.6rem' }}>{heroText}</h2>
+                  <p className="text-white/80 text-[11px] font-bold mt-2 uppercase tracking-[0.1em]">{products.length} pépites dénichées</p>
+                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} />
+                </div>
               </div>
-              <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '2rem' }}>
-                Trouve ton bonheur à Babi 🤩
-              </h2>
-              <p className="text-green-50 text-[11px] font-bold mt-3 uppercase tracking-[0.1em] opacity-80">
-                {products.length} pépites dénichées
-              </p>
-              <TrustBadges />
-            </div>
-            <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute right-6 top-6 opacity-40 select-none pointer-events-none">
-              <span style={{ fontSize: '52px', lineHeight: 1 }}>🇨🇮</span>
-            </div>
+            ) : (
+              <div className="p-8">
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-bold text-white uppercase tracking-[0.2em]">
+                      🇨🇮 Abidjan · En direct
+                    </span>
+                  </div>
+                  <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '2rem' }}>
+                    {heroText}
+                  </h2>
+                  <p className="text-green-50 text-[11px] font-bold mt-3 uppercase tracking-[0.1em] opacity-80">
+                    {products.length} pépites dénichées
+                  </p>
+                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} />
+                </div>
+                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
+                <div className="absolute right-6 top-6 opacity-40 select-none pointer-events-none">
+                  <span style={{ fontSize: '52px', lineHeight: 1 }}>🇨🇮</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

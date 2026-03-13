@@ -124,6 +124,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
                 { icon: '💬', bold: null, rest: 'Messagerie ', boldEnd: 'Illimitée' },
                 { icon: '🌐', bold: null, rest: 'Bio + Liens réseaux sociaux' },
                 { icon: '📊', bold: null, rest: 'Stats de vues de base' },
+                { icon: '📸', bold: null, rest: 'Stories ', boldEnd: '24h' },
                 { icon: '📦', bold: null, rest: 'Max ', boldEnd: '20 produits' },
               ].map((f, i) => (
                 <div key={i} className="flex items-center gap-3">
