@@ -644,59 +644,109 @@ function DisputeButton({ orderId }: { orderId: string }) {
   );
 }
 
-// ── CashCollectButton — livreur confirme avoir collecté le cash COD ──
-function CashCollectButton({ orderId }: { orderId: string }) {
-  const [loading, setLoading] = React.useState(false);
-  const [done, setDone]       = React.useState(false);
+// ── CODStepsBlock — flux 3 étapes séquentiel pour COD espèces (après picked) ──
+function CODStepsBlock({ orderId, order }: { orderId: string; order: Order }) {
+  const [loadingStep2, setLoadingStep2] = React.useState(false);
+  const [loadingStep3, setLoadingStep3] = React.useState(false);
+  const [errStep2, setErrStep2] = React.useState<string | null>(null);
+  const [errStep3, setErrStep3] = React.useState<string | null>(null);
+  const ord = order as any;
 
-  const handleCollect = async () => {
-    setLoading(true);
+  const step2Done = ord.delivererCashCollected;
+  const step3Done = ord.sellerCashReturned;
+
+  const handleDelivered = async () => {
+    setLoadingStep2(true); setErrStep2(null);
     try {
-      // Lire les infos de la commande pour la notif
-      const { getDoc, doc: fDoc } = await import('firebase/firestore');
-      const snap = await getDoc(fDoc(db, 'orders', orderId));
-      const ord = snap.exists() ? snap.data() : null;
-
       await updateDoc(doc(db, 'orders', orderId), {
         delivererCashCollected: true,
         delivererCashCollectedAt: serverTimestamp(),
       });
-
-      // Notifier l'acheteur que le livreur est en route (différé pour COD)
-      if (ord) {
-        const { createNotification } = await import('@/services/notificationService');
-        await createNotification(ord.buyerId, 'system',
+      const { createNotification } = await import('@/services/notificationService');
+      await Promise.all([
+        createNotification(ord.buyerId, 'system',
           '🚀 Ton article est en route !',
-          `Le livreur arrive avec "${ord.productTitle}". Prépare-toi à recevoir.`,
+          `Le livreur arrive avec "${ord.productTitle}". Prépare le paiement.`,
           { orderId, productId: ord.productId }
-        );
-      }
-      setDone(true);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+        ),
+        createNotification(ord.sellerId, 'system',
+          '🛵 Livreur en route vers l\'acheteur',
+          `Le livreur collecte le paiement. Si tu veux que l\'acheteur paie autrement, contacte-le maintenant.`,
+          { orderId, productId: ord.productId }
+        ),
+      ]);
+    } catch (e: any) { setErrStep2(e?.message || 'Erreur'); }
+    finally { setLoadingStep2(false); }
   };
 
-  if (done) return (
-    <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
-      <span className="text-lg">✅</span>
-      <p className="text-[11px] font-black text-green-700">Cash collecté — acheteur peut valider</p>
-    </div>
-  );
+  const handleReturnCash = async () => {
+    setLoadingStep3(true); setErrStep3(null);
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        sellerCashReturned: true,
+        sellerCashReturnedAt: serverTimestamp(),
+      });
+      const { createNotification } = await import('@/services/notificationService');
+      await createNotification(ord.sellerId, 'system',
+        '💰 Le livreur dit avoir remis ton argent',
+        `Confirme la réception de ${(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA dans ta commande.`,
+        { orderId, productId: ord.productId }
+      );
+    } catch (e: any) { setErrStep3(e?.message || 'Erreur'); }
+    finally { setLoadingStep3(false); }
+  };
 
   return (
-    <button onClick={handleCollect} disabled={loading}
-      className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 transition-all"
-      style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
-      {loading
-        ? <span className="flex items-center justify-center gap-2">
-            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
-            Confirmation...
-          </span>
-        : '💵 J\'ai collecté le paiement cash'
-      }
-    </button>
+    <div className="space-y-2 mb-3">
+      {/* Étape 2 — Livrer + collecter */}
+      {!step2Done ? (
+        <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 space-y-2">
+          <p className="text-[10px] font-black text-amber-800">💵 Étape 2 — Livrer et collecter le paiement</p>
+          <p className="text-[9px] text-amber-700">Une fois chez l&apos;acheteur : remets le colis et collecte le paiement.</p>
+          <button onClick={handleDelivered} disabled={loadingStep2}
+            className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+            style={{ background: loadingStep2 ? '#9CA3AF' : 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+            {loadingStep2
+              ? <span className="flex items-center justify-center gap-1"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />En cours...</span>
+              : '📦 J\'ai livré le colis — cash collecté'
+            }
+          </button>
+          {errStep2 && <p className="text-[9px] text-red-600 text-center font-bold">{errStep2}</p>}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2">
+          <span>✅</span>
+          <p className="text-[10px] font-black text-green-700">Colis livré — cash collecté</p>
+        </div>
+      )}
+
+      {/* Étape 3 — Remettre au vendeur */}
+      {step2Done && !step3Done && (
+        <div className="rounded-xl border-2 border-dashed border-green-400 bg-green-50 p-3 space-y-2">
+          <p className="text-[10px] font-black text-green-800">🤝 Étape 3 — Remettre la part du vendeur</p>
+          <p className="text-[9px] text-green-700">Remets <span className="font-black">{(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA</span> au vendeur. Il confirmera la réception.</p>
+          <button onClick={handleReturnCash} disabled={loadingStep3}
+            className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+            style={{ background: loadingStep3 ? '#9CA3AF' : 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+            {loadingStep3
+              ? <span className="flex items-center justify-center gap-1"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />Signature...</span>
+              : '✍️ Je signe — j\'ai remis l\'argent au vendeur'
+            }
+          </button>
+          {errStep3 && <p className="text-[9px] text-red-600 text-center font-bold">{errStep3}</p>}
+        </div>
+      )}
+      {step2Done && step3Done && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2">
+          <span>✅</span>
+          <p className="text-[10px] font-black text-green-700">Argent remis — en attente confirmation vendeur</p>
+        </div>
+      )}
+    </div>
   );
 }
+
+function CashCollectButton({ orderId }: { orderId: string }) { return null; }
 
 // ── ActiveDeliveryCard — EN COURS (ready / cod_confirmed / picked) ─
 // Affiche le code directement — le livreur le transmet à l'acheteur

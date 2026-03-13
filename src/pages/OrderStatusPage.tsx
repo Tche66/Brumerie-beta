@@ -849,50 +849,48 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
                 <div>
                   <p className="text-[10px] font-black text-amber-800 uppercase mb-1">💳 Étape 1 — Payer le vendeur</p>
-                  {(order.status === 'picked' && (order as any).isCOD) ? (
-                    // Livreur en route COD → message informatif uniquement
-                    <div className="bg-orange-50 rounded-xl p-3 border border-orange-200">
-                      <p className="text-[11px] text-orange-800 font-bold mb-1">🛵 Le livreur est en route</p>
-                      <p className="text-[10px] text-orange-700 leading-relaxed">
-                        Le livreur collecte le paiement à la livraison.
-                        Si tu veux payer autrement, contacte le vendeur maintenant.
-                      </p>
-                    </div>
-                  ) : (
-                    // Pas encore en route → afficher les moyens de paiement
-                    <>
-                      <p className="text-[11px] text-amber-700 mb-3">
-                        Paie <span className="font-black text-amber-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au vendeur avant réception.
-                        Les frais du livreur sont séparés.
-                      </p>
-                      {(order as any).paymentInfo?.phone && (
-                        <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between mb-3">
-                          <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase">Vendeur · {(order as any).sellerName}</p>
-                            <p className="font-black text-slate-900 text-[14px] tracking-widest mt-0.5">
-                              {(order as any).paymentInfo.phone}
-                            </p>
-                            <p className="text-[10px] text-slate-500">{(order as any).paymentInfo.holderName}</p>
-                          </div>
-                          <div className="flex flex-col gap-1.5">
-                            {(order as any).paymentInfo?.waveLink ? (
-                              <a href={(order as any).paymentInfo.waveLink}
-                                target="_blank" rel="noopener noreferrer"
-                                className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95"
-                                style={{ background: '#1BA6F9' }}>
-                                Wave
-                              </a>
-                            ) : null}
-                            <button onClick={() => navigator.clipboard?.writeText((order as any).paymentInfo.phone)}
-                              className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
-                              Copier
-                            </button>
-                          </div>
+                  <>
+                    {/* Bandeau info si livreur en route COD */}
+                    {(order.status === 'picked' && (order as any).isCOD) && (
+                      <div className="bg-orange-50 rounded-xl p-3 border border-orange-200 mb-3">
+                        <p className="text-[11px] text-orange-800 font-bold mb-0.5">🛵 Le livreur est en route</p>
+                        <p className="text-[10px] text-orange-700 leading-relaxed">
+                          Le livreur collecte le paiement à la livraison.
+                          Si tu préfères payer autrement, contacte le vendeur maintenant.
+                        </p>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-amber-700 mb-3">
+                      Paie <span className="font-black text-amber-900 text-[13px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</span> au vendeur avant réception.
+                      Les frais du livreur sont séparés.
+                    </p>
+                    {(order as any).paymentInfo?.phone && (
+                      <div className="bg-white rounded-xl p-3 border border-amber-200 flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase">Vendeur · {(order as any).sellerName}</p>
+                          <p className="font-black text-slate-900 text-[14px] tracking-widest mt-0.5">
+                            {(order as any).paymentInfo.phone}
+                          </p>
+                          <p className="text-[10px] text-slate-500">{(order as any).paymentInfo.holderName}</p>
                         </div>
-                      )}
-                      <SellerPaymentMethods order={order} />
-                    </>
-                  )}
+                        <div className="flex flex-col gap-1.5">
+                          {(order as any).paymentInfo?.waveLink ? (
+                            <a href={(order as any).paymentInfo.waveLink}
+                              target="_blank" rel="noopener noreferrer"
+                              className="px-3 py-2 rounded-xl font-black text-[9px] text-white active:scale-95"
+                              style={{ background: '#1BA6F9' }}>
+                              Wave
+                            </a>
+                          ) : null}
+                          <button onClick={() => navigator.clipboard?.writeText((order as any).paymentInfo.phone)}
+                            className="px-3 py-2 rounded-xl bg-slate-100 font-black text-[9px] text-slate-600 active:scale-95">
+                            Copier
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <SellerPaymentMethods order={order} />
+                  </>
                 </div>
               </div>
             )}
