@@ -94,12 +94,14 @@ service cloud.firestore {
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.buyerId ||
         request.auth.uid == resource.data.sellerId ||
+        request.auth.uid == resource.data.delivererId ||
         isAdmin()
       );
       allow create: if request.auth != null;
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.buyerId ||
         request.auth.uid == resource.data.sellerId ||
+        request.auth.uid == resource.data.delivererId ||
         isAdmin()
       );
     }
