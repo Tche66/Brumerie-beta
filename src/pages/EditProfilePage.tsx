@@ -376,24 +376,12 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                 <Toggle value={managesDelivery} onChange={setManagesDelivery}/>
               </div>
 
-              {/* Prix de livraison si activé */}
+              {/* Info livraison — message simple, pas de détails livreur ici */}
               {managesDelivery && (
-                <div className="bg-white rounded-2xl p-4 space-y-3 border border-slate-100">
-                  <div className="bg-green-50 rounded-xl p-3 border border-green-100">
-                    <p className="text-[10px] font-bold text-green-700">
-                      💡 Le prix de livraison est fixé directement par le livreur partenaire lors de l&apos;assignation.
-                    </p>
-                  </div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pt-2">Livreur partenaire</p>
-                  <input type="text" value={deliveryPartnerName}
-                    onChange={e => setDeliveryPartnerName(e.target.value)}
-                    placeholder="Nom du livreur (ex: Kouassi Express)"
-                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"/>
-                  <input type="tel" value={deliveryPartnerPhone}
-                    onChange={e => setDeliveryPartnerPhone(e.target.value)}
-                    placeholder="Numéro WhatsApp livreur (+225...)"
-                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"/>
-                  <p className="text-[9px] text-slate-400 font-medium">L'acheteur pourra contacter ton livreur directement via WhatsApp.</p>
+                <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+                  <p className="text-[10px] font-bold text-green-700">
+                    💡 Le prix de livraison sera fixé directement par le livreur lors de l'assignation de ta commande.
+                  </p>
                 </div>
               )}
             </div>

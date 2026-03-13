@@ -179,9 +179,9 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Moyen de transport *</label>
               <div className="grid grid-cols-2 gap-2">
                 {VEHICLES.map(v => (
-                  <button key={v.id} onClick={() => { setVehicle(v.id); setHasLicense(null); }}
+                  <button key={v.id} onClick={() => toggleVehicle(v.id as VehicleType)}
                     className={'py-4 px-3 rounded-2xl border-2 text-center transition-all active:scale-95 ' +
-                      (vehicle === v.id ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50')}>
+                      (vehicles.includes(v.id as VehicleType) ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50')}>
                     <div className="text-2xl mb-1">{v.icon}</div>
                     <p className={'text-[11px] font-black ' + (vehicles.includes(v.id as VehicleType) ? 'text-green-800' : 'text-slate-700')}>{v.label}</p>
                     {v.needsLicense && <p className="text-[9px] text-slate-400 mt-0.5">Permis requis</p>}
