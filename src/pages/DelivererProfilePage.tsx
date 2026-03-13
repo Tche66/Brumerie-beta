@@ -61,13 +61,12 @@ export function DelivererProfilePage({
 
   useEffect(() => {
     // Écoute temps réel des livraisons terminées
-    const { onSnapshot, query, collection, where } = require('firebase/firestore');
     const q = query(
       collection(db, 'orders'),
       where('delivererId', '==', delivererId),
     );
-    const unsub = onSnapshot(q, (snap: any) => {
-      const count = snap.docs.filter((d: any) => d.data().status === 'delivered').length;
+    const unsub = onSnapshot(q, (snap) => {
+      const count = snap.docs.filter(d => d.data().status === 'delivered').length;
       setLiveDeliveryCount(count);
     }, () => {});
     return unsub;

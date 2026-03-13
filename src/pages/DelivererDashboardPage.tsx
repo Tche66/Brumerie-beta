@@ -189,7 +189,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">📦</div>
                 <p className="font-black text-slate-400 text-[13px]">Aucune mission disponible</p>
-                <p className="text-[10px] text-slate-400 mt-2">Les commandes de ta zone apparaîtront ici</p>
+                <p className="text-[10px] text-slate-400 mt-2">Aucune nouvelle mission disponible pour le moment. Reviens plus tard !</p>
               </div>
             )}
           </div>
@@ -233,18 +233,45 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               <div className="text-center py-10">
                 <p className="text-slate-400 text-[12px]">Tes livraisons complétées apparaîtront ici</p>
               </div>
-            ) : myDone.map(order => (
-              <div key={order.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-lg">✅</div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-slate-900 text-[12px] truncate">{order.productTitle}</p>
-                  <p className="text-[10px] text-slate-400">{order.sellerNeighborhood} → {order.buyerNeighborhood}</p>
+            ) : myDone.map(order => {
+              const ord = order as any;
+              const fee = ord.deliveryFee || 0;
+              const deliveredAt = ord.deliveredAt?.toDate?.() || ord.deliveryPickedAt?.toDate?.() || null;
+              const dateStr = deliveredAt ? deliveredAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null;
+              const timeStr = deliveredAt ? deliveredAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
+              return (
+                <div key={order.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+                  <div className="flex items-center gap-3 p-3">
+                    {ord.productImage
+                      ? <img src={ord.productImage} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>
+                      : <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-xl flex-shrink-0">✅</div>
+                    }
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-900 text-[12px] truncate">{order.productTitle}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{ord.sellerNeighborhood || '—'} → {ord.buyerNeighborhood || '—'}</p>
+                      {dateStr && <p className="text-[9px] text-slate-400 mt-0.5">📅 {dateStr} à {timeStr}</p>}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-black text-green-600 text-[15px]">+{fee.toLocaleString('fr-FR')} F</p>
+                      <p className="text-[9px] text-slate-400 mt-0.5">{ord.isCOD ? '💵 Espèces' : '📱 Mobile'}</p>
+                    </div>
+                  </div>
+                  <div className="border-t border-slate-100 px-3 py-2 flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-[8px] text-slate-400 uppercase font-bold">Vendeur</p>
+                        <p className="text-[10px] font-black text-slate-700 truncate max-w-[90px]">{ord.sellerName || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] text-slate-400 uppercase font-bold">Acheteur</p>
+                        <p className="text-[10px] font-black text-slate-700 truncate max-w-[90px]">{ord.buyerName || '—'}</p>
+                      </div>
+                    </div>
+                    <span className="text-[9px] bg-green-100 text-green-700 font-black px-2 py-0.5 rounded-full">Livré ✓</span>
+                  </div>
                 </div>
-                <p className="font-black text-green-600 text-[13px] whitespace-nowrap">
-                  +{((order as any).deliveryFee || 0).toLocaleString('fr-FR')} F
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -633,7 +660,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
   const ord2 = order as any;
   const statusLabel = order.status === 'picked'
     ? { icon: '🛵', text: "En route vers l'acheteur", color: 'text-green-600', bg: 'border-green-500' }
-    : (order.status === 'cod_confirmed' || order.status === 'ready') && ord2.isCOD
+    : (order.status === 'cod_confirmed' || order.status === 'ready' || order.status === 'confirmed') && ord2.isCOD
     ? { icon: '💵', text: 'COD — récupère le paiement chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
     : order.status === 'cod_confirmed'
     ? { icon: '💵', text: 'COD — va chercher le colis', color: 'text-blue-600', bg: 'border-blue-400' }
@@ -695,7 +722,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
       )}
 
       {/* COD espèces seulement : bouton "Paiement récupéré chez le vendeur" → picked */}
-      {ord.isCOD && ['cod_confirmed', 'ready'].includes(order.status) && (
+      {ord.isCOD && ['cod_confirmed', 'ready', 'confirmed'].includes(order.status) && (
         <CashPickupButton orderId={order.id} order={order} />
       )}
       {/* COD espèces : cash collecté → attendre scan acheteur */}
