@@ -267,8 +267,24 @@ function SellerPaymentMethods({ order }: { order: Order }) {
   const [selectedMethod, setSelectedMethod] = React.useState<string | null>(null);
   const [paid, setPaid] = React.useState(false);
   const [paidAmount] = React.useState((order as any).productPrice || order.price || 0);
-  const sellerMethods: import('@/types').PaymentInfo[] = (order as any).sellerPaymentMethods
-    || ((order as any).paymentInfo ? [(order as any).paymentInfo] : []);
+  const [liveSellerMethods, setLiveSellerMethods] = React.useState<import('@/types').PaymentInfo[] | null>(null);
+
+  // Charger les numéros vendeur depuis son profil si absent dans la commande
+  React.useEffect(() => {
+    const fromOrder = (order as any).sellerPaymentMethods;
+    if (fromOrder && fromOrder.length > 0) { setLiveSellerMethods(fromOrder); return; }
+    import('firebase/firestore').then(({ getDoc, doc: fDoc }) => {
+      import('@/config/firebase').then(({ db }) => {
+        getDoc(fDoc(db, 'users', order.sellerId)).then(snap => {
+          if (snap.exists()) setLiveSellerMethods(snap.data().defaultPaymentMethods || []);
+        });
+      });
+    });
+  }, [order.sellerId]);
+
+  const sellerMethods: import('@/types').PaymentInfo[] = liveSellerMethods
+    ?? ((order as any).sellerPaymentMethods)
+    ?? [];
 
   if (paid) return (
     <div className="bg-green-50 rounded-xl p-3 border border-green-200">
@@ -1070,6 +1086,46 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <p className="text-3xl mb-2">🎉</p>
               <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">Transaction terminée !</p>
             </div>
+            {/* Résumé mode de paiement utilisé */}
+            {(() => {
+              const ord = order as any;
+              const isCOD = ord.isCOD;
+              const method = ord.paymentInfo?.method;
+              const phone = ord.paymentInfo?.phone;
+              const methodLabel = isCOD ? 'Espèces à la livraison' : (MOBILE_PAYMENT_METHODS.find(m => m.id === method)?.name || method || 'Mobile money');
+              const proofUrl = ord.screenshotUrl || ord.proofUrl;
+              return (
+                <div className="bg-white rounded-xl p-3 border border-green-200 space-y-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Récapitulatif paiement</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-slate-600 font-bold">Mode</p>
+                    <p className="text-[11px] font-black text-slate-900">{isCOD ? '💵' : '📱'} {methodLabel}</p>
+                  </div>
+                  {phone && !isCOD && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-slate-600 font-bold">Numéro</p>
+                      <p className="text-[11px] font-black text-slate-900">{phone}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-slate-600 font-bold">Montant vendeur</p>
+                    <p className="text-[11px] font-black text-green-700">{(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA</p>
+                  </div>
+                  {(ord.deliveryFee || 0) > 0 && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-slate-600 font-bold">Frais livreur</p>
+                      <p className="text-[11px] font-black text-slate-700">{(ord.deliveryFee || 0).toLocaleString('fr-FR')} FCFA</p>
+                    </div>
+                  )}
+                  {proofUrl && !isCOD && (
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Preuve de paiement</p>
+                      <img src={proofUrl} alt="preuve" className="w-full rounded-lg object-cover max-h-32 border border-slate-200"/>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {/* Acheteur : noter vendeur + livreur */}
             {isBuyer && (
               <div className="space-y-2 pt-1">

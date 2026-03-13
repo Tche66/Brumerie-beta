@@ -253,7 +253,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-black text-green-600 text-[15px]">+{fee.toLocaleString('fr-FR')} F</p>
-                      <p className="text-[9px] text-slate-400 mt-0.5">{ord.isCOD ? '💵 Espèces' : '📱 Mobile'}</p>
+                      {(() => {
+                const isCOD = ord.isCOD;
+                const method = ord.paymentInfo?.method;
+                const label = isCOD ? '💵 Espèces' : method ? ('📱 ' + (method === 'wave' ? 'Wave' : method === 'orange_money' ? 'Orange Money' : method === 'mtn' ? 'MTN' : method === 'moov' ? 'Moov' : method)) : '📱 Mobile';
+                return <p className="text-[9px] text-slate-400 mt-0.5">{label}</p>;
+              })()}
                     </div>
                   </div>
                   <div className="border-t border-slate-100 px-3 py-2 flex items-center justify-between bg-slate-50">

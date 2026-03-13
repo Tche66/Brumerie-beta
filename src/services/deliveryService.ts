@@ -235,11 +235,10 @@ export function subscribeOpenOrdersInZone(
   zones: string[],
   callback: (orders: Order[]) => void,
 ): Unsubscribe {
-  // Toutes les missions disponibles — pas de filtre de zone en Firestore
+  // Toutes les missions disponibles — tous types de livraison, tous statuts valides
   const q = query(
     collection(db, 'orders'),
-    where('deliveryType', '==', 'delivery'),
-    where('status', 'in', ['confirmed', 'ready', 'cod_confirmed']),
+    where('status', 'in', ['confirmed', 'ready', 'cod_confirmed', 'cod_pending']),
   );
 
   return onSnapshot(q, snap => {
