@@ -394,18 +394,39 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
 
 
 
-// ── CashPickupButton — COD espèces uniquement : livreur confirme avoir récupéré le paiement chez le vendeur ──
+// ── CashPickupButton — COD espèces uniquement : livreur confirme avoir récupéré le colis ──
 function CashPickupButton({ orderId, order }: { orderId: string; order: Order }) {
+  // ⚠️ TOUS les hooks AVANT tout return conditionnel (Rules of Hooks)
   const [loading, setLoading] = React.useState(false);
   const [signed, setSigned] = React.useState(false);
   const [signedAt, setSignedAt] = React.useState<string | null>(null);
+  const [signError, setSignError] = React.useState<string | null>(null);
 
-  // Si déjà signé (status = picked), afficher la signature
   const alreadyPicked = order.status === 'picked';
   const pickupTime = (order as any).deliveryPickedAt?.toDate?.()
     ? new Date((order as any).deliveryPickedAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     : null;
 
+  const handleSign = async () => {
+    setLoading(true);
+    setSignError(null);
+    try {
+      const timeStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'picked',
+        deliveryPickedAt: serverTimestamp(),
+      });
+      setSigned(true);
+      setSignedAt(timeStr);
+    } catch (e: any) {
+      console.error(e);
+      setSignError('Erreur : ' + (e?.message || 'réessaie'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Early returns APRÈS tous les hooks
   if (alreadyPicked || signed) {
     const timeStr = signedAt || pickupTime || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     return (
@@ -420,27 +441,6 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
       </div>
     );
   }
-
-  const [signError, setSignError] = React.useState<string | null>(null);
-
-  const handleSign = async () => {
-    setLoading(true);
-    setSignError(null);
-    try {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      await updateDoc(doc(db, 'orders', orderId), {
-        status: 'picked',
-        deliveryPickedAt: serverTimestamp(),
-      });
-      setSigned(true);
-      setSignedAt(timeStr);
-    } catch (e: any) {
-      console.error(e);
-      setSignError('Erreur : ' + (e?.message || 'réessaie'));
-    }
-    finally { setLoading(false); }
-  };
 
   return (
     <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-4 mb-3 space-y-3">
@@ -461,6 +461,7 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
           : <span>✍️ Je confirme avoir récupéré le colis</span>
         }
       </button>
+      {signError && <p className="text-[10px] text-red-600 text-center font-bold">{signError}</p>}
     </div>
   );
 }
