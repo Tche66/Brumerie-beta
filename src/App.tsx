@@ -406,16 +406,21 @@ useEffect(() => {
   // Ouvrir le chat avec un vendeur depuis Stories / OrderStatus / etc.
   const handleOpenChatWithSeller = async (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => {
     if (!currentUser || !userProfile) return;
+    // ✅ Empêcher de se contacter soi-même
+    if (currentUser.uid === sellerId) return;
     const { getOrCreateConversation } = await import('@/services/messagingService');
+    const { getUserById } = await import('@/services/userService');
     try {
+      // Récupérer la photo du vendeur pour l'afficher dans le chat
+      const sellerData = await getUserById(sellerId);
       const convId = await getOrCreateConversation(
         currentUser.uid,
         sellerId,
         { id: productId || 'direct', title: productTitle || 'Contact direct', price: 0, image: '', neighborhood: '' },
         userProfile.name,
-        sellerName,
+        sellerName || sellerData?.name || 'Vendeur',
         userProfile.photoURL,
-        undefined,
+        sellerData?.photoURL || undefined,
       );
       await handleStartChat(convId);
     } catch (e) { console.error('[Chat direct]', e); }

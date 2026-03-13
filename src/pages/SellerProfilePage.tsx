@@ -138,7 +138,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
             Se connecter
           </button>
         )}
-        {!isGuest && onStartChat && seller && (
+        {!isGuest && onStartChat && seller && currentUser?.uid !== sellerId && (
           <button
             onClick={() => onStartChat(seller.uid, seller.name)}
             className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-200">
