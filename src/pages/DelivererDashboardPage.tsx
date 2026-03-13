@@ -15,6 +15,8 @@ import { EditDelivererProfilePage } from '@/pages/EditDelivererProfilePage';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
 import type { Order } from '@/types';
+import { updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -254,6 +256,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                     <div className="text-right flex-shrink-0">
                       <p className="font-black text-green-600 text-[15px]">+{fee.toLocaleString('fr-FR')} F</p>
                       {(() => {
+                const chosen = ord.chosenPaymentMethod;
+                if (chosen) {
+                  const icon = chosen.method === 'especes' ? '💵' : '📱';
+                  const label = `${icon} ${chosen.methodName}${chosen.phone ? ' · ' + chosen.phone : ''}`;
+                  return <p className="text-[9px] text-slate-400 mt-0.5">{label}</p>;
+                }
                 const isCOD = ord.isCOD;
                 const method = ord.paymentInfo?.method;
                 const label = isCOD ? '💵 Espèces' : method ? ('📱 ' + (method === 'wave' ? 'Wave' : method === 'orange_money' ? 'Orange Money' : method === 'mtn' ? 'MTN' : method === 'moov' ? 'Moov' : method)) : '📱 Mobile';
@@ -421,18 +429,15 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
     try {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      // Forcer directement picked sans vérification de statut
-      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-      const { db } = await import('@/config/firebase');
       await updateDoc(doc(db, 'orders', orderId), {
         status: 'picked',
         deliveryPickedAt: serverTimestamp(),
       });
       setSigned(true);
       setSignedAt(timeStr);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setSignError('Erreur réseau — réessaie');
+      setSignError('Erreur : ' + (e?.message || 'réessaie'));
     }
     finally { setLoading(false); }
   };
@@ -627,8 +632,6 @@ function DisputeButton({ orderId }: { orderId: string }) {
     <button onClick={async () => {
       setLoading(true);
       try {
-        const { updateDoc, doc } = await import('firebase/firestore');
-        const { db } = await import('@/config/firebase');
         await updateDoc(doc(db, 'orders', orderId), { status: 'disputed', disputeReason: 'Livreur — problème encaissement COD' });
         setDone(true);
       } catch (e) { console.error(e); }
@@ -648,8 +651,6 @@ function CashCollectButton({ orderId }: { orderId: string }) {
   const handleCollect = async () => {
     setLoading(true);
     try {
-      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-      const { db } = await import('@/config/firebase');
       await updateDoc(doc(db, 'orders', orderId), {
         delivererCashCollected: true,
         delivererCashCollectedAt: serverTimestamp(),

@@ -266,8 +266,20 @@ function ProofUploadInline({ orderId, order }: { orderId: string; order: Order }
 function SellerPaymentMethods({ order }: { order: Order }) {
   const [selectedMethod, setSelectedMethod] = React.useState<string | null>(null);
   const [paid, setPaid] = React.useState(false);
+  const [savingPayment, setSavingPayment] = React.useState(false);
   const [paidAmount] = React.useState((order as any).productPrice || order.price || 0);
   const [liveSellerMethods, setLiveSellerMethods] = React.useState<import('@/types').PaymentInfo[] | null>(null);
+
+  // Sauvegarder le moyen de paiement choisi dans Firestore
+  const confirmPaymentChosen = async (methodId: string, methodName: string, phone?: string | null) => {
+    setSavingPayment(true);
+    try {
+      await updateDoc(doc(db, 'orders', order.id), {
+        chosenPaymentMethod: { method: methodId, methodName, phone: phone || null },
+      });
+    } catch(e) { console.error(e); }
+    finally { setSavingPayment(false); setPaid(true); }
+  };
 
   // Charger les numéros vendeur depuis son profil si absent dans la commande
   React.useEffect(() => {
@@ -367,20 +379,28 @@ function SellerPaymentMethods({ order }: { order: Order }) {
               </div>
             </div>
             <button
-              onClick={() => setPaid(true)}
-              className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+              onClick={() => confirmPaymentChosen(m.id, m.name, m.phone)}
+              disabled={savingPayment}
+              className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
               style={{ background: `linear-gradient(135deg,${m.color},${m.color}CC)` }}>
-              ✅ Paiement envoyé — {paidAmount.toLocaleString('fr-FR')} FCFA via {m.name}
+              {savingPayment ? '⏳ Enregistrement...' : `✅ Paiement envoyé — ${paidAmount.toLocaleString('fr-FR')} FCFA via ${m.name}`}
             </button>
           </div>
         );
       })()}
 
       {selectedMethod === 'cash' && (
-        <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+        <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 space-y-2">
           <p className="text-[10px] text-amber-700 font-bold">
             💵 Règlement en espèces directement lors de la remise de l&apos;article.
           </p>
+          <button
+            onClick={() => confirmPaymentChosen('especes', 'Espèces', null)}
+            disabled={savingPayment}
+            className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+            {savingPayment ? '⏳...' : '✅ Confirmer — paiement en espèces'}
+          </button>
         </div>
       )}
     </div>
@@ -1099,10 +1119,20 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               return (
                 <div className="bg-white rounded-xl p-3 border border-green-200 space-y-2">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Récapitulatif paiement</p>
-                  {/* Choix de paiement */}
+                  {/* Moyen de paiement choisi par l'acheteur */}
+                  {ord.chosenPaymentMethod && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-slate-600 font-bold">Moyen de paiement</p>
+                      <p className="text-[11px] font-black text-slate-900">
+                        {ord.chosenPaymentMethod.method === 'especes' ? '💵' : '📱'} {ord.chosenPaymentMethod.methodName}
+                        {ord.chosenPaymentMethod.phone ? ` · ${ord.chosenPaymentMethod.phone}` : ''}
+                      </p>
+                    </div>
+                  )}
+                  {/* Mode de livraison (COD / Mobile) */}
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-600 font-bold">Choix acheteur</p>
-                    <p className="text-[11px] font-black text-slate-900">{isRealCOD ? '💵' : '📱'} {methodLabel}</p>
+                    <p className="text-[11px] text-slate-600 font-bold">Mode livraison</p>
+                    <p className="text-[11px] font-black text-slate-900">{isRealCOD ? '💵 Espèces à la livraison' : '📱 ' + methodLabel}</p>
                   </div>
                   {phone && !isRealCOD && (
                     <div className="flex items-center justify-between">
