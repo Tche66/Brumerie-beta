@@ -1092,31 +1092,42 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               const method = ord.paymentInfo?.method;
               const isRealCOD = method === 'cash_on_delivery' || method === 'especes' || (!method && ord.isCOD);
               const phone = ord.paymentInfo?.phone;
+              const holderName = ord.paymentInfo?.holderName;
               const methodLabel = isRealCOD ? 'Espèces à la livraison' : (MOBILE_PAYMENT_METHODS.find(m => m.id === method)?.name || method || 'Mobile money');
               const proofUrl = ord.screenshotUrl || ord.proofUrl;
+              const totalPaid = (ord.productPrice || 0) + (ord.deliveryFee || 0);
               return (
                 <div className="bg-white rounded-xl p-3 border border-green-200 space-y-2">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Récapitulatif paiement</p>
+                  {/* Choix de paiement */}
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-600 font-bold">Mode</p>
+                    <p className="text-[11px] text-slate-600 font-bold">Choix acheteur</p>
                     <p className="text-[11px] font-black text-slate-900">{isRealCOD ? '💵' : '📱'} {methodLabel}</p>
                   </div>
                   {phone && !isRealCOD && (
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-slate-600 font-bold">Numéro</p>
-                      <p className="text-[11px] font-black text-slate-900">{phone}</p>
+                      <p className="text-[11px] text-slate-600 font-bold">Numéro vendeur</p>
+                      <p className="text-[11px] font-black text-slate-900">{phone}{holderName ? ` · ${holderName}` : ''}</p>
                     </div>
                   )}
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-600 font-bold">Montant vendeur</p>
-                    <p className="text-[11px] font-black text-green-700">{(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA</p>
-                  </div>
-                  {(ord.deliveryFee || 0) > 0 && (
+                  {/* Montants */}
+                  <div className="border-t border-slate-100 pt-2 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-slate-600 font-bold">Frais livreur</p>
-                      <p className="text-[11px] font-black text-slate-700">{(ord.deliveryFee || 0).toLocaleString('fr-FR')} FCFA</p>
+                      <p className="text-[11px] text-slate-600 font-bold">Article</p>
+                      <p className="text-[11px] font-black text-slate-900">{(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA</p>
                     </div>
-                  )}
+                    {(ord.deliveryFee || 0) > 0 && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] text-slate-600 font-bold">Frais livreur</p>
+                        <p className="text-[11px] font-black text-slate-900">{(ord.deliveryFee || 0).toLocaleString('fr-FR')} FCFA</p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-1">
+                      <p className="text-[11px] text-slate-800 font-black">Total</p>
+                      <p className="text-[12px] font-black text-green-700">{totalPaid.toLocaleString('fr-FR')} FCFA</p>
+                    </div>
+                  </div>
+                  {/* Preuve */}
                   {proofUrl && !isRealCOD && (
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Preuve de paiement</p>

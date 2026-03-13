@@ -421,21 +421,15 @@ function CashPickupButton({ orderId, order }: { orderId: string; order: Order })
     try {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const result = await confirmPickupByDeliverer(orderId, order);
-      if (result.success) {
-        setSigned(true);
-        setSignedAt(timeStr);
-      } else {
-        // Même si erreur statut, forcer picked directement
-        const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-        const { db } = await import('@/config/firebase');
-        await updateDoc(doc(db, 'orders', orderId), {
-          status: 'picked',
-          deliveryPickedAt: serverTimestamp(),
-        });
-        setSigned(true);
-        setSignedAt(timeStr);
-      }
+      // Forcer directement picked sans vérification de statut
+      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('@/config/firebase');
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'picked',
+        deliveryPickedAt: serverTimestamp(),
+      });
+      setSigned(true);
+      setSignedAt(timeStr);
     } catch (e) {
       console.error(e);
       setSignError('Erreur réseau — réessaie');
@@ -710,7 +704,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
   const statusLabel = order.status === 'picked'
     ? { icon: '🛵', text: "En route vers l'acheteur", color: 'text-green-600', bg: 'border-green-500' }
     : (order.status === 'cod_confirmed' || order.status === 'ready' || order.status === 'confirmed') && ord2.isCOD
-    ? { icon: '💵', text: 'COD — récupère le paiement chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
+    ? { icon: '📦', text: 'COD — récupère le colis chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
     : order.status === 'cod_confirmed'
     ? { icon: '💵', text: 'COD — va chercher le colis', color: 'text-blue-600', bg: 'border-blue-400' }
     : { icon: '📦', text: 'Va chercher le colis chez le vendeur', color: 'text-amber-600', bg: 'border-amber-400' };
