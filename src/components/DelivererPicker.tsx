@@ -20,6 +20,7 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
   const [selected, setSelected]     = useState<User | null>(null);
   const [selectedRate, setSelectedRate] = useState<DeliveryRate | null>(null);
   const [customFee, setCustomFee]   = useState<number | null>(null);
+  const [deliveryNotes, setDeliveryNotes] = useState(''); // détails livraison
   const [sending, setSending]       = useState(false);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
     setSending(true);
     try {
       const fee = getFee();
-      await assignDeliverer({ orderId: order.id, deliverer: selected, fee, order });
+      await assignDeliverer({ orderId: order.id, deliverer: selected, fee, order, deliveryNotes: deliveryNotes.trim() || undefined });
       onDone(selected, fee);
     } catch (e) { console.error(e); }
     finally { setSending(false); }
@@ -217,6 +218,20 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
               </div>
             );
           })}
+        </div>
+
+        {/* Champ description/détails livraison */}
+        <div className="mb-3 flex-shrink-0">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+            📝 Détails pour le livreur (optionnel)
+          </p>
+          <textarea
+            value={deliveryNotes}
+            onChange={e => setDeliveryNotes(e.target.value)}
+            placeholder="Ex : Livrer avant 18h au 2e étage, interphone 12. Appeler à l'arrivée."
+            rows={2}
+            className="w-full bg-slate-50 border-2 border-slate-200 focus:border-green-400 rounded-2xl px-4 py-3 text-[12px] text-slate-700 outline-none resize-none transition-colors"
+          />
         </div>
 
         <div className="flex gap-3 flex-shrink-0">
