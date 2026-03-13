@@ -1,0 +1,82 @@
+name: Build Brumerie APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: 'temurin' }
+
+      - name: Install deps
+        run: npm install
+
+      # ── Variables Firebase injectées au build Vite ──────────────
+      - name: Build web app
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        run: npm run build
+
+      # ── Capacitor sync ──────────────────────────────────────────
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # ── CRUCIAL : icônes appliquées APRÈS cap sync (qui les écrase) ──
+      - name: Apply Brumerie icons
+        run: |
+          for folder in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            cp brumerie-icons/$folder/ic_launcher.png android/app/src/main/res/$folder/ic_launcher.png
+            cp brumerie-icons/$folder/ic_launcher_round.png android/app/src/main/res/$folder/ic_launcher_round.png
+          done
+          echo "✅ Icônes Brumerie appliquées"
+
+      # ── Keystore régénéré à chaque build avec tes secrets ───────
+      # ✅ Mêmes secrets = même signature = même app, peu importe le repo
+      - name: Generate keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/app/brumerie.keystore \
+            -alias ${{ secrets.KEY_ALIAS }} \
+            -keyalg RSA -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Brumerie,O=Brumerie CI,C=CI" \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}"
+
+      # ── Build APK Release signé ─────────────────────────────────
+      - name: Build signed APK
+        working-directory: android
+        env:
+          KEYSTORE_PATH: brumerie.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # ── Renommer l'APK ──────────────────────────────────────────
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk brumerie-android.apk
+
+      # ── Upload artifact (dispo 60 jours) ────────────────────────
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Brumerie-APK
+          path: brumerie-android.apk
+          retention-days: 60

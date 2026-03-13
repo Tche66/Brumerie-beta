@@ -16,6 +16,11 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    LocalNotifications: {
+      smallIcon: 'ic_launcher',
+      iconColor: '#16A34A',
+      sound: 'notif_general',
+    },
   },
   server: {
     allowNavigation: [

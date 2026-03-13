@@ -82,8 +82,14 @@ export async function sendPushNotification(
   subscription: object,
   title: string,
   body: string,
-  url?: string,
-  productId?: string
+  options?: {
+    url?: string;
+    productId?: string;
+    orderId?: string;
+    conversationId?: string;
+    type?: 'message' | 'commande' | 'confirmation' | 'livraison' | 'offre' | 'note' | 'publication' | 'alerte' | 'story' | 'general';
+    image?: string;   // URL image à afficher dans la notif
+  }
 ): Promise<void> {
   try {
     await fetch('/api/push-notify', {
@@ -92,7 +98,16 @@ export async function sendPushNotification(
       body: JSON.stringify({
         action: 'send',
         subscription,
-        payload: { title, body, url, productId },
+        payload: {
+          title,
+          body,
+          type:           options?.type || 'general',
+          url:            options?.url,
+          productId:      options?.productId,
+          orderId:        options?.orderId,
+          conversationId: options?.conversationId,
+          image:          options?.image,
+        },
       }),
     });
   } catch (err) {
@@ -116,8 +131,8 @@ export function showLocalPushNotification(title: string, body: string, data?: an
   navigator.serviceWorker.ready.then(registration => {
     registration.showNotification(title, {
       body,
-      icon:    '/assets/Logos/logo-app-icon.png',
-      badge:   '/assets/Logos/logo-app-icon.png',
+      icon:    '/notif-icon.png',
+      badge:   '/notif-badge.png',
       // Son personnalisé Brumerie (Android uniquement via channel natif)
       silent:  false,
       vibrate: [200, 100, 200],
