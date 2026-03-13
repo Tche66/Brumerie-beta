@@ -498,3 +498,43 @@ export async function sendCounterOffer(
 
   await batch.commit();
 }
+
+// ── Envoyer une image dans le chat ─────────────────────────
+export async function sendImageMessage(
+  convId: string,
+  senderId: string,
+  senderName: string,
+  imageUrl: string,
+  senderPhoto?: string,
+): Promise<void> {
+  const batch = writeBatch(db);
+  const convRef = doc(db, 'conversations', convId);
+  const msgRef = doc(collection(db, 'conversations', convId, 'messages'));
+
+  const convSnap = await getDoc(convRef);
+  if (!convSnap.exists()) return;
+  const conv = convSnap.data() as Conversation;
+  const otherId = (conv.participants || []).find(p => p !== senderId) || '';
+
+  batch.set(msgRef, {
+    conversationId: convId,
+    senderId,
+    senderName,
+    senderPhoto: senderPhoto || '',
+    text: '📷 Photo',
+    type: 'image',
+    imageUrl,
+    readBy: [senderId],
+    createdAt: serverTimestamp(),
+  });
+
+  batch.update(convRef, {
+    lastMessage: '📷 Photo',
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: senderId,
+    [`unreadCount.${otherId}`]: increment(1),
+    [`unreadCount.${senderId}`]: 0,
+  });
+
+  await batch.commit();
+}

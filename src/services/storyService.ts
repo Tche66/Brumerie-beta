@@ -18,7 +18,7 @@ export async function publishStory(params: {
   productRef?: { id: string; title: string; price: number };
 }): Promise<string> {
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000); // +48h
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
 
   // Firestore rejette les champs `undefined` — on les exclut explicitement
   const data: Record<string, any> = {
