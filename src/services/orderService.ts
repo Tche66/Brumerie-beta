@@ -155,9 +155,12 @@ export async function confirmCODDelivered(orderId: string): Promise<void> {
   const snap = await getDoc(doc(ordersCol, orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
+  const isCOD = (order as any).isCOD;
 
+  // Pour COD : passe à cod_delivered (attente confirmation vendeur)
+  // Pour mobile money : passe directement à delivered
   await updateDoc(doc(ordersCol, orderId), {
-    status: 'delivered' as OrderStatus,
+    status: (isCOD ? 'cod_delivered' : 'delivered') as OrderStatus,
     deliveredAt: serverTimestamp(),
   });
 

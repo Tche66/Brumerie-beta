@@ -13,7 +13,7 @@ import { Order, OrderStatus, MOBILE_PAYMENT_METHODS } from '@/types';
 import { RatingModal } from '@/components/RatingModal';
 import { hasReviewed } from '@/services/reviewService';
 import { PaymentLogo } from '@/components/PaymentLogo';
-import { updateDoc, doc } from 'firebase/firestore';
+import { updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { DelivererPicker } from '@/components/DelivererPicker';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
@@ -136,6 +136,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     cancelled:     { label: 'Annulé',                bg: '#F3F4F6', color: '#374151' },
     cod_pending:   { label: '🤝 Payer à livraison',  bg: '#EFF6FF', color: '#1D4ED8' },
     cod_confirmed: { label: '🚚 En livraison',        bg: '#F0FDF4', color: '#166534' },
+    cod_delivered:  { label: '⏳ Att. confirmation',    bg: '#FEF9C3', color: '#854D0E' },
   };
   const s = map[status] || map.initiated;
   return (
@@ -632,7 +633,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           {(order.isCOD ? [
             { label: '🤝 Commande confirmée',        done: true },
             { label: '🚚 En cours de livraison',     done: ['cod_confirmed','picked','delivered'].includes(order.status) },
-            { label: '✅ Reçu & payé',               done: order.status === 'delivered' },
+            { label: '✅ Reçu & payé',               done: ['delivered', 'cod_delivered'].includes(order.status) },
           ] : [
             { label: '🛍️ Commande initiée',              done: true },
             { label: '📸 Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
@@ -771,7 +772,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
         {/* Système Autoriser/Bloquer supprimé — flux simplifié */}
 
         {/* ══ COD ESPÈCES — VENDEUR : delivered → Confirmer réception argent + noter livreur ══ */}
-        {isSeller && order.status === 'delivered' && (order as any).isCOD && (
+        {isSeller && (order.status === 'delivered' || order.status === 'cod_delivered') && (order as any).isCOD && (
           <div className="space-y-3 pt-2">
             {!(order as any).sellerReceivedCash && (
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
@@ -789,6 +790,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                     await updateDoc(doc(db, 'orders', orderId), {
                       sellerReceivedCash: true,
                       sellerReceivedCashAt: serverTimestamp(),
+                      status: 'delivered',      // Clôture définitive
+                      reviewsUnlocked: true,    // Déverrouille les avis
                     });
                     setShowSellerDelivererRatingModal(true);
                   }}

@@ -226,6 +226,7 @@ export type OrderStatus =
   // ── Paiement à la livraison ──────────────────
   | 'cod_pending'    // Commande COD créée — vendeur doit confirmer
   | 'cod_confirmed'  // Vendeur prêt à livrer (COD)
+  | 'cod_delivered'  // Acheteur a reçu → attente confirmation vendeur (argent reçu)
   // ── Fin de vie ───────────────────────────────
   | 'disputed'
   | 'cancelled';

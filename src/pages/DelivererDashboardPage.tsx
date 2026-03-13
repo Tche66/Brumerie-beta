@@ -58,11 +58,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const myOpenOrders = openOrders.filter(o => o.id && !orders.some(mo => mo.id === o.id));
   const allMissions  = [...myAssignedPending, ...myOpenOrders];
   // EN COURS  = code généré → livreur peut agir
-  const myOngoing  = orders.filter(o => ['ready', 'cod_confirmed', 'picked'].includes(o.status));
-  const myDone     = orders.filter(o => o.status === 'delivered');
+  const myOngoing  = orders.filter(o => ['ready', 'cod_confirmed', 'picked', 'cod_delivered'].includes(o.status));
+  const myDone     = orders.filter(o => ['delivered', 'cod_delivered'].includes(o.status));
   const myPending  = allMissions; // alias pour le badge
   // Recalcul live depuis les commandes réelles (plus fiable que userProfile stale)
-  const myDoneOrders = orders.filter(o => o.status === 'delivered');
+  const myDoneOrders = orders.filter(o => ['delivered', 'cod_delivered'].includes(o.status));
   const totalGains = myDoneOrders.reduce((sum, o) => sum + ((o as any).deliveryFee || 0), 0)
     || userProfile?.totalEarnings || 0;
   const totalCount = myDoneOrders.length || userProfile?.totalDeliveries || 0;
@@ -750,6 +750,42 @@ function CODStepsBlock({ orderId, order }: { orderId: string; order: Order }) {
     finally { setLoadingStep3(false); }
   };
 
+  const isCodDelivered = order.status === 'cod_delivered';
+
+  // Si cod_delivered et étapes pas encore faites → acheteur a validé avant le livreur
+  if (isCodDelivered && !step2Done) {
+    return (
+      <div className="space-y-2 mb-3">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 flex items-start gap-2">
+          <span className="text-base mt-0.5">📱</span>
+          <div>
+            <p className="text-[10px] font-black text-blue-800">Acheteur a validé le code</p>
+            <p className="text-[9px] text-blue-700 mt-0.5">L&apos;acheteur a confirmé la réception. Si tu as collecté le cash, signe ci-dessous. Sinon utilise le raccourci.</p>
+          </div>
+        </div>
+        {!ord.buyerPaidSellerDirectly && (
+          <>
+            <BuyerPaidDirectlyButton orderId={orderId} order={order} />
+            <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 space-y-2">
+              <p className="text-[10px] font-black text-amber-800">💵 J&apos;ai collecté le cash à la livraison</p>
+              <button onClick={handleDelivered} disabled={loadingStep2}
+                className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+                style={{ background: loadingStep2 ? '#9CA3AF' : 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+                {loadingStep2 ? '...' : '📦 Confirmer — cash collecté'}
+              </button>
+            </div>
+          </>
+        )}
+        {ord.buyerPaidSellerDirectly && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2">
+            <span>✅</span>
+            <p className="text-[10px] font-black text-green-700">Acheteur a payé le vendeur directement</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 mb-3">
       {/* Étape 2 — Livrer + collecter */}
@@ -822,7 +858,9 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
   };
 
   const ord2 = order as any;
-  const statusLabel = order.status === 'picked'
+  const statusLabel = order.status === 'cod_delivered'
+    ? { icon: '⏳', text: 'Attente confirmation vendeur', color: 'text-amber-700', bg: 'border-amber-400' }
+    : order.status === 'picked'
     ? { icon: '🛵', text: "En route vers l'acheteur", color: 'text-green-600', bg: 'border-green-500' }
     : (order.status === 'cod_confirmed' || order.status === 'ready' || order.status === 'confirmed') && ord2.isCOD
     ? { icon: '📦', text: 'COD — récupère le colis chez le vendeur', color: 'text-blue-600', bg: 'border-blue-400' }
@@ -890,7 +928,7 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
         <CashPickupButton orderId={order.id} order={order} />
       )}
       {/* COD espèces : flux 3 étapes + raccourci si acheteur a déjà payé autrement */}
-      {ord.isCOD && order.status === 'picked' && (
+      {ord.isCOD && ['picked', 'cod_delivered'].includes(order.status) && (
         <>
           {/* Raccourci : acheteur a payé le vendeur directement */}
           {!ord.delivererCashCollected && !ord.buyerPaidSellerDirectly && (

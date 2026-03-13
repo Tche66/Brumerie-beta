@@ -178,21 +178,28 @@ export async function confirmDeliveryByBuyer(
     return { success: false, error: 'Livraison non en cours' };
   }
 
+  const isCOD = current.isCOD;
+  const newStatus = isCOD ? 'cod_delivered' : 'delivered';
+
   await updateDoc(doc(db, 'orders', orderId), {
-    status: 'delivered',
+    status: newStatus,
     deliveredAt: serverTimestamp(),
-    reviewsUnlocked: true,
+    reviewsUnlocked: !isCOD, // Pour COD, déverrouillé quand vendeur confirme
   });
 
   await Promise.all([
     createNotification(order.sellerId, 'system',
-      '✅ Livraison confirmée !',
-      `${order.buyerName} a bien reçu "${order.productTitle}". Mission terminée ✓`,
+      isCOD ? '💰 Confirme la réception de ton argent' : '✅ Livraison confirmée !',
+      isCOD
+        ? `L'acheteur a bien reçu "${order.productTitle}". Confirme que tu as reçu ton argent pour clôturer la course.`
+        : `${order.buyerName} a bien reçu "${order.productTitle}". Mission terminée ✓`,
       { orderId, productId: order.productId }
     ),
     createNotification(current.delivererId, 'system',
-      '💰 Mission terminée !',
-      `Livraison de "${order.productTitle}" confirmée par l'acheteur. Bravo !`,
+      isCOD ? '⏳ En attente confirmation vendeur' : '💰 Mission terminée !',
+      isCOD
+        ? `L'acheteur a validé la réception de "${order.productTitle}". Remets l'argent au vendeur pour clôturer.`
+        : `Livraison de "${order.productTitle}" confirmée par l'acheteur. Bravo !`,
       { orderId }
     ),
   ]);

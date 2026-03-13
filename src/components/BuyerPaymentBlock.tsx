@@ -18,10 +18,12 @@ interface Props {
 
 export function BuyerPaymentBlock({ order, orderId }: Props) {
   const ord = order as any;
+  // Chercher dans sellerPaymentMethods (tableau) en priorité, sinon fallback paymentInfo
+  const allSellerMethods: PaymentInfo[] = ord.sellerPaymentMethods || (ord.paymentInfo ? [ord.paymentInfo] : []);
   const sellerPayment: PaymentInfo | undefined = ord.paymentInfo;
 
   const [selectedMethod, setSelectedMethod] = useState<string>(
-    sellerPayment?.method || MOBILE_PAYMENT_METHODS[0].id
+    allSellerMethods[0]?.method || sellerPayment?.method || MOBILE_PAYMENT_METHODS[0].id
   );
   const [transactionRef, setTransactionRef]  = useState('');
   const [screenshot, setScreenshot]          = useState<File | null>(null);
@@ -30,9 +32,8 @@ export function BuyerPaymentBlock({ order, orderId }: Props) {
   const [error, setError]                    = useState('');
 
   // Infos paiement du vendeur pour le mode sélectionné
-  const vendorPaymentInfo = sellerPayment?.method === selectedMethod
-    ? sellerPayment
-    : undefined;
+  const vendorPaymentInfo = allSellerMethods.find(m => m.method === selectedMethod)
+    ?? (sellerPayment?.method === selectedMethod ? sellerPayment : undefined);
 
   const productPrice = order.productPrice || (ord.effectivePrice ?? 0);
 
@@ -99,7 +100,10 @@ export function BuyerPaymentBlock({ order, orderId }: Props) {
           Mode de paiement
         </p>
         <div className="grid grid-cols-2 gap-2">
-          {MOBILE_PAYMENT_METHODS.map(m => (
+          {(allSellerMethods.length > 0
+            ? allSellerMethods.map(pm => MOBILE_PAYMENT_METHODS.find(m => m.id === pm.method)).filter(Boolean)
+            : MOBILE_PAYMENT_METHODS
+          ).map(m => m && (
             <button
               key={m.id}
               onClick={() => setSelectedMethod(m.id)}
@@ -122,6 +126,21 @@ export function BuyerPaymentBlock({ order, orderId }: Props) {
               </span>
             </button>
           ))}
+          {/* Espèces toujours disponible */}
+          <button
+            onClick={() => setSelectedMethod('especes')}
+            className={
+              'flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 transition-all active:scale-95 ' +
+              (selectedMethod === 'especes'
+                ? 'border-amber-500 bg-white shadow-sm'
+                : 'border-slate-200 bg-white/60')
+            }
+          >
+            <span className="text-lg">💵</span>
+            <span className={'font-black text-[10px] ' + (selectedMethod === 'especes' ? 'text-amber-800' : 'text-slate-600')}>
+              Espèces
+            </span>
+          </button>
         </div>
       </div>
 
