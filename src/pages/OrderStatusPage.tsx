@@ -638,7 +638,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             { label: '🛍️ Commande initiée',              done: true },
             { label: '📸 Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
             { label: '✅ Paiement confirmé', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
-            { label: '🛵 En route',          done: ['picked','delivered'].includes(order.status) },
+            { label: '🛵 En route',          done: ['ready','picked','delivered'].includes(order.status) },
             { label: '📦 Livré',             done: order.status === 'delivered' },
           ]).map((s, i) => (
             <div key={i} className="flex items-center gap-3">

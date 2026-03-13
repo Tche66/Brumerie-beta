@@ -644,6 +644,95 @@ function DisputeButton({ orderId }: { orderId: string }) {
   );
 }
 
+// ── MobileDeliveryButtons — livreur paiement mobile : 2 options simples ──
+function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Order }) {
+  const [loadingA, setLoadingA] = React.useState(false);
+  const [loadingB, setLoadingB] = React.useState(false);
+  const [done, setDone]         = React.useState(false);
+  const ord = order as any;
+
+  if (done) return (
+    <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2 mb-3">
+      <span>✅</span>
+      <p className="text-[10px] font-black text-green-700">Course terminée — bien joué !</p>
+    </div>
+  );
+
+  // Option A : livré, acheteur a déjà payé le vendeur directement
+  const handleDeliveredOnly = async () => {
+    setLoadingA(true);
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'delivered',
+        deliveredAt: serverTimestamp(),
+        delivererPickedAt: serverTimestamp(),
+      });
+      const { createNotification } = await import('@/services/notificationService');
+      await Promise.all([
+        createNotification(ord.buyerId, 'system',
+          '🎉 Livraison confirmée !',
+          `Le livreur confirme t'avoir remis "${ord.productTitle}".`,
+          { orderId, productId: ord.productId }
+        ),
+        createNotification(ord.sellerId, 'system',
+          '✅ Livraison terminée',
+          `"${ord.productTitle}" a été livré à l'acheteur.`,
+          { orderId, productId: ord.productId }
+        ),
+      ]);
+      setDone(true);
+    } catch (e) { console.error(e); }
+    finally { setLoadingA(false); }
+  };
+
+  // Option B : livré ET collecté les fonds du vendeur
+  const handleDeliveredAndCollected = async () => {
+    setLoadingB(true);
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'delivered',
+        deliveredAt: serverTimestamp(),
+        delivererPickedAt: serverTimestamp(),
+        delivererCollectedSellerFunds: true,
+        delivererCollectedAt: serverTimestamp(),
+      });
+      const { createNotification } = await import('@/services/notificationService');
+      await Promise.all([
+        createNotification(ord.buyerId, 'system',
+          '🎉 Livraison confirmée !',
+          `Le livreur confirme t'avoir remis "${ord.productTitle}".`,
+          { orderId, productId: ord.productId }
+        ),
+        createNotification(ord.sellerId, 'system',
+          '💵 Livreur a collecté tes fonds',
+          `Le livreur a collecté le paiement de "${ord.productTitle}" chez toi. Confirme la réception.`,
+          { orderId, productId: ord.productId }
+        ),
+      ]);
+      setDone(true);
+    } catch (e) { console.error(e); }
+    finally { setLoadingB(false); }
+  };
+
+  return (
+    <div className="space-y-2 mb-3">
+      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Confirmer la livraison</p>
+      {/* Option A */}
+      <button onClick={handleDeliveredOnly} disabled={loadingA || loadingB}
+        className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+        style={{ background: loadingA ? '#9CA3AF' : 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+        {loadingA ? '...' : '📦 Colis livré — course terminée'}
+      </button>
+      {/* Option B */}
+      <button onClick={handleDeliveredAndCollected} disabled={loadingA || loadingB}
+        className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 disabled:opacity-50"
+        style={{ background: loadingB ? '#9CA3AF' : 'linear-gradient(135deg,#D97706,#F59E0B)', color: 'white' }}>
+        {loadingB ? '...' : '💵 Colis livré + collecté fonds vendeur'}
+      </button>
+    </div>
+  );
+}
+
 // ── BuyerPaidDirectlyButton — raccourci : acheteur a payé le vendeur directement ──
 function BuyerPaidDirectlyButton({ orderId, order }: { orderId: string; order: Order }) {
   const [loading, setLoading] = React.useState(false);
@@ -921,6 +1010,11 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller }: {
         <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100">
           <p className="text-[11px] text-amber-700 font-bold">⏳ Code en cours de génération...</p>
         </div>
+      )}
+
+      {/* Paiement mobile : boutons livreur simples */}
+      {!ord.isCOD && ['ready', 'confirmed'].includes(order.status) && (
+        <MobileDeliveryButtons orderId={order.id} order={order} />
       )}
 
       {/* COD espèces seulement : bouton "Paiement récupéré chez le vendeur" → picked */}
