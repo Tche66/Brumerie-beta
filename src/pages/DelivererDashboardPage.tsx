@@ -389,36 +389,62 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer }: {
 // ── CashPickupButton — COD espèces uniquement : livreur confirme avoir récupéré le paiement chez le vendeur ──
 function CashPickupButton({ orderId, order }: { orderId: string; order: Order }) {
   const [loading, setLoading] = React.useState(false);
-  const [done, setDone] = React.useState(false);
+  const [signed, setSigned] = React.useState(false);
+  const [signedAt, setSignedAt] = React.useState<string | null>(null);
 
-  if (done || order.status === 'picked') return (
-    <div className="bg-green-50 rounded-xl p-3 mb-3 border border-green-200 flex items-center gap-2">
-      <span className="text-lg">✅</span>
-      <p className="text-[11px] font-black text-green-700">Paiement récupéré — en route vers l&apos;acheteur</p>
-    </div>
-  );
+  // Si déjà signé (status = picked), afficher la signature
+  const alreadyPicked = order.status === 'picked';
+  const pickupTime = (order as any).deliveryPickedAt?.toDate?.()
+    ? new Date((order as any).deliveryPickedAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    : null;
 
-  const handlePickup = async () => {
+  if (alreadyPicked || signed) {
+    const timeStr = signedAt || pickupTime || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return (
+      <div className="rounded-xl border-2 border-green-300 bg-green-50 p-4 mb-3 space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">✅</span>
+          <div>
+            <p className="text-[12px] font-black text-green-800">Paiement récupéré chez le vendeur</p>
+            <p className="text-[10px] text-green-600">Signé à {timeStr} · En route vers l&apos;acheteur</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSign = async () => {
     setLoading(true);
     try {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       await confirmPickupByDeliverer(orderId, order);
-      setDone(true);
+      setSigned(true);
+      setSignedAt(timeStr);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
   return (
-    <button onClick={handlePickup} disabled={loading}
-      className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 transition-all"
-      style={{ background: 'linear-gradient(135deg,#D4500F,#ea580c)' }}>
-      {loading
-        ? <span className="flex items-center justify-center gap-2">
-            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
-            Confirmation...
-          </span>
-        : <span>💵 Paiement récupéré chez le vendeur</span>
-      }
-    </button>
+    <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-4 mb-3 space-y-3">
+      <div>
+        <p className="text-[11px] font-black text-orange-800 mb-0.5">💵 Confirmer récupération du paiement</p>
+        <p className="text-[10px] text-orange-700 leading-relaxed">
+          Signe pour confirmer que tu as récupéré le paiement chez le vendeur et que tu es en route vers l&apos;acheteur.
+        </p>
+      </div>
+      <button onClick={handleSign} disabled={loading}
+        className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50 transition-all"
+        style={{ background: loading ? '#9CA3AF' : 'linear-gradient(135deg,#D4500F,#ea580c)' }}>
+        {loading
+          ? <span className="flex items-center justify-center gap-2">
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>
+              Signature en cours...
+            </span>
+          : <span>✍️ Je confirme avoir récupéré le paiement</span>
+        }
+      </button>
+    </div>
   );
 }
 

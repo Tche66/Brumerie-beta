@@ -1089,19 +1089,19 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             {/* Résumé mode de paiement utilisé */}
             {(() => {
               const ord = order as any;
-              const isCOD = ord.isCOD;
               const method = ord.paymentInfo?.method;
+              const isRealCOD = method === 'cash_on_delivery' || method === 'especes' || (!method && ord.isCOD);
               const phone = ord.paymentInfo?.phone;
-              const methodLabel = isCOD ? 'Espèces à la livraison' : (MOBILE_PAYMENT_METHODS.find(m => m.id === method)?.name || method || 'Mobile money');
+              const methodLabel = isRealCOD ? 'Espèces à la livraison' : (MOBILE_PAYMENT_METHODS.find(m => m.id === method)?.name || method || 'Mobile money');
               const proofUrl = ord.screenshotUrl || ord.proofUrl;
               return (
                 <div className="bg-white rounded-xl p-3 border border-green-200 space-y-2">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Récapitulatif paiement</p>
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] text-slate-600 font-bold">Mode</p>
-                    <p className="text-[11px] font-black text-slate-900">{isCOD ? '💵' : '📱'} {methodLabel}</p>
+                    <p className="text-[11px] font-black text-slate-900">{isRealCOD ? '💵' : '📱'} {methodLabel}</p>
                   </div>
-                  {phone && !isCOD && (
+                  {phone && !isRealCOD && (
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] text-slate-600 font-bold">Numéro</p>
                       <p className="text-[11px] font-black text-slate-900">{phone}</p>
@@ -1117,7 +1117,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                       <p className="text-[11px] font-black text-slate-700">{(ord.deliveryFee || 0).toLocaleString('fr-FR')} FCFA</p>
                     </div>
                   )}
-                  {proofUrl && !isCOD && (
+                  {proofUrl && !isRealCOD && (
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Preuve de paiement</p>
                       <img src={proofUrl} alt="preuve" className="w-full rounded-lg object-cover max-h-32 border border-slate-200"/>
