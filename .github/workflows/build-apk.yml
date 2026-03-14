@@ -45,8 +45,8 @@ jobs:
           done
           echo "✅ Icônes appliquées"
 
-      - name: Generate keystore
-        run: keytool -genkeypair -v -keystore android/app/brumerie.keystore -alias "${{ secrets.KEY_ALIAS }}" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Brumerie,O=Brumerie CI,C=CI" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}"
+      - name: Restore keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/brumerie.keystore
 
       - name: Build signed APK
         working-directory: android
