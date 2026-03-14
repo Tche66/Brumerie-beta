@@ -373,6 +373,11 @@ useEffect(() => {
   };
 
   const handleSellerClick = (sellerId: string) => {
+    // Vendeur clique sur son propre profil → rediriger vers son profil interne
+    if (currentUser?.uid === sellerId) {
+      navigate('profile');
+      return;
+    }
     setSelectedSellerId(sellerId);
     navigate('seller-profile');
   };
@@ -413,10 +418,12 @@ useEffect(() => {
     try {
       // Récupérer la photo du vendeur pour l'afficher dans le chat
       const sellerData = await getUserById(sellerId);
+      // ✅ productId unique par paire — évite de récupérer une conv avec un autre vendeur
+      const directId = productId || [currentUser.uid, sellerId].sort().join('_direct_');
       const convId = await getOrCreateConversation(
         currentUser.uid,
         sellerId,
-        { id: productId || 'direct', title: productTitle || 'Contact direct', price: 0, image: '', neighborhood: '' },
+        { id: directId, title: productTitle || 'Contact direct', price: 0, image: '', neighborhood: '' },
         userProfile.name,
         sellerName || sellerData?.name || 'Vendeur',
         userProfile.photoURL,
@@ -499,7 +506,14 @@ useEffect(() => {
           />
         )}
         {activePage === 'seller-profile' && selectedSellerId && (
-          <SellerProfilePage sellerId={selectedSellerId} onBack={goBack} onProductClick={handleProductClick} onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname)} />
+          <SellerProfilePage
+            sellerId={selectedSellerId}
+            onBack={goBack}
+            onProductClick={handleProductClick}
+            onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname)}
+            isGuest={!currentUser}
+            onGuestAction={(reason) => { navigate('auth'); }}
+          />
         )}
         {activePage === 'profile' && isBuyer && (
           <BuyerProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />

@@ -47,18 +47,23 @@ export async function getOrCreateConversation(
   buyerPhoto?: string,
   sellerPhoto?: string,
 ): Promise<string> {
-  // Chercher conversation existante pour ce produit entre ces deux users
+  // Chercher conversation existante pour ce produit entre CES DEUX users précisément
+  // On filtre par productId + buyerId puis on vérifie que sellerId est bien là
   const q = query(
     convsCol,
     where('productId', '==', product.id),
     where('participants', 'array-contains', buyerId),
-    limit(1),
+    limit(10),
   );
   const snap = await getDocs(q);
 
   if (!snap.empty) {
-    // Conversation existante → retourner son ID
-    return snap.docs[0].id;
+    // Vérifier que la conversation trouvée implique bien CES DEUX utilisateurs
+    const matching = snap.docs.find(d => {
+      const parts = d.data().participants || [];
+      return parts.includes(sellerId);
+    });
+    if (matching) return matching.id;
   }
 
   // Créer nouvelle conversation
