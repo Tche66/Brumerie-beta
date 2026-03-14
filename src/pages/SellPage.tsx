@@ -125,7 +125,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
     } catch (err: any) {
       const msg = String(err?.message || err || '');
       if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('user denied')) {
-        setError('Impossible d'ouvrir la caméra');
+        setError("Impossible d'ouvrir la caméra");
       }
     }
   };
