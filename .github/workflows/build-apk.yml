@@ -37,17 +37,6 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Patch settings.gradle pour Google Auth plugin
-        run: |
-          # S'assurer que le plugin est bien déclaré même après cap sync
-          if ! grep -q "capacitorGoogleAuth" android/settings.gradle; then
-            echo "" >> android/settings.gradle
-            echo "include ':capacitorGoogleAuth'" >> android/settings.gradle
-            echo "project(':capacitorGoogleAuth').projectDir = new File('../node_modules/@codetrix-studio/capacitor-google-auth/android')" >> android/settings.gradle
-            echo "✅ capacitorGoogleAuth ajouté à settings.gradle"
-          else
-            echo "✅ capacitorGoogleAuth déjà présent"
-          fi
 
       - name: Inject Google Web Client ID
         run: |
