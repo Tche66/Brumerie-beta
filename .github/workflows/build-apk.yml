@@ -31,8 +31,17 @@ jobs:
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_APP_DOMAIN: ${{ secrets.VITE_APP_DOMAIN }}
           # Google Sign-In natif — Web Client ID depuis Google Cloud Console
-          VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.VITE_GOOGLE_WEB_CLIENT_ID }}
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: npm run build
+
+
+      - name: Inject Google Web Client ID
+        run: |
+          # Injecter dans capacitor.config.ts (lu par cap sync pour configurer le plugin natif)
+          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' capacitor.config.ts
+          # Injecter dans google_auth.xml (Android resources)
+          sed -i 's|PLACEHOLDER_REPLACED_BY_BUILD|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/google_auth.xml
+          echo "✅ Google Web Client ID injecté dans capacitor.config.ts et google_auth.xml"
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -50,10 +59,6 @@ jobs:
           fi
 
 
-      - name: Inject Google Web Client ID
-        run: |
-          sed -i 's|PLACEHOLDER_REPLACED_BY_BUILD|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/google_auth.xml
-          echo "✅ Google Web Client ID injecté"
 
       - name: Apply Brumerie icons
         run: |

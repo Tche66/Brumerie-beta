@@ -21,12 +21,10 @@ const config: CapacitorConfig = {
       iconColor: '#16A34A',
       sound: 'notif_general',
     },
-    // ✅ Google Sign-In natif via @capacitor-community/google-auth
-    // clientId = Web Client ID (pas le client Android)
-    // Valeur injectée depuis le secret GitHub GOOGLE_WEB_CLIENT_ID
     GoogleAuth: {
       scopes: ['profile', 'email'],
-      serverClientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID || '',
+      // ⚙️ Remplacé par le workflow GitHub Actions depuis GOOGLE_WEB_CLIENT_ID
+      serverClientId: 'GOOGLE_WEB_CLIENT_ID_PLACEHOLDER',
       forceCodeForRefreshToken: true,
     },
   },
