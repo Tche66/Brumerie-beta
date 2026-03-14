@@ -412,7 +412,6 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
               </>
             )}
           </button>
-        )}
 
         {/* Séparateur */}
         <div className="flex items-center gap-4 mb-6">
