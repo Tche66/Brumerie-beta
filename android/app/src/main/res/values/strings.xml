@@ -4,4 +4,6 @@
     <string name="title_activity_main">Brumerie</string>
     <string name="package_name">com.brumerie.app</string>
     <string name="custom_url_scheme">com.brumerie.app</string>
+    <!-- Web Client ID pour Google Sign-In — injecté par GitHub Actions -->
+    <string name="server_client_id">GOOGLE_WEB_CLIENT_ID_PLACEHOLDER</string>
 </resources>

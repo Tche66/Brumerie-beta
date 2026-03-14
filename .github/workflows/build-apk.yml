@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with: { node-version: '22' }
 
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
@@ -38,10 +38,13 @@ jobs:
       - name: Inject Google Web Client ID
         run: |
           # Injecter dans capacitor.config.ts (lu par cap sync pour configurer le plugin natif)
+          # 1. capacitor.config.ts — pour la config du plugin
           sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' capacitor.config.ts
-          # Injecter dans google_auth.xml (Android resources)
+          # 2. strings.xml — NOM EXACT lu par le plugin Android natif
+          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/strings.xml
+          # 3. google_auth.xml — backup
           sed -i 's|PLACEHOLDER_REPLACED_BY_BUILD|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/google_auth.xml
-          echo "✅ Google Web Client ID injecté dans capacitor.config.ts et google_auth.xml"
+          echo "✅ Google Web Client ID injecté dans capacitor.config.ts, strings.xml et google_auth.xml"
 
       - name: Sync Capacitor
         run: npx cap sync android
