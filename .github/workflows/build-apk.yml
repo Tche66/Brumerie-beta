@@ -20,6 +20,16 @@ jobs:
       - name: Install deps
         run: npm install --legacy-peer-deps
 
+      # ── 1. Injecter les secrets AVANT le build ──────────────────
+      - name: Inject secrets into config files
+        run: |
+          # Google Web Client ID dans capacitor.config.ts
+          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' capacitor.config.ts
+          # Google Web Client ID dans strings.xml (lu par le plugin Android natif)
+          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/strings.xml
+          echo "✅ Secrets injectés"
+
+      # ── 2. Build Vite ───────────────────────────────────────────
       - name: Build web app
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -30,28 +40,24 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_APP_DOMAIN: ${{ secrets.VITE_APP_DOMAIN }}
-          # Google Sign-In natif — Web Client ID depuis Google Cloud Console
           VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: npm run build
 
-
-      - name: Inject Google Web Client ID
-        run: |
-          # Injecter dans capacitor.config.ts (lu par cap sync pour configurer le plugin natif)
-          # 1. capacitor.config.ts — pour la config du plugin
-          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' capacitor.config.ts
-          # 2. strings.xml — NOM EXACT lu par le plugin Android natif
-          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/strings.xml
-          # 3. google_auth.xml — backup
-          sed -i 's|PLACEHOLDER_REPLACED_BY_BUILD|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/google_auth.xml
-          echo "✅ Google Web Client ID injecté dans capacitor.config.ts, strings.xml et google_auth.xml"
-
+      # ── 3. Capacitor sync ───────────────────────────────────────
       - name: Sync Capacitor
         run: npx cap sync android
 
+      # ── 4. Réinjecter strings.xml après cap sync (qui peut l'écraser) ──
+      - name: Re-inject Google Client ID after cap sync
+        run: |
+          sed -i 's|GOOGLE_WEB_CLIENT_ID_PLACEHOLDER|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/strings.xml
+          # Vérifier que l'injection a bien fonctionné
+          grep "server_client_id" android/app/src/main/res/values/strings.xml
+          echo "✅ server_client_id confirmé dans strings.xml"
+
+      # ── 5. S'assurer que le plugin Google Auth est dans Gradle ──
       - name: Patch capacitor.settings.gradle pour Google Auth
         run: |
-          # cap sync écrase capacitor.settings.gradle → on réinjecte le plugin
           if ! grep -q "codetrix-studio-capacitor-google-auth" android/capacitor.settings.gradle; then
             echo "" >> android/capacitor.settings.gradle
             echo "include ':codetrix-studio-capacitor-google-auth'" >> android/capacitor.settings.gradle
@@ -61,21 +67,29 @@ jobs:
             echo "✅ Google Auth déjà présent"
           fi
 
-
-
+      # ── 6. Icônes Brumerie ──────────────────────────────────────
       - name: Apply Brumerie icons
         run: |
           for folder in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             cp brumerie-icons/$folder/ic_launcher.png android/app/src/main/res/$folder/ic_launcher.png
             cp brumerie-icons/$folder/ic_launcher_round.png android/app/src/main/res/$folder/ic_launcher_round.png
-            # Foreground = le vrai logo (pas le carré vert généré)
-            [ -f brumerie-icons/$folder/ic_launcher_foreground.png ] && cp brumerie-icons/$folder/ic_launcher_foreground.png android/app/src/main/res/$folder/ic_launcher_foreground.png || true
+            [ -f brumerie-icons/$folder/ic_launcher_foreground.png ] && \
+              cp brumerie-icons/$folder/ic_launcher_foreground.png android/app/src/main/res/$folder/ic_launcher_foreground.png || true
           done
-          echo "✅ Icônes appliquées"
+          echo "✅ Icônes Brumerie appliquées"
 
-      - name: Generate keystore
-        run: keytool -genkeypair -v -keystore android/app/brumerie.keystore -alias "${{ secrets.KEY_ALIAS }}" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Brumerie,O=Brumerie CI,C=CI" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}"
+      # ── 7. Restaurer le keystore depuis KEYSTORE_BASE64 ─────────
+      # Même keystore à chaque build = même SHA-1 = Google Sign-In fonctionne
+      - name: Restore keystore from secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/brumerie.keystore
+          # Vérifier que le keystore est valide
+          keytool -list -keystore android/app/brumerie.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.KEY_ALIAS }}" 2>&1 | head -5
+          echo "✅ Keystore restauré"
 
+      # ── 8. Build APK signé ──────────────────────────────────────
       - name: Build signed APK
         working-directory: android
         env:
