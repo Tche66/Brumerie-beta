@@ -768,13 +768,9 @@ function AppContent() {
     );
   }
 
-  // Pas connecté → mode visiteur avec accès limité
-  // Le visiteur peut voir l'accueil, les articles et les profils vendeurs
-  // Mais est invité à se connecter pour les actions
+  // Pas connecté → page de connexion directement (pas de mode visiteur sur APK)
   if (!currentUser) {
-    // showAuth = true → forcer l'affichage de la page de connexion
-    if (showAuth) return <AuthGate />;
-    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
+    return <AuthGate />;
   }
 
   // Connecté mais rôle manquant → sélection du rôle

@@ -1,6 +1,9 @@
 // api/google-auth-start.js — Vercel
 // Étape 1 : redirige vers Google OAuth avec le state
 
+// ⚙️  DOMAINE — changer ici lors du passage en production
+const APP_DOMAIN = process.env.APP_DOMAIN || 'https://brumerie-beta.vercel.app';
+
 export default async function handler(req, res) {
   const state = req.query?.state;
   if (!state) {
@@ -8,7 +11,7 @@ export default async function handler(req, res) {
   }
 
   const clientId    = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = `https://brumerie-beta.vercel.app/api/google-auth-callback`;
+  const redirectUri = `${APP_DOMAIN}/api/google-auth-callback`;
 
   if (!clientId) {
     return res.status(500).json({ error: 'GOOGLE_CLIENT_ID manquant' });

@@ -3,6 +3,9 @@
 
 import admin from 'firebase-admin';
 
+// ⚙️  DOMAINE — changer ici lors du passage en production
+const APP_DOMAIN = process.env.APP_DOMAIN || 'https://brumerie-beta.vercel.app';
+
 function getAdmin() {
   if (admin.apps.length > 0) return admin;
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -67,7 +70,7 @@ export default async function handler(req, res) {
   try {
     const clientId     = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri  = `https://brumerie-beta.vercel.app/api/google-auth-callback`;
+    const redirectUri  = `${APP_DOMAIN}/api/google-auth-callback`;
 
     if (!clientId || !clientSecret) {
       console.error('[GoogleCallback] Missing env vars:', { clientId: !!clientId, clientSecret: !!clientSecret });

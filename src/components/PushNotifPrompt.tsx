@@ -1,79 +1,102 @@
 // src/components/PushNotifPrompt.tsx
-// Demande permissions notifications + caméra sur Android (Capacitor)
+// Demande permissions notifications + caméra — UNE SEULE FOIS par installation
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { isPushSupported, getPushPermission, subscribeToPush, isPushSubscribed } from '@/services/pushService';
+import { isPushSupported, getPushPermission, subscribeToPush } from '@/services/pushService';
 
-// Détection Capacitor Android
 const isCapacitor = typeof (window as any).Capacitor !== 'undefined';
+
+// Clés localStorage pour mémoriser le choix
+const KEY_NOTIF  = 'brumerie_notif_prompted';
+const KEY_CAMERA = 'brumerie_camera_prompted';
 
 export function PushNotifPrompt() {
   const { currentUser, userProfile } = useAuth();
   const [show, setShow]       = useState(false);
   const [loading, setLoading] = useState(false);
-  const [done, setDone]       = useState(false);
   const [step, setStep]       = useState<'notif' | 'camera'>('notif');
 
   useEffect(() => {
     if (!currentUser || !userProfile) return;
 
+    // ✅ Déjà répondu aux deux → ne plus jamais afficher
+    const notifDone  = localStorage.getItem(KEY_NOTIF);
+    const cameraDone = localStorage.getItem(KEY_CAMERA);
+    if (notifDone && cameraDone) return;
+
     const timer = setTimeout(async () => {
-      // Sur Capacitor — demander via l'API native Capacitor
+      if (notifDone) {
+        // Notif déjà traitée → passer direct caméra si pas encore faite
+        if (!cameraDone && isCapacitor) { setStep('camera'); setShow(true); }
+        return;
+      }
+
       if (isCapacitor) {
-        const { Capacitor } = window as any;
-        // Vérifier si permissions déjà accordées
         try {
           const notifPlugin = (window as any).Capacitor?.Plugins?.PushNotifications;
           if (notifPlugin) {
-            const permResult = await notifPlugin.checkPermissions();
-            if (permResult?.receive !== 'granted') setShow(true);
-          } else {
-            setShow(true);
-          }
+            const perm = await notifPlugin.checkPermissions();
+            if (perm?.receive === 'granted') {
+              // Déjà accordé nativement → marquer comme fait
+              localStorage.setItem(KEY_NOTIF, '1');
+              if (!cameraDone) { setStep('camera'); setShow(true); }
+            } else {
+              setShow(true);
+            }
+          } else { setShow(true); }
         } catch { setShow(true); }
         return;
       }
 
-      // Sur PWA web classique
+      // PWA web
       if (!isPushSupported()) return;
-      if (getPushPermission() !== 'default') return;
-      const alreadySubscribed = await isPushSubscribed(currentUser.uid);
-      if (!alreadySubscribed) setShow(true);
-    }, 5_000); // 5s après login sur mobile, 30s en web
+      if (getPushPermission() !== 'default') {
+        localStorage.setItem(KEY_NOTIF, '1');
+        return;
+      }
+      setShow(true);
+    }, 4_000);
 
     return () => clearTimeout(timer);
-  }, [currentUser, userProfile]);
+  }, [currentUser?.uid]);
 
-  if (!show || done) return null;
+  if (!show) return null;
+
+  const dismiss = () => {
+    // Marquer les deux comme traités même si ignoré
+    localStorage.setItem(KEY_NOTIF,  '1');
+    localStorage.setItem(KEY_CAMERA, '1');
+    setShow(false);
+  };
 
   const handleAcceptNotif = async () => {
     setLoading(true);
     try {
       if (isCapacitor) {
-        // Capacitor native request
         const notifPlugin = (window as any).Capacitor?.Plugins?.PushNotifications;
         if (notifPlugin) await notifPlugin.requestPermissions();
       } else {
         await subscribeToPush(currentUser!.uid, userProfile?.neighborhood || '');
       }
-    } catch (e) { console.warn('[Notif permission]', e); }
+    } catch (e) { console.warn(e); }
+    localStorage.setItem(KEY_NOTIF, '1');
     setLoading(false);
-    // Passer à la demande caméra si Capacitor
     if (isCapacitor) {
-      setStep('camera');
-    } else {
-      setDone(true); setShow(false);
+      const cameraDone = localStorage.getItem(KEY_CAMERA);
+      if (!cameraDone) { setStep('camera'); return; }
     }
+    dismiss();
   };
 
   const handleAcceptCamera = async () => {
     setLoading(true);
     try {
-      const cameraPlugin = (window as any).Capacitor?.Plugins?.Camera;
-      if (cameraPlugin) await cameraPlugin.requestPermissions();
-    } catch (e) { console.warn('[Camera permission]', e); }
+      const cam = (window as any).Capacitor?.Plugins?.Camera;
+      if (cam) await cam.requestPermissions();
+    } catch (e) { console.warn(e); }
+    localStorage.setItem(KEY_CAMERA, '1');
     setLoading(false);
-    setDone(true); setShow(false);
+    dismiss();
   };
 
   return (
@@ -96,8 +119,7 @@ export function PushNotifPrompt() {
                   Reçois des alertes pour tes commandes, messages et nouveaux articles.
                 </p>
               </div>
-              <button onClick={() => { setDone(true); setShow(false); }}
-                className="text-slate-500 text-xl leading-none flex-shrink-0 -mt-1">×</button>
+              <button onClick={dismiss} className="text-slate-500 text-xl leading-none flex-shrink-0 -mt-1">×</button>
             </div>
             <div className="flex gap-2 mt-4">
               <button onClick={handleAcceptNotif} disabled={loading}
@@ -105,7 +127,7 @@ export function PushNotifPrompt() {
                 style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
                 {loading ? '…' : '🔔 Activer'}
               </button>
-              <button onClick={() => isCapacitor ? setStep('camera') : (setDone(true), setShow(false))}
+              <button onClick={dismiss}
                 className="flex-1 py-3.5 bg-white/10 text-slate-300 font-bold text-[11px] uppercase tracking-widest rounded-2xl active:scale-95 transition-all">
                 Plus tard
               </button>
@@ -122,8 +144,7 @@ export function PushNotifPrompt() {
                   Nécessaire pour prendre des photos de tes articles à vendre.
                 </p>
               </div>
-              <button onClick={() => { setDone(true); setShow(false); }}
-                className="text-slate-500 text-xl leading-none flex-shrink-0 -mt-1">×</button>
+              <button onClick={dismiss} className="text-slate-500 text-xl leading-none flex-shrink-0 -mt-1">×</button>
             </div>
             <div className="flex gap-2 mt-4">
               <button onClick={handleAcceptCamera} disabled={loading}
@@ -131,7 +152,7 @@ export function PushNotifPrompt() {
                 style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
                 {loading ? '…' : '📷 Autoriser'}
               </button>
-              <button onClick={() => { setDone(true); setShow(false); }}
+              <button onClick={dismiss}
                 className="flex-1 py-3.5 bg-white/10 text-slate-300 font-bold text-[11px] uppercase tracking-widest rounded-2xl active:scale-95 transition-all">
                 Ignorer
               </button>

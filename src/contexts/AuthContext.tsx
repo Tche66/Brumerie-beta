@@ -98,15 +98,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Flux : nouvel onglet → Google OAuth → Netlify callback → custom token
   // → poll → signInWithCustomToken → onAuthStateChanged → connecté ✅
   async function signInWithGoogle() {
-    // Générer un state unique pour cette tentative
     const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-    // Déterminer l'URL de base de l'app (Netlify)
-    const baseUrl = window.location.origin;
+    // Pour l'APK Capacitor, l'app charge depuis brumerie-beta.vercel.app
+    // donc window.location.origin = https://brumerie-beta.vercel.app
+    const baseUrl = 'https://brumerie-beta.vercel.app';
     const startUrl = `${baseUrl}/api/google-auth-start?state=${state}`;
 
-    // Ouvrir le flux Google dans un nouvel onglet (jamais bloqué)
-    window.open(startUrl, '_blank', 'noopener');
+    // ✅ Capacitor : utiliser le Browser plugin natif (jamais bloqué)
+    // Web : window.open classique
+    const isCapacitor = typeof (window as any).Capacitor !== 'undefined';
+    if (isCapacitor) {
+      try {
+        const { Browser } = await import('@capacitor/browser');
+        await Browser.open({ url: startUrl, presentationStyle: 'popover' });
+      } catch {
+        // Fallback si Browser plugin absent
+        window.open(startUrl, '_blank', 'noopener');
+      }
+    } else {
+      window.open(startUrl, '_blank', 'noopener');
+    }
 
     // Poller toutes les secondes pour récupérer le custom token
     return new Promise<void>((resolve, reject) => {
