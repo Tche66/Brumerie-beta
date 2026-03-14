@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "102228890533",
+    "project_id": "brumerie-app",
+    "storage_bucket": "brumerie-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102228890533:android:bd2d39f239b5fcc34d0e4c",
+        "android_client_info": {
+          "package_name": "com.brumerie.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "102228890533-3e09i0kigauilmkc0jvtjtlc3ml8g7bj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.brumerie.app",
+            "certificate_hash": "49788ea952cd67f1b2e8256e17fecbf7e8dd5e13"
+          }
+        },
+        {
+          "client_id": "102228890533-5tdr9e4sjh3a3uqstcfgc1ah6b6k8phl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBO8VxHukI7tXlmGpy3-UL86UVIg48b4Gw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "102228890533-5tdr9e4sjh3a3uqstcfgc1ah6b6k8phl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
