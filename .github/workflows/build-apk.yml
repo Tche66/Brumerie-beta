@@ -37,6 +37,18 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Patch capacitor.settings.gradle pour Google Auth
+        run: |
+          # cap sync écrase capacitor.settings.gradle → on réinjecte le plugin
+          if ! grep -q "codetrix-studio-capacitor-google-auth" android/capacitor.settings.gradle; then
+            echo "" >> android/capacitor.settings.gradle
+            echo "include ':codetrix-studio-capacitor-google-auth'" >> android/capacitor.settings.gradle
+            echo "project(':codetrix-studio-capacitor-google-auth').projectDir = new File('../node_modules/@codetrix-studio/capacitor-google-auth/android')" >> android/capacitor.settings.gradle
+            echo "✅ Google Auth ajouté à capacitor.settings.gradle"
+          else
+            echo "✅ Google Auth déjà présent"
+          fi
+
 
       - name: Inject Google Web Client ID
         run: |
