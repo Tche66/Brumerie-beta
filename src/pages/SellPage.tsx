@@ -93,23 +93,32 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const isCapacitor = typeof (window as any).Capacitor !== 'undefined' &&
     (window as any).Capacitor?.isNativePlatform?.();
 
+  const addPhotoFromDataUrl = async (dataUrl: string) => {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+    setImages(prev => [...prev, file]);
+    setImagePreviews(prev => [...prev, dataUrl]);
+  };
+
   const handleNativeCamera = async () => {
     if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
     try {
       const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
+      // Demander la permission avant d'ouvrir la caméra
+      const perms = await Camera.requestPermissions({ permissions: ['camera'] });
+      if (perms.camera !== 'granted') { setError('Permission caméra refusée'); return; }
       const photo = await Camera.getPhoto({
         source: CameraSource.Camera,
         resultType: CameraResultType.DataUrl,
-        quality: 80,
+        quality: 75,
+        correctOrientation: true,
       });
       if (!photo.dataUrl) return;
-      const res = await fetch(photo.dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      setImages(prev => [...prev, file]);
-      setImagePreviews(prev => [...prev, photo.dataUrl!]);
+      await addPhotoFromDataUrl(photo.dataUrl);
     } catch (err: any) {
-      if (!err?.message?.includes('cancel')) setError('Erreur caméra');
+      const msg = err?.message || '';
+      if (!msg.includes('cancel') && !msg.includes('Cancel')) setError('Erreur caméra');
     }
   };
 
@@ -117,19 +126,20 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
     if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
     try {
       const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
+      // Demander la permission galerie
+      const perms = await Camera.requestPermissions({ permissions: ['photos'] });
+      if (perms.photos !== 'granted') { setError('Permission galerie refusée'); return; }
       const photo = await Camera.getPhoto({
         source: CameraSource.Photos,
         resultType: CameraResultType.DataUrl,
-        quality: 80,
+        quality: 75,
+        correctOrientation: true,
       });
       if (!photo.dataUrl) return;
-      const res = await fetch(photo.dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      setImages(prev => [...prev, file]);
-      setImagePreviews(prev => [...prev, photo.dataUrl!]);
+      await addPhotoFromDataUrl(photo.dataUrl);
     } catch (err: any) {
-      if (!err?.message?.includes('cancel')) setError('Erreur galerie');
+      const msg = err?.message || '';
+      if (!msg.includes('cancel') && !msg.includes('Cancel')) setError('Erreur galerie');
     }
   };
 

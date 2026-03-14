@@ -28,8 +28,10 @@ const config: CapacitorConfig = {
       forceCodeForRefreshToken: true,
     },
   },
+  // server.url retiré → l'APK charge le dist/ local = plus rapide et fluide
+  // Les appels Firebase/API passent toujours par internet normalement
   server: {
-    url: 'https://brumerie-beta.vercel.app',
+    androidScheme: 'https',
     cleartext: false,
     allowNavigation: [
       '*.firebaseapp.com',
