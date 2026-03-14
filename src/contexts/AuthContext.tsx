@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Le plugin ouvre le vrai sélecteur de compte Android natif
       // → pas de WebView → Google ne bloque pas
       try {
-        const { GoogleAuth } = await import('@capacitor-community/google-auth');
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
         // clientId injecté par Vite via define{} ou window global
         const clientId = (typeof __GOOGLE_WEB_CLIENT_ID__ !== 'undefined' ? __GOOGLE_WEB_CLIENT_ID__ : '') ||
                          (window as any).__GOOGLE_WEB_CLIENT_ID__ || '';
