@@ -20,7 +20,6 @@ jobs:
       - name: Install deps
         run: npm install
 
-      # ── Variables Firebase injectées au build Vite ──────────────
       - name: Build web app
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -30,35 +29,22 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_APP_DOMAIN: ${{ secrets.VITE_APP_DOMAIN }}
         run: npm run build
 
-      # ── Capacitor sync ──────────────────────────────────────────
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # ── CRUCIAL : icônes appliquées APRÈS cap sync (qui les écrase) ──
       - name: Apply Brumerie icons
         run: |
           for folder in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             cp brumerie-icons/$folder/ic_launcher.png android/app/src/main/res/$folder/ic_launcher.png
             cp brumerie-icons/$folder/ic_launcher_round.png android/app/src/main/res/$folder/ic_launcher_round.png
           done
-          echo "✅ Icônes Brumerie appliquées"
 
-      # ── Keystore régénéré à chaque build avec tes secrets ───────
-      # ✅ Mêmes secrets = même signature = même app, peu importe le repo
       - name: Generate keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore android/app/brumerie.keystore \
-            -alias ${{ secrets.KEY_ALIAS }} \
-            -keyalg RSA -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Brumerie,O=Brumerie CI,C=CI" \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}"
+        run: keytool -genkeypair -v -keystore android/app/brumerie.keystore -alias "${{ secrets.KEY_ALIAS }}" -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Brumerie,O=Brumerie CI,C=CI" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}"
 
-      # ── Build APK Release signé ─────────────────────────────────
       - name: Build signed APK
         working-directory: android
         env:
@@ -70,11 +56,9 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      # ── Renommer l'APK ──────────────────────────────────────────
       - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk brumerie-android.apk
 
-      # ── Upload artifact (dispo 60 jours) ────────────────────────
       - uses: actions/upload-artifact@v4
         with:
           name: Brumerie-APK
