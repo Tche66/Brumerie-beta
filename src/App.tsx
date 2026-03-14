@@ -203,8 +203,8 @@ useEffect(() => {
             (hasModal as HTMLElement).dispatchEvent(new CustomEvent('capacitor:back'));
             return;
           }
-          // Si on est sur la page d'accueil → minimiser l'app (pas quitter)
-          if (activePage === 'home') {
+          // Si on est sur la page d'accueil ou auth → minimiser l'app (pas quitter)
+          if (activePage === 'home' || activePage === 'auth' || !activePage) {
             CapacitorApp.minimizeApp();
             return;
           }

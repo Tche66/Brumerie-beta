@@ -118,6 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
+        // Forcer le sélecteur de compte à chaque fois
+        try { await GoogleAuth.signOut(); } catch (_) {}
         const googleUser = await GoogleAuth.signIn();
         const idToken = googleUser?.authentication?.idToken;
         if (!idToken) throw new Error('idToken Google manquant');
