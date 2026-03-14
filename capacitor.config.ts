@@ -21,9 +21,9 @@ const config: CapacitorConfig = {
       iconColor: '#16A34A',
       sound: 'notif_general',
     },
-    // ✅ Google Sign-In natif — SDK Android officiel
-    // Utilise le WEB Client ID (pas le client Android)
-    // À récupérer dans Google Cloud Console → APIs & Services → Credentials
+    // ✅ Google Sign-In natif via @capacitor-community/google-auth
+    // clientId = Web Client ID (pas le client Android)
+    // Valeur injectée depuis le secret GitHub GOOGLE_WEB_CLIENT_ID
     GoogleAuth: {
       scopes: ['profile', 'email'],
       serverClientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID || '',
@@ -31,7 +31,6 @@ const config: CapacitorConfig = {
     },
   },
   server: {
-    // L'APK charge directement depuis Vercel
     url: 'https://brumerie-beta.vercel.app',
     cleartext: false,
     allowNavigation: [

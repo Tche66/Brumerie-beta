@@ -1,3 +1,6 @@
+// Déclarée par Vite define{}
+declare const __GOOGLE_WEB_CLIENT_ID__: string;
+
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
@@ -102,49 +105,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Web/PWA      : flux Custom Token via /api/google-auth-start + poll
   async function signInWithGoogle() {
     const isCapacitor = typeof (window as any).Capacitor !== 'undefined';
-    const hasNativeBridge = isCapacitor && typeof (window as any).AndroidGoogleAuth !== 'undefined';
 
-    if (hasNativeBridge) {
-      // ── Flux natif Android — SDK Google Sign-In via JavascriptInterface ──
-      // MainActivity.java expose window.AndroidGoogleAuth.signIn(callbackName)
-      // Le sélecteur de compte Google natif s'ouvre (pas une WebView → pas de blocage)
-      return new Promise<void>((resolve, reject) => {
-        const callbackName = '__googleAuthCb_' + Date.now();
-
-        // Enregistrer le callback que Java appellera avec le résultat
-        (window as any)[callbackName] = (result: { success: boolean; idToken?: string; error?: string }) => {
-          delete (window as any)[callbackName];
-          if (result.success && result.idToken) {
-            const credential = GoogleAuthProvider.credential(result.idToken);
-            signInWithCredential(auth, credential)
-              .then(() => resolve())
-              .catch((err) => reject(err));
-          } else {
-            reject(new Error(result.error || 'Connexion Google échouée'));
-          }
-        };
-
-        // Lancer le sélecteur Google natif
-        (window as any).AndroidGoogleAuth.signIn(callbackName);
-      });
+    if (isCapacitor) {
+      // ── Flux natif Android via @capacitor-community/google-auth ──
+      // Le plugin ouvre le vrai sélecteur de compte Android natif
+      // → pas de WebView → Google ne bloque pas
+      try {
+        const { GoogleAuth } = await import('@capacitor-community/google-auth');
+        // clientId injecté par Vite via define{} ou window global
+        const clientId = (typeof __GOOGLE_WEB_CLIENT_ID__ !== 'undefined' ? __GOOGLE_WEB_CLIENT_ID__ : '') ||
+                         (window as any).__GOOGLE_WEB_CLIENT_ID__ || '';
+        await GoogleAuth.initialize({
+          clientId,
+          scopes:   ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+        const googleUser = await GoogleAuth.signIn();
+        const idToken = googleUser?.authentication?.idToken;
+        if (!idToken) throw new Error('idToken Google manquant');
+        const credential = GoogleAuthProvider.credential(idToken);
+        await signInWithCredential(auth, credential);
+        return;
+      } catch (err: any) {
+        console.error('[GoogleAuth natif]', err);
+        throw new Error(err?.message || 'Connexion Google échouée');
+      }
     }
 
     // ── Flux web (PWA) : Custom Token via Vercel ─────────────
-    const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const state   = Math.random().toString(36).slice(2) + Date.now().toString(36);
     const baseUrl = window.location.origin;
-    const startUrl = `${baseUrl}/api/google-auth-start?state=${state}`;
-    window.open(startUrl, '_blank', 'noopener');
+    window.open(`${baseUrl}/api/google-auth-start?state=${state}`, '_blank', 'noopener');
 
     return new Promise<void>((resolve, reject) => {
       let attempts = 0;
       const maxAttempts = 120;
       const poll = setInterval(async () => {
         attempts++;
-        if (attempts > maxAttempts) {
-          clearInterval(poll);
-          reject(new Error('auth/timeout'));
-          return;
-        }
+        if (attempts > maxAttempts) { clearInterval(poll); reject(new Error('auth/timeout')); return; }
         try {
           const res  = await fetch(`${baseUrl}/api/google-auth-poll?state=${state}`);
           const data = await res.json();
