@@ -8,16 +8,10 @@ import android.os.Build;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
-// ✅ Import du plugin Google Auth communautaire
-import com.codetrix_studio.capacitorGoogleAuth.GoogleAuth;
-
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // ✅ Enregistrer le plugin AVANT super.onCreate
-        registerPlugin(GoogleAuth.class);
-
         super.onCreate(savedInstanceState);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
