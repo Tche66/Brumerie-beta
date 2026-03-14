@@ -89,6 +89,50 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
     setImagePreviews(imagePreviews.filter((_, i) => i !== index));
   };
 
+  // ── Caméra/Galerie natives sur APK (Capacitor) ──────────────
+  const isCapacitor = typeof (window as any).Capacitor !== 'undefined' &&
+    (window as any).Capacitor?.isNativePlatform?.();
+
+  const handleNativeCamera = async () => {
+    if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
+    try {
+      const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
+      const photo = await Camera.getPhoto({
+        source: CameraSource.Camera,
+        resultType: CameraResultType.DataUrl,
+        quality: 80,
+      });
+      if (!photo.dataUrl) return;
+      const res = await fetch(photo.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setImages(prev => [...prev, file]);
+      setImagePreviews(prev => [...prev, photo.dataUrl!]);
+    } catch (err: any) {
+      if (!err?.message?.includes('cancel')) setError('Erreur caméra');
+    }
+  };
+
+  const handleNativeGallery = async () => {
+    if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
+    try {
+      const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
+      const photo = await Camera.getPhoto({
+        source: CameraSource.Photos,
+        resultType: CameraResultType.DataUrl,
+        quality: 80,
+      });
+      if (!photo.dataUrl) return;
+      const res = await fetch(photo.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setImages(prev => [...prev, file]);
+      setImagePreviews(prev => [...prev, photo.dataUrl!]);
+    } catch (err: any) {
+      if (!err?.message?.includes('cancel')) setError('Erreur galerie');
+    }
+  };
+
   const toggleCity = (city: string) => {
     setSelectedCities(prev => {
       if (prev.includes(city)) return prev.filter(c => c !== city);
@@ -251,7 +295,13 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                 </div>
               ))}
               {images.length < 5 && (
-                <div onClick={() => (userProfile?.isVerified || userProfile?.isPremium) ? galleryRef.current?.click() : cameraRef.current?.click()}
+                <div onClick={() => {
+                  if (isCapacitor) {
+                    (userProfile?.isVerified || userProfile?.isPremium) ? handleNativeGallery() : handleNativeCamera();
+                  } else {
+                    (userProfile?.isVerified || userProfile?.isPremium) ? galleryRef.current?.click() : cameraRef.current?.click();
+                  }
+                }}
                   className="aspect-[4/5] rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 bg-slate-50 active:scale-95 transition-all cursor-pointer">
                   <span className="text-slate-300 text-3xl font-light">+</span>
                   <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Ajouter</span>
@@ -261,16 +311,16 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
             {/* Vendeur Simple = caméra uniquement | Vérifié/Premium = galerie + caméra */}
             {(userProfile?.isVerified || userProfile?.isPremium) ? (
               <div className="flex gap-3">
-                <button onClick={() => galleryRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
+                <button onClick={() => isCapacitor ? handleNativeGallery() : galleryRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
                   <Icon name="gallery" /> Galerie
                 </button>
-                <button onClick={() => cameraRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-50 text-slate-900 rounded-[2rem] font-bold text-xs uppercase tracking-widest border border-slate-100 active:scale-95">
+                <button onClick={() => isCapacitor ? handleNativeCamera() : cameraRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-50 text-slate-900 rounded-[2rem] font-bold text-xs uppercase tracking-widest border border-slate-100 active:scale-95">
                   <Icon name="camera" /> Caméra
                 </button>
               </div>
             ) : (
               <div className="space-y-2">
-                <button onClick={() => cameraRef.current?.click()} className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
+                <button onClick={() => isCapacitor ? handleNativeCamera() : cameraRef.current?.click()} className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
                   <Icon name="camera" /> Prendre une photo
                 </button>
                 <p className="text-center text-[9px] text-slate-400 font-bold">
