@@ -93,16 +93,44 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const isCapacitor = typeof (window as any).Capacitor !== 'undefined' &&
     (window as any).Capacitor?.isNativePlatform?.();
 
-  // Ouvre caméra ou galerie via input HTML caché — fiable sur tous Android
+  // Ouvre galerie via input HTML
   const triggerInput = (ref: React.RefObject<HTMLInputElement>) => {
     if (ref.current) {
-      ref.current.value = ''; // reset pour permettre de rechoisir le même fichier
+      ref.current.value = '';
       ref.current.click();
     }
   };
 
-  // Alias pour compatibilité avec les boutons
-  const handleNativeCamera = () => triggerInput(cameraRef);
+  // Caméra native via @capacitor/camera — seule façon fiable sur Android
+  const handleNativeCamera = async () => {
+    if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
+    try {
+      const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
+      const photo = await Camera.getPhoto({
+        source: CameraSource.Camera,
+        resultType: CameraResultType.Uri,
+        quality: 80,
+        correctOrientation: true,
+        saveToGallery: false,
+      });
+      // Convertir l'URI en File
+      const uri = photo.path || photo.webPath;
+      if (!uri) return;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const preview = URL.createObjectURL(blob);
+      setImages(prev => [...prev, file]);
+      setImagePreviews(prev => [...prev, preview]);
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('user denied')) {
+        setError('Impossible d'ouvrir la caméra');
+      }
+    }
+  };
+
+  // Galerie — input HTML suffit
   const handleNativeGallery = () => triggerInput(galleryRef);
 
   const toggleCity = (city: string) => {
