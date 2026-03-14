@@ -112,12 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // → pas de WebView → Google ne bloque pas
       try {
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-        // clientId injecté par Vite via define{} ou window global
-        const clientId = (typeof __GOOGLE_WEB_CLIENT_ID__ !== 'undefined' ? __GOOGLE_WEB_CLIENT_ID__ : '') ||
-                         (window as any).__GOOGLE_WEB_CLIENT_ID__ || '';
+        // Le plugin lit automatiquement le serverClientId depuis capacitor.config.ts
+        // et strings.xml — pas besoin de le passer manuellement ici
         await GoogleAuth.initialize({
-          clientId,
-          scopes:   ['profile', 'email'],
+          scopes: ['profile', 'email'],
           grantOfflineAccess: true,
         });
         const googleUser = await GoogleAuth.signIn();
