@@ -89,7 +89,17 @@ jobs:
             -alias "${{ secrets.KEY_ALIAS }}" 2>&1 | head -5
           echo "✅ Keystore restauré"
 
-      # ── 8. Build APK signé ──────────────────────────────────────
+      # ── 8. Afficher le SHA-1 du keystore ───────────────────────
+      - name: Show Release SHA-1
+        run: |
+          keytool -list -v \
+            -keystore android/app/brumerie.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.KEY_ALIAS }}" \
+            | grep SHA1
+          echo "✅ Copie ce SHA-1 et ajoute-le dans Firebase Console"
+
+      # ── 9. Build APK signé ──────────────────────────────────────
       - name: Build signed APK
         working-directory: android
         env:
