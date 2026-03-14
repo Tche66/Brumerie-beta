@@ -21,11 +21,17 @@ const config: CapacitorConfig = {
       iconColor: '#16A34A',
       sound: 'notif_general',
     },
+    // ✅ Google Sign-In natif — SDK Android officiel
+    // Utilise le WEB Client ID (pas le client Android)
+    // À récupérer dans Google Cloud Console → APIs & Services → Credentials
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID || '',
+      forceCodeForRefreshToken: true,
+    },
   },
   server: {
-    // ✅ L'APK charge directement depuis Vercel
-    // → /api/* fonctionne, upload Cloudinary fonctionne, Google Auth fonctionne
-    // Changer pour https://brumerie.com quand le domaine sera migré
+    // L'APK charge directement depuis Vercel
     url: 'https://brumerie-beta.vercel.app',
     cleartext: false,
     allowNavigation: [
@@ -35,7 +41,6 @@ const config: CapacitorConfig = {
       'brumerie.com',
       'www.brumerie.com',
       'brumerie-beta.vercel.app',
-      'accounts.google.com',
     ],
   },
 };

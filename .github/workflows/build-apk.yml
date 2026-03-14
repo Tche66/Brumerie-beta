@@ -30,10 +30,17 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_APP_DOMAIN: ${{ secrets.VITE_APP_DOMAIN }}
+          # Google Sign-In natif — Web Client ID depuis Google Cloud Console
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ secrets.VITE_GOOGLE_WEB_CLIENT_ID }}
         run: npm run build
 
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Inject Google Web Client ID
+        run: |
+          sed -i 's|PLACEHOLDER_REPLACED_BY_BUILD|${{ secrets.GOOGLE_WEB_CLIENT_ID }}|g' android/app/src/main/res/values/google_auth.xml
+          echo "✅ Google Web Client ID injecté"
 
       - name: Apply Brumerie icons
         run: |

@@ -8,6 +8,8 @@ import {
   sendPasswordResetEmail,
   onAuthStateChanged,
   signInWithCustomToken,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/config/firebase';
@@ -94,37 +96,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   }
 
-  // ── Connexion Google — Option B (Custom Token) ──────────────
-  // Flux : nouvel onglet → Google OAuth → Netlify callback → custom token
-  // → poll → signInWithCustomToken → onAuthStateChanged → connecté ✅
+  // ── Connexion Google ─────────────────────────────────────────
+  // APK Android  : SDK natif Google Sign-In via @codetrix-studio/capacitor-google-auth
+  //                → évite l'erreur disallowed_useragent de Google
+  // Web/PWA      : flux Custom Token via /api/google-auth-start + poll
   async function signInWithGoogle() {
-    const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-    // Pour l'APK Capacitor, l'app charge depuis brumerie-beta.vercel.app
-    // donc window.location.origin = https://brumerie-beta.vercel.app
-    const baseUrl = 'https://brumerie-beta.vercel.app';
-    const startUrl = `${baseUrl}/api/google-auth-start?state=${state}`;
-
-    // ✅ Capacitor : utiliser le Browser plugin natif (jamais bloqué)
-    // Web : window.open classique
     const isCapacitor = typeof (window as any).Capacitor !== 'undefined';
-    if (isCapacitor) {
-      try {
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url: startUrl, presentationStyle: 'popover' });
-      } catch {
-        // Fallback si Browser plugin absent
-        window.open(startUrl, '_blank', 'noopener');
-      }
-    } else {
-      window.open(startUrl, '_blank', 'noopener');
+    const hasNativeBridge = isCapacitor && typeof (window as any).AndroidGoogleAuth !== 'undefined';
+
+    if (hasNativeBridge) {
+      // ── Flux natif Android — SDK Google Sign-In via JavascriptInterface ──
+      // MainActivity.java expose window.AndroidGoogleAuth.signIn(callbackName)
+      // Le sélecteur de compte Google natif s'ouvre (pas une WebView → pas de blocage)
+      return new Promise<void>((resolve, reject) => {
+        const callbackName = '__googleAuthCb_' + Date.now();
+
+        // Enregistrer le callback que Java appellera avec le résultat
+        (window as any)[callbackName] = (result: { success: boolean; idToken?: string; error?: string }) => {
+          delete (window as any)[callbackName];
+          if (result.success && result.idToken) {
+            const credential = GoogleAuthProvider.credential(result.idToken);
+            signInWithCredential(auth, credential)
+              .then(() => resolve())
+              .catch((err) => reject(err));
+          } else {
+            reject(new Error(result.error || 'Connexion Google échouée'));
+          }
+        };
+
+        // Lancer le sélecteur Google natif
+        (window as any).AndroidGoogleAuth.signIn(callbackName);
+      });
     }
 
-    // Poller toutes les secondes pour récupérer le custom token
+    // ── Flux web (PWA) : Custom Token via Vercel ─────────────
+    const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const baseUrl = window.location.origin;
+    const startUrl = `${baseUrl}/api/google-auth-start?state=${state}`;
+    window.open(startUrl, '_blank', 'noopener');
+
     return new Promise<void>((resolve, reject) => {
       let attempts = 0;
-      const maxAttempts = 120; // 2 minutes max
-
+      const maxAttempts = 120;
       const poll = setInterval(async () => {
         attempts++;
         if (attempts > maxAttempts) {
@@ -132,27 +145,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           reject(new Error('auth/timeout'));
           return;
         }
-
         try {
-          const res = await fetch(
-            `${baseUrl}/api/google-auth-poll?state=${state}`
-          );
+          const res  = await fetch(`${baseUrl}/api/google-auth-poll?state=${state}`);
           const data = await res.json();
-
           if (data.status === 'ready' && data.token) {
             clearInterval(poll);
-            // Connecter avec le custom token Firebase
             await signInWithCustomToken(auth, data.token);
-            // onAuthStateChanged + loadUserProfile prennent la main
             resolve();
           } else if (data.error === 'expired') {
             clearInterval(poll);
             reject(new Error('auth/expired'));
           }
-          // status === 'pending' → continuer à poller
-        } catch (e) {
-          // Erreur réseau temporaire → continuer
-        }
+        } catch { /* réseau temporaire */ }
       }, 1000);
     });
   }

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Web Client ID pour Google Sign-In natif
+        Valeur injectée par GitHub Actions depuis le secret GOOGLE_WEB_CLIENT_ID
+        Ne pas hardcoder ici — remplacé automatiquement au build
+    -->
+    <string name="google_web_client_id">PLACEHOLDER_REPLACED_BY_BUILD</string>
+</resources>
