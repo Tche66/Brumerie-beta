@@ -93,55 +93,17 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const isCapacitor = typeof (window as any).Capacitor !== 'undefined' &&
     (window as any).Capacitor?.isNativePlatform?.();
 
-  const addPhotoFromDataUrl = async (dataUrl: string) => {
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-    setImages(prev => [...prev, file]);
-    setImagePreviews(prev => [...prev, dataUrl]);
-  };
-
-  const handleNativeCamera = async () => {
-    if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
-    try {
-      const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
-      // Demander la permission avant d'ouvrir la caméra
-      const perms = await Camera.requestPermissions({ permissions: ['camera'] });
-      if (perms.camera !== 'granted') { setError('Permission caméra refusée'); return; }
-      const photo = await Camera.getPhoto({
-        source: CameraSource.Camera,
-        resultType: CameraResultType.DataUrl,
-        quality: 75,
-        correctOrientation: true,
-      });
-      if (!photo.dataUrl) return;
-      await addPhotoFromDataUrl(photo.dataUrl);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (!msg.includes('cancel') && !msg.includes('Cancel')) setError('Erreur caméra');
+  // Ouvre caméra ou galerie via input HTML caché — fiable sur tous Android
+  const triggerInput = (ref: React.RefObject<HTMLInputElement>) => {
+    if (ref.current) {
+      ref.current.value = ''; // reset pour permettre de rechoisir le même fichier
+      ref.current.click();
     }
   };
 
-  const handleNativeGallery = async () => {
-    if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
-    try {
-      const { Camera, CameraSource, CameraResultType } = await import('@capacitor/camera');
-      // Demander la permission galerie
-      const perms = await Camera.requestPermissions({ permissions: ['photos'] });
-      if (perms.photos !== 'granted') { setError('Permission galerie refusée'); return; }
-      const photo = await Camera.getPhoto({
-        source: CameraSource.Photos,
-        resultType: CameraResultType.DataUrl,
-        quality: 75,
-        correctOrientation: true,
-      });
-      if (!photo.dataUrl) return;
-      await addPhotoFromDataUrl(photo.dataUrl);
-    } catch (err: any) {
-      const msg = err?.message || '';
-      if (!msg.includes('cancel') && !msg.includes('Cancel')) setError('Erreur galerie');
-    }
-  };
+  // Alias pour compatibilité avec les boutons
+  const handleNativeCamera = () => triggerInput(cameraRef);
+  const handleNativeGallery = () => triggerInput(galleryRef);
 
   const toggleCity = (city: string) => {
     setSelectedCities(prev => {
@@ -321,16 +283,16 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
             {/* Vendeur Simple = caméra uniquement | Vérifié/Premium = galerie + caméra */}
             {(userProfile?.isVerified || userProfile?.isPremium) ? (
               <div className="flex gap-3">
-                <button onClick={() => isCapacitor ? handleNativeGallery() : galleryRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
+                <button onClick={() => triggerInput(galleryRef)} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
                   <Icon name="gallery" /> Galerie
                 </button>
-                <button onClick={() => isCapacitor ? handleNativeCamera() : cameraRef.current?.click()} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-50 text-slate-900 rounded-[2rem] font-bold text-xs uppercase tracking-widest border border-slate-100 active:scale-95">
+                <button onClick={() => triggerInput(cameraRef)} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-50 text-slate-900 rounded-[2rem] font-bold text-xs uppercase tracking-widest border border-slate-100 active:scale-95">
                   <Icon name="camera" /> Caméra
                 </button>
               </div>
             ) : (
               <div className="space-y-2">
-                <button onClick={() => isCapacitor ? handleNativeCamera() : cameraRef.current?.click()} className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
+                <button onClick={() => triggerInput(cameraRef)} className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
                   <Icon name="camera" /> Prendre une photo
                 </button>
                 <p className="text-center text-[9px] text-slate-400 font-bold">
@@ -338,8 +300,9 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                 </p>
               </div>
             )}
+            {/* Un seul input sans capture — Android affiche le menu caméra/galerie nativement */}
             <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="hidden" />
+            <input ref={cameraRef} type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
           </div>
         )}
 
