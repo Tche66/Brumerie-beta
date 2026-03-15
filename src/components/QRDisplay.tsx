@@ -50,6 +50,7 @@ function CopyButton({ code }: { code: string }) {
 }
 
 export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, instruction, onClose }: Props) {
+  // QR avec zone centrale réservée pour le logo (erreur de correction = 30% → H)
   const qrUrl = getQRCodeUrl(qrPayload, 260);
 
   return (
@@ -69,16 +70,36 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
         <p className="text-white/70 text-[12px] mt-1">{subtitle}</p>
       </div>
 
-      {/* QR Code */}
+      {/* QR Code + logo Brumerie centré */}
       <div className="bg-white rounded-[2.5rem] p-6 shadow-2xl mb-6 flex flex-col items-center">
-        <img
-          src={qrUrl}
-          alt="QR Code"
-          width={220}
-          height={220}
-          className="rounded-xl"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
+        <div className="relative" style={{ width: 220, height: 220 }}>
+          <img
+            src={qrUrl}
+            alt="QR Code"
+            width={220}
+            height={220}
+            className="rounded-xl"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          {/* Logo Brumerie — overlay centré sur zone de repos du QR */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="rounded-xl flex items-center justify-center shadow-sm"
+              style={{ width: 46, height: 46, background: '#1B5E20', padding: 4 }}>
+              <img
+                src="/logo.png"
+                alt="Brumerie"
+                style={{ width: 38, height: 38, objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+                onError={(e) => {
+                  // Fallback SVG si logo.png absent
+                  const el = e.target as HTMLImageElement;
+                  el.style.display = 'none';
+                  const parent = el.parentElement!;
+                  parent.innerHTML = '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7 5 12 12 14 7-2 12-7 12-14V8L16 2z" fill="white"/><path d="M11 15l3 3 7-7" stroke="#1B5E20" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>';
+                }}
+              />
+            </div>
+          </div>
+        </div>
         {/* Code alphanumérique + bouton copier */}
         <div className="mt-4 pt-4 border-t border-slate-100 w-full text-center">
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-2">Code de secours</p>

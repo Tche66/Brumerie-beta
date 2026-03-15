@@ -304,6 +304,7 @@ export interface Review {
   fromUserId: string;
   fromUserName: string;
   fromUserPhoto?: string;
+  fromUserNeighborhood?: string;  // Quartier de l'acheteur — affiché sur la carte avis
   toUserId: string;
   role: RatingRole;
   rating: number;

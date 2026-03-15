@@ -1249,6 +1249,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           fromUserId={currentUser.uid}
           fromUserName={order.buyerName}
           fromUserPhoto={order.buyerPhoto || undefined}
+          fromUserNeighborhood={userProfile?.neighborhood || undefined}
           toUserId={order.sellerId}
           toUserName={order.sellerName}
           role="buyer_to_seller"
@@ -1274,6 +1275,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           fromUserId={currentUser.uid}
           fromUserName={order.buyerName}
           fromUserPhoto={(order as any).buyerPhoto || undefined}
+          fromUserNeighborhood={userProfile?.neighborhood || undefined}
           toUserId={(order as any).delivererId}
           toUserName={(order as any).delivererName || 'Livreur'}
           role="buyer_to_deliverer"
@@ -1291,6 +1293,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           productImage={order.productImage}
           fromUserId={currentUser.uid}
           fromUserName={order.sellerName}
+          fromUserNeighborhood={userProfile?.neighborhood || undefined}
           toUserId={(order as any).delivererId}
           toUserName={(order as any).delivererName || 'Livreur'}
           role="seller_to_deliverer"

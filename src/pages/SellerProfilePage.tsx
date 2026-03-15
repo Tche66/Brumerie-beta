@@ -417,7 +417,14 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-black text-slate-900 text-[11px] truncate">{review.fromUserName}</p>
-                          <p className="text-[9px] text-slate-400 truncate">{review.productTitle}</p>
+                          {/* Quartier de l'acheteur — crédibilité communautaire */}
+                          {review.fromUserNeighborhood ? (
+                            <p className="text-[9px] font-bold truncate" style={{ color: '#16A34A' }}>
+                              📍 {review.fromUserNeighborhood}
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-slate-400 truncate">{review.productTitle}</p>
+                          )}
                         </div>
                         <div className="flex gap-0.5">
                           {[1,2,3,4,5].map(s => (
@@ -430,6 +437,10 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
                       </div>
                       {review.comment && (
                         <p className="text-[11px] text-slate-600 italic">"{review.comment}"</p>
+                      )}
+                      {/* Article acheté — affiché si quartier déjà visible */}
+                      {review.fromUserNeighborhood && review.productTitle && (
+                        <p className="text-[9px] text-slate-400 mt-1 truncate">🛍️ {review.productTitle}</p>
                       )}
                     </div>
                   ))}

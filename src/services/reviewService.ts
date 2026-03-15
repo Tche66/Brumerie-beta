@@ -11,6 +11,7 @@ const reviewsCol = collection(db, 'reviews');
 export async function submitReview(params: {
   orderId: string; productId: string; productTitle: string;
   fromUserId: string; fromUserName: string; fromUserPhoto?: string;
+  fromUserNeighborhood?: string;   // Quartier de l'acheteur
   toUserId: string; role: RatingRole; rating: number; comment: string;
 }): Promise<void> {
   // Vérifier doublon
@@ -34,6 +35,7 @@ export async function submitReview(params: {
     createdAt: serverTimestamp(),
   };
   if (params.fromUserPhoto) reviewData.fromUserPhoto = params.fromUserPhoto;
+  if (params.fromUserNeighborhood) reviewData.fromUserNeighborhood = params.fromUserNeighborhood;
 
   await addDoc(reviewsCol, reviewData);
 

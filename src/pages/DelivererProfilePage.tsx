@@ -93,6 +93,17 @@ export function DelivererProfilePage({
   const statusLabel = STATUS_LABELS[(deliverer as any).deliveryStatus] || '—';
   const hasLicense = (deliverer as any).deliveryHasLicense;
   const deliveryAge = (deliverer as any).deliveryAge;
+  const totalDone = liveDeliveryCount ?? deliverer.totalDeliveries ?? 0;
+
+  // ── Badge de fiabilité Agent Brumerie ──────────────────────────
+  // Calculé en temps réel selon: livraisons, note, ancienneté
+  const reliabilityBadge = (() => {
+    if (avgRating >= 4.5 && totalDone >= 50)  return { label: '🥇 Agent Élite',   color: '#F59E0B', bg: '#FFFBEB' };
+    if (avgRating >= 4.0 && totalDone >= 20)  return { label: '🥈 Agent Confirmé', color: '#6366F1', bg: '#EEF2FF' };
+    if (avgRating >= 3.5 && totalDone >= 5)   return { label: '🥉 Agent Actif',    color: '#16A34A', bg: '#F0FDF4' };
+    if (totalDone >= 1)                        return { label: '🆕 Nouveau',        color: '#64748B', bg: '#F8FAFC' };
+    return null;
+  })();
 
   return (
     <div className="fixed inset-0 bg-white z-[300] flex flex-col font-sans overflow-y-auto">
@@ -130,12 +141,19 @@ export function DelivererProfilePage({
             {deliverer.deliveryBio && (
               <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">{deliverer.deliveryBio}</p>
             )}
+            {/* Badge de fiabilité Agent Brumerie */}
+            {reliabilityBadge && (
+              <span className="inline-block mt-1.5 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full"
+                style={{ color: reliabilityBadge.color, background: reliabilityBadge.bg }}>
+                {reliabilityBadge.label}
+              </span>
+            )}
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <StatCard value={liveDeliveryCount ?? deliverer.totalDeliveries ?? 0} label="Livraisons" color="green" />
+          <StatCard value={totalDone} label="Livraisons" color="green" />
           <StatCard value={avgRating > 0 ? avgRating.toFixed(1) : '—'} label="Note" color="amber" suffix={avgRating > 0 ? '★' : ''} />
           <StatCard value={reviewCount} label="Avis" color="blue" />
         </div>
@@ -205,7 +223,14 @@ export function DelivererProfilePage({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-black text-slate-700 text-[11px] truncate">{r.fromUserName}</p>
+                      <div className="min-w-0">
+                        <p className="font-black text-slate-700 text-[11px] truncate">{r.fromUserName}</p>
+                        {r.fromUserNeighborhood && (
+                          <p className="text-[9px] font-bold" style={{ color: '#16A34A' }}>
+                            📍 {r.fromUserNeighborhood}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         {[1,2,3,4,5].map(s => (
                           <svg key={s} width="9" height="9" viewBox="0 0 24 24"

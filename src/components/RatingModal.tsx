@@ -6,13 +6,15 @@ import { RatingRole } from '@/types';
 interface RatingModalProps {
   orderId: string; productId: string; productTitle: string; productImage: string;
   fromUserId: string; fromUserName: string; fromUserPhoto?: string;
+  fromUserNeighborhood?: string;  // Quartier de l'acheteur — stocké dans la review
   toUserId: string; toUserName: string;
   role: RatingRole;
   onDone: () => void; onSkip: () => void;
 }
 
 export function RatingModal({ orderId, productId, productTitle, productImage,
-  fromUserId, fromUserName, fromUserPhoto, toUserId, toUserName, role, onDone, onSkip }: RatingModalProps) {
+  fromUserId, fromUserName, fromUserPhoto, fromUserNeighborhood,
+  toUserId, toUserName, role, onDone, onSkip }: RatingModalProps) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
@@ -42,7 +44,7 @@ export function RatingModal({ orderId, productId, productTitle, productImage,
     setLoading(true); setError('');
     try {
       await submitReview({ orderId, productId, productTitle, fromUserId, fromUserName,
-        fromUserPhoto, toUserId, role, rating, comment: comment.trim() });
+        fromUserPhoto, fromUserNeighborhood, toUserId, role, rating, comment: comment.trim() });
       setSuccess(true);
       setTimeout(() => onDone(), 1800);
     } catch (e: any) {
