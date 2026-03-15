@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { syncSellerDataToProducts } from './productService';
+import { VERIFICATION_PRICE } from '@/types';
 
 // ─── STATISTIQUES ─────────────────────────────────────────────
 export async function getAdminStats(): Promise<{
@@ -53,7 +54,7 @@ export async function getAdminStats(): Promise<{
     activeProducts: productsData.filter(p => p.status === 'active').length,
     totalOrders: orders.size,
     totalBoostRevenue,
-    totalVerifRevenue: verifiedCount * 3000,
+    totalVerifRevenue: verifiedCount * VERIFICATION_PRICE, // Toujours 3 000 FCFA — prix officiel (hors promo)
     newUsersToday: usersData.filter(u => {
       const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
       return ms !== null && ms > todayTs.toMillis();
@@ -221,7 +222,8 @@ export async function getGlobalSettings(): Promise<any> {
 }
 
 export async function saveGlobalSettings(settings: {
-  verificationPrice?: number;
+  verificationPrice?: number;          // Prix officiel (affiché barré + comptabilité admin)
+  verificationPromoPrice?: number;     // Prix promo affiché au vendeur (optionnel — null = pas de promo)
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
   boostPrices?: { '24h': number; '48h': number; '7j': number };

@@ -10,14 +10,20 @@ interface VerificationPageProps { onBack: () => void; }
 export function VerificationPage({ onBack }: VerificationPageProps) {
   const { userProfile } = useAuth();
   const [sent, setSent] = useState(false);
-  const [verificationPrice, setVerificationPrice] = useState(3000); // par défaut 3000 FCFA
+  const [verificationPrice, setVerificationPrice] = useState(3000);        // Prix officiel (barré si promo active)
+  const [verificationPromoPrice, setVerificationPromoPrice] = useState<number | null>(null); // null = pas de promo
 
-  // Lire le prix dynamique depuis Firestore (modifiable par l'admin)
+  // Lire le prix officiel + prix promo depuis Firestore (modifiables par l'admin)
   useEffect(() => {
     getGlobalSettings().then((s: any) => {
       if (s?.verificationPrice) setVerificationPrice(s.verificationPrice);
+      // verificationPromoPrice : null ou 0 = pas de promo active
+      setVerificationPromoPrice(s?.verificationPromoPrice > 0 ? s.verificationPromoPrice : null);
     }).catch(() => {});
   }, []);
+
+  // Prix effectif = promo si active, sinon prix officiel
+  const effectivePrice = verificationPromoPrice ?? verificationPrice;
 
   const tier = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
 
@@ -36,7 +42,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     if (!userProfile) return;
     const config = getAppConfig();
     const waNum = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
-    const msg = 'Bonjour Brumerie ! Je viens de payer le Badge Vérifié (' + verificationPrice.toLocaleString('fr-FR') + ' FCFA).\n\nVoici ma preuve de paiement en photo.\n\n👤 Nom : ' + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\n📱 App : ' + userProfile.uid;
+    const msg = 'Bonjour Brumerie ! Je viens de payer le Badge Vérifié (' + effectivePrice.toLocaleString('fr-FR') + ' FCFA).\n\nVoici ma preuve de paiement en photo.\n\n👤 Nom : ' + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\n📱 App : ' + userProfile.uid;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
 
@@ -109,10 +115,17 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
           <div className="bg-white rounded-3xl p-6 pt-8">
             <p className="font-black uppercase tracking-widest mb-2" style={{ color: '#1D9BF0' }}>Vérifié</p>
 
-            {/* Prix barré + nouveau */}
+            {/* Prix : barré si promo active, sinon prix officiel seul */}
             <div className="flex items-baseline gap-3 mb-1">
-              <p className="text-slate-300 line-through text-lg font-bold">3000</p>
-              <p className="text-5xl font-black text-slate-900">{verificationPrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span></p>
+              {verificationPromoPrice && (
+                <p className="text-slate-300 line-through text-lg font-bold">{verificationPrice.toLocaleString('fr-FR')}</p>
+              )}
+              <p className="text-5xl font-black text-slate-900">
+                {effectivePrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span>
+              </p>
+              {verificationPromoPrice && (
+                <span className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">PROMO</span>
+              )}
             </div>
             <p className="text-[10px] text-slate-400 mb-5">Visibilité accrue · Identité contrôlée</p>
 
@@ -165,7 +178,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
                     <button onClick={handleActivate}
                       className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white active:scale-[0.98] transition-all"
                       style={{ background: 'linear-gradient(135deg,#1B5E20,#16A34A)', boxShadow: '0 10px 30px rgba(22,163,74,0.4)' }}>
-                      💳 PAYER {verificationPrice.toLocaleString('fr-FR')} FCFA
+                      💳 PAYER {effectivePrice.toLocaleString('fr-FR')} FCFA
                     </button>
                   )}
                   <p className="text-center text-amber-500 font-black text-[10px]">✨ Cadeau : +30 jours gratuits !</p>

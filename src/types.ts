@@ -42,7 +42,7 @@ export const SUPPORT_EMAIL = 'support@brumerie.com';
 export const CONTACT_EMAIL = 'contact@brumerie.com';
 export const SUPPORT_WHATSAPP = '2250586867693';
 export const VERIFICATION_PRICE = 3000; // FCFA/mois — badge VÉRIFIÉ
-export const PREMIUM_PRICE = 5000;      // FCFA/mois — badge PREMIUM (futur)
+// PREMIUM_PRICE non défini — badge PREMIUM bientôt disponible, prix non communiqué
 
 // Limites par plan
 // ─── PALIERS DE PARRAINAGE ───────────────────────────────────

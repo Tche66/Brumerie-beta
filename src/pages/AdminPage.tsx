@@ -833,16 +833,29 @@ export function AdminPage({ onBack }: AdminPageProps) {
         {tab === 'settings' && (
           <>
             <div className="bg-white rounded-2xl p-4 space-y-4">
-              {[
-                { label: 'Prix badge vérifié (FCFA)', key: 'verificationPrice', default: 3000 },
-              ].map(({ label, key, default: def }) => (
-                <div key={key}>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{label}</p>
-                  <input type="number" value={settingsDraft[key] ?? globalSettings[key] ?? def}
-                    onChange={e => setSettingsDraft((s: any) => ({ ...s, [key]: parseInt(e.target.value)||def }))}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-4 py-3 text-[13px] font-black outline-none"/>
-                </div>
-              ))}
+              {/* ── Prix badge Vérifié ── */}
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Prix badge vérifié — officiel (FCFA)</p>
+                <p className="text-[9px] text-slate-400 mb-2">Prix de référence affiché barré + utilisé pour la comptabilité admin.</p>
+                <input type="number"
+                  value={settingsDraft['verificationPrice'] ?? globalSettings['verificationPrice'] ?? 3000}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, verificationPrice: parseInt(e.target.value) || 3000 }))}
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-4 py-3 text-[13px] font-black outline-none"/>
+              </div>
+              {/* ── Prix promo badge Vérifié ── */}
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">🔥 Prix promo badge vérifié (FCFA)</p>
+                <p className="text-[9px] text-slate-400 mb-2">Prix affiché au vendeur. Mettre <strong>0</strong> pour désactiver la promo (affichage prix officiel seul).</p>
+                <input type="number"
+                  value={settingsDraft['verificationPromoPrice'] ?? globalSettings['verificationPromoPrice'] ?? 0}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, verificationPromoPrice: parseInt(e.target.value) || 0 }))}
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-400 rounded-xl px-4 py-3 text-[13px] font-black outline-none"/>
+                {((settingsDraft['verificationPromoPrice'] ?? globalSettings['verificationPromoPrice'] ?? 0) > 0) && (
+                  <p className="text-[9px] text-blue-600 font-bold mt-1">
+                    ✅ Promo active — vendeurs voient {(settingsDraft['verificationPromoPrice'] ?? globalSettings['verificationPromoPrice'])} FCFA · comptabilité reste à {settingsDraft['verificationPrice'] ?? globalSettings['verificationPrice'] ?? 3000} FCFA
+                  </p>
+                )}
+              </div>
               {/* ── Liens Wave par plan ── */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -907,7 +920,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 <input
                   value={settingsDraft.badgePaymentLink ?? globalSettings.badgePaymentLink ?? ''}
                   onChange={e => setSettingsDraft((s: any) => ({ ...s, badgePaymentLink: e.target.value }))}
-                  placeholder="wave://send?phone=+225...&amount=3000&note=BadgeVerifie"
+                  placeholder="wave://send?phone=+225...&amount=2000&note=BadgeVerifie (adapter le montant au prix promo)"
                   className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
                 />
               </div>
