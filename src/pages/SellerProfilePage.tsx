@@ -2,86 +2,23 @@ import { SocialBar } from '@/components/SocialIcon';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import React, { useState, useEffect } from 'react';
 import { subscribeSellerReviews } from '@/services/reviewService';
-// ── QR Code boutique — génération locale via canvas (zéro réseau) ─
-// Utilise qrcode-generator chargé dynamiquement depuis cdnjs
+import { drawQROnCanvas } from '@/utils/qrCode';
+import { BrumerieLogo } from '@/components/BrumerieLogo';
+// ── QR Code boutique — algorithme pur TypeScript, zéro réseau ───
 function ShopQRImage({ url }: { url: string }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = React.useState(false);
-  const [error, setError] = React.useState(false);
   const SIZE = 190;
 
   React.useEffect(() => {
-    let cancelled = false;
-
-    async function generate() {
-      try {
-        // Charger qrcode-generator depuis cdnjs si pas encore chargé
-        if (!(window as any).qrcode) {
-          await new Promise<void>((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-            s.onload = () => resolve();
-            s.onerror = () => reject(new Error('qrcode CDN failed'));
-            document.head.appendChild(s);
-          });
-        }
-        if (cancelled) return;
-
-        // Créer un div temporaire hors DOM pour QRCode.js
-        const tmp = document.createElement('div');
-        tmp.style.display = 'none';
-        document.body.appendChild(tmp);
-
-        // Générer via QRCode.js (lib standard)
-        const qr = new (window as any).QRCode(tmp, {
-          text: url,
-          width: SIZE,
-          height: SIZE,
-          colorDark: '#0f5c2e',
-          colorLight: '#FFFFFF',
-          correctLevel: (window as any).QRCode.CorrectLevel.M,
-        });
-
-        // Attendre que l'image soit générée
-        await new Promise(r => setTimeout(r, 80));
-
-        const img = tmp.querySelector('img') as HTMLImageElement | null;
-        const cvs = canvasRef.current;
-        if (img && cvs && !cancelled) {
-          const ctx = cvs.getContext('2d')!;
-          // Dessiner fond blanc
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, SIZE, SIZE);
-          // Dessiner le QR
-          if (img.complete && img.naturalWidth > 0) {
-            ctx.drawImage(img, 0, 0, SIZE, SIZE);
-          } else {
-            await new Promise<void>(res => { img.onload = () => res(); });
-            ctx.drawImage(img, 0, 0, SIZE, SIZE);
-          }
-          setReady(true);
-        }
-        document.body.removeChild(tmp);
-      } catch (e) {
-        console.warn('QR local generation failed:', e);
-        if (!cancelled) setError(true);
-      }
+    if (!canvasRef.current || !url) return;
+    try {
+      drawQROnCanvas(canvasRef.current, url, { dark: '#0f5c2e', light: '#FFFFFF', margin: 3 });
+      setReady(true);
+    } catch (e) {
+      console.warn('ShopQR error:', e);
     }
-
-    generate();
-    return () => { cancelled = true; };
   }, [url]);
-
-  if (error) return (
-    <div style={{ width: SIZE, height: SIZE }}
-      className="flex flex-col items-center justify-center bg-slate-50 rounded-xl gap-2">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5">
-        <rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/>
-        <rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/>
-      </svg>
-      <p className="text-[9px] font-bold text-slate-400 text-center px-3">Impossible de générer le QR</p>
-    </div>
-  );
 
   return (
     <div style={{ width: SIZE, height: SIZE, position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
@@ -295,9 +232,9 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
 
             {/* Header vert Brumerie */}
             <div className="px-6 pt-7 pb-5 text-center" style={{ background: 'linear-gradient(150deg, #16A34A 0%, #0f5c2e 100%)' }}>
-              {/* Logo transparent Brumerie */}
+              {/* Logo Brumerie caméléon — blanc sur fond vert */}
               <div className="flex items-center justify-center gap-2 mb-3">
-                <img src="/logo.png" alt="Brumerie" style={{ width: 32, height: 32, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                <BrumerieLogo size={32} color="#FFFFFF" />
                 <span className="text-white font-black text-[15px] tracking-wide">BRUMERIE</span>
               </div>
               <p className="text-white/60 text-[9px] font-bold uppercase tracking-[3px]">QR Code boutique</p>

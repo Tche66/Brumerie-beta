@@ -6,6 +6,8 @@ interface BottomNavProps {
   onNavigate: (page: string) => void;
   role?: 'buyer' | 'seller' | 'livreur';
   unreadMessages?: number;
+  pendingDashboard?: number;  // commandes actives + offres (vendeur)
+  activeMissions?: number;    // missions actives (livreur)
 }
 
 const HomeIcon = (active: boolean, color: string) => (
@@ -73,7 +75,7 @@ function NavBtn({ id, label, icon, active, onClick, badge }: {
   );
 }
 
-export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0 }: BottomNavProps) {
+export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0, pendingDashboard = 0, activeMissions = 0 }: BottomNavProps) {
   const C = '#16A34A'; // vert vendeur
   const CB = '#3B82F6'; // bleu acheteur
   const CO = '#D97706'; // orange livreur
@@ -87,6 +89,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
           icon={HomeIcon(activePage === 'home', CO)}/>
         <NavBtn id="deliverer-dashboard" label="Missions" active={activePage === 'deliverer-dashboard'} onClick={() => onNavigate('deliverer-dashboard')}
+          badge={activeMissions}
           icon={TruckIcon(activePage === 'deliverer-dashboard', CO)}/>
         <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
           badge={unreadMessages} icon={MsgIcon(activePage === 'messages', CO)}/>
@@ -138,6 +141,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
           <PlusIcon/>
         </button>
         <NavBtn id="orders" label="Dashboard" active={activePage === 'dashboard'} onClick={() => onNavigate('tableau')}
+          badge={pendingDashboard}
           icon={DashIcon(activePage === 'dashboard', C)}/>
         <NavBtn id="settings" label="Paramètres" active={activePage === 'settings'} onClick={() => onNavigate('settings')}
           icon={SettingsIcon(activePage === 'settings', C)}/>

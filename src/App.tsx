@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
 import { subscribeTotalUnread, sendOfferCard, getOrCreateConversation } from '@/services/messagingService';
+import { subscribeOrdersAsSeller, subscribeOrdersAsBuyer } from '@/services/orderService';
 import { AuthPage } from '@/pages/AuthPage';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
@@ -139,6 +140,8 @@ function AppShell() {
   const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
   const [showRoleSwitch, setShowRoleSwitch]       = useState(false);
   const [unreadMessages, setUnreadMessages]       = useState(0);
+  const [pendingDashboard, setPendingDashboard]   = useState(0); // commandes actives + offres en attente (vendeur)
+  const [activeMissions, setActiveMissions]       = useState(0); // missions actives (livreur)
   const [showExitConfirm, setShowExitConfirm]     = useState(false);
   const exitConfirmTimer                          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevNotifsRef                             = useRef<Set<string>>(new Set());
@@ -273,6 +276,51 @@ useEffect(() => {
     if (!currentUser) return;
     return subscribeTotalUnread(currentUser.uid, setUnreadMessages);
   }, [currentUser?.uid]);
+
+  // ── useEffect #3b — badges dashboard/missions ────────────────
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+
+    if (userProfile.role === 'seller') {
+      // Vendeur : commandes actives + offres en attente
+      return subscribeOrdersAsSeller(currentUser.uid, (orders) => {
+        const active = orders.filter(o =>
+          !['delivered', 'cod_delivered', 'cancelled', 'disputed'].includes(o.status)
+        ).length;
+        setPendingDashboard(active);
+      });
+    }
+
+    if (userProfile.role === 'livreur') {
+      // Livreur : missions assignées non terminées
+      return subscribeOrdersAsBuyer(currentUser.uid, (orders) => {
+        // Pour les livreurs, on écoute leurs missions via delivererId
+        // subscribeOrdersAsBuyer ne marche pas pour livreur — on utilise une query custom
+      });
+    }
+
+    return undefined;
+  }, [currentUser?.uid, userProfile?.role]);
+
+  // ── useEffect #3c — missions livreur ────────────────────────
+  useEffect(() => {
+    if (!currentUser || userProfile?.role !== 'livreur') return;
+    let unsub: (() => void) | undefined;
+    Promise.all([
+      import('firebase/firestore'),
+      import('@/config/firebase'),
+    ]).then(([{ collection: col, query: q, where: wh, onSnapshot: ons }, { db }]) => {
+      const qr = q(col(db, 'orders'), wh('delivererId', '==', currentUser.uid));
+      unsub = ons(qr, (snap: any) => {
+        const active = snap.docs.filter((d: any) => {
+          const s = d.data().status;
+          return !['delivered', 'cod_delivered', 'cancelled'].includes(s);
+        }).length;
+        setActiveMissions(active);
+      }, () => {});
+    });
+    return () => unsub?.();
+  }, [currentUser?.uid, userProfile?.role]);
 
   // ── useEffect #4 — notifications in-app ──────────────────────
   useEffect(() => {
@@ -662,7 +710,7 @@ useEffect(() => {
       </main>
 
       {MAIN_PAGES.includes(activePage) && (
-        <BottomNav activePage={activePage} onNavigate={handleBottomNavNavigate} role={role} unreadMessages={unreadMessages} />
+        <BottomNav activePage={activePage} onNavigate={handleBottomNavNavigate} role={role} unreadMessages={unreadMessages} pendingDashboard={pendingDashboard} activeMissions={activeMissions} />
       )}
 
       {showRoleSwitch && userProfile && (

@@ -2,6 +2,8 @@
 // Affichage plein écran d'un QR code à faire scanner
 
 import React from 'react';
+import { drawQROnCanvas } from '@/utils/qrCode';
+import { BrumerieLogo } from '@/components/BrumerieLogo';
 
 interface Props {
   title: string;
@@ -48,65 +50,19 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
-// ── Génération QR locale via canvas ────────────────────────────
+// ── Génération QR locale — algorithme pur TypeScript, zéro CDN ──
 function useQRCanvas(data: string, size: number) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
-    let cancelled = false;
-    setReady(false);
-
-    async function generate() {
-      try {
-        if (!(window as any).QRCode) {
-          await new Promise<void>((resolve, reject) => {
-            // Éviter double chargement
-            if (document.querySelector('script[data-qrcode]')) { resolve(); return; }
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-            s.setAttribute('data-qrcode', '1');
-            s.onload = () => resolve();
-            s.onerror = () => reject();
-            document.head.appendChild(s);
-          });
-        }
-        if (cancelled) return;
-
-        const tmp = document.createElement('div');
-        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-        document.body.appendChild(tmp);
-
-        new (window as any).QRCode(tmp, {
-          text: data,
-          width: size,
-          height: size,
-          colorDark: '#0F172A',
-          colorLight: '#FFFFFF',
-          correctLevel: (window as any).QRCode.CorrectLevel.M,
-        });
-
-        await new Promise(r => setTimeout(r, 100));
-
-        const img = tmp.querySelector('img') as HTMLImageElement | null;
-        const cvs = canvasRef.current;
-        if (img && cvs && !cancelled) {
-          const ctx = cvs.getContext('2d')!;
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, size, size);
-          const draw = () => { ctx.drawImage(img, 0, 0, size, size); setReady(true); };
-          if (img.complete && img.naturalWidth > 0) draw();
-          else img.onload = draw;
-        }
-        document.body.removeChild(tmp);
-      } catch (e) {
-        console.warn('QRDisplay canvas error:', e);
-        // Fallback silencieux — l'utilisateur utilise le code 6 chiffres
-      }
+    if (!canvasRef.current || !data) return;
+    try {
+      drawQROnCanvas(canvasRef.current, data, { dark: '#0F172A', light: '#FFFFFF', margin: 3 });
+      setReady(true);
+    } catch (e) {
+      console.warn('QR generation error:', e);
     }
-
-    generate();
-    return () => { cancelled = true; };
   }, [data, size]);
 
   return { canvasRef, ready };
@@ -137,7 +93,7 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
 
         {/* En-tête branding — logo transparent + BRUMERIE */}
         <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 w-full justify-center">
-          <img src="/logo.png" alt="Brumerie" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+          <BrumerieLogo size={26} color="#1B5E20" />
           <span className="font-black text-slate-900 text-[15px] uppercase tracking-[0.15em]">Brumerie</span>
         </div>
 
