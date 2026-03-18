@@ -8,7 +8,7 @@ export function buildQRPayload(type: 'pickup' | 'delivery', orderId: string, cod
 }
 
 export function parseQRPayload(raw: string): { type: 'pickup' | 'delivery'; orderId: string; code: string } | null {
-  const match = raw.match(/^brumerie:\\/\\/(pickup|delivery)\\/([^/]+)\\/([^/]+)$/);
+  const match = raw.match(/^brumerie:\/\/(pickup|delivery)\/([^/]+)\/([^/]+)$/);
   if (!match) return null;
   return { type: match[1] as 'pickup' | 'delivery', orderId: match[2], code: match[3] };
 }
