@@ -580,7 +580,7 @@ useEffect(() => {
             sellerId={selectedSellerId}
             onBack={goBack}
             onProductClick={handleProductClick}
-            onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname)}
+            onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname, undefined, 'Contact direct')}
             isGuest={!currentUser}
             onGuestAction={(reason) => { navigate('auth'); }}
           />
@@ -814,15 +814,28 @@ function AppContent() {
     });
   }, []);
 
-  // Mode maintenance — bloquer tous sauf admin
-  if (maintenance?.active && currentUser?.uid !== ((import.meta as any).env?.VITE_ADMIN_UID || '__none__')) {
+  // Mode maintenance — bloquer tous SAUF admin
+  // IMPORTANT : attendre que Firebase Auth ait chargé (loading = false)
+  // sinon currentUser est null et l'admin est aussi bloqué
+  const adminUid = (import.meta as any).env?.VITE_ADMIN_UID || '__none__';
+  const isCurrentUserAdmin = !loading && currentUser?.uid === adminUid;
+
+  if (maintenance?.active && !loading && !isCurrentUserAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-8" style={{ background: '#0F172A' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center px-8" style={{ background: '#0F172A' }}>
         <div className="text-center">
           <div className="text-6xl mb-6">🔧</div>
           <h2 className="font-black text-white text-[22px] mb-3">Maintenance en cours</h2>
           <p className="text-slate-400 text-[14px] leading-relaxed">{maintenance.message}</p>
         </div>
+        {/* Si pas connecté, proposer de se connecter (pour que l'admin puisse accéder) */}
+        {!currentUser && (
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-8 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-400 border border-slate-700 active:scale-95 transition-all">
+            Admin ? Recharger
+          </button>
+        )}
       </div>
     );
   }

@@ -101,15 +101,22 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
         </div>
 
         {/* Bookmark button */}
-        <button
-          onClick={handleBookmark}
-          className={`bookmark-btn absolute bottom-3 left-3 ${saved ? 'saved' : ''}`}
-          title={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
-        >
+        <div className="absolute bottom-3 left-3 flex flex-col items-center gap-0.5">
+          <button
+            onClick={handleBookmark}
+            className={`bookmark-btn ${saved ? 'saved' : ''}`}
+            title={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
           <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? '#1D9BF0' : 'none'} stroke={saved ? '#1D9BF0' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
           </svg>
-        </button>
+          </button>
+          {((product as any).bookmarkCount || 0) > 0 && (
+            <span className="text-[8px] font-black text-blue-600 bg-white/90 rounded-full px-1 py-0.5 leading-none shadow-sm">
+              ❤️{(product as any).bookmarkCount}
+            </span>
+          )}
+        </div>
 
         {/* Stock badge bottom right — dans l'image, toujours contenu */}
         {product.quantity && product.quantity > 1 && product.status !== 'sold' && (

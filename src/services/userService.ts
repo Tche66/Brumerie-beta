@@ -12,7 +12,7 @@ export async function getUserById(userId: string): Promise<User | null> {
     const userDoc = await getDoc(doc(db, 'users', userId));
     if (!userDoc.exists()) return null;
 
-    return userDoc.data() as User;
+    return { ...userDoc.data(), id: userDoc.id, uid: userDoc.id } as User;
   } catch (error) {
     console.error('Error getting user:', error);
     return null;

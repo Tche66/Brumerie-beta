@@ -288,13 +288,20 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#0F172A" strokeWidth="3"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div className="flex gap-2">
-            <button onClick={handleBookmark} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
-              <svg width="20" height="20" viewBox="0 0 24 24"
-                fill={isBookmarked ? '#1D9BF0' : 'none'}
-                stroke={isBookmarked ? '#1D9BF0' : '#0F172A'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-              </svg>
-            </button>
+            <div className="flex flex-col items-center gap-0.5">
+              <button onClick={handleBookmark} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
+                <svg width="20" height="20" viewBox="0 0 24 24"
+                  fill={isBookmarked ? '#1D9BF0' : 'none'}
+                  stroke={isBookmarked ? '#1D9BF0' : '#0F172A'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              {((product as any).bookmarkCount || 0) > 0 && (
+                <span className="text-[8px] font-black text-blue-600 bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
+                  ❤️ {(product as any).bookmarkCount}
+                </span>
+              )}
+            </div>
             <button onClick={handleShare} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
               {copySuccess
                 ? <span className="text-[10px] font-black text-green-600">OK</span>

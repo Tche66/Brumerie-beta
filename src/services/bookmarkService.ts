@@ -2,7 +2,7 @@
 // ✅ Favoris stockés dans users/{uid}.bookmarkedProductIds
 // Utilise la collection "users" qui existe déjà → zéro problème de règles Firestore
 
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, increment } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { createNotification } from './notificationService';
 import { showLocalPushNotification } from './pushService';
@@ -31,6 +31,10 @@ export async function addBookmark(
     await updateDoc(userRef(userId), {
       bookmarkedProductIds: arrayUnion(productId),
     });
+    // Incrémenter le compteur favori sur le produit (visible par tous)
+    try {
+      await updateDoc(doc(db, 'products', productId), { bookmarkCount: increment(1) });
+    } catch { /* silencieux — pas bloquant */ }
 
     // Notifier le vendeur si infos disponibles
     if (productInfo?.sellerId && productInfo.sellerId !== userId) {
@@ -60,6 +64,10 @@ export async function removeBookmark(userId: string, productId: string): Promise
     await updateDoc(userRef(userId), {
       bookmarkedProductIds: arrayRemove(productId),
     });
+    // Décrémenter le compteur favori
+    try {
+      await updateDoc(doc(db, 'products', productId), { bookmarkCount: increment(-1) });
+    } catch { /* silencieux */ }
     return true;
   } catch (err) {
     console.error('[Bookmarks] removeBookmark:', err);

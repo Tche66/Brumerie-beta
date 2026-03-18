@@ -6,7 +6,8 @@ import { Review, Product } from '@/types';
 import { SocialBar } from '@/components/SocialIcon';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { BoostModal } from '@/components/BoostModal';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { drawQROnCanvas } from '@/utils/qrCode';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { ProductCard } from '@/components/ProductCard';
@@ -24,6 +25,7 @@ type Tab = 'active' | 'sold' | 'bookmarks';
 
 export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
+  const [showQRModal, setShowQRModal] = useState(false);
   const isOwnProfile = true; // ProfilePage affiche toujours SON propre profil
   const [products, setProducts] = useState<Product[]>([]);
   const [bookmarkedProducts, setBookmarkedProducts] = useState<Product[]>([]);
@@ -287,7 +289,27 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
             🎨 Personnaliser ma boutique
           </button>
         )}
+        {/* Bouton QR boutique — tous les vendeurs */}
+        {currentUser && (
+          <button onClick={() => setShowQRModal(true)}
+            className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-slate-200 text-slate-700 bg-slate-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/>
+              <rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/>
+            </svg>
+            Mon QR Boutique
+          </button>
+        )}
       </div>
+
+      {/* Modal QR Boutique vendeur */}
+      {showQRModal && currentUser && (
+        <ProfileQRModal
+          sellerId={currentUser.uid}
+          sellerName={userProfile?.name || 'Ma boutique'}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
 
       {/* Action Sheet */}
       {actionProduct && (
@@ -349,6 +371,115 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
           onBoosted={() => setBoostProduct(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Modal QR boutique vendeur — avec téléchargement PNG ─────────
+function ProfileQRModal({ sellerId, sellerName, onClose }: {
+  sellerId: string; sellerName: string; onClose: () => void;
+}) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = React.useState(false);
+  const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
+  const SIZE = 220;
+
+  React.useEffect(() => {
+    if (!canvasRef.current) return;
+    let cancelled = false;
+    drawQROnCanvas(canvasRef.current, profileUrl, { dark: '#0f5c2e', light: '#FFFFFF', margin: 2 })
+      .then(() => { if (!cancelled) setReady(true); })
+      .catch(e => console.warn('QR error:', e));
+    return () => { cancelled = true; };
+  }, [profileUrl]);
+
+  const handleDownload = () => {
+    if (!canvasRef.current) return;
+    // Créer un canvas final avec branding
+    const final = document.createElement('canvas');
+    final.width = SIZE + 80;
+    final.height = SIZE + 120;
+    const ctx = final.getContext('2d')!;
+    // Fond blanc
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, final.width, final.height);
+    // Header vert
+    ctx.fillStyle = '#1B5E20';
+    ctx.fillRect(0, 0, final.width, 56);
+    // Texte BRUMERIE
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('BRUMERIE', final.width / 2, 34);
+    // QR code
+    ctx.drawImage(canvasRef.current, 40, 64, SIZE, SIZE);
+    // Nom vendeur
+    ctx.fillStyle = '#1B5E20';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(sellerName, final.width / 2, SIZE + 84);
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('Scanne pour visiter la boutique', final.width / 2, SIZE + 102);
+    // Télécharger
+    const link = document.createElement('a');
+    link.download = `QR-Brumerie-${sellerName.replace(/\s+/g, '-')}.png`;
+    link.href = final.toDataURL('image/png');
+    link.click();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[300] flex items-center justify-center p-4"
+      onClick={onClose}>
+      <div className="bg-white rounded-[2.5rem] w-full max-w-xs overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="px-6 pt-7 pb-5 text-center" style={{ background: 'linear-gradient(150deg,#16A34A,#0f5c2e)' }}>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <img src="/logo.png" alt="Brumerie" style={{ width:28, height:28, objectFit:'contain', filter:'brightness(0) invert(1)' }}/>
+            <span className="text-white font-black text-[15px] tracking-wide">BRUMERIE</span>
+          </div>
+          <p className="text-white/70 text-[9px] font-bold uppercase tracking-[3px]">Mon QR Code boutique</p>
+          <p className="text-white font-black text-[13px] mt-1 truncate px-2">{sellerName}</p>
+        </div>
+
+        {/* QR */}
+        <div className="px-6 py-5 flex flex-col items-center gap-4">
+          <div className="bg-white rounded-2xl p-3 border-2 border-green-100 shadow-lg">
+            <div style={{ width: SIZE, height: SIZE, position: 'relative' }}>
+              {!ready && (
+                <div style={{ position:'absolute', inset:0 }} className="flex items-center justify-center bg-slate-50 rounded-xl">
+                  <div className="w-8 h-8 border-2 border-slate-200 border-t-green-600 rounded-full animate-spin"/>
+                </div>
+              )}
+              <canvas ref={canvasRef} width={SIZE} height={SIZE}
+                style={{ display: ready ? 'block' : 'none', borderRadius: 12 }}/>
+            </div>
+          </div>
+
+          {/* URL */}
+          <p className="text-[9px] text-slate-400 font-mono text-center break-all px-2">{profileUrl}</p>
+
+          {/* Actions */}
+          <div className="flex gap-3 w-full">
+            <button onClick={handleDownload} disabled={!ready}
+              className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg,#1B5E20,#16A34A)' }}>
+              ⬇️ Télécharger
+            </button>
+            <button onClick={() => {
+              navigator.clipboard?.writeText(profileUrl).catch(()=>{});
+            }}
+              className="px-4 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest bg-slate-100 text-slate-700 active:scale-95 transition-all">
+              📋
+            </button>
+          </div>
+
+          <button onClick={onClose}
+            className="w-full py-3 rounded-2xl text-[10px] font-bold text-slate-400 active:scale-95">
+            Fermer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

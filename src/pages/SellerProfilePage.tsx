@@ -174,7 +174,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
         )}
         {!isGuest && onStartChat && seller && currentUser?.uid !== sellerId && (
           <button
-            onClick={() => onStartChat(seller.uid, seller.name)}
+            onClick={() => onStartChat(sellerId, seller.name)}
             className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-wider active:scale-95 transition-all shadow-lg shadow-green-200">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             Contacter
@@ -372,7 +372,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
               {/* Bouton Contacter — chat intégré (visible ici aussi, sous le profil) */}
               {!isGuest && onStartChat && seller && currentUser?.uid !== sellerId && (
                 <button
-                  onClick={() => onStartChat(seller.uid, seller.name)}
+                  onClick={() => onStartChat(sellerId, seller.name)}
                   className="mt-3 flex items-center gap-2 bg-green-600 text-white px-5 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-green-200">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
