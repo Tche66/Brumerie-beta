@@ -3,7 +3,6 @@ import { VerifiedTag } from '@/components/VerifiedTag';
 import React, { useState, useEffect } from 'react';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
-import { BrumerieLogo } from '@/components/BrumerieLogo';
 // ── QR Code boutique — algorithme pur TypeScript, zéro réseau ───
 function ShopQRImage({ url }: { url: string }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -12,12 +11,11 @@ function ShopQRImage({ url }: { url: string }) {
 
   React.useEffect(() => {
     if (!canvasRef.current || !url) return;
-    try {
-      drawQROnCanvas(canvasRef.current, url, { dark: '#0f5c2e', light: '#FFFFFF', margin: 3 });
-      setReady(true);
-    } catch (e) {
-      console.warn('ShopQR error:', e);
-    }
+    let cancelled = false;
+    drawQROnCanvas(canvasRef.current, url, { dark: '#0f5c2e', light: '#FFFFFF', margin: 2 })
+      .then(() => { if (!cancelled) setReady(true); })
+      .catch(e => console.warn('ShopQR error:', e));
+    return () => { cancelled = true; };
   }, [url]);
 
   return (
@@ -234,7 +232,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
             <div className="px-6 pt-7 pb-5 text-center" style={{ background: 'linear-gradient(150deg, #16A34A 0%, #0f5c2e 100%)' }}>
               {/* Logo Brumerie caméléon — blanc sur fond vert */}
               <div className="flex items-center justify-center gap-2 mb-3">
-                <BrumerieLogo size={32} color="#FFFFFF" />
+                <img src="/logo.png" alt="Brumerie" style={{ width:32, height:32, objectFit:'contain', filter:'brightness(0) invert(1)' }} />
                 <span className="text-white font-black text-[15px] tracking-wide">BRUMERIE</span>
               </div>
               <p className="text-white/60 text-[9px] font-bold uppercase tracking-[3px]">QR Code boutique</p>

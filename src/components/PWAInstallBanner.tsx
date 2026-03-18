@@ -74,7 +74,7 @@ export function PWAInstallBanner() {
         style={{ bottom: showBanner ? 140 : 90 }}
         title="Installer l'app Brumerie"
       >
-        <img src="/favicon.png" alt="" className="w-4 h-4 object-contain" />
+        <img src="/logo.png" alt="" className="w-4 h-4 object-contain" />
         <span className="hidden sm:inline">Installer</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -94,7 +94,7 @@ export function PWAInstallBanner() {
             animation: 'slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
           }}
         >
-          <img src="/favicon.png" alt="Brumerie" className="w-10 h-10 object-contain rounded-xl flex-shrink-0" />
+          <img src="/logo.png" alt="Brumerie" className="w-10 h-10 object-contain rounded-xl flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-bold leading-tight">Installe Brumerie</p>
             <p className="text-[10px] text-slate-400 mt-0.5">Accès rapide depuis ton écran d'accueil</p>

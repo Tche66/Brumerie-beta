@@ -365,7 +365,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white/10 blur-3xl"/>
         <div className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full bg-white/10 blur-2xl"/>
         <div className="relative z-10 flex flex-col items-center">
-          <img src="/favicon.png" alt="Brumerie" className="w-24 h-24 object-contain drop-shadow-2xl mb-4"/>
+          <img src="/logo.png" alt="Brumerie" className="w-24 h-24 object-contain drop-shadow-2xl mb-4"/>
           <p className="text-green-50 text-xs font-medium opacity-80 uppercase tracking-[0.1em]">Le commerce de quartier</p>
         </div>
       </div>

@@ -825,7 +825,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <img src="/favicon.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
+          <img src="/logo.png" alt="Brumerie" className="w-16 h-16 object-contain animate-pulse mb-2"/>
           <div className="w-10 h-10 border-4 border-slate-100 border-t-green-600 rounded-full animate-spin" />
           <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Connexion Google…</p>
           <p className="text-[9px] text-slate-300">uid: {currentUser.uid.slice(0,8)}…</p>

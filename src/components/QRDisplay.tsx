@@ -3,7 +3,6 @@
 
 import React from 'react';
 import { drawQROnCanvas } from '@/utils/qrCode';
-import { BrumerieLogo } from '@/components/BrumerieLogo';
 
 interface Props {
   title: string;
@@ -50,19 +49,18 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
-// ── Génération QR locale — algorithme pur TypeScript, zéro CDN ──
+// ── Génération QR via lib qrcode (bundlée par Vite) ─────────────
 function useQRCanvas(data: string, size: number) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
     if (!canvasRef.current || !data) return;
-    try {
-      drawQROnCanvas(canvasRef.current, data, { dark: '#0F172A', light: '#FFFFFF', margin: 3 });
-      setReady(true);
-    } catch (e) {
-      console.warn('QR generation error:', e);
-    }
+    let cancelled = false;
+    drawQROnCanvas(canvasRef.current, data, { dark: '#0F172A', light: '#FFFFFF', margin: 2 })
+      .then(() => { if (!cancelled) setReady(true); })
+      .catch(e => console.warn('QR error:', e));
+    return () => { cancelled = true; };
   }, [data, size]);
 
   return { canvasRef, ready };
@@ -93,7 +91,7 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
 
         {/* En-tête branding — logo transparent + BRUMERIE */}
         <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 w-full justify-center">
-          <BrumerieLogo size={26} color="#1B5E20" />
+          <img src="/logo.png" alt="Brumerie" style={{ width:26, height:26, objectFit:'contain' }} />
           <span className="font-black text-slate-900 text-[15px] uppercase tracking-[0.15em]">Brumerie</span>
         </div>
 

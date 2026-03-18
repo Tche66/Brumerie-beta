@@ -14,7 +14,7 @@ export function RoleSelectPage({ onSelect, userName }: RoleSelectPageProps) {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12 font-sans">
 
       {/* Logo */}
-      <img src="/favicon.png" alt="Brumerie" className="w-14 h-14 object-contain mb-8 drop-shadow-lg" />
+      <img src="/logo.png" alt="Brumerie" className="w-14 h-14 object-contain mb-8 drop-shadow-lg" />
 
       <div className="text-center mb-10">
         <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">

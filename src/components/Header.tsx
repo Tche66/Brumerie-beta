@@ -33,7 +33,7 @@ export function Header({ onProfileClick, onSearchChange, searchTerm = '', onNoti
           {/* Logo — cliquable pour revenir à l'accueil et rafraîchir */}
           <button onClick={onLogoClick} className="flex-shrink-0 active:scale-95 transition-all" aria-label="Accueil">
             <img
-              src="/assets/Logos/logo-horizontal.png"
+              src="/logo.png"
               alt="Brumerie"
               className="h-8 w-auto object-contain"
               onError={(e) => {
