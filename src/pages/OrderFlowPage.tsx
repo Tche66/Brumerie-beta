@@ -1,12 +1,13 @@
 // src/pages/OrderFlowPage.tsx
 // Flow complet acheteur : Récapitulatif → Paiement → Upload preuve
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createOrder, submitProof } from '@/services/orderService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
+import { getAppConfig } from '@/services/appConfigService';
 import { PaymentLogo } from '@/components/PaymentLogo';
 
 interface OrderFlowPageProps {
@@ -24,6 +25,15 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [step, setStep] = useState<Step>('recap');
   const [orderId, setOrderId] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash_on_delivery');
+  // Paiement à l'avance — activé globalement OU pour ce vendeur spécifique
+  const [advancePaymentOk, setAdvancePaymentOk] = useState(false);
+
+  useEffect(() => {
+    const config = getAppConfig();
+    // Activé si : global activé OU ce vendeur a un override
+    const sellerAllowed = (product as any)?.sellerAdvancePaymentAllowed === true;
+    setAdvancePaymentOk(config.advancePaymentEnabled || sellerAllowed);
+  }, [product]);
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
@@ -251,16 +261,28 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         <div>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de paiement</p>
           <div className="grid grid-cols-1 gap-3 mb-4">
-            <button onClick={() => setPaymentMode('mobile_money')}
-              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'mobile_money' ? 'border-orange-400 bg-orange-50' : 'border-slate-100 bg-slate-50'}`}>
+            {/* Payer à l'avance — conditionnel selon config admin */}
+            <button
+              onClick={() => advancePaymentOk && setPaymentMode('mobile_money')}
+              disabled={!advancePaymentOk}
+              className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 relative ${
+                !advancePaymentOk
+                  ? 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
+                  : paymentMode === 'mobile_money'
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-slate-100 bg-slate-50'
+              }`}>
+              {!advancePaymentOk && (
+                <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
+                  🔒 Bientôt
+                </span>
+              )}
               <div className="text-2xl flex-shrink-0">💳</div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer à l'avance</p>
                 <p className="text-[10px] text-slate-400 font-medium">Wave · Orange Money · MTN · Moov</p>
                 {paymentMode === 'mobile_money' && (
-                  <p className="text-[9px] text-orange-600 font-black mt-1 leading-tight">
-                    ⚠️ Payez en avance uniquement si vous connaissez bien le vendeur ou lui faites confiance. Brumerie ne rembourse pas au MVP.
-                  </p>
+
                 )}
               </div>
               {paymentMode === 'mobile_money' && (
@@ -386,7 +408,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <ul className="space-y-1.5">
             {[
               "Confirmez que le vendeur est disponible pour livrer.",
-              "Payez en avance uniquement si vous connaissez le vendeur ou lui faites confiance.",
+              "Paiement mobile money — disponible prochainement.",
               "Brumerie ne rembourse pas en cas de litige au stade MVP.",
               "En cas de doute, choisissez Payer à la livraison."
             ].map((txt, i) => (

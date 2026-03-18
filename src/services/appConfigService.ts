@@ -10,12 +10,13 @@ export interface AppConfig {
   maintenanceMessage:  string;   // Message affiché aux users
 
   // ── Features on/off ──────────────────────────────────
-  sellEnabled:         boolean;  // Publier une annonce
-  chatEnabled:         boolean;  // Messagerie
-  ordersEnabled:       boolean;  // Commandes
-  referralEnabled:     boolean;  // Parrainage
-  searchAlertsEnabled: boolean;  // Alertes de recherche
-  pushNotifsEnabled:   boolean;  // Notifications push
+  sellEnabled:            boolean;  // Publier une annonce
+  chatEnabled:            boolean;  // Messagerie
+  ordersEnabled:          boolean;  // Commandes
+  referralEnabled:        boolean;  // Parrainage
+  searchAlertsEnabled:    boolean;  // Alertes de recherche
+  pushNotifsEnabled:      boolean;  // Notifications push
+  advancePaymentEnabled:  boolean;  // Paiement à l'avance Mobile Money (global)
 
   // ── Limites globales ─────────────────────────────────
   maxImagesPerProduct: number;   // Nb photos max par annonce (défaut 5)
@@ -41,12 +42,13 @@ export interface AppConfig {
 export const DEFAULT_CONFIG: AppConfig = {
   maintenanceMode:     false,
   maintenanceMessage:  'Brumerie est en maintenance. Reviens dans quelques minutes !',
-  sellEnabled:         true,
-  chatEnabled:         true,
-  ordersEnabled:       true,
-  referralEnabled:     true,
-  searchAlertsEnabled: true,
-  pushNotifsEnabled:   true,
+  sellEnabled:            true,
+  chatEnabled:            true,
+  ordersEnabled:          true,
+  referralEnabled:        true,
+  searchAlertsEnabled:    true,
+  pushNotifsEnabled:      true,
+  advancePaymentEnabled:  false, // Désactivé par défaut pour MVP
   maxImagesPerProduct: 5,
   maxProductsFreeTier: 5,
   bannerEnabled:       false,

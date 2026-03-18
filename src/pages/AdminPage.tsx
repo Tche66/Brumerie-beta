@@ -572,6 +572,29 @@ export function AdminPage({ onBack }: AdminPageProps) {
                           <option value="365">1an</option>
                         </select>
                       </div>
+                      {/* Toggle paiement à l'avance par vendeur */}
+                      {u.role === 'seller' && (
+                        <button
+                          onClick={async () => {
+                            setBusy('adv_'+u.id);
+                            try {
+                              await updateDoc(doc(db,'users',u.id), {
+                                advancePaymentAllowed: !(u as any).advancePaymentAllowed
+                              });
+                              showToast((u as any).advancePaymentAllowed ? '🔒 Paiement avance retiré' : '💳 Paiement avance accordé');
+                            } catch { showToast('Erreur'); }
+                            finally { setBusy(''); }
+                          }}
+                          disabled={busy==='adv_'+u.id}
+                          className={`px-2 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all border ${
+                            (u as any).advancePaymentAllowed
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : 'bg-slate-100 text-slate-500 border-slate-200'
+                          }`}
+                          title={(u as any).advancePaymentAllowed ? 'Retirer paiement avance' : 'Autoriser paiement avance'}>
+                          {(u as any).advancePaymentAllowed ? '💳✓' : '💳'}
+                        </button>
+                      )}
                     </div>
                     {/* Ligne 2 — message direct + changer rôle */}
                     <div className="flex gap-2">
@@ -746,7 +769,17 @@ export function AdminPage({ onBack }: AdminPageProps) {
                     if (f) { setHeroBannerFile(f); setHeroBannerPreview(URL.createObjectURL(f)); }
                   }} />
                 </label>
-                {heroBannerPreview && <img src={heroBannerPreview} className="w-full rounded-xl mt-2 max-h-24 object-cover" alt="preview"/>}
+                {heroBannerPreview && (
+                  <div className="relative mt-2">
+                    <img src={heroBannerPreview} className="w-full rounded-xl max-h-24 object-cover" alt="preview"/>
+                    <button
+                      onClick={() => { setHeroBannerFile(null); setHeroBannerPreview(''); }}
+                      className="absolute top-1 right-1 w-7 h-7 bg-red-500 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all"
+                      title="Supprimer l'image">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                )}
                 {heroBannerFile && (
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <p className="text-[9px] text-slate-400">Durée :</p>
@@ -759,11 +792,30 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </div>
                 )}
               </div>
-              <button onClick={saveHeroConfig} disabled={heroSaving}
-                className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-[0.98] transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                {heroSaving ? '⏳ Sauvegarde...' : '💾 Sauvegarder Hero'}
-              </button>
+              <div className="flex gap-2">
+                <button onClick={saveHeroConfig} disabled={heroSaving}
+                  className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-[0.98] transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                  {heroSaving ? '⏳ Sauvegarde...' : '💾 Sauvegarder Hero'}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('Supprimer la bannière image active ?')) return;
+                    try {
+                      const { setDoc, doc: firestoreDoc } = await import('firebase/firestore');
+                      const { db } = await import('@/config/firebase');
+                      await setDoc(firestoreDoc(db, 'system', 'homeConfig'),
+                        { heroBannerUrl: '', heroBannerExpiry: null }, { merge: true });
+                      setHeroBannerFile(null);
+                      setHeroBannerPreview('');
+                      showToast('🗑️ Bannière supprimée');
+                    } catch { showToast('Erreur suppression'); }
+                  }}
+                  className="px-4 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest bg-red-900/40 text-red-400 active:scale-95 transition-all"
+                  title="Supprimer la bannière active">
+                  🗑️
+                </button>
+              </div>
             </div>
 
             <div className="bg-white/5 rounded-2xl p-4 space-y-4">
@@ -833,6 +885,35 @@ export function AdminPage({ onBack }: AdminPageProps) {
         {tab === 'settings' && (
           <>
             <div className="bg-white rounded-2xl p-4 space-y-4">
+              {/* ── Paiement à l'avance ── */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">💳 Paiement à l'avance (Mobile Money)</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">Active/désactive le paiement mobile money pour tous les acheteurs</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const newVal = !(settingsDraft['advancePaymentEnabled'] ?? globalSettings['advancePaymentEnabled'] ?? false);
+                      setSettingsDraft((s: any) => ({ ...s, advancePaymentEnabled: newVal }));
+                    }}
+                    className={`relative w-12 h-6 rounded-full transition-all flex-shrink-0 ${
+                      (settingsDraft['advancePaymentEnabled'] ?? globalSettings['advancePaymentEnabled'] ?? false)
+                        ? 'bg-green-500' : 'bg-slate-600'
+                    }`}>
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                      (settingsDraft['advancePaymentEnabled'] ?? globalSettings['advancePaymentEnabled'] ?? false)
+                        ? 'left-7' : 'left-1'
+                    }`}/>
+                  </button>
+                </div>
+                <p className="text-[9px] mt-1 font-bold">
+                  {(settingsDraft['advancePaymentEnabled'] ?? globalSettings['advancePaymentEnabled'] ?? false)
+                    ? <span className="text-green-400">✅ Activé — les acheteurs peuvent payer à l'avance</span>
+                    : <span className="text-slate-500">🔒 Désactivé — seul le COD est disponible</span>}
+                </p>
+              </div>
+
               {/* ── Prix badge Vérifié ── */}
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Prix badge vérifié — officiel (FCFA)</p>

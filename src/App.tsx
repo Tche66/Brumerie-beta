@@ -271,6 +271,27 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // une seule fois au montage
 
+  // ── useEffect #2c — deep link /vendeur/{sellerId} ──────────────
+  useEffect(() => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/vendeur\/([^/]+)$/);
+    if (!match) return;
+    const sellerIdFromUrl = match[1];
+    // Nettoyer l'URL immédiatement
+    window.history.replaceState({}, '', '/');
+    // Naviguer vers le profil du vendeur
+    setSelectedSellerId(sellerIdFromUrl);
+    // Attendre que l'auth soit prête avant de naviguer
+    const tryNavigate = () => {
+      setActivePage('seller-profile' as any);
+      setNavigationHistory(['seller-profile' as any]);
+    };
+    // Délai court pour laisser Firebase Auth s'initialiser
+    const t = setTimeout(tryNavigate, 800);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // une seule fois au montage
+
   // ── useEffect #3 — messages non-lus ──────────────────────────
   useEffect(() => {
     if (!currentUser) return;

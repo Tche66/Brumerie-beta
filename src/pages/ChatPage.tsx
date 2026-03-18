@@ -37,8 +37,9 @@ function dateSeparator(ts: any): string {
 }
 
 // ── Rendu texte avec liens cliquables ──────────────────────
-function TextWithLinks({ text, isMe }: { text: string; isMe: boolean }) {
+function TextWithLinks({ text, isMe }: { text?: string; isMe: boolean }) {
   const URL_REGEX = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  if (!text) return null;
   const parts = text.split(URL_REGEX);
   return (
     <p className="text-[13px] leading-relaxed">
@@ -460,7 +461,7 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
                     <div className={`px-4 py-3 rounded-[1.5rem] shadow-sm ${
                       isMe ? 'bg-blue-500 text-white rounded-br-md' : 'bg-white text-slate-900 border border-slate-100 rounded-bl-md'
                     }`}>
-                      <TextWithLinks text={msg.text} isMe={isMe}/>
+                      {msg.text && <TextWithLinks text={msg.text} isMe={isMe}/>}
                       <div className={`flex items-center justify-end gap-1.5 mt-1 ${isMe ? 'text-blue-200' : 'text-slate-300'}`}>
                         <span className="text-[9px] font-bold">{timeLabel(msg.createdAt)}</span>
                         {isMe && (

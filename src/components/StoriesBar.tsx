@@ -97,7 +97,7 @@ function StoryViewer({
             {story.sellerPhoto
               ? <img src={story.sellerPhoto} className="w-full h-full object-cover" alt=""/>
               : <div className="w-full h-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white font-black text-sm">{story.sellerName[0]}</span>
+                  <span className="text-white font-black text-sm">{(story.sellerName || '?')[0]}</span>
                 </div>
             }
           </div>
@@ -347,12 +347,12 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
                     {story.sellerPhoto
                       ? <img src={story.sellerPhoto} className="w-full h-full object-cover" alt=""/>
                       : <div className="w-full h-full bg-green-100 flex items-center justify-center">
-                          <span className="text-green-700 font-black text-lg">{story.sellerName[0]}</span>
+                          <span className="text-green-700 font-black text-lg">{(story.sellerName || '?')[0]}</span>
                         </div>
                     }
                   </div>
                 </div>
-                <p className="text-[9px] font-bold text-slate-600 text-center w-14 truncate">{story.sellerName.split(' ')[0]}</p>
+                <p className="text-[9px] font-bold text-slate-600 text-center w-14 truncate">{(story.sellerName || '').split(' ')[0]}</p>
               </button>
             );
           })}

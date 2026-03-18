@@ -113,6 +113,7 @@ export interface User {
   shopBanner?: string;       // URL image bannière
   shopSlogan?: string;       // ex: "La mode à prix imbattable"
   // ─── Parrainage ──────────────────────────────────────────
+  advancePaymentAllowed?: boolean; // Ce vendeur peut recevoir des paiements à l'avance (override global)
   referralCode?: string;     // Code unique ex: "KOFFI-X7K2"
   referredBy?: string;       // UID du parrain
   referralCount?: number;    // Nombre d'invités actifs

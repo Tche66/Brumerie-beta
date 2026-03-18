@@ -54,7 +54,17 @@ export async function getAdminStats(): Promise<{
     activeProducts: productsData.filter(p => p.status === 'active').length,
     totalOrders: orders.size,
     totalBoostRevenue,
-    totalVerifRevenue: verifiedCount * VERIFICATION_PRICE, // Toujours 3 000 FCFA — prix officiel (hors promo)
+    totalVerifRevenue: await (async () => {
+      // Utiliser le prix réellement payé : promo si active, sinon prix officiel
+      try {
+        const settingsSnap = await getDoc(doc(db, 'system', 'settings'));
+        const s = settingsSnap.exists() ? settingsSnap.data() : {};
+        const effectivePrice = (s.verificationPromoPrice && s.verificationPromoPrice > 0)
+          ? s.verificationPromoPrice
+          : (s.verificationPrice || VERIFICATION_PRICE);
+        return verifiedCount * effectivePrice;
+      } catch { return verifiedCount * VERIFICATION_PRICE; }
+    })(),
     newUsersToday: usersData.filter(u => {
       const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
       return ms !== null && ms > todayTs.toMillis();
@@ -234,6 +244,7 @@ export async function saveGlobalSettings(settings: {
     simple: { products: number; dailyChats: number };
     verified: { products: number; dailyChats: number };
   };
+  advancePaymentEnabled?: boolean;  // Paiement mobile money global
 }): Promise<void> {
   const ref = doc(db, 'system', 'settings');
   await updateDoc(ref, { ...settings, updatedAt: serverTimestamp() }).catch(async () => {
