@@ -2,6 +2,59 @@ import { SocialBar } from '@/components/SocialIcon';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import React, { useState, useEffect } from 'react';
 import { subscribeSellerReviews } from '@/services/reviewService';
+// ── QR Code boutique robuste ─────────────────────────────────────
+// Essaie plusieurs fournisseurs QR en cascade pour Android PWA
+function ShopQRImage({ url }: { url: string }) {
+  const encoded = encodeURIComponent(url);
+  // 3 fournisseurs QR en fallback — si le 1er échoue, on essaie le 2e, puis le 3e
+  const SOURCES = [
+    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encoded}&color=0f5c2e&bgcolor=FFFFFF&margin=8&format=png`,
+    `https://quickchart.io/qr?text=${encoded}&size=190&dark=0f5c2e&light=FFFFFF&margin=1`,
+    `https://chart.googleapis.com/chart?chs=190x190&cht=qr&chl=${encoded}&choe=UTF-8`,
+  ];
+  const [srcIdx, setSrcIdx] = React.useState(0);
+  const [loaded, setLoaded] = React.useState(false);
+  const [failed, setFailed] = React.useState(false);
+
+  const handleError = () => {
+    if (srcIdx < SOURCES.length - 1) {
+      setSrcIdx(i => i + 1);
+      setLoaded(false);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  if (failed) return (
+    <div style={{ width: 190, height: 190 }}
+      className="flex flex-col items-center justify-center bg-slate-50 rounded-xl gap-2">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/></svg>
+      <p className="text-[9px] font-bold text-slate-400 text-center px-3">QR indisponible hors ligne</p>
+    </div>
+  );
+
+  return (
+    <div style={{ width: 190, height: 190, position: 'relative' }}>
+      {!loaded && (
+        <div style={{ position: 'absolute', inset: 0 }}
+          className="flex items-center justify-center bg-slate-50 rounded-xl">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-green-600 rounded-full animate-spin" />
+        </div>
+      )}
+      <img
+        key={srcIdx}
+        src={SOURCES[srcIdx]}
+        alt="QR Code boutique"
+        width={190}
+        height={190}
+        style={{ display: loaded ? 'block' : 'none', borderRadius: 12 }}
+        onLoad={() => setLoaded(true)}
+        onError={handleError}
+      />
+    </div>
+  );
+}
+
 import { Review, Product, User } from '@/types';
 import { ProductCard } from '@/components/ProductCard';
 import { getUserById } from '@/services/userService';
@@ -213,12 +266,7 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
             {/* Zone QR */}
             <div className="px-6 py-5 flex flex-col items-center">
               <div className="bg-white rounded-2xl p-3 border-2 border-green-100 shadow-lg mb-4">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}&color=0f5c2e&bgcolor=FFFFFF`}
-                  alt="QR Code"
-                  width={190} height={190}
-                  className="rounded-xl block"
-                />
+                <ShopQRImage url={profileUrl} />
               </div>
 
               {/* Slogan */}

@@ -50,7 +50,12 @@ export function CreateGroupModal({ onClose, onCreated }: CreateGroupModalProps) 
         const photos = data.participantPhotos || {};
         Object.keys(names).forEach(uid => {
           if (uid !== currentUser.uid && !contactMap[uid]) {
-            contactMap[uid] = { uid, name: names[uid] || 'Utilisateur', photo: photos[uid] || undefined };
+            const photo = photos[uid];
+            contactMap[uid] = {
+              uid,
+              name: names[uid] || 'Utilisateur',
+              ...(photo ? { photo } : {}),
+            };
           }
         });
       });
@@ -76,16 +81,22 @@ export function CreateGroupModal({ onClose, onCreated }: CreateGroupModalProps) 
     try {
       const memberIds = [currentUser.uid, ...Array.from(selected)];
       const membersInfo: Record<string, { name: string; photo?: string }> = {
-        [currentUser.uid]: { name: userProfile.name, photo: userProfile.photoURL || undefined },
+        [currentUser.uid]: {
+          name: userProfile.name,
+          ...(userProfile.photoURL ? { photo: userProfile.photoURL } : {}),
+        },
       };
       contacts.filter(c => selected.has(c.uid)).forEach(c => {
-        membersInfo[c.uid] = { name: c.name, photo: c.photo };
+        membersInfo[c.uid] = {
+          name: c.name,
+          ...(c.photo ? { photo: c.photo } : {}),
+        };
       });
 
       const convId = await createGroupConversation({
         adminId: currentUser.uid,
         adminName: userProfile.name,
-        adminPhoto: userProfile.photoURL || undefined,
+        ...(userProfile.photoURL ? { adminPhoto: userProfile.photoURL } : {}),
         groupName: groupName.trim(),
         memberIds,
         membersInfo,

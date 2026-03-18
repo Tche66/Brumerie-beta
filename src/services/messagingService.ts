@@ -561,18 +561,27 @@ export async function createGroupConversation(params: {
     participantsInfo[uid] = membersInfo[uid] || { name: 'Membre' };
   });
 
-  const groupRef = await addDoc(collection(db, 'conversations'), {
+  // Nettoyer participantsInfo — Firestore rejette les valeurs undefined
+  const cleanParticipantsInfo: Record<string, any> = {};
+  Object.entries(participantsInfo).forEach(([uid, info]) => {
+    cleanParticipantsInfo[uid] = { name: info.name || 'Membre' };
+    if (info.photo) cleanParticipantsInfo[uid].photo = info.photo;
+  });
+
+  const groupData: Record<string, any> = {
     participants: memberIds,
-    participantsInfo,
+    participantsInfo: cleanParticipantsInfo,
     isGroup: true,
     groupName: groupName.trim(),
     groupAdminId: adminId,
     lastMessage: `Groupe "${groupName}" créé par ${adminName}`,
     lastMessageAt: serverTimestamp(),
     lastSenderId: adminId,
-    unreadCount: memberIds.reduce((acc, uid) => ({ ...acc, [uid]: uid === adminId ? 0 : 1 }), {}),
+    unreadCount: memberIds.reduce((acc: Record<string,number>, uid: string) => ({ ...acc, [uid]: uid === adminId ? 0 : 1 }), {}),
     createdAt: serverTimestamp(),
-  });
+  };
+
+  const groupRef = await addDoc(collection(db, 'conversations'), groupData);
 
   // Message système de bienvenue
   await addDoc(collection(db, 'conversations', groupRef.id, 'messages'), {
