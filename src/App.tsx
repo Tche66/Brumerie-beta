@@ -814,31 +814,30 @@ function AppContent() {
     });
   }, []);
 
-  // Mode maintenance — bloquer tous SAUF admin
-  // IMPORTANT : attendre que Firebase Auth ait chargé (loading = false)
-  // sinon currentUser est null et l'admin est aussi bloqué
+  // Mode maintenance — logique correcte
+  // Règles :
+  // 1. Si loading → ne rien bloquer (laisser le spinner normal s'afficher)
+  // 2. Si maintenance active ET utilisateur connecté ET pas admin → bloquer
+  // 3. Si maintenance active ET pas connecté → LAISSER LA PAGE DE CONNEXION
+  //    (l'admin doit pouvoir se connecter pour désactiver la maintenance)
   const adminUid = (import.meta as any).env?.VITE_ADMIN_UID || '__none__';
-  const isCurrentUserAdmin = !loading && currentUser?.uid === adminUid;
+  const isCurrentUserAdmin = currentUser?.uid === adminUid;
 
-  if (maintenance?.active && !loading && !isCurrentUserAdmin) {
+  // Bloquer UNIQUEMENT si : maintenance active + auth chargée + connecté + pas admin
+  if (maintenance?.active && !loading && currentUser && !isCurrentUserAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-8" style={{ background: '#0F172A' }}>
         <div className="text-center">
           <div className="text-6xl mb-6">🔧</div>
           <h2 className="font-black text-white text-[22px] mb-3">Maintenance en cours</h2>
           <p className="text-slate-400 text-[14px] leading-relaxed">{maintenance.message}</p>
+          <p className="text-slate-600 text-[11px] mt-4">Réessayez dans quelques instants</p>
         </div>
-        {/* Si pas connecté, proposer de se connecter (pour que l'admin puisse accéder) */}
-        {!currentUser && (
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-400 border border-slate-700 active:scale-95 transition-all">
-            Admin ? Recharger
-          </button>
-        )}
       </div>
     );
   }
+  // Si maintenance active + pas connecté → continuer normalement
+  // L'admin peut se connecter via la page de connexion habituelle
 
   // Pendant le chargement initial Firebase
   if (loading) {
