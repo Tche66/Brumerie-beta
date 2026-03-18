@@ -9,6 +9,7 @@ import { PaymentLogo } from '@/components/PaymentLogo';
 import { compressImage } from '@/utils/helpers';
 import { getAllActiveSellers } from '@/services/userService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
+import { isValidAWCode, resolveAWCode, formatAWCode } from '@/services/awService';
 
 interface EditProfilePageProps { onBack: () => void; onSaved: () => void; }
 
