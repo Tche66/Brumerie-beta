@@ -1040,12 +1040,24 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   <p className="font-black text-slate-800 text-[13px]">🔧 Maintenance</p>
                   <p className="text-slate-400 text-[11px]">Bloque tous les utilisateurs</p>
                 </div>
-                <button onClick={() => setSettingsDraft((s: any) => ({ ...s, maintenanceMode: !s.maintenanceMode }))}
-                  className={`w-12 h-6 rounded-full relative transition-all ${settingsDraft.maintenanceMode||globalSettings.maintenanceMode?'bg-red-500':'bg-slate-200'}`}>
-                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${settingsDraft.maintenanceMode||globalSettings.maintenanceMode?'left-6':'left-0.5'}`}/>
+                <button onClick={() => {
+                    // Lire la valeur actuelle réelle (draft si défini, sinon globalSettings)
+                    const current = 'maintenanceMode' in settingsDraft
+                      ? settingsDraft.maintenanceMode
+                      : (globalSettings.maintenanceMode ?? false);
+                    setSettingsDraft((s: any) => ({ ...s, maintenanceMode: !current }));
+                  }}
+                  className={`w-12 h-6 rounded-full relative transition-all ${ 
+                    ('maintenanceMode' in settingsDraft ? settingsDraft.maintenanceMode : globalSettings.maintenanceMode)
+                      ? 'bg-red-500' : 'bg-slate-200'
+                  }`}>
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                    ('maintenanceMode' in settingsDraft ? settingsDraft.maintenanceMode : globalSettings.maintenanceMode)
+                      ? 'left-6' : 'left-0.5'
+                  }`}/>
                 </button>
               </div>
-              {(settingsDraft.maintenanceMode||globalSettings.maintenanceMode) && (
+              {('maintenanceMode' in settingsDraft ? settingsDraft.maintenanceMode : globalSettings.maintenanceMode) && (
                 <input value={settingsDraft.maintenanceMessage??globalSettings.maintenanceMessage??''} onChange={e => setSettingsDraft((s: any) => ({ ...s, maintenanceMessage: e.target.value }))} placeholder="Message maintenance..." className="w-full bg-red-50 border-2 border-red-200 rounded-xl px-4 py-3 text-[12px] outline-none"/>
               )}
             </div>
