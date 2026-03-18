@@ -161,6 +161,37 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
           </Section>
         )}
 
+        {/* ── CARD ADDRESS-WEB ── */}
+        {!activeCategory && (
+          <div className="px-4 mb-2">
+            <div className="rounded-[2rem] overflow-hidden"
+              style={{ background: 'linear-gradient(135deg,#0369A1,#0EA5E9)' }}>
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🌍</div>
+                  <div>
+                    <p className="text-white font-black text-[12px]">Address-Web Africa</p>
+                    <p className="text-white/70 text-[9px]">Ton adresse numérique partout en Afrique</p>
+                  </div>
+                </div>
+                <p className="text-white/80 text-[10px] font-medium leading-relaxed mb-3">
+                  En Afrique, 60% des rues n'ont pas de nom officiel. Address-Web te donne un code unique <span className="font-black text-white">AW-ABJ-84321</span> qui pointe vers tes coordonnées GPS exactes — pour recevoir des livraisons, partager ta boutique ou ton domicile.
+                </p>
+                <div className="flex gap-2">
+                  <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
+                    className="flex-1 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest text-sky-800 bg-white active:scale-95 transition-all text-center">
+                    📍 Créer gratuitement
+                  </a>
+                  <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
+                    className="px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest text-white bg-white/20 active:scale-95 transition-all">
+                    En savoir +
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Vendeurs Vérifiés en vedette ── */}
         {!activeCategory && verifiedSellers.length > 0 && (
           <Section title="✅ Vendeurs vérifiés" subtitle="Identité contrôlée par Brumerie">

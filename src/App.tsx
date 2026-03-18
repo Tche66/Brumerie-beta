@@ -371,6 +371,31 @@ useEffect(() => {
     });
   }, [currentUser?.uid]);
 
+  // ── useEffect #4b — rappel Address-Web si pas de code AW ───────
+  useEffect(() => {
+    if (!currentUser || !userProfile || loading) return;
+    // Ne montrer qu'une fois (stocker en localStorage)
+    const key = `aw_prompt_${currentUser.uid}`;
+    if (localStorage.getItem(key)) return;
+    // Si pas de code AW → créer une notification in-app
+    if (!userProfile.awAddressCode) {
+      const timer = setTimeout(async () => {
+        try {
+          const { createNotification } = await import('@/services/notificationService');
+          await createNotification(
+            currentUser.uid,
+            'system',
+            '📍 Tu n'as pas encore d'adresse numérique',
+            'Crée ton code Address-Web gratuit pour recevoir tes livraisons n'importe où en Afrique. C'est rapide et gratuit !',
+            { actionUrl: 'https://addressweb.brumerie.com/creer' },
+          );
+          localStorage.setItem(key, '1');
+        } catch { /* silencieux */ }
+      }, 3000); // 3s après le login pour ne pas gêner
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser?.uid, userProfile?.awAddressCode, loading]);
+
   // ── useEffect #5 — vérifier boosts/badges expirant au démarrage ─
   useEffect(() => {
     if (!currentUser?.uid || !userProfile) return;

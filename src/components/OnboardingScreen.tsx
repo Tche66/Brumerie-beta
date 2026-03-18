@@ -16,6 +16,13 @@ const SLIDES = [
     hasAlert: true,
   },
   {
+    emoji: '📍',
+    title: 'Ton adresse\nnumérique gratuite',
+    sub: 'En Afrique, les rues n\'ont pas toujours de nom.\nAddress-Web te donne un code unique comme\nAW-ABJ-84321 pour recevoir tes livraisons.',
+    color: '#0EA5E9',
+    isAddressWeb: true,
+  },
+  {
     emoji: '🔍',
     title: 'Achète en\ntoute confiance',
     sub: 'Vendeurs vérifiés, paiement Mobile Money\nou à la livraison. Zéro arnaque.',
@@ -89,6 +96,21 @@ export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
           style={{ color: 'rgba(255,255,255,0.5)' }}>
           {slide.sub}
         </p>
+
+        {/* CTA Address-Web */}
+        {(slide as any).isAddressWeb && (
+          <div className="mt-8 w-full max-w-xs flex flex-col items-center gap-3">
+            <a
+              href="https://addressweb.brumerie.com/creer"
+              target="_blank" rel="noopener noreferrer"
+              className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-sky-700 bg-white active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2">
+              📍 Créer mon adresse gratuite →
+            </a>
+            <p className="text-[9px] font-bold text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Fonctionne pour Abidjan, Dakar, Lagos, Accra et + encore
+            </p>
+          </div>
+        )}
 
         {/* Champ alerte mots-clés */}
         {(slide as any).hasAlert && (

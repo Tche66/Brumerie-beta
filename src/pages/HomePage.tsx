@@ -384,6 +384,30 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         </div>
       </div>
 
+      {/* ── BANNIÈRE ADDRESS-WEB ── Canal de pub permanent ── */}
+      {!searchTerm && (
+        <div className="mx-4 mt-4 mb-2 rounded-[1.8rem] overflow-hidden shadow-lg"
+          style={{ background: 'linear-gradient(135deg,#0EA5E9,#0369A1)' }}>
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl">
+              📍
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-black text-[11px] leading-tight">
+                Tu as une adresse numérique ?
+              </p>
+              <p className="text-white/75 text-[9px] font-medium mt-0.5 leading-tight">
+                Address-Web : reçois des livraisons n'importe où en Afrique sans adresse postale
+              </p>
+            </div>
+            <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
+              className="flex-shrink-0 bg-white text-sky-700 font-black text-[8px] uppercase tracking-widest px-3 py-2 rounded-xl active:scale-90 transition-all">
+              Essayer →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Grille produits */}
       <div className="px-5 mt-8">
         <div className="flex items-center justify-between mb-6">

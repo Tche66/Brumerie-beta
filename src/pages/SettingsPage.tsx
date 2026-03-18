@@ -295,6 +295,69 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </SettingSection>
 
         {/* Informations */}
+        {/* ══ SECTION ADDRESS-WEB ══ */}
+        <SettingSection title="📍 Mon adresse Address-Web">
+          <div className="space-y-3">
+            {userProfile?.awAddressCode ? (
+              <div className="flex items-center justify-between p-4 bg-sky-50 rounded-2xl border border-sky-100">
+                <div>
+                  <p className="font-black text-sky-800 text-[13px] font-mono">{userProfile.awAddressCode}</p>
+                  <p className="text-sky-600 text-[10px] font-bold mt-0.5">Ton adresse numérique Brumerie</p>
+                </div>
+                <a href={`https://addressweb.brumerie.com/${userProfile.awAddressCode}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] font-black text-sky-700 bg-white border border-sky-200 px-3 py-2 rounded-xl active:scale-90 transition-all">
+                  Voir →
+                </a>
+              </div>
+            ) : (
+              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <p className="font-black text-amber-800 text-[12px] mb-1">⚠️ Tu n'as pas encore d'adresse</p>
+                <p className="text-amber-700 text-[10px] font-medium leading-relaxed mb-3">
+                  Sans adresse numérique, les livreurs ne peuvent pas te localiser précisément.
+                  Crée ta gratuitement en 1 minute sur Address-Web.
+                </p>
+                <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
+                  className="block w-full py-3 text-center rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg,#0EA5E9,#0369A1)' }}>
+                  📍 Créer mon adresse gratuite
+                </a>
+              </div>
+            )}
+
+            {/* Explication complète */}
+            <div className="p-4 bg-slate-50 rounded-2xl space-y-2">
+              <p className="font-black text-slate-800 text-[11px]">Pourquoi une adresse numérique ?</p>
+              <div className="space-y-1.5">
+                {[
+                  { icon: '🏠', text: 'En Afrique, 60% des rues n\'ont pas de nom officiel' },
+                  { icon: '📦', text: 'Les livreurs ne peuvent pas trouver ton domicile sans repère GPS' },
+                  { icon: '📍', text: 'Ton code AW-ABJ-XXXXX = tes coordonnées GPS exactes + un repère' },
+                  { icon: '🆓', text: 'Gratuit, universel, utilisable en dehors de Brumerie' },
+                ].map(({ icon, text }) => (
+                  <div key={text} className="flex items-start gap-2">
+                    <span className="text-[13px] flex-shrink-0">{icon}</span>
+                    <p className="text-slate-600 text-[10px] font-medium leading-relaxed">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Lien vers Address-Web */}
+            <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-white rounded-2xl border-2 border-slate-100 active:scale-95 transition-all">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🌍</span>
+                <div>
+                  <p className="font-black text-slate-800 text-[12px]">Address-Web Africa</p>
+                  <p className="text-slate-400 text-[9px]">addressweb.brumerie.com</p>
+                </div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          </div>
+        </SettingSection>
+
         <SettingSection title="Informations">
           <SettingItem icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>}
             label="Confidentialité" sublabel="Protection de tes données" onClick={() => onNavigate('privacy')}/>
