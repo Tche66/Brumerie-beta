@@ -373,11 +373,10 @@ useEffect(() => {
 
   // ── useEffect #4b — rappel Address-Web si pas de code AW ───────
   useEffect(() => {
-    if (!currentUser || !userProfile || loading) return;
-    // Ne montrer qu'une fois (stocker en localStorage)
+    // Pas de référence à "loading" — utilise currentUser + userProfile comme garde
+    if (!currentUser || !userProfile) return;
     const key = `aw_prompt_${currentUser.uid}`;
     if (localStorage.getItem(key)) return;
-    // Si pas de code AW → créer une notification in-app
     if (!userProfile.awAddressCode) {
       const timer = setTimeout(async () => {
         try {
@@ -391,10 +390,10 @@ useEffect(() => {
           );
           localStorage.setItem(key, '1');
         } catch { /* silencieux */ }
-      }, 3000); // 3s après le login pour ne pas gêner
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentUser?.uid, userProfile?.awAddressCode, loading]);
+  }, [currentUser?.uid, userProfile?.awAddressCode]);
 
   // ── useEffect #5 — vérifier boosts/badges expirant au démarrage ─
   useEffect(() => {
