@@ -281,9 +281,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer à l'avance</p>
                 <p className="text-[10px] text-slate-400 font-medium">Wave · Orange Money · MTN · Moov</p>
-                {paymentMode === 'mobile_money' && (
 
-                )}
               </div>
               {paymentMode === 'mobile_money' && (
                 <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center flex-shrink-0 flex-shrink-0">
