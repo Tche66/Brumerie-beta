@@ -833,6 +833,19 @@ function AppContent() {
           <p className="text-slate-400 text-[14px] leading-relaxed">{maintenance.message}</p>
           <p className="text-slate-600 text-[11px] mt-4">Réessayez dans quelques instants</p>
         </div>
+        <button
+          onClick={async () => {
+            const { getAuth, signOut } = await import('firebase/auth');
+            await signOut(getAuth());
+          }}
+          className="mt-8 flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-400 border border-slate-700 active:scale-95 transition-all">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Se déconnecter
+        </button>
       </div>
     );
   }
