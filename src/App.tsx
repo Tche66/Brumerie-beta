@@ -385,8 +385,8 @@ useEffect(() => {
           await createNotification(
             currentUser.uid,
             'system',
-            '📍 Tu n'as pas encore d'adresse numérique',
-            'Crée ton code Address-Web gratuit pour recevoir tes livraisons n'importe où en Afrique. C'est rapide et gratuit !',
+            "📍 Tu n'as pas encore d'adresse numérique",
+            "Crée ton code Address-Web gratuit pour recevoir tes livraisons n'importe où en Afrique. C'est rapide et gratuit !",
             { actionUrl: 'https://addressweb.brumerie.com/creer' },
           );
           localStorage.setItem(key, '1');
