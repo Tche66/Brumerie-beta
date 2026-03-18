@@ -50,8 +50,7 @@ function CopyButton({ code }: { code: string }) {
 }
 
 export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, instruction, onClose }: Props) {
-  // QR avec zone centrale réservée pour le logo (erreur de correction = 30% → H)
-  const qrUrl = getQRCodeUrl(qrPayload, 260);
+  const qrUrl = getQRCodeUrl(qrPayload, 240);
 
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center px-6"
@@ -64,41 +63,42 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
         </svg>
       </button>
 
-      <div className="text-center mb-8">
+      <div className="text-center mb-6">
         <span className="text-5xl">{emoji}</span>
         <h2 className="font-black text-white text-[20px] mt-3 uppercase tracking-tight">{title}</h2>
         <p className="text-white/70 text-[12px] mt-1">{subtitle}</p>
       </div>
 
-      {/* QR Code + logo Brumerie centré */}
-      <div className="bg-white rounded-[2.5rem] p-6 shadow-2xl mb-6 flex flex-col items-center">
-        <div className="relative" style={{ width: 220, height: 220 }}>
+      {/* Card blanche : logo + nom AU-DESSUS, QR propre en dessous */}
+      <div className="bg-white rounded-[2.5rem] px-6 pt-5 pb-6 shadow-2xl mb-6 flex flex-col items-center">
+
+        {/* En-tête branding — logo + BRUMERIE au-dessus du QR */}
+        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 w-full justify-center">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: '#1B5E20' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L3 7v7c0 5.5 3.8 9.7 9 11 5.2-1.3 9-5.5 9-11V7L12 2z" fill="white"/>
+              <path d="M9 12l2 2 4-4" stroke="#1B5E20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span className="font-black text-slate-900 text-[15px] uppercase tracking-[0.15em]">Brumerie</span>
+        </div>
+
+        {/* QR Code — propre, sans overlay, scannable à 100% */}
+        <div style={{ width: 210, height: 210 }}>
           <img
             src={qrUrl}
             alt="QR Code"
-            width={220}
-            height={220}
+            width={210}
+            height={210}
             className="rounded-xl"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              el.style.display = 'none';
+              const p = el.parentElement!;
+              p.innerHTML = '<div style="width:210px;height:210px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:12px;"><p style="font-size:11px;color:#94a3b8;font-weight:700;text-align:center;">QR indisponible<br/>Utilise le code ci-dessous</p></div>';
+            }}
           />
-          {/* Logo Brumerie — overlay centré sur zone de repos du QR */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="rounded-xl flex items-center justify-center shadow-sm"
-              style={{ width: 46, height: 46, background: '#1B5E20', padding: 4 }}>
-              <img
-                src="/logo.png"
-                alt="Brumerie"
-                style={{ width: 38, height: 38, objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-                onError={(e) => {
-                  // Fallback SVG si logo.png absent
-                  const el = e.target as HTMLImageElement;
-                  el.style.display = 'none';
-                  const parent = el.parentElement!;
-                  parent.innerHTML = '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7 5 12 12 14 7-2 12-7 12-14V8L16 2z" fill="white"/><path d="M11 15l3 3 7-7" stroke="#1B5E20" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>';
-                }}
-              />
-            </div>
-          </div>
         </div>
         {/* Code alphanumérique + bouton copier */}
         <div className="mt-4 pt-4 border-t border-slate-100 w-full text-center">

@@ -189,6 +189,11 @@ export interface Conversation {
   productRef?: { id: string; title: string; price: number; image: string; sellerId: string };
   unreadCount?: Record<string, number>;
   createdAt?: any;
+  // ── Groupe de chat ──────────────────────────────────────
+  isGroup?: boolean;        // true si groupe
+  groupName?: string;       // Nom du groupe
+  groupPhoto?: string;      // URL photo du groupe (optionnel)
+  groupAdminId?: string;    // UID du créateur/admin
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductSkeleton } from '@/components/ProductSkeleton';
-import { getProducts } from '@/services/productService';
+import { getProducts, getProductsPage, PRODUCTS_PER_PAGE } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterDrawer';
 import { SearchAlertButton } from '@/components/SearchAlertButton';
@@ -77,6 +77,10 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [boostedIds, setBoostedIds] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<any>(null);
   const [neighborhoodSellerCount, setNeighborhoodSellerCount] = useState<number>(0);
 
   // Écouter les produits boostés
@@ -114,6 +118,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
+    setLastDoc(null);
+    setHasMore(false);
     try {
       let data = await getProducts({
         category: filters.category !== 'all' ? filters.category : undefined,
@@ -128,9 +135,32 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       if (filters.sortBy === 'price_desc') data = [...data].sort((a,b) => b.price - a.price);
       if (filters.sortBy === 'promo')      data = [...data].filter(p => p.originalPrice && p.originalPrice > p.price);
       setProducts(data);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [filters, searchTerm]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !lastDoc) return;
+    setLoadingMore(true);
+    try {
+      const result = await getProductsPage(lastDoc, {
+        category: filters.category !== 'all' ? filters.category : undefined,
+        neighborhood: filters.neighborhood !== 'all' ? filters.neighborhood : undefined,
+      });
+      setProducts(prev => {
+        const ids = new Set(prev.map(p => p.id));
+        const news = result.products.filter(p => !ids.has(p.id));
+        return [...prev, ...news];
+      });
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+    } catch (e) { console.error(e); }
+    finally { setLoadingMore(false); }
+  }, [loadingMore, hasMore, lastDoc, filters]);
 
   useEffect(() => {
     const t = setTimeout(loadProducts, 300);
@@ -362,24 +392,62 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         </div>
         {loading ? (
           <div className="grid grid-cols-2 gap-4">{[1,2,3,4,5,6].map(i => <ProductSkeleton key={i} />)}</div>
+        ) : loadError ? (
+          <div className="text-center py-16 px-8 bg-red-50 rounded-[3rem] border-2 border-red-100">
+            <div className="text-4xl mb-3">😕</div>
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-red-700 mb-2">Impossible de charger</p>
+            <p className="text-[10px] font-bold text-red-400 mb-5">Vérifie ta connexion internet</p>
+            <button onClick={loadProducts}
+              className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl active:scale-95 transition-all">
+              🔄 Réessayer
+            </button>
+          </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 px-10 bg-slate-50 rounded-[3rem] border-4 border-dashed border-white">
             <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 mb-2">Aucun article trouvé</p>
-            <p className="text-[10px] font-bold text-slate-400">Sois le premier à publier !</p>
+            <p className="text-[10px] font-bold text-slate-400">
+              {searchTerm || filters.category !== 'all' || filters.neighborhood !== 'all'
+                ? 'Essaie de modifier tes filtres'
+                : 'Sois le premier à publier !'}
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 animate-fade-up">
-            {[...products]
-              .sort((a, b) => (boostedIds.has(b.id) ? 1 : 0) - (boostedIds.has(a.id) ? 1 : 0))
-              .map((product) => (
-              <ProductCard key={product.id} product={product}
-                onClick={() => onProductClick(product)}
-                onBookmark={handleBookmark}
-                isBookmarked={bookmarkIds.has(product.id)}
-                isBoosted={boostedIds.has(product.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-4 animate-fade-up">
+              {[...products]
+                .sort((a, b) => (boostedIds.has(b.id) ? 1 : 0) - (boostedIds.has(a.id) ? 1 : 0))
+                .map((product) => (
+                <ProductCard key={product.id} product={product}
+                  onClick={() => onProductClick(product)}
+                  onBookmark={handleBookmark}
+                  isBookmarked={bookmarkIds.has(product.id)}
+                  isBoosted={boostedIds.has(product.id)}
+                />
+              ))}
+            </div>
+
+            {/* Bouton Voir plus */}
+            {hasMore && (
+              <div className="flex justify-center mt-6">
+                <button onClick={loadMore} disabled={loadingMore}
+                  className="flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white disabled:opacity-60 active:scale-95 transition-all shadow-lg"
+                  style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                  {loadingMore ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/><span>Chargement...</span></>
+                  ) : (
+                    <>📦 Voir plus d'articles</>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Fin de liste */}
+            {!hasMore && products.length > 10 && (
+              <p className="text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest py-6">
+                — {products.length} articles affichés —
+              </p>
+            )}
+          </>
         )}
       </div>
       <div className="h-16" />

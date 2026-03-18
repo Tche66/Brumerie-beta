@@ -80,10 +80,16 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const inputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const otherId = (conversation.participants || []).find((p: string) => p !== currentUser?.uid) || '';
-  const otherName = conversation.participantNames?.[otherId] || 'Utilisateur';
-  const otherPhoto = conversation.participantPhotos?.[otherId];
-  const isSeller = currentUser?.uid === (conversation.participants || [])[1];
+  const isGroup   = !!(conversation as any).isGroup;
+  const otherId   = isGroup ? '' : ((conversation.participants || []).find((p: string) => p !== currentUser?.uid) || '');
+  const otherName = isGroup
+    ? ((conversation as any).groupName || 'Groupe')
+    : (conversation.participantNames?.[otherId] || 'Utilisateur');
+  const otherPhoto = isGroup
+    ? ((conversation as any).groupPhoto || undefined)
+    : (conversation.participantPhotos?.[otherId]);
+  const isSeller = !isGroup && currentUser?.uid === (conversation.participants || [])[1];
+  const memberCount = isGroup ? (conversation.participants || []).length : 0;
 
   // Récupérer le téléphone de l'interlocuteur depuis Firestore
   const [otherPhone, setOtherPhone] = useState<string | null>(null);
@@ -225,16 +231,29 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
 
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-            {otherPhoto
-              ? <img src={otherPhoto} alt={otherName} className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center bg-green-50">
-                  <span className="text-green-700 font-black">{otherName.charAt(0).toUpperCase()}</span>
-                </div>
-            }
+            {isGroup ? (
+              otherPhoto
+                ? <img src={otherPhoto} alt={otherName} className="w-full h-full object-cover"/>
+                : <div className="w-full h-full flex items-center justify-center" style={{ background:'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                  </div>
+            ) : (
+              otherPhoto
+                ? <img src={otherPhoto} alt={otherName} className="w-full h-full object-cover"/>
+                : <div className="w-full h-full flex items-center justify-center bg-green-50">
+                    <span className="text-green-700 font-black">{otherName.charAt(0).toUpperCase()}</span>
+                  </div>
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-black text-slate-900 text-sm truncate">{otherName}</p>
-            <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest truncate">{conversation.productTitle}</p>
+            {isGroup
+              ? <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest">{memberCount} membres</p>
+              : <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest truncate">{(conversation as any).productTitle}</p>
+            }
           </div>
         </div>
 

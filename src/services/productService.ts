@@ -15,6 +15,9 @@ import {
   increment,
   orderBy,
   writeBatch,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -135,6 +138,64 @@ export async function getProducts(filters?: {
   } catch (error) {
     console.error('Erreur getProducts:', error);
     return [];
+  }
+}
+
+// ── Pagination : charger une page de produits ───────────────────
+export const PRODUCTS_PER_PAGE = 30;
+
+export async function getProductsPage(
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null,
+  filters?: { category?: string; neighborhood?: string }
+): Promise<{ products: Product[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> {
+  try {
+    const constraints: any[] = [
+      where('status', 'in', ['active', 'sold']),
+      orderBy('createdAt', 'desc'),
+      limit(PRODUCTS_PER_PAGE + 1), // +1 pour détecter s'il y a une suite
+    ];
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+
+    const snapshot = await getDocs(query(collection(db, 'products'), ...constraints));
+    const docs = snapshot.docs;
+    const hasMore = docs.length > PRODUCTS_PER_PAGE;
+    const pageDocs = hasMore ? docs.slice(0, PRODUCTS_PER_PAGE) : docs;
+
+    let products = pageDocs.map(d => {
+      const data = d.data();
+      let images: string[] = [];
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        images = data.images;
+      } else if (typeof data.imageUrl === 'string' && data.imageUrl) {
+        images = [data.imageUrl];
+      }
+      return {
+        id: d.id,
+        ...data,
+        images,
+        createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(),
+      } as Product;
+    }).filter(p => !(p as any).hidden);
+
+    // Filtres optionnels côté client
+    if (filters?.category && filters.category !== 'all') {
+      products = products.filter(p => p.category === filters.category);
+    }
+    if (filters?.neighborhood && filters.neighborhood !== 'all') {
+      products = products.filter(p => {
+        const nh = (p as any).neighborhoods || [p.neighborhood];
+        return nh.includes(filters.neighborhood);
+      });
+    }
+
+    return {
+      products,
+      lastDoc: pageDocs.length > 0 ? pageDocs[pageDocs.length - 1] : null,
+      hasMore,
+    };
+  } catch (error) {
+    console.error('Erreur getProductsPage:', error);
+    return { products: [], lastDoc: null, hasMore: false };
   }
 }
 

@@ -11,6 +11,7 @@ import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { SellPage } from '@/pages/SellPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { BuyerProfilePage } from '@/pages/BuyerProfilePage';
+import { DiscoverPage } from '@/pages/DiscoverPage';
 import { SellerProfilePage } from '@/pages/SellerProfilePage';
 import { EditProfilePage } from '@/pages/EditProfilePage';
 import { VerificationPage } from '@/pages/VerificationPage';
@@ -53,7 +54,7 @@ type Page =
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin'
-  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile';
+  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {
@@ -144,7 +145,7 @@ function AppShell() {
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'profile', 'order-status', 'dashboard', 'settings', 'deliverer-dashboard', ...(isBuyer ? [] : ['sell' as Page])];
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', 'deliverer-dashboard', ...(isBuyer ? [] : ['sell' as Page])];
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const navigate = (page: Page) => {
@@ -516,13 +517,30 @@ useEffect(() => {
           />
         )}
         {activePage === 'profile' && isBuyer && (
-          <BuyerProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />
+          <BuyerProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} onOpenOrder={(id) => { setSelectedOrderId(id); navigate('order-status'); }} />
+        )}
+        {activePage === 'discover' && isBuyer && (
+          <DiscoverPage
+            onProductClick={handleProductClick}
+            onSellerClick={(sellerId) => { setSelectedSellerId(sellerId); navigate('seller-profile'); }}
+          />
         )}
         {activePage === 'profile' && !isBuyer && (
           <ProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />
         )}
         {activePage === 'messages' && (
-          <ConversationsListPage onOpenConversation={handleOpenConversation} />
+          <ConversationsListPage
+            onOpenConversation={handleOpenConversation}
+            onOpenConversationById={async (convId) => {
+              // Chercher la conv dans la liste ou naviguer directement
+              const { getDoc, doc } = await import('firebase/firestore');
+              const { db } = await import('@/config/firebase');
+              const snap = await getDoc(doc(db, 'conversations', convId));
+              if (snap.exists()) {
+                handleOpenConversation({ id: snap.id, ...snap.data() } as any);
+              }
+            }}
+          />
         )}
         {activePage === 'chat' && selectedConversation && (
           <ChatPage

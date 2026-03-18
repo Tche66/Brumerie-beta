@@ -97,49 +97,50 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
     </nav>
   );
 
+  // ── Navigation ACHETEUR — 5 tabs avec Découvrir au centre ──────
+  if (isBuyer) return (
+    <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
+      style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
+      <div className="flex items-center justify-around h-16 px-1">
+        <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
+          icon={HomeIcon(activePage === 'home', CB)}/>
+        <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
+          badge={unreadMessages} icon={MsgIcon(activePage === 'messages', CB)}/>
+        {/* Bouton Découvrir — centre, élevé */}
+        <button onClick={() => onNavigate('discover')}
+          className="-translate-y-4 w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all gap-0.5"
+          style={{ background: activePage === 'discover' ? 'linear-gradient(135deg,#1D4ED8,#3B82F6)' : 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 8px 24px rgba(59,130,246,0.45)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </button>
+        <NavBtn id="orders" label="Commandes" active={activePage === 'order-status'} onClick={() => onNavigate('orders')}
+          icon={OrderIcon(activePage === 'order-status', CB)}/>
+        <NavBtn id="profile" label="Profil" active={activePage === 'profile'} onClick={() => onNavigate('profile')}
+          icon={ProfileIcon(activePage === 'profile', CB)}/>
+      </div>
+      <div className="h-safe-area-inset-bottom"/>
+    </nav>
+  );
+
+  // ── Navigation VENDEUR ──────────────────────────────────────────
   return (
     <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
       style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
       <div className="flex items-center justify-around h-16 px-2">
-
-        {/* ACCUEIL */}
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
-          icon={HomeIcon(activePage === 'home', isBuyer ? CB : C)}/>
-
-        {/* MESSAGES */}
+          icon={HomeIcon(activePage === 'home', C)}/>
         <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
-          badge={unreadMessages}
-          icon={MsgIcon(activePage === 'messages', isBuyer ? CB : C)}/>
-
-        {/* BOUTON + (vendeur uniquement) */}
-        {!isBuyer && (
-          <button onClick={() => onNavigate('sell')}
-            className="-translate-y-4 w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl shadow-green-500/40 active:scale-90 transition-all"
-            style={{ background: 'linear-gradient(135deg, #115E2E, #16A34A)' }}>
-            <PlusIcon/>
-          </button>
-        )}
-
-        {/* COMMANDES (acheteur) / DASHBOARD (vendeur) */}
-        <NavBtn
-          id="orders"
-          label={isBuyer ? 'Commandes' : 'Dashboard'}
-          active={isBuyer ? activePage === 'order-status' : activePage === 'dashboard'}
-          onClick={() => onNavigate(isBuyer ? 'orders' : 'tableau')}
-          icon={isBuyer
-            ? OrderIcon(activePage === 'order-status', CB)
-            : DashIcon(activePage === 'dashboard', C)
-          }
-        />
-
-        {/* PARAMÈTRES */}
-        <NavBtn
-          id="settings"
-          label="Paramètres"
-          active={activePage === 'settings'}
-          onClick={() => onNavigate('settings')}
-          icon={SettingsIcon(activePage === 'settings', isBuyer ? CB : C)}
-        />
+          badge={unreadMessages} icon={MsgIcon(activePage === 'messages', C)}/>
+        <button onClick={() => onNavigate('sell')}
+          className="-translate-y-4 w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl shadow-green-500/40 active:scale-90 transition-all"
+          style={{ background: 'linear-gradient(135deg, #115E2E, #16A34A)' }}>
+          <PlusIcon/>
+        </button>
+        <NavBtn id="orders" label="Dashboard" active={activePage === 'dashboard'} onClick={() => onNavigate('tableau')}
+          icon={DashIcon(activePage === 'dashboard', C)}/>
+        <NavBtn id="settings" label="Paramètres" active={activePage === 'settings'} onClick={() => onNavigate('settings')}
+          icon={SettingsIcon(activePage === 'settings', C)}/>
       </div>
       <div className="h-safe-area-inset-bottom"/>
     </nav>

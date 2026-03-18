@@ -1,4 +1,4 @@
-// src/pages/NotificationsPage.tsx
+// src/pages/NotificationsPage.tsx — v19 : onglets par catégorie
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -13,6 +13,8 @@ interface NotificationsPageProps {
   onOpenOrder?: (orderId: string) => void;
 }
 
+type TabFilter = 'all' | 'messages' | 'orders' | 'system';
+
 function timeAgo(ts: any): string {
   if (!ts) return '';
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
@@ -23,6 +25,7 @@ function timeAgo(ts: any): string {
   return `il y a ${Math.floor(diff / 86400)} j`;
 }
 
+// Icônes par type
 const ICONS: Record<string, React.ReactNode> = {
   message: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -39,6 +42,16 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
     </svg>
   ),
+  new_favorite: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#16A34A">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  order: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+  ),
   system: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -47,11 +60,38 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 const BG: Record<string, string> = {
-  message: 'bg-blue-50',
-  reply: 'bg-blue-50',
-  favorite: 'bg-green-50',
-  system: 'bg-slate-50',
+  message:      'bg-blue-50',
+  reply:        'bg-blue-50',
+  favorite:     'bg-green-50',
+  new_favorite: 'bg-green-50',
+  order:        'bg-amber-50',
+  system:       'bg-slate-50',
 };
+
+// Catégorisation d'une notif → tab
+function getTab(notif: AppNotification): TabFilter {
+  const t = notif.type as string;
+  if (t === 'message' || t === 'reply') return 'messages';
+  if (t === 'order') return 'orders';
+  // Détection par title pour les notifs anciennes sans type 'order'
+  const title = notif.title || '';
+  if (
+    title.includes('commande') || title.includes('paiement') ||
+    title.includes('Livraison') || title.includes('livraison') ||
+    title.includes('reçu') || title.includes('Litige') ||
+    title.includes('mission') || title.includes('Mission') ||
+    title.includes('COD') || title.includes('collecté')
+  ) return 'orders';
+  if (t === 'favorite' || t === 'new_favorite') return 'system';
+  return 'system';
+}
+
+const TABS: { id: TabFilter; label: string; emoji: string }[] = [
+  { id: 'all',      label: 'Tout',      emoji: '🔔' },
+  { id: 'messages', label: 'Messages',  emoji: '💬' },
+  { id: 'orders',   label: 'Commandes', emoji: '📦' },
+  { id: 'system',   label: 'Système',   emoji: '⚙️' },
+];
 
 export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: NotificationsPageProps) {
   const { currentUser } = useAuth();
@@ -59,6 +99,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
   const [loading, setLoading] = useState(true);
   const [pushGranted, setPushGranted] = useState(isPushGranted());
   const [requestingPush, setRequestingPush] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabFilter>('all');
 
   useEffect(() => {
     if (!currentUser) return;
@@ -77,22 +118,14 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
   const handleNotifClick = async (notif: AppNotification) => {
     if (!currentUser) return;
     if (!notif.read) await markNotificationRead(currentUser.uid, notif.id);
-    // Naviguer vers la commande si orderId dans les données
-    if (notif.data?.orderId && onOpenOrder) {
-      onOpenOrder(notif.data.orderId);
-      return;
-    }
-    // Naviguer vers la conversation si conversationId
-    if (notif.data?.conversationId && onOpenConversation) {
-      onOpenConversation(notif.data.conversationId);
-      return;
-    }
-    // Naviguer vers les commandes si c'est une notif de commande
-    if (notif.title?.includes('commande') || notif.title?.includes('paiement') ||
-        notif.title?.includes('Livraison') || notif.title?.includes('reçu') ||
-        notif.title?.includes('Litige') || notif.title?.includes('Nouvelle')) {
-      onOpenOrder?.('');
-    }
+    if (notif.data?.orderId && onOpenOrder) { onOpenOrder(notif.data.orderId); return; }
+    if (notif.data?.conversationId && onOpenConversation) { onOpenConversation(notif.data.conversationId); return; }
+    const title = notif.title || '';
+    if (
+      title.includes('commande') || title.includes('paiement') ||
+      title.includes('Livraison') || title.includes('reçu') ||
+      title.includes('Litige') || title.includes('Nouvelle')
+    ) { onOpenOrder?.(''); }
   };
 
   const handleEnablePush = async () => {
@@ -103,30 +136,74 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
     setRequestingPush(false);
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Filtrage selon l'onglet actif
+  const filtered = activeTab === 'all'
+    ? notifications
+    : notifications.filter(n => getTab(n) === activeTab);
+
+  const unreadTotal = notifications.filter(n => !n.read).length;
+
+  // Compteurs par onglet pour les badges
+  const counts: Record<TabFilter, number> = {
+    all:      notifications.filter(n => !n.read).length,
+    messages: notifications.filter(n => !n.read && getTab(n) === 'messages').length,
+    orders:   notifications.filter(n => !n.read && getTab(n) === 'orders').length,
+    system:   notifications.filter(n => !n.read && getTab(n) === 'system').length,
+  };
 
   return (
     <div className="min-h-screen bg-white pb-24 font-sans">
+
       {/* Header */}
-      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-5 flex items-center gap-4 border-b border-slate-100">
-        <button onClick={onBack}
-          className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-            <path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <div className="flex-1">
-          <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
+      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-5 border-b border-slate-100">
+        <div className="flex items-center gap-4 mb-4">
+          <button onClick={onBack}
+            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
+            <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="flex-1">
+            <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Notifications</h1>
+            {unreadTotal > 0 && (
+              <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">
+                {unreadTotal} non lue{unreadTotal > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+          {unreadTotal > 0 && (
+            <button onClick={handleMarkAllRead}
+              className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-xl active:scale-95 transition-all">
+              Tout lire
+            </button>
           )}
         </div>
-        {unreadCount > 0 && (
-          <button onClick={handleMarkAllRead}
-            className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-xl active:scale-95 transition-all">
-            Tout lire
-          </button>
-        )}
+
+        {/* Onglets catégories */}
+        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+          {TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            const badge = counts[tab.id];
+            return (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all active:scale-95 flex-shrink-0 ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'bg-slate-50 text-slate-500 border border-slate-100'
+                }`}>
+                <span>{tab.emoji}</span>
+                <span>{tab.label}</span>
+                {badge > 0 && (
+                  <span className={`w-4 h-4 rounded-full text-[8px] font-black flex items-center justify-center ${
+                    isActive ? 'bg-white text-slate-900' : 'bg-blue-500 text-white'
+                  }`}>
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Bannière activation push */}
@@ -142,7 +219,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
             <div className="flex-1">
               <p className="font-black text-blue-900 text-[12px] uppercase tracking-tight mb-1">Activer les notifications</p>
               <p className="text-blue-700 text-[10px] font-medium leading-relaxed mb-3">
-                Reçois une alerte dès qu'un message ou un favori arrive, même quand Brumerie est en arrière-plan.
+                Reçois une alerte dès qu'un message ou une commande arrive.
               </p>
               <button onClick={handleEnablePush} disabled={requestingPush}
                 className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:opacity-50">
@@ -153,10 +230,10 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
         </div>
       )}
 
-      {/* Liste notifications */}
-      <div className="mt-6">
+      {/* Liste notifications filtrées */}
+      <div className="mt-4">
         {loading ? (
-          <div className="space-y-3 px-6">
+          <div className="space-y-3 px-6 mt-4">
             {[1,2,3].map(i => (
               <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
                 <div className="w-12 h-12 bg-slate-100 rounded-2xl flex-shrink-0" />
@@ -167,27 +244,31 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
               </div>
             ))}
           </div>
-        ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center pt-20 px-10 text-center">
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center pt-16 px-10 text-center">
             <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Aucune notification</h3>
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-tight mb-2">
+              {activeTab === 'all' ? 'Aucune notification' : `Aucune notif ${TABS.find(t => t.id === activeTab)?.label.toLowerCase()}`}
+            </h3>
             <p className="text-slate-400 text-[11px] font-medium leading-relaxed">
-              Les nouvelles activités sur tes annonces et messages apparaîtront ici.
+              {activeTab === 'all'
+                ? 'Les nouvelles activités apparaîtront ici.'
+                : 'Change d\'onglet pour voir les autres notifications.'}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {notifications.map(notif => (
+            {filtered.map(notif => (
               <button key={notif.id} onClick={() => handleNotifClick(notif)}
                 className={`w-full flex items-start gap-4 px-6 py-4 text-left transition-all active:bg-slate-50 ${!notif.read ? 'bg-blue-50/40' : ''}`}>
                 {/* Icône */}
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${BG[notif.type] || 'bg-slate-50'}`}>
-                  {ICONS[notif.type]}
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${BG[notif.type as string] || 'bg-slate-50'}`}>
+                  {ICONS[notif.type as string] || ICONS.system}
                 </div>
                 {/* Contenu */}
                 <div className="flex-1 min-w-0 pt-0.5">

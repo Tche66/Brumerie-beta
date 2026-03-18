@@ -543,3 +543,87 @@ export async function sendImageMessage(
 
   await batch.commit();
 }
+
+// ── Créer un groupe de chat ──────────────────────────────────────
+export async function createGroupConversation(params: {
+  adminId: string;
+  adminName: string;
+  adminPhoto?: string;
+  groupName: string;
+  memberIds: string[];       // UIDs des membres (admin inclus)
+  membersInfo: Record<string, { name: string; photo?: string }>;
+}): Promise<string> {
+  const { adminId, adminName, adminPhoto, groupName, memberIds, membersInfo } = params;
+
+  // Construire participantsInfo
+  const participantsInfo: Record<string, { name: string; photo?: string }> = {};
+  memberIds.forEach(uid => {
+    participantsInfo[uid] = membersInfo[uid] || { name: 'Membre' };
+  });
+
+  const groupRef = await addDoc(collection(db, 'conversations'), {
+    participants: memberIds,
+    participantsInfo,
+    isGroup: true,
+    groupName: groupName.trim(),
+    groupAdminId: adminId,
+    lastMessage: `Groupe "${groupName}" créé par ${adminName}`,
+    lastMessageAt: serverTimestamp(),
+    lastSenderId: adminId,
+    unreadCount: memberIds.reduce((acc, uid) => ({ ...acc, [uid]: uid === adminId ? 0 : 1 }), {}),
+    createdAt: serverTimestamp(),
+  });
+
+  // Message système de bienvenue
+  await addDoc(collection(db, 'conversations', groupRef.id, 'messages'), {
+    senderId: 'system',
+    senderName: 'Brumerie',
+    text: `👋 Bienvenue dans le groupe "${groupName}" ! Créé par ${adminName}.`,
+    type: 'system',
+    createdAt: serverTimestamp(),
+  });
+
+  // Notifier les membres (sauf admin)
+  const others = memberIds.filter(uid => uid !== adminId);
+  await Promise.all(others.map(uid =>
+    createNotification(uid, 'message',
+      `💬 Nouveau groupe : ${groupName}`,
+      `${adminName} t'a ajouté au groupe "${groupName}"`,
+      { conversationId: groupRef.id }
+    ).catch(() => {})
+  ));
+
+  return groupRef.id;
+}
+
+// ── Ajouter un membre à un groupe ───────────────────────────────
+export async function addMemberToGroup(
+  convId: string,
+  newMemberId: string,
+  newMemberInfo: { name: string; photo?: string },
+  addedByName: string,
+): Promise<void> {
+  const convRef = doc(db, 'conversations', convId);
+  const snap = await getDoc(convRef);
+  if (!snap.exists()) return;
+  const conv = snap.data();
+
+  const participants = [...(conv.participants || [])];
+  if (participants.includes(newMemberId)) return; // déjà membre
+  participants.push(newMemberId);
+
+  await updateDoc(convRef, {
+    participants,
+    [`participantsInfo.${newMemberId}`]: newMemberInfo,
+    [`unreadCount.${newMemberId}`]: 1,
+  });
+
+  // Message système
+  await addDoc(collection(db, 'conversations', convId, 'messages'), {
+    senderId: 'system',
+    senderName: 'Brumerie',
+    text: `➕ ${newMemberInfo.name} a rejoint le groupe.`,
+    type: 'system',
+    createdAt: serverTimestamp(),
+  });
+}
