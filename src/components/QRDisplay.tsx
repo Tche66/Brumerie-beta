@@ -2,7 +2,6 @@
 // Affichage plein écran d'un QR code à faire scanner
 
 import React from 'react';
-import { getQRCodeUrl } from '@/utils/qrCode';
 
 interface Props {
   title: string;
@@ -49,8 +48,72 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
+// ── Génération QR locale via canvas ────────────────────────────
+function useQRCanvas(data: string, size: number) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+
+    async function generate() {
+      try {
+        if (!(window as any).QRCode) {
+          await new Promise<void>((resolve, reject) => {
+            // Éviter double chargement
+            if (document.querySelector('script[data-qrcode]')) { resolve(); return; }
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+            s.setAttribute('data-qrcode', '1');
+            s.onload = () => resolve();
+            s.onerror = () => reject();
+            document.head.appendChild(s);
+          });
+        }
+        if (cancelled) return;
+
+        const tmp = document.createElement('div');
+        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+        document.body.appendChild(tmp);
+
+        new (window as any).QRCode(tmp, {
+          text: data,
+          width: size,
+          height: size,
+          colorDark: '#0F172A',
+          colorLight: '#FFFFFF',
+          correctLevel: (window as any).QRCode.CorrectLevel.M,
+        });
+
+        await new Promise(r => setTimeout(r, 100));
+
+        const img = tmp.querySelector('img') as HTMLImageElement | null;
+        const cvs = canvasRef.current;
+        if (img && cvs && !cancelled) {
+          const ctx = cvs.getContext('2d')!;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, size, size);
+          const draw = () => { ctx.drawImage(img, 0, 0, size, size); setReady(true); };
+          if (img.complete && img.naturalWidth > 0) draw();
+          else img.onload = draw;
+        }
+        document.body.removeChild(tmp);
+      } catch (e) {
+        console.warn('QRDisplay canvas error:', e);
+        // Fallback silencieux — l'utilisateur utilise le code 6 chiffres
+      }
+    }
+
+    generate();
+    return () => { cancelled = true; };
+  }, [data, size]);
+
+  return { canvasRef, ready };
+}
+
 export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, instruction, onClose }: Props) {
-  const qrUrl = getQRCodeUrl(qrPayload, 240);
+  const { canvasRef, ready } = useQRCanvas(qrPayload, 210);
 
   return (
     <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center px-6"
@@ -72,32 +135,25 @@ export function QRDisplay({ title, subtitle, code, qrPayload, color, emoji, inst
       {/* Card blanche : logo + nom AU-DESSUS, QR propre en dessous */}
       <div className="bg-white rounded-[2.5rem] px-6 pt-5 pb-6 shadow-2xl mb-6 flex flex-col items-center">
 
-        {/* En-tête branding — logo + BRUMERIE au-dessus du QR */}
+        {/* En-tête branding — logo transparent + BRUMERIE */}
         <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 w-full justify-center">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: '#1B5E20' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L3 7v7c0 5.5 3.8 9.7 9 11 5.2-1.3 9-5.5 9-11V7L12 2z" fill="white"/>
-              <path d="M9 12l2 2 4-4" stroke="#1B5E20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          <img src="/logo.png" alt="Brumerie" style={{ width: 26, height: 26, objectFit: 'contain' }} />
           <span className="font-black text-slate-900 text-[15px] uppercase tracking-[0.15em]">Brumerie</span>
         </div>
 
-        {/* QR Code — propre, sans overlay, scannable à 100% */}
-        <div style={{ width: 210, height: 210 }}>
-          <img
-            src={qrUrl}
-            alt="QR Code"
+        {/* QR Code — généré localement, zéro réseau requis */}
+        <div style={{ width: 210, height: 210, position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+          {!ready && (
+            <div style={{ position: 'absolute', inset: 0, background: '#f8fafc', borderRadius: 12 }}
+              className="flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-slate-200 border-t-green-600 rounded-full animate-spin" />
+            </div>
+          )}
+          <canvas
+            ref={canvasRef}
             width={210}
             height={210}
-            className="rounded-xl"
-            onError={(e) => {
-              const el = e.target as HTMLImageElement;
-              el.style.display = 'none';
-              const p = el.parentElement!;
-              p.innerHTML = '<div style="width:210px;height:210px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:12px;"><p style="font-size:11px;color:#94a3b8;font-weight:700;text-align:center;">QR indisponible<br/>Utilise le code ci-dessous</p></div>';
-            }}
+            style={{ display: ready ? 'block' : 'none', borderRadius: 12 }}
           />
         </div>
         {/* Code alphanumérique + bouton copier */}

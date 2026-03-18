@@ -2,54 +2,100 @@ import { SocialBar } from '@/components/SocialIcon';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import React, { useState, useEffect } from 'react';
 import { subscribeSellerReviews } from '@/services/reviewService';
-// ── QR Code boutique robuste ─────────────────────────────────────
-// Essaie plusieurs fournisseurs QR en cascade pour Android PWA
+// ── QR Code boutique — génération locale via canvas (zéro réseau) ─
+// Utilise qrcode-generator chargé dynamiquement depuis cdnjs
 function ShopQRImage({ url }: { url: string }) {
-  const encoded = encodeURIComponent(url);
-  // 3 fournisseurs QR en fallback — si le 1er échoue, on essaie le 2e, puis le 3e
-  const SOURCES = [
-    `https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encoded}&color=0f5c2e&bgcolor=FFFFFF&margin=8&format=png`,
-    `https://quickchart.io/qr?text=${encoded}&size=190&dark=0f5c2e&light=FFFFFF&margin=1`,
-    `https://chart.googleapis.com/chart?chs=190x190&cht=qr&chl=${encoded}&choe=UTF-8`,
-  ];
-  const [srcIdx, setSrcIdx] = React.useState(0);
-  const [loaded, setLoaded] = React.useState(false);
-  const [failed, setFailed] = React.useState(false);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = React.useState(false);
+  const [error, setError] = React.useState(false);
+  const SIZE = 190;
 
-  const handleError = () => {
-    if (srcIdx < SOURCES.length - 1) {
-      setSrcIdx(i => i + 1);
-      setLoaded(false);
-    } else {
-      setFailed(true);
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function generate() {
+      try {
+        // Charger qrcode-generator depuis cdnjs si pas encore chargé
+        if (!(window as any).qrcode) {
+          await new Promise<void>((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('qrcode CDN failed'));
+            document.head.appendChild(s);
+          });
+        }
+        if (cancelled) return;
+
+        // Créer un div temporaire hors DOM pour QRCode.js
+        const tmp = document.createElement('div');
+        tmp.style.display = 'none';
+        document.body.appendChild(tmp);
+
+        // Générer via QRCode.js (lib standard)
+        const qr = new (window as any).QRCode(tmp, {
+          text: url,
+          width: SIZE,
+          height: SIZE,
+          colorDark: '#0f5c2e',
+          colorLight: '#FFFFFF',
+          correctLevel: (window as any).QRCode.CorrectLevel.M,
+        });
+
+        // Attendre que l'image soit générée
+        await new Promise(r => setTimeout(r, 80));
+
+        const img = tmp.querySelector('img') as HTMLImageElement | null;
+        const cvs = canvasRef.current;
+        if (img && cvs && !cancelled) {
+          const ctx = cvs.getContext('2d')!;
+          // Dessiner fond blanc
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, SIZE, SIZE);
+          // Dessiner le QR
+          if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, 0, 0, SIZE, SIZE);
+          } else {
+            await new Promise<void>(res => { img.onload = () => res(); });
+            ctx.drawImage(img, 0, 0, SIZE, SIZE);
+          }
+          setReady(true);
+        }
+        document.body.removeChild(tmp);
+      } catch (e) {
+        console.warn('QR local generation failed:', e);
+        if (!cancelled) setError(true);
+      }
     }
-  };
 
-  if (failed) return (
-    <div style={{ width: 190, height: 190 }}
+    generate();
+    return () => { cancelled = true; };
+  }, [url]);
+
+  if (error) return (
+    <div style={{ width: SIZE, height: SIZE }}
       className="flex flex-col items-center justify-center bg-slate-50 rounded-xl gap-2">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5"><rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/><rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/></svg>
-      <p className="text-[9px] font-bold text-slate-400 text-center px-3">QR indisponible hors ligne</p>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="1.5">
+        <rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/>
+        <rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/>
+      </svg>
+      <p className="text-[9px] font-bold text-slate-400 text-center px-3">Impossible de générer le QR</p>
     </div>
   );
 
   return (
-    <div style={{ width: 190, height: 190, position: 'relative' }}>
-      {!loaded && (
-        <div style={{ position: 'absolute', inset: 0 }}
-          className="flex items-center justify-center bg-slate-50 rounded-xl">
+    <div style={{ width: SIZE, height: SIZE, position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+      {!ready && (
+        <div style={{ position: 'absolute', inset: 0, background: '#f8fafc', borderRadius: 12 }}
+          className="flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-slate-200 border-t-green-600 rounded-full animate-spin" />
         </div>
       )}
-      <img
-        key={srcIdx}
-        src={SOURCES[srcIdx]}
-        alt="QR Code boutique"
-        width={190}
-        height={190}
-        style={{ display: loaded ? 'block' : 'none', borderRadius: 12 }}
-        onLoad={() => setLoaded(true)}
-        onError={handleError}
+      <canvas
+        ref={canvasRef}
+        width={SIZE}
+        height={SIZE}
+        style={{ display: ready ? 'block' : 'none', borderRadius: 12 }}
       />
     </div>
   );
@@ -249,14 +295,9 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
 
             {/* Header vert Brumerie */}
             <div className="px-6 pt-7 pb-5 text-center" style={{ background: 'linear-gradient(150deg, #16A34A 0%, #0f5c2e 100%)' }}>
-              {/* Mini logo */}
+              {/* Logo transparent Brumerie */}
               <div className="flex items-center justify-center gap-2 mb-3">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L3 7v10l9 5 9-5V7L12 2z" fill="white" opacity="0.9"/>
-                    <path d="M8 10h8M8 14h5" stroke="#16A34A" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </div>
+                <img src="/logo.png" alt="Brumerie" style={{ width: 32, height: 32, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
                 <span className="text-white font-black text-[15px] tracking-wide">BRUMERIE</span>
               </div>
               <p className="text-white/60 text-[9px] font-bold uppercase tracking-[3px]">QR Code boutique</p>
