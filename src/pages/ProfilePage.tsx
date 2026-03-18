@@ -300,6 +300,20 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
             Mon QR Boutique
           </button>
         )}
+        {/* Adresse Address-Web */}
+        {userProfile?.awAddressCode ? (
+          <a href={`https://addressweb.brumerie.com/${userProfile.awAddressCode}`}
+            target="_blank" rel="noopener noreferrer"
+            className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-green-200 text-green-700 bg-green-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            📍 {userProfile.awAddressCode}
+          </a>
+        ) : (
+          <a href="https://addressweb.brumerie.com/creer"
+            target="_blank" rel="noopener noreferrer"
+            className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-dashed border-slate-200 text-slate-400 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            📍 Créer mon adresse AW gratuite
+          </a>
+        )}
       </div>
 
       {/* Modal QR Boutique vendeur */}

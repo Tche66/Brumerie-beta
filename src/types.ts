@@ -73,6 +73,7 @@ export interface User {
   email: string;
   phone?: string;
   neighborhood?: string;
+  awAddressCode?: string;     // Code Address-Web ex: AW-ABJ-84321
   photoURL?: string;
   role: 'buyer' | 'seller' | 'livreur';
   isVerified?: boolean;
@@ -281,6 +282,11 @@ export interface Order {
   sellerBlocked?: boolean;
   createdAt?: any;
   updatedAt?: any;
+  // Address-Web — adresse numérique acheteur
+  buyerAWCode?: string;          // Code AW de l'acheteur ex: AW-ABJ-84321
+  buyerAWRepere?: string;        // Repère résolu au moment de la commande
+  buyerAWLatitude?: number;      // Coordonnées GPS résolues
+  buyerAWLongitude?: number;
   // Livraison — code escrow
   deliveryCode?: string;         // Code 6 chars ex: XK9B2R (visible acheteur + vendeur)
   deliveryCodeGeneratedAt?: any; // Timestamp génération

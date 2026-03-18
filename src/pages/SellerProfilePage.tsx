@@ -324,6 +324,14 @@ export function SellerProfilePage({ sellerId, onBack, onProductClick, onStartCha
                   size="lg"
                 />
               </div>
+              {(seller as any).awAddressCode && (
+                <a
+                  href={`https://addressweb.brumerie.com/${(seller as any).awAddressCode}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-2 active:scale-95 transition-all">
+                  📍 {(seller as any).awAddressCode}
+                </a>
+              )}
 
               <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest mb-3 flex-wrap justify-center">
                 {seller.neighborhood && (

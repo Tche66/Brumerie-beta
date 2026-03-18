@@ -1,3 +1,4 @@
+import { getAWMapsLink } from '@/services/awService';
 // src/pages/OrderStatusPage.tsx — Sprint 5 fix : 2 onglets, pas de conflit de rôle
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -519,6 +520,21 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Acheteur</p>
             <p className="font-black text-slate-900 text-[12px] truncate">{order.buyerName}</p>
             {isBuyer && <span className="text-[8px] text-blue-500 font-bold">← Toi</span>}
+            {(order as any).buyerAWCode && (
+              <div className="mt-2 pt-2 border-t border-blue-100">
+                <p className="text-[8px] font-black text-blue-500 font-mono">{(order as any).buyerAWCode}</p>
+                {(order as any).buyerAWRepere && (
+                  <p className="text-[8px] text-blue-600 truncate">{(order as any).buyerAWRepere}</p>
+                )}
+                {(order as any).buyerAWLatitude ? (
+                  <a href={`https://www.google.com/maps?q=${(order as any).buyerAWLatitude},${(order as any).buyerAWLongitude}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="text-[8px] text-blue-700 font-black underline block mt-0.5">
+                    🗺️ GPS →
+                  </a>
+                ) : null}
+              </div>
+            )}
           </div>
           <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
             <p className="text-[9px] font-black text-green-400 uppercase tracking-widest mb-1">Vendeur</p>

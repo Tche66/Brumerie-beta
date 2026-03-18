@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { getAppConfig } from '@/services/appConfigService';
+import { isValidAWCode, resolveAWCode, formatAWCode, AWAddress } from '@/services/awService';
 import { PaymentLogo } from '@/components/PaymentLogo';
 
 interface OrderFlowPageProps {
@@ -25,6 +26,30 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [step, setStep] = useState<Step>('recap');
   const [orderId, setOrderId] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('cash_on_delivery');
+  // Address-Web — adresse de livraison numérique
+  const [awCode, setAwCode] = useState('');
+  const [awAddress, setAwAddress] = useState<AWAddress | null>(null);
+  const [awLoading, setAwLoading] = useState(false);
+  const [awError, setAwError] = useState('');
+
+  const handleResolveAW = async (code: string) => {
+    const clean = formatAWCode(code);
+    setAwCode(clean);
+    setAwError('');
+    setAwAddress(null);
+    if (!clean || !isValidAWCode(clean)) {
+      if (clean.length > 5) setAwError('Format invalide — ex: AW-ABJ-84321');
+      return;
+    }
+    setAwLoading(true);
+    try {
+      const addr = await resolveAWCode(clean);
+      if (addr) setAwAddress(addr);
+      else setAwError('Code introuvable sur Address-Web');
+    } catch { setAwError('Impossible de vérifier le code'); }
+    finally { setAwLoading(false); }
+  };
+
   // Paiement à l'avance — activé globalement OU pour ce vendeur spécifique
   const [advancePaymentOk, setAdvancePaymentOk] = useState(false);
 
@@ -105,6 +130,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
+        buyerAWCode: awCode || undefined,
+        buyerAWRepere: awAddress?.repere || undefined,
+        buyerAWLatitude: awAddress?.latitude || undefined,
+        buyerAWLongitude: awAddress?.longitude || undefined,
       });
       setOrderId(id);
       setStep('proof');
@@ -138,6 +167,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
+        buyerAWCode: awCode || undefined,
+        buyerAWRepere: awAddress?.repere || undefined,
+        buyerAWLatitude: awAddress?.latitude || undefined,
+        buyerAWLongitude: awAddress?.longitude || undefined,
       });
       setOrderId(id);
       setStep('cod_confirm');
@@ -254,6 +287,51 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                 </p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* ── ADRESSE DE LIVRAISON Address-Web ── */}
+        <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            📍 Adresse de livraison (Address-Web)
+          </p>
+          <div className="relative">
+            <input
+              value={awCode}
+              onChange={e => handleResolveAW(e.target.value)}
+              placeholder="AW-ABJ-84321 (optionnel)"
+              className="w-full px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-[12px] font-mono font-bold uppercase outline-none focus:border-green-400 transition-all pr-10"
+              maxLength={14}
+            />
+            {awLoading && (
+              <div className="absolute right-3 top-3.5 w-4 h-4 border-2 border-slate-200 border-t-green-500 rounded-full animate-spin"/>
+            )}
+          </div>
+          {awError && <p className="text-[10px] text-red-500 font-bold mt-1.5 px-1">{awError}</p>}
+          {awAddress && awAddress.repere && (
+            <div className="mt-3 p-3 bg-green-50 rounded-2xl border border-green-100 flex items-start gap-2">
+              <span className="text-green-600 text-sm flex-shrink-0">✅</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-green-800">{awAddress.addressCode}</p>
+                <p className="text-[10px] text-green-700 truncate">{awAddress.repere}</p>
+                {awAddress.ville && <p className="text-[9px] text-green-600">{awAddress.quartier ? `${awAddress.quartier}, ` : ''}{awAddress.ville}</p>}
+                {awAddress.googleMapsLink && (
+                  <a href={awAddress.googleMapsLink} target="_blank" rel="noopener noreferrer"
+                    className="text-[9px] text-blue-600 font-bold underline mt-0.5 block">
+                    📍 Voir sur Google Maps
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+          {!awCode && (
+            <p className="text-[9px] text-slate-400 mt-2 px-1">
+              Tu n'as pas encore d'adresse ?{' '}
+              <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
+                className="text-green-600 font-bold underline">
+                Créer la mienne gratuitement →
+              </a>
+            </p>
           )}
         </div>
 

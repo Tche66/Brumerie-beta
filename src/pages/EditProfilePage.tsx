@@ -67,6 +67,21 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
   const [name, setName] = useState(userProfile?.name || '');
   const [phone, setPhone] = useState(userProfile?.phone || '');
   const [neighborhood, setNeighborhood] = useState(userProfile?.neighborhood || '');
+  const [awCode, setAwCode] = useState(userProfile?.awAddressCode || '');
+  const [awVerified, setAwVerified] = useState(false);
+  const [awChecking, setAwChecking] = useState(false);
+
+  const handleAwCodeChange = async (val: string) => {
+    const clean = formatAWCode(val);
+    setAwCode(clean);
+    setAwVerified(false);
+    if (isValidAWCode(clean)) {
+      setAwChecking(true);
+      const addr = await resolveAWCode(clean).catch(() => null);
+      setAwVerified(!!addr);
+      setAwChecking(false);
+    }
+  };
 
   // Sync si userProfile charge après le montage (connexion Google)
   useEffect(() => {
@@ -150,7 +165,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
       const digits = phone.replace(/\D/g, '');
       const formattedPhone = digits ? (digits.startsWith('225') ? '+' + digits : '+225' + digits) : '';
-      const updateData: any = { name: name.trim(), neighborhood, photoURL, phone: formattedPhone };
+      const updateData: any = { name: name.trim(), neighborhood, photoURL, phone: formattedPhone, awAddressCode: awCode || null };
       // Bio accessible à tous les vendeurs
       if (isSeller) {
         updateData.bio = bio.trim();
@@ -317,6 +332,35 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
           {(userProfile?.isVerified || userProfile?.isPremium) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 ml-1">
+                {/* ── Adresse Address-Web ── */}
+                <div className="mb-5 pb-5 border-b border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    📍 Mon adresse Address-Web
+                  </p>
+                  <div className="relative">
+                    <input
+                      value={awCode}
+                      onChange={e => handleAwCodeChange(e.target.value)}
+                      placeholder="AW-ABJ-84321"
+                      className="w-full px-4 py-3 bg-slate-50 rounded-2xl border-2 border-slate-100 focus:border-green-400 outline-none text-[12px] font-mono font-bold uppercase transition-all pr-10"
+                      maxLength={14}
+                    />
+                    {awChecking && (
+                      <div className="absolute right-3 top-3.5 w-4 h-4 border-2 border-slate-200 border-t-green-500 rounded-full animate-spin"/>
+                    )}
+                    {awVerified && !awChecking && (
+                      <span className="absolute right-3 top-3 text-green-500 text-base">✅</span>
+                    )}
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1.5 px-1">
+                    Ton code pour recevoir des livraisons.{" "}
+                    <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
+                      className="text-green-600 font-bold underline">
+                      Créer gratuitement →
+                    </a>
+                  </p>
+                </div>
+
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liens réseaux sociaux</p>
                 <span className="text-[8px] font-black px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1D9BF0' }}>Vérifié</span>
               </div>
