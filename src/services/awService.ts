@@ -37,10 +37,13 @@ export async function resolveAWCode(code: string): Promise<AWAddress | null> {
 
   try {
     // Essai 1 : API REST Address-Web
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(`${AW_BASE_URL}/api/v1/addresses/${clean}`, {
       headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(5000),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (res.ok) {
       const data = await res.json();

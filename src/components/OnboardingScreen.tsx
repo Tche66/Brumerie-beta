@@ -5,7 +5,7 @@ const SLIDES = [
   {
     emoji: '🛍️',
     title: 'Bienvenue sur\nBrumerie',
-    sub: 'Le marché local d\'Abidjan.\nAchète et vends près de chez toi.',
+    sub: "Le marché local d'Abidjan.\nAchète et vends près de chez toi.",
     color: '#16A34A',
   },
   {
@@ -17,8 +17,8 @@ const SLIDES = [
   },
   {
     emoji: '📍',
-    title: 'Ton adresse\nnumérique gratuite',
-    sub: 'En Afrique, les rues n\'ont pas toujours de nom.\nAddress-Web te donne un code unique comme\nAW-ABJ-84321 pour recevoir tes livraisons.',
+    title: "Ton adresse\nnumérique gratuite",
+    sub: "En Afrique, les rues n'ont pas toujours de nom.\nAddress-Web te donne un code unique comme\nAW-ABJ-84321 pour recevoir tes livraisons.",
     color: '#0EA5E9',
     isAddressWeb: true,
   },

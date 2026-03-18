@@ -748,7 +748,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <div className="space-y-4">
             {[
               { ico: '📞', t: 'Le vendeur te contacte', d: 'Via la messagerie Brumerie pour confirmer la remise' },
-              { ico: deliveryType === 'delivery' ? '🚚' : '📍', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: 'Conviens du lieu et de l\'heure avec le vendeur' },
+              { ico: deliveryType === 'delivery' ? '🚚' : '📍', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: "Conviens du lieu et de l'heure avec le vendeur" },
               { ico: '💵', t: 'Tu paies à la réception', d: `${effectivePrice.toLocaleString('fr-FR')} FCFA en cash au moment de la remise` },
               { ico: '⭐', t: 'Tu notes le vendeur', d: 'Reviens confirmer la réception et laisser un avis' },
             ].map((s, i) => (

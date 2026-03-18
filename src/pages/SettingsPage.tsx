@@ -330,10 +330,10 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               <p className="font-black text-slate-800 text-[11px]">Pourquoi une adresse numérique ?</p>
               <div className="space-y-1.5">
                 {[
-                  { icon: '🏠', text: 'En Afrique, 60% des rues n\'ont pas de nom officiel' },
-                  { icon: '📦', text: 'Les livreurs ne peuvent pas trouver ton domicile sans repère GPS' },
-                  { icon: '📍', text: 'Ton code AW-ABJ-XXXXX = tes coordonnées GPS exactes + un repère' },
-                  { icon: '🆓', text: 'Gratuit, universel, utilisable en dehors de Brumerie' },
+                  { icon: '🏠', text: "En Afrique, 60% des rues n'ont pas de nom officiel" },
+                  { icon: '📦', text: "Les livreurs ne peuvent pas trouver ton domicile sans repère GPS" },
+                  { icon: '📍', text: "Ton code AW-ABJ-XXXXX = tes coordonnées GPS exactes + un repère" },
+                  { icon: '🆓', text: "Gratuit, universel, utilisable en dehors de Brumerie" },
                 ].map(({ icon, text }) => (
                   <div key={text} className="flex items-start gap-2">
                     <span className="text-[13px] flex-shrink-0">{icon}</span>
