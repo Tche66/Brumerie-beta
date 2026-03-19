@@ -1,31 +1,47 @@
 // src/components/SocialIcon.tsx — Logos officiels réseaux sociaux
 import React from 'react';
 
-export type SocialNetwork = 'instagram' | 'tiktok' | 'facebook' | 'twitter';
+export type SocialNetwork = 'instagram' | 'tiktok' | 'facebook' | 'twitter' | 'addressweb';
 
 const LOGOS: Record<SocialNetwork, string> = {
-  instagram: '/assets/social/instagram.jpg',
-  tiktok:    '/assets/social/tiktok.jpg',
-  facebook:  '/assets/social/facebook.png',
-  twitter:   '/assets/social/twitter.jpg',
+  instagram:   '/assets/social/instagram.jpg',
+  tiktok:      '/assets/social/tiktok.jpg',
+  facebook:    '/assets/social/facebook.png',
+  twitter:     '/assets/social/twitter.jpg',
+  addressweb:  '/assets/social/addressweb.png',
 };
 
 const LABELS: Record<SocialNetwork, string> = {
-  instagram: 'Instagram',
-  tiktok:    'TikTok',
-  facebook:  'Facebook',
-  twitter:   'X (Twitter)',
+  instagram:   'Instagram',
+  tiktok:      'TikTok',
+  facebook:    'Facebook',
+  twitter:     'X (Twitter)',
+  addressweb:  'Address-Web',
 };
 
 function buildUrl(network: SocialNetwork, raw: string): string {
   if (!raw) return '#';
   if (raw.startsWith('http')) return raw;
+  // Address-Web : code AW-ABJ-84321 → lien direct ou numéro WhatsApp
+  if (network === 'addressweb') {
+    const clean = raw.trim().toUpperCase();
+    if (/^AW-[A-Z]{3}-\d{5}$/.test(clean)) {
+      return `https://addressweb.app/${clean}`;
+    }
+    // Numéro de téléphone → WhatsApp avec message Address-Web
+    if (/^[+\d\s]{8,}$/.test(raw.trim())) {
+      const phone = raw.replace(/\s/g, '');
+      return `https://wa.me/${phone}?text=${encodeURIComponent('Bonjour, je cherche votre adresse Address-Web 📍')}`;
+    }
+    return `https://addressweb.app/${raw}`;
+  }
   const handle = raw.replace('@', '');
   const bases: Record<SocialNetwork, string> = {
-    instagram: 'https://instagram.com/',
-    tiktok:    'https://tiktok.com/@',
-    facebook:  'https://facebook.com/',
-    twitter:   'https://x.com/',
+    instagram:   'https://instagram.com/',
+    tiktok:      'https://tiktok.com/@',
+    facebook:    'https://facebook.com/',
+    twitter:     'https://x.com/',
+    addressweb:  'https://addressweb.app/',
   };
   return bases[network] + handle;
 }

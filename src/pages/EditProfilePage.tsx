@@ -118,10 +118,11 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
   const [deliveryPartnerPhone, setDeliveryPartnerPhone] = useState((userProfile as any)?.deliveryPartnerPhone || '');
   const [bio, setBio] = useState(userProfile?.bio || '');
   const [socialLinks, setSocialLinks] = useState({
-    instagram: userProfile?.socialLinks?.instagram || '',
-    tiktok:    userProfile?.socialLinks?.tiktok    || '',
-    facebook:  userProfile?.socialLinks?.facebook  || '',
-    twitter:   userProfile?.socialLinks?.twitter   || '',
+    instagram:  userProfile?.socialLinks?.instagram  || '',
+    tiktok:     userProfile?.socialLinks?.tiktok     || '',
+    facebook:   userProfile?.socialLinks?.facebook   || '',
+    twitter:    userProfile?.socialLinks?.twitter    || '',
+    addressweb: userProfile?.socialLinks?.addressweb || '',
   });
   const [paymentMethods, setPaymentMethods] = useState<PaymentInfo[]>(
     userProfile?.defaultPaymentMethods || []
@@ -186,10 +187,11 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
         // Liens sociaux réservés aux vérifié + premium
         if (userProfile?.isVerified || userProfile?.isPremium) {
           updateData.socialLinks = {
-            instagram: socialLinks.instagram.trim(),
-            tiktok:    socialLinks.tiktok.trim(),
-            facebook:  socialLinks.facebook.trim(),
-            twitter:   socialLinks.twitter.trim(),
+            instagram:  socialLinks.instagram.trim(),
+            tiktok:     socialLinks.tiktok.trim(),
+            facebook:   socialLinks.facebook.trim(),
+            twitter:    socialLinks.twitter.trim(),
+            addressweb: socialLinks.addressweb.trim(),
           };
         }
       }
@@ -367,10 +369,11 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               </div>
               <div className="bg-slate-50 rounded-3xl p-4 space-y-3 border border-slate-100">
                 {([
-                  { key: 'instagram' as const, label: 'Instagram', placeholder: '@moncompte ou lien', logo: '/assets/social/instagram.jpg' },
-                  { key: 'tiktok'    as const, label: 'TikTok',    placeholder: '@moncompte ou lien', logo: '/assets/social/tiktok.jpg'    },
-                  { key: 'facebook'  as const, label: 'Facebook',  placeholder: 'Lien page Facebook', logo: '/assets/social/facebook.png'  },
-                  { key: 'twitter'   as const, label: 'X (Twitter)',placeholder: '@moncompte',         logo: '/assets/social/twitter.jpg'   },
+                  { key: 'instagram'  as const, label: 'Instagram',   placeholder: '@moncompte ou lien',      logo: '/assets/social/instagram.jpg'  },
+                  { key: 'tiktok'    as const, label: 'TikTok',     placeholder: '@moncompte ou lien',      logo: '/assets/social/tiktok.jpg'     },
+                  { key: 'facebook'  as const, label: 'Facebook',   placeholder: 'Lien page Facebook',      logo: '/assets/social/facebook.png'   },
+                  { key: 'twitter'   as const, label: 'X (Twitter)', placeholder: '@moncompte',              logo: '/assets/social/twitter.jpg'    },
+                  { key: 'addressweb' as const, label: 'Address-Web', placeholder: 'Code AW-ABJ-84321 ou lien', logo: '/assets/social/addressweb.png' },
                 ] as { key: keyof typeof socialLinks; label: string; placeholder: string; logo: string }[]).map(({ key, label, placeholder, logo }) => (
                   <div key={key} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-slate-100">
                     <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
