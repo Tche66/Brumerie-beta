@@ -315,7 +315,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                 <p className="font-black text-amber-800 text-[12px] mb-1">⚠️ Tu n'as pas encore d'adresse</p>
                 <p className="text-amber-700 text-[10px] font-medium leading-relaxed mb-3">
                   Sans adresse numérique, les livreurs ne peuvent pas te localiser précisément.
-                  Crée ta gratuitement en 1 minute sur Address-Web.
+                  Crée la gratuitement en 1 minute sur Address-Web.
                 </p>
                 <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
                   className="block w-full py-3 text-center rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"

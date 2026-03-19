@@ -10,7 +10,7 @@ interface VerificationPageProps { onBack: () => void; }
 export function VerificationPage({ onBack }: VerificationPageProps) {
   const { userProfile } = useAuth();
   const [sent, setSent] = useState(false);
-  const [verificationPrice, setVerificationPrice] = useState(3000);        // Prix officiel (barré si promo active)
+  const [verificationPrice, setVerificationPrice] = useState(5000);        // Prix officiel (barré si promo active)
   const [verificationPromoPrice, setVerificationPromoPrice] = useState<number | null>(null); // null = pas de promo
 
   // Lire le prix officiel + prix promo depuis Firestore (modifiables par l'admin)

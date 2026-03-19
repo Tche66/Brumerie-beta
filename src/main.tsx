@@ -1,8 +1,15 @@
 import React from "react";
+import { inject as injectAnalytics } from "@vercel/analytics";
+import { injectSpeedInsights } from "@vercel/speed-insights";
 import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
+
+// ── Vercel Analytics + Speed Insights ────────────────────────
+// Collecte visiteurs, pages vues et métriques de performance
+injectAnalytics();
+injectSpeedInsights();
 
 // ── Sentry : monitoring erreurs production ─────────────────────
 // Actif uniquement en production (pas en local dev)
