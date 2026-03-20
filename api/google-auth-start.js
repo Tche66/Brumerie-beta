@@ -4,7 +4,7 @@
 // ⚙️  DOMAINE — changer ici lors du passage en production
 const APP_DOMAIN = process.env.APP_DOMAIN || 'https://brumerie-beta.vercel.app';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const state = req.query?.state;
   if (!state) {
     return res.status(400).json({ error: 'Missing state parameter' });
