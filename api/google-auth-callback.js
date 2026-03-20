@@ -56,7 +56,7 @@ h2{color:#ef4444;margin-bottom:12px;font-size:18px}p{color:#64748b;font-size:13p
 <p style="margin-top:12px;font-size:11px">Retourne sur Brumerie et réessaie.</p>
 </div></body></html>`;
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const { code, state, error } = req.query || {};
 
   const sendHtml = (html) => {
