@@ -301,19 +301,26 @@ export function ProfilePage({ onProductClick, onNavigate }: ProfilePageProps) {
           </button>
         )}
         {/* Adresse Address-Web */}
-        {userProfile?.awAddressCode ? (
-          <a href={`https://addressweb.brumerie.com/${userProfile.awAddressCode}`}
-            target="_blank" rel="noopener noreferrer"
-            className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-green-200 text-green-700 bg-green-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-            📍 {userProfile.awAddressCode}
-          </a>
-        ) : (
-          <a href="https://addressweb.brumerie.com/creer"
-            target="_blank" rel="noopener noreferrer"
-            className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-dashed border-slate-200 text-slate-400 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-            📍 Créer mon adresse AW gratuite
-          </a>
-        )}
+        {/* Bouton Address-Web avec connexion automatique */}
+        <button
+          onClick={async () => {
+            if (!currentUser) return;
+            try {
+              const res = await fetch('/api/aw-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: currentUser.uid, email: currentUser.email }),
+              });
+              const data = await res.json();
+              const url = data.magicLink || 'https://addressweb.brumerie.com';
+              window.open(url, '_blank', 'noopener,noreferrer');
+            } catch {
+              window.open('https://addressweb.brumerie.com', '_blank', 'noopener,noreferrer');
+            }
+          }}
+          className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-sky-200 text-sky-700 bg-sky-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+          📍 {userProfile?.awAddressCode || 'Accéder à Address-Web'}
+        </button>
       </div>
 
       {/* Modal QR Boutique vendeur */}
