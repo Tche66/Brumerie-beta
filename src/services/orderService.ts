@@ -43,16 +43,15 @@ export async function createOrder(params: {
   const initialStatus: OrderStatus = isCOD ? 'cod_pending' : 'initiated';
 
   // ── Créer la commande dans Firestore ──
+  // ✅ Firestore refuse les valeurs undefined — on les supprime avant écriture
+  const cleanParams = Object.fromEntries(
+    Object.entries({ ...params, isCOD: isCOD || false, brumerieFee, sellerReceives, status: initialStatus, createdAt: serverTimestamp() })
+      .filter(([_, v]) => v !== undefined)
+  );
+
   let ref;
   try {
-    ref = await addDoc(ordersCol, {
-      ...params,
-      isCOD: isCOD || false,
-      brumerieFee,
-      sellerReceives,
-      status: initialStatus,
-      createdAt: serverTimestamp(),
-    });
+    ref = await addDoc(ordersCol, cleanParams);
   } catch (firestoreErr: any) {
     console.error('[createOrder] Firestore addDoc failed:', firestoreErr);
     throw new Error(firestoreErr?.message || firestoreErr?.code || 'Firestore write failed');

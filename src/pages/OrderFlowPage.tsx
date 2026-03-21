@@ -135,10 +135,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        buyerAWCode: awCode || undefined,
-        buyerAWRepere: awAddress?.repere || undefined,
-        buyerAWLatitude: awAddress?.latitude || undefined,
-        buyerAWLongitude: awAddress?.longitude || undefined,
+        // ✅ Firestore refuse undefined — on omet les champs vides
+        ...(awCode        ? { buyerAWCode:      awCode }               : {}),
+        ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
+        ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
+        ...(awAddress?.longitude ? { buyerAWLongitude: awAddress.longitude } : {}),
       });
       setOrderId(id);
       setStep('proof');
@@ -178,10 +179,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        buyerAWCode: awCode || undefined,
-        buyerAWRepere: awAddress?.repere || undefined,
-        buyerAWLatitude: awAddress?.latitude || undefined,
-        buyerAWLongitude: awAddress?.longitude || undefined,
+        // ✅ Firestore refuse undefined — on omet les champs vides
+        ...(awCode        ? { buyerAWCode:      awCode }               : {}),
+        ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
+        ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
+        ...(awAddress?.longitude ? { buyerAWLongitude: awAddress.longitude } : {}),
       });
       setOrderId(id);
       setStep('cod_confirm');
