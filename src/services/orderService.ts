@@ -42,17 +42,27 @@ export async function createOrder(params: {
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
   const initialStatus: OrderStatus = isCOD ? 'cod_pending' : 'initiated';
 
-  const ref = await addDoc(ordersCol, {
-    ...params,
-    isCOD: isCOD || false,
-    brumerieFee,
-    sellerReceives,
-    status: initialStatus,
-    createdAt: serverTimestamp(),
-  });
+  // ── Créer la commande dans Firestore ──
+  let ref;
+  try {
+    ref = await addDoc(ordersCol, {
+      ...params,
+      isCOD: isCOD || false,
+      brumerieFee,
+      sellerReceives,
+      status: initialStatus,
+      createdAt: serverTimestamp(),
+    });
+  } catch (firestoreErr: any) {
+    console.error('[createOrder] Firestore addDoc failed:', firestoreErr);
+    throw new Error(firestoreErr?.message || firestoreErr?.code || 'Firestore write failed');
+  }
 
   const orderId = ref.id;
-  await notifyBoth({
+
+  // ── Notifications — non bloquantes ──
+  // Pas de await — les notifs ne bloquent jamais la commande
+  notifyBoth({
     sellerId: params.sellerId,
     sellerMsg: {
       title: isCOD ? `🤝 Commande à la livraison !` : `🛍️ Nouvelle commande !`,

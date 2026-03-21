@@ -142,8 +142,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       });
       setOrderId(id);
       setStep('proof');
-    } catch (e) { console.error(e); setOrderError('Erreur lors de la création de la commande. Réessaie.'); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      console.error('[handleStartOrder]', e);
+      const msg = e?.message || e?.code || JSON.stringify(e);
+      setOrderError(`Erreur : ${msg}`);
+    } finally { setLoading(false); }
   };
 
   // ── Paiement à la livraison — crée commande COD directement ──
@@ -182,8 +185,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       });
       setOrderId(id);
       setStep('cod_confirm');
-    } catch (e) { console.error(e); setOrderError('Erreur lors de la création de la commande. Réessaie.'); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      console.error('[handleStartCOD]', e);
+      const msg = e?.message || e?.code || JSON.stringify(e);
+      setOrderError(`Erreur : ${msg}`);
+    } finally { setLoading(false); }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -437,6 +443,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
 
       <div className="px-5 py-4 border-t border-slate-100 space-y-3">
+        {orderError && (
+          <p className="text-red-500 text-[11px] font-bold text-center px-2 mb-1">{orderError}</p>
+        )}
         {paymentMode === 'mobile_money' ? (
           <button
             onClick={() => setStep('availability_check')}
