@@ -232,25 +232,33 @@ export async function getGlobalSettings(): Promise<any> {
 }
 
 export async function saveGlobalSettings(settings: {
-  verificationPrice?: number;          // Prix officiel (affiché barré + comptabilité admin)
-  verificationPromoPrice?: number;     // Prix promo affiché au vendeur (optionnel — null = pas de promo)
+  verificationPrice?: number;
+  verificationPromoPrice?: number;
   maintenanceMode?: boolean;
   maintenanceMessage?: string;
   boostPrices?: { '24h': number; '48h': number; '7j': number };
   wavePaymentPhone?: string;
-  // Deeplinks Wave complets, un par plan (ex: wave://send?phone=...&amount=500)
   waveLinks?: { '24h': string; '48h': string; '7j': string };
   planLimits?: {
     simple: { products: number; dailyChats: number };
     verified: { products: number; dailyChats: number };
   };
-  advancePaymentEnabled?: boolean;  // Paiement mobile money global
+  advancePaymentEnabled?: boolean;
 }): Promise<void> {
-  const ref = doc(db, 'system', 'settings');
-  await updateDoc(ref, { ...settings, updatedAt: serverTimestamp() }).catch(async () => {
-    // Document n'existe pas encore — créer
-    const { setDoc } = await import('firebase/firestore');
-    await setDoc(ref, { ...settings, updatedAt: serverTimestamp() });
+  const { setDoc } = await import('firebase/firestore');
+  const payload = { ...settings, updatedAt: serverTimestamp() };
+
+  // ✅ Écrire dans system/settings (historique admin)
+  const refSystem = doc(db, 'system', 'settings');
+  await updateDoc(refSystem, payload).catch(async () => {
+    await setDoc(refSystem, payload);
+  });
+
+  // ✅ Écrire aussi dans appConfig/main (lu par appConfigService en temps réel)
+  // C'est ce document qu'écoute l'app pour advancePaymentEnabled etc.
+  const refAppConfig = doc(db, 'appConfig', 'main');
+  await updateDoc(refAppConfig, payload).catch(async () => {
+    await setDoc(refAppConfig, payload);
   });
 }
 

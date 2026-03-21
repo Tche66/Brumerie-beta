@@ -33,6 +33,10 @@ export async function createOrder(params: {
   isCOD?: boolean;
   sellerNeighborhood?: string;
   buyerNeighborhood?: string;
+  buyerAWCode?: string;
+  buyerAWRepere?: string;
+  buyerAWLatitude?: number;
+  buyerAWLongitude?: number;
 }): Promise<string> {
   const { brumerieFee, sellerReceives } = calcOrderFees(params.productPrice);
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
@@ -608,12 +612,18 @@ async function notifyBoth(params: {
   sellerId: string; sellerMsg: { title: string; body: string; convData: any };
   buyerId: string;  buyerMsg:  { title: string; body: string; convData: any };
 }): Promise<void> {
-  await Promise.all([
-    createNotification(params.sellerId, 'system', params.sellerMsg.title, params.sellerMsg.body, params.sellerMsg.convData),
-    createNotification(params.buyerId,  'system', params.buyerMsg.title,  params.buyerMsg.body,  params.buyerMsg.convData),
-    showLocalPushNotification(params.sellerMsg.title, params.sellerMsg.body, { type: 'system' }),
-    showLocalPushNotification(params.buyerMsg.title,  params.buyerMsg.body,  { type: 'system' }),
-  ]);
+  // ✅ Les notifications ne doivent JAMAIS bloquer la création de commande
+  // Erreurs silencieuses — la commande est créée même si push échoue
+  try {
+    await Promise.allSettled([
+      createNotification(params.sellerId, 'system', params.sellerMsg.title, params.sellerMsg.body, params.sellerMsg.convData),
+      createNotification(params.buyerId,  'system', params.buyerMsg.title,  params.buyerMsg.body,  params.buyerMsg.convData),
+      showLocalPushNotification(params.sellerMsg.title, params.sellerMsg.body, { type: 'system' }),
+      showLocalPushNotification(params.buyerMsg.title,  params.buyerMsg.body,  { type: 'system' }),
+    ]);
+  } catch (e) {
+    console.warn('[notifyBoth] Notification error (non-blocking):', e);
+  }
 }
 
 // ── Notifier tous les livreurs Brumerie ─────────────────
