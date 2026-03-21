@@ -28,6 +28,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
   const [loading, setLoading] = useState(true);
   const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     setBookmarkIds(new Set(userProfile?.bookmarkedProductIds || []));
@@ -52,9 +53,14 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
   };
 
   // Produits filtrés par catégorie
-  const filtered = activeCategory
-    ? allProducts.filter(p => p.category === activeCategory)
-    : allProducts;
+  const filtered = allProducts.filter(p => {
+    const matchCat = !activeCategory || p.category === activeCategory;
+    const matchSearch = !searchTerm || 
+      p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchCat && matchSearch;
+  });
 
   // Sections calculées
   const newArrivals  = [...allProducts]
@@ -161,7 +167,28 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
           </Section>
         )}
 
-        {/* ── CARD ADDRESS-WEB ── */}
+        {/* ── BARRE DE RECHERCHE ── */}
+      <div className="px-4 mb-4">
+        <div className="relative">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Chercher un article, une marque..."
+            className="w-full pl-11 pr-4 py-3.5 bg-white rounded-2xl border-2 border-slate-100 focus:border-green-400 outline-none text-[13px] font-medium shadow-sm transition-all"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 active:scale-90">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── CARD ADDRESS-WEB ── */}
         {!activeCategory && (
           <div className="px-4 mb-2">
             <div className="rounded-[2rem] overflow-hidden"
