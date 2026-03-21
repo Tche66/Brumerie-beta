@@ -73,7 +73,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 1,
     boostDuration: '24h',
     description: '1 boost 24h offert',
-    detail: 'Ton article est mis en avant pendant 24h — plus de visibilité, plus de ventes.',
+    detail: "Ton article est mis en avant pendant 24h — plus de visibilité, plus de ventes.",
   },
   {
     threshold: 15,
@@ -87,7 +87,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 0,
     boostDuration: '',
     description: '+1 publication + +1 conversation/jour',
-    detail: 'Tu publies plus et tu peux contacter plus d'acheteurs chaque jour.',
+    detail: "Tu publies plus et tu peux contacter plus d'acheteurs chaque jour.",
   },
   {
     threshold: 20,
@@ -101,7 +101,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 2,
     boostDuration: '24h',
     description: '+1 publication + +1 chat/jour + 2 boosts 24h',
-    detail: 'Les avantages s'accumulent : publications, chats et 2 boosts de visibilité offerts.',
+    detail: "Les avantages s'accumulent : publications, chats et 2 boosts de visibilité offerts.",
   },
   {
     threshold: 30,
@@ -115,7 +115,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 1,
     boostDuration: '7j',
     description: '1 boost semaine offert',
-    detail: '7 jours de mise en avant pour ton article — la visibilité maximale sur Brumerie.',
+    detail: "7 jours de mise en avant pour ton article — la visibilité maximale sur Brumerie.",
   },
   {
     threshold: 50,
@@ -129,7 +129,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 0,
     boostDuration: '',
     description: 'Badge Vérifié 30 jours offert',
-    detail: 'Le badge Vérifié s'active automatiquement sur ton profil pendant 30 jours — crédibilité maximale auprès des acheteurs.',
+    detail: "Le badge Vérifié s'active automatiquement sur ton profil pendant 30 jours — crédibilité maximale auprès des acheteurs.",
   },
   {
     threshold: 100,
@@ -143,7 +143,7 @@ export const REFERRAL_REWARDS = [
     boostCredit: 3,
     boostDuration: '7j',
     description: 'Badge 3 mois + messagerie illimitée + 3 boosts semaine',
-    detail: 'Le statut Ambassadeur officiel Brumerie. Badge Vérifié 3 mois, messagerie totalement illimitée et 3 boosts de 7 jours pour dominer les résultats.',
+    detail: "Le statut Ambassadeur officiel Brumerie. Badge Vérifié 3 mois, messagerie totalement illimitée et 3 boosts de 7 jours pour dominer les résultats.",
   },
 ];
 
