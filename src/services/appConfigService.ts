@@ -48,7 +48,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   referralEnabled:        true,
   searchAlertsEnabled:    true,
   pushNotifsEnabled:      true,
-  advancePaymentEnabled:  false, // Désactivé par défaut pour MVP
+  advancePaymentEnabled:  true,  // ✅ Activé — géré depuis dashboard admin
   maxImagesPerProduct: 5,
   maxProductsFreeTier: 5,
   bannerEnabled:       false,

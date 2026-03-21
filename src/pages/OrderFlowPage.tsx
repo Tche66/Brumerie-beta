@@ -360,7 +360,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
               }`}>
               {!advancePaymentOk && (
                 <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
-                  🔒 Bientôt
+                  🔒 Indisponible
                 </span>
               )}
               <div className="text-2xl flex-shrink-0">💳</div>
