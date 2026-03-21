@@ -7,7 +7,7 @@ import { uploadToCloudinary } from '@/utils/uploadImage';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
-import { getAppConfig } from '@/services/appConfigService';
+import { getAppConfig, subscribeAppConfig } from '@/services/appConfigService';
 import { isValidAWCode, resolveAWCode, formatAWCode, AWAddress } from '@/services/awService';
 import { PaymentLogo } from '@/components/PaymentLogo';
 
@@ -50,14 +50,19 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
     finally { setAwLoading(false); }
   };
 
-  // Paiement à l'avance — activé globalement OU pour ce vendeur spécifique
-  const [advancePaymentOk, setAdvancePaymentOk] = useState(false);
+  // Paiement à l'avance — écoute temps réel Firestore
+  const [advancePaymentOk, setAdvancePaymentOk] = useState(() => {
+    const cfg = getAppConfig();
+    return cfg.advancePaymentEnabled || (product as any)?.sellerAdvancePaymentAllowed === true;
+  });
 
   useEffect(() => {
-    const config = getAppConfig();
-    // Activé si : global activé OU ce vendeur a un override
     const sellerAllowed = (product as any)?.sellerAdvancePaymentAllowed === true;
-    setAdvancePaymentOk(config.advancePaymentEnabled || sellerAllowed);
+    // S'abonner aux changements temps réel — le toggle admin prend effet immédiatement
+    const unsub = subscribeAppConfig((config) => {
+      setAdvancePaymentOk(config.advancePaymentEnabled || sellerAllowed);
+    });
+    return unsub;
   }, [product]);
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
@@ -143,7 +148,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
   // ── Paiement à la livraison — crée commande COD directement ──
   const handleStartCOD = async () => {
-    if (!currentUser || !userProfile) return;
+    if (!currentUser || !userProfile) {
+      setOrderError('Connecte-toi pour passer commande.');
+      return;
+    }
     setLoading(true);
     try {
       const deliveryFee = 0; // Sera fixé par le livreur lors de l'assignation
@@ -327,7 +335,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           {!awCode && (
             <p className="text-[9px] text-slate-400 mt-2 px-1">
               Tu n'as pas encore d'adresse ?{' '}
-              <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
+              <a href="https://addressweb.brumerie.com/auth?redirect=/creer" target="_blank" rel="noopener noreferrer"
                 className="text-green-600 font-bold underline">
                 Créer la mienne gratuitement →
               </a>
