@@ -6,6 +6,9 @@ import { removeBookmark } from '@/services/bookmarkService';
 import { getProducts } from '@/services/productService';
 import { subscribeOrdersAsBuyer } from '@/services/orderService';
 import { Product, Order } from '@/types';
+import { AWAddress } from '@/services/awService';
+import { AWAddressPicker } from '@/components/AWAddressPicker';
+import { updateUserProfile } from '@/services/userService';
 
 interface BuyerProfilePageProps {
   onProductClick: (product: Product) => void;
@@ -275,27 +278,25 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
           className="btn-secondary-custom w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em]">
           Modifier mon profil
         </button>
-        {/* Adresse Address-Web acheteur */}
-        {/* Bouton Address-Web avec connexion automatique */}
-        <button
-          onClick={async () => {
-            if (!currentUser) return;
-            try {
-              const res = await fetch('/api/aw-auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: currentUser.uid, email: currentUser.email }),
-              });
-              const data = await res.json();
-              const url = data.magicLink || 'https://addressweb.brumerie.com';
-              window.open(url, '_blank', 'noopener,noreferrer');
-            } catch {
-              window.open('https://addressweb.brumerie.com', '_blank', 'noopener,noreferrer');
-            }
-          }}
-          className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-sky-200 text-sky-700 bg-sky-50 active:scale-95 transition-all flex items-center justify-center gap-2">
-          📍 {userProfile?.awAddressCode || 'Accéder à Address-Web'}
-        </button>
+        {/* ── Adresse Address-Web acheteur — inline ── */}
+        <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm">
+          <AWAddressPicker
+            value={userProfile?.awAddressCode || ''}
+            onChange={async (code, addr) => {
+              if (currentUser && code) {
+                await updateUserProfile(currentUser.uid, { awAddressCode: code });
+              }
+            }}
+            onSaveToProfile={async (code, addr) => {
+              if (currentUser) {
+                await updateUserProfile(currentUser.uid, { awAddressCode: code });
+              }
+            }}
+            showSaveToProfile
+            label="Mon adresse de livraison"
+            placeholder="AW-ABJ-84321"
+          />
+        </div>
         <button onClick={() => onNavigate?.('switch-to-seller')}
           className="w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] border-2 border-green-200 text-green-700 bg-green-50 active:scale-95 transition-all flex items-center justify-center gap-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
