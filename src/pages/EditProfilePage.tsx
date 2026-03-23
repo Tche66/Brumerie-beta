@@ -9,7 +9,8 @@ import { PaymentLogo } from '@/components/PaymentLogo';
 import { compressImage } from '@/utils/helpers';
 import { getAllActiveSellers } from '@/services/userService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
-import { isValidAWCode, resolveAWCode, formatAWCode } from '@/services/awService';
+// awService — AWAddressPicker gère la résolution en interne
+import { AWAddressPicker } from '@/components/AWAddressPicker';
 
 interface EditProfilePageProps { onBack: () => void; onSaved: () => void; }
 
@@ -72,6 +73,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
   const [awVerified, setAwVerified] = useState(false);
   const [awChecking, setAwChecking] = useState(false);
 
+  // @deprecated — remplacé par AWAddressPicker. À supprimer au prochain refactor.
   const handleAwCodeChange = async (val: string) => {
     const clean = formatAWCode(val);
     setAwCode(clean);
@@ -335,33 +337,25 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
           {(userProfile?.isVerified || userProfile?.isPremium) && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 ml-1">
-                {/* ── Adresse Address-Web ── */}
+                {/* ── Adresse Address-Web — inline, sans quitter l'app ── */}
                 <div className="mb-5 pb-5 border-b border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                    📍 Mon adresse Address-Web
-                  </p>
-                  <div className="relative">
-                    <input
-                      value={awCode}
-                      onChange={e => handleAwCodeChange(e.target.value)}
-                      placeholder="AW-ABJ-84321"
-                      className="w-full px-4 py-3 bg-slate-50 rounded-2xl border-2 border-slate-100 focus:border-green-400 outline-none text-[12px] font-mono font-bold uppercase transition-all pr-10"
-                      maxLength={14}
-                    />
-                    {awChecking && (
-                      <div className="absolute right-3 top-3.5 w-4 h-4 border-2 border-slate-200 border-t-green-500 rounded-full animate-spin"/>
-                    )}
-                    {awVerified && !awChecking && (
-                      <span className="absolute right-3 top-3 text-green-500 text-base">✅</span>
-                    )}
-                  </div>
-                  <p className="text-[9px] text-slate-400 mt-1.5 px-1">
-                    Ton code pour recevoir des livraisons.{" "}
-                    <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
-                      className="text-green-600 font-bold underline">
-                      Créer gratuitement →
-                    </a>
-                  </p>
+                  <AWAddressPicker
+                    value={awCode}
+                    onChange={(code, addr) => {
+                      setAwCode(code);
+                      setAwVerified(!!addr?.repere);
+                    }}
+                    onSaveToProfile={async (code, addr) => {
+                      if (currentUser) {
+                        const { updateUserProfile } = await import('@/services/userService');
+                        await updateUserProfile(currentUser.uid, { awAddressCode: code });
+                        setAwCode(code);
+                      }
+                    }}
+                    showSaveToProfile
+                    label="Mon adresse Address-Web"
+                    placeholder="AW-ABJ-84321"
+                  />
                 </div>
 
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liens réseaux sociaux</p>

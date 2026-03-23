@@ -1,11 +1,8 @@
-// src/services/awService.ts — v2 : proxy sécurisé via /api/aw-address
-// La clé API Address-Web reste côté serveur Vercel — jamais exposée au navigateur
+// src/services/awService.ts — v3 : proxy sécurisé via /api/aw-address
+// Meilleure gestion erreurs + health check + timeout adapté CI (connexions lentes)
 
-// ── Config ────────────────────────────────────────────────────
-// En prod → /api/aw-address (proxy Vercel)
-// En dev local → même chose (Vercel CLI gère les fonctions)
-const AW_PROXY = '/api/aw-address';
-const AW_SHARE_BASE = 'https://addressweb.app';
+const AW_PROXY      = '/api/aw-address';
+const AW_SHARE_BASE = 'https://addressweb.brumerie.com';
 
 // ── Types ─────────────────────────────────────────────────────
 export interface AWAddress {
@@ -37,36 +34,76 @@ export async function resolveAWCode(code: string): Promise<AWAddress | null> {
   const clean = formatAWCode(code);
   if (!isValidAWCode(clean)) return null;
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000); // 12s — connexions lentes CI
+
   try {
     const res = await fetch(`${AW_PROXY}?code=${encodeURIComponent(clean)}`, {
-      signal: AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined,
+      signal: controller.signal,
     });
 
     if (res.status === 404) return null;
+
+    if (res.status === 500) {
+      const errData = await res.json().catch(() => ({}));
+      console.error('[AW] Proxy config error — ADDRESSWEB_API_KEY probablement absente sur Vercel:', errData);
+      return buildFallback(clean);
+    }
+
+    if (res.status === 502) {
+      const errData = await res.json().catch(() => ({}));
+      console.error('[AW] API upstream error:', errData);
+      return buildFallback(clean);
+    }
+
     if (!res.ok) {
-      console.warn('[AW] Proxy error:', res.status);
+      console.warn('[AW] Proxy error HTTP', res.status);
       return buildFallback(clean);
     }
 
     const data = await res.json();
 
     return {
-      addressCode:    data.addressCode || clean,
-      latitude:       data.latitude    || 0,
-      longitude:      data.longitude   || 0,
-      repere:         data.repere      || '',
-      ville:          data.ville       || '',
+      addressCode:    data.addressCode    || clean,
+      latitude:       data.latitude       || 0,
+      longitude:      data.longitude      || 0,
+      repere:         data.repere         || '',
+      ville:          data.ville          || '',
       quartier:       data.quartier,
       pays:           data.pays,
-      isVerified:     data.isVerified  || false,
-      shareLink:      `${AW_SHARE_BASE}/${clean}`,
-      googleMapsLink: data.latitude && data.longitude
+      isVerified:     data.isVerified     || false,
+      shareLink:      data.shareLink      || `${AW_SHARE_BASE}/${clean}`,
+      googleMapsLink: data.googleMapsLink || (data.latitude && data.longitude
         ? `https://www.google.com/maps?q=${data.latitude},${data.longitude}`
-        : '',
+        : ''),
     };
-  } catch (err) {
-    console.warn('[AW] Resolve failed:', err);
+  } catch (err: any) {
+    const isTimeout = err?.name === 'AbortError';
+    console.warn(`[AW] Resolve ${isTimeout ? 'TIMEOUT (>12s)' : 'failed'}:`, err?.message);
     return buildFallback(clean);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ── Vérifier l'état de la config AW (debug / admin) ──────────
+export async function checkAWProxyHealth(): Promise<{
+  ok: boolean; keyPresent: boolean; message: string;
+}> {
+  try {
+    const res = await fetch(`${AW_PROXY}?health=1`);
+    if (!res.ok) return { ok: false, keyPresent: false, message: `Proxy HTTP ${res.status}` };
+    const data = await res.json();
+    if (!data.keyPresent) {
+      return {
+        ok: false,
+        keyPresent: false,
+        message: 'ADDRESSWEB_API_KEY absente — Vercel > Settings > Environment Variables',
+      };
+    }
+    return { ok: true, keyPresent: true, message: `Proxy OK (${data.apiBase})` };
+  } catch (err: any) {
+    return { ok: false, keyPresent: false, message: `Proxy injoignable: ${err?.message}` };
   }
 }
 
@@ -100,10 +137,10 @@ export async function searchAWAddresses(query: string, limit = 10): Promise<AWAd
       repere:         d.repere      || '',
       ville:          d.ville       || '',
       quartier:       d.quartier,
-      shareLink:      `${AW_SHARE_BASE}/${d.addressCode}`,
-      googleMapsLink: d.latitude && d.longitude
+      shareLink:      d.shareLink || `${AW_SHARE_BASE}/${d.addressCode}`,
+      googleMapsLink: d.googleMapsLink || (d.latitude && d.longitude
         ? `https://www.google.com/maps?q=${d.latitude},${d.longitude}`
-        : '',
+        : ''),
     }));
   } catch { return []; }
 }

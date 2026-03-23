@@ -26,14 +26,14 @@ function buildUrl(network: SocialNetwork, raw: string): string {
   if (network === 'addressweb') {
     const clean = raw.trim().toUpperCase();
     if (/^AW-[A-Z]{3}-\d{5}$/.test(clean)) {
-      return `https://addressweb.app/${clean}`;
+      return `https://addressweb.brumerie.com/${clean}`;
     }
     // Numéro de téléphone → WhatsApp avec message Address-Web
     if (/^[+\d\s]{8,}$/.test(raw.trim())) {
       const phone = raw.replace(/\s/g, '');
       return `https://wa.me/${phone}?text=${encodeURIComponent('Bonjour, je cherche votre adresse Address-Web 📍')}`;
     }
-    return `https://addressweb.app/${raw}`;
+    return `https://addressweb.brumerie.com/${raw}`;
   }
   const handle = raw.replace('@', '');
   const bases: Record<SocialNetwork, string> = {
@@ -41,7 +41,7 @@ function buildUrl(network: SocialNetwork, raw: string): string {
     tiktok:      'https://tiktok.com/@',
     facebook:    'https://facebook.com/',
     twitter:     'https://x.com/',
-    addressweb:  'https://addressweb.app/',
+    addressweb:  'https://addressweb.brumerie.com/',
   };
   return bases[network] + handle;
 }
