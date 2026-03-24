@@ -23,7 +23,7 @@ function generateAddressCode(ville = 'ABJ') {
   return `AW-${code}-${uniqueId}`;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS
   const origin = req.headers.origin || '';
   const ALLOWED = ['https://brumerie.com','https://www.brumerie.com','http://localhost:5173'];
