@@ -41,6 +41,10 @@ const QUARTIERS_ABIDJAN = [
 ];
 
 // ── Proxy calls ───────────────────────────────────────────────
+// BRUMERIE_AW_USER_ID — compte Supabase dédié à Brumerie
+// Configurer dans Vercel env vars côté frontend si besoin, sinon géré par le proxy
+const AW_BRUMERIE_USER_ID = (import.meta as any).env?.VITE_AW_USER_ID || 'brumerie-api';
+
 async function createAWAddress(params: {
   latitude: number; longitude: number;
   repere: string; ville: string; quartier?: string;
@@ -49,9 +53,18 @@ async function createAWAddress(params: {
     const res = await fetch('/api/aw-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, isPublic: false }),
+      body: JSON.stringify({
+        ...params,
+        isPublic: true,          // adresses Brumerie publiques par défaut
+        userId: AW_BRUMERIE_USER_ID,
+        categorie: 'livraison',
+      }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[AWAddressPicker] Create failed:', res.status, err);
+      return null;
+    }
     const data = await res.json();
     return {
       addressCode:    data.addressCode    || '',
@@ -60,11 +73,15 @@ async function createAWAddress(params: {
       repere:         data.repere         || params.repere,
       ville:          data.ville          || params.ville,
       quartier:       data.quartier       || params.quartier,
-      isVerified:     data.isVerified     || false,
+      isVerified:     false,
       shareLink:      data.shareLink      || `https://addressweb.brumerie.com/${data.addressCode}`,
-      googleMapsLink: `https://www.google.com/maps?q=${params.latitude},${params.longitude}`,
+      googleMapsLink: data.googleMaps     || data.googleMapsLink
+        || `https://www.google.com/maps?q=${params.latitude},${params.longitude}`,
     };
-  } catch { return null; }
+  } catch (err) {
+    console.error('[AWAddressPicker] Create exception:', err);
+    return null;
+  }
 }
 
 // ── Composant principal ───────────────────────────────────────
