@@ -98,7 +98,7 @@ export function AWAddressPicker({
 
   // Create flow
   const [createStep, setCreateStep]   = useState<CreateStep>('repere');
-  const [gpsCoords, setGpsCoords]     = useState<{ lat: number; lng: number } | null>(null);
+  const [gpsCoords, setGpsCoords]     = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
   const [gpsLoading, setGpsLoading]   = useState(false);
   const [gpsError, setGpsError]       = useState('');
   const [repere, setRepere]           = useState('');
@@ -152,24 +152,49 @@ export function AWAddressPicker({
     }
     setGpsLoading(true);
     setGpsError('');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+
+    // Stratégie en 2 passes :
+    // 1. Position rapide (réseau/WiFi) — affichée immédiatement pour ne pas bloquer l'UX
+    // 2. Position GPS précise — remplace dès qu'elle arrive (jusqu'à 15s)
+    let bestAccuracy = Infinity;
+
+    const onSuccess = (pos: GeolocationPosition) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+
+      // On garde seulement si meilleure précision que ce qu'on a déjà
+      if (accuracy < bestAccuracy) {
+        bestAccuracy = accuracy;
+        setGpsCoords({ lat: latitude, lng: longitude, accuracy: Math.round(accuracy) });
         setGpsLoading(false);
         setMode('create_gps');
         setCreateStep('repere');
-      },
-      (err) => {
-        setGpsLoading(false);
-        if (err.code === 1) {
-          setGpsError("Permission refusée. Autorise la localisation dans ton navigateur ou crée manuellement.");
-        } else {
-          setGpsError("Impossible d'obtenir ta position. Crée manuellement.");
-        }
-        setMode('create_manual');
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-    );
+      }
+    };
+
+    const onError = (err: GeolocationPositionError) => {
+      setGpsLoading(false);
+      if (err.code === 1) {
+        setGpsError("Permission refusée. Autorise la localisation dans ton navigateur ou crée manuellement.");
+      } else {
+        setGpsError("Impossible d'obtenir ta position. Crée manuellement.");
+      }
+      setMode('create_manual');
+    };
+
+    // Passe 1 — position rapide (réseau/WiFi, ~1-2s)
+    navigator.geolocation.getCurrentPosition(onSuccess, () => {}, {
+      enableHighAccuracy: false,
+      timeout: 5000,
+      maximumAge: 60000,
+    });
+
+    // Passe 2 — position GPS précise (satellite, ~10-15s)
+    // Remplace la position précédente si meilleure précision
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0, // forcer une nouvelle mesure GPS
+    });
   };
 
   // ── Créer l'adresse ───────────────────────────────────────────
@@ -351,10 +376,20 @@ export function AWAddressPicker({
           {mode === 'create_gps' && gpsCoords && (
             <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-2xl border border-green-100">
               <span className="text-green-500 text-sm">📍</span>
-              <div>
-                <p className="text-[9px] font-black text-green-700 uppercase tracking-widest">Position GPS détectée</p>
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-green-700 uppercase tracking-widest">
+                  Position GPS détectée
+                  {gpsCoords.accuracy && gpsCoords.accuracy > 50 && (
+                    <span className="text-amber-500 ml-1 normal-case font-bold">— affinage en cours...</span>
+                  )}
+                </p>
                 <p className="text-[9px] text-green-600 font-mono">
                   {gpsCoords.lat.toFixed(5)}, {gpsCoords.lng.toFixed(5)}
+                  {gpsCoords.accuracy && (
+                    <span className={`ml-2 font-bold ${gpsCoords.accuracy <= 20 ? 'text-green-600' : gpsCoords.accuracy <= 100 ? 'text-amber-500' : 'text-red-400'}`}>
+                      ±{gpsCoords.accuracy}m
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
