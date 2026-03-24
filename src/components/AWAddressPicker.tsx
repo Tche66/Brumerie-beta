@@ -27,6 +27,8 @@ interface Props {
   label?: string;
   required?: boolean;
   className?: string;
+  firebaseUid?: string;   // UID Firebase de l'utilisateur connecté
+  email?: string;         // Email Firebase — pour créer son compte AW
 }
 
 type Mode = 'idle' | 'enter_code' | 'create_gps' | 'create_manual';
@@ -41,18 +43,50 @@ const QUARTIERS_ABIDJAN = [
 ];
 
 // ── Proxy calls ───────────────────────────────────────────────
+
+// Étape 1 — récupérer ou créer le compte Supabase de l'utilisateur
+async function getOrCreateAWUserId(firebaseUid: string, email: string): Promise<string | null> {
+  try {
+    const res = await fetch('/api/aw-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: firebaseUid, email }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.supabaseUserId || null;
+  } catch {
+    return null;
+  }
+}
+
+// Étape 2 — créer l'adresse au nom de l'utilisateur réel
 async function createAWAddress(params: {
   latitude: number; longitude: number;
   repere: string; ville: string; quartier?: string;
+  firebaseUid?: string; email?: string;  // pour créer l'adresse au bon nom
 }): Promise<AWAddress | null> {
   try {
+    // Résoudre le vrai supabaseUserId de l'utilisateur
+    let userId: string | undefined;
+    if (params.firebaseUid && params.email) {
+      const supabaseId = await getOrCreateAWUserId(params.firebaseUid, params.email);
+      if (supabaseId) userId = supabaseId;
+    }
+
     const res = await fetch('/api/aw-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...params,
-        isPublic: true,
-        categorie: 'livraison', // userId résolu côté proxy via AW_BRUMERIE_USER_ID
+        latitude:  params.latitude,
+        longitude: params.longitude,
+        repere:    params.repere,
+        ville:     params.ville,
+        quartier:  params.quartier,
+        isPublic:  true,
+        // Si on a le vrai userId → l'adresse appartient à l'utilisateur
+        // Sinon → fallback sur AW_BRUMERIE_USER_ID côté proxy
+        ...(userId ? { userId } : {}),
       }),
     });
     if (!res.ok) {
@@ -89,6 +123,8 @@ export function AWAddressPicker({
   label = 'Adresse de livraison',
   required = false,
   className = '',
+  firebaseUid,
+  email,
 }: Props) {
   const [mode, setMode]               = useState<Mode>('idle');
   const [inputCode, setInputCode]     = useState(value);
@@ -209,11 +245,13 @@ export function AWAddressPicker({
     setCreateError('');
     try {
       const addr = await createAWAddress({
-        latitude:  coords.lat,
-        longitude: coords.lng,
-        repere:    repere.trim(),
-        ville:     ville,
-        quartier:  finalQuartier,
+        latitude:     coords.lat,
+        longitude:    coords.lng,
+        repere:       repere.trim(),
+        ville:        ville,
+        quartier:     finalQuartier,
+        firebaseUid,  // pour créer l'adresse au nom de l'utilisateur réel
+        email,
       });
 
       if (!addr || !addr.addressCode) {

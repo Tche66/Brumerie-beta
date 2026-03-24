@@ -294,6 +294,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             onChange={(code, addr) => { setAwCode(code); setAwAddress(addr); }}
             label="Adresse de livraison"
             placeholder="AW-ABJ-84321 (optionnel)"
+            firebaseUid={currentUser?.uid}
+            email={currentUser?.email || undefined}
           />
         </div>
 

@@ -355,6 +355,8 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                     showSaveToProfile
                     label="Mon adresse Address-Web"
                     placeholder="AW-ABJ-84321"
+                    firebaseUid={currentUser?.uid}
+                    email={currentUser?.email || undefined}
                   />
                 </div>
 
