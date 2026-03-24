@@ -112,9 +112,9 @@ export default async function handler(req, res) {
       ville:        ville,
       quartier:     quartier || null,
       pays:         pays || 'Côte d\'Ivoire',
-      is_public:    isPublic !== false, // true par défaut
+      is_public:    isPublic !== false,
       user_id:      resolvedUserId,
-      categorie:    categorie || 'autre',
+      // categorie retiré — vérifier si le champ existe dans la table Supabase
     };
 
     const response = await fetch(
