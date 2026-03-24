@@ -41,10 +41,6 @@ const QUARTIERS_ABIDJAN = [
 ];
 
 // ── Proxy calls ───────────────────────────────────────────────
-// BRUMERIE_AW_USER_ID — compte Supabase dédié à Brumerie
-// Configurer dans Vercel env vars côté frontend si besoin, sinon géré par le proxy
-const AW_BRUMERIE_USER_ID = (import.meta as any).env?.VITE_AW_USER_ID || 'brumerie-api';
-
 async function createAWAddress(params: {
   latitude: number; longitude: number;
   repere: string; ville: string; quartier?: string;
@@ -55,9 +51,8 @@ async function createAWAddress(params: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...params,
-        isPublic: true,          // adresses Brumerie publiques par défaut
-        userId: AW_BRUMERIE_USER_ID,
-        categorie: 'livraison',
+        isPublic: true,
+        categorie: 'livraison', // userId résolu côté proxy via AW_BRUMERIE_USER_ID
       }),
     });
     if (!res.ok) {
