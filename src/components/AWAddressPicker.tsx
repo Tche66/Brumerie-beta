@@ -97,6 +97,7 @@ async function createAWAddress(params: {
         ville:     params.ville,
         quartier:  params.quartier,
         isPublic:  true,
+        categorie: params.categorie || 'maison',
         ...(supabaseUserId ? { supabaseUserId } : {}), // ← vrai propriétaire
       }),
     });
@@ -156,6 +157,7 @@ export function AWAddressPicker({
   const [ville, setVille]             = useState('Abidjan');
   const [quartier, setQuartier]       = useState('');
   const [customQuartier, setCustomQuartier] = useState('');
+  const [categorie, setCategorie]     = useState('maison');
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError]     = useState('');
   const [createdAddr, setCreatedAddr]     = useState<AWAddress | null>(null);
@@ -265,7 +267,8 @@ export function AWAddressPicker({
         repere:       repere.trim(),
         ville:        ville,
         quartier:     finalQuartier,
-        firebaseUid,  // pour créer l'adresse au nom de l'utilisateur réel
+        categorie,
+        firebaseUid,
         email,
       });
 
@@ -512,6 +515,35 @@ export function AWAddressPicker({
                 className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-[12px] outline-none focus:border-green-400 transition-all"
               />
             )}
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">
+              Type de lieu
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: 'maison',     label: '🏠 Maison' },
+                { value: 'commerce',   label: '🏪 Commerce' },
+                { value: 'bureau',     label: '🏢 Bureau' },
+                { value: 'restaurant', label: '🍽️ Restaurant' },
+                { value: 'evenement',  label: '🎉 Événement' },
+                { value: 'autre',      label: '📍 Autre' },
+              ].map(cat => (
+                <button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => setCategorie(cat.value)}
+                  className={`py-2.5 px-2 rounded-2xl border-2 text-[10px] font-bold transition-all text-center active:scale-95 ${
+                    categorie === cat.value
+                      ? 'border-green-500 bg-green-50 text-green-800'
+                      : 'border-slate-200 bg-white text-slate-500'
+                  }`}>
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {createError && (
