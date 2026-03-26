@@ -77,7 +77,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const {
       latitude, longitude, repere, ville,
-      quartier, pays, isPublic, categorie,
+      quartier, pays, isPublic,
       supabaseUserId, // ← ID réel de l'utilisateur (retourné par /api/aw-auth)
     } = req.body || {};
 

@@ -97,7 +97,6 @@ async function createAWAddress(params: {
         ville:     params.ville,
         quartier:  params.quartier,
         isPublic:  true,
-        categorie: 'livraison',
         ...(supabaseUserId ? { supabaseUserId } : {}), // ← vrai propriétaire
       }),
     });
