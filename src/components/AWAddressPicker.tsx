@@ -45,7 +45,15 @@ const QUARTIERS_ABIDJAN = [
 // ── Proxy calls ───────────────────────────────────────────────
 
 // Étape 1 — récupérer ou créer le compte Supabase de l'utilisateur
-async function getOrCreateAWUserId(firebaseUid: string, email: string): Promise<string | null> {
+// Retourne le supabaseUserId ET le stocke dans Firebase pour les prochaines fois
+async function resolveSupabaseUserId(
+  firebaseUid: string,
+  email: string,
+  cachedSupabaseUserId?: string,
+): Promise<string | null> {
+  // Si déjà en cache (profil Firebase) → pas besoin d'appeler aw-auth
+  if (cachedSupabaseUserId) return cachedSupabaseUserId;
+
   try {
     const res = await fetch('/api/aw-auth', {
       method: 'POST',
@@ -64,14 +72,19 @@ async function getOrCreateAWUserId(firebaseUid: string, email: string): Promise<
 async function createAWAddress(params: {
   latitude: number; longitude: number;
   repere: string; ville: string; quartier?: string;
-  firebaseUid?: string; email?: string;  // pour créer l'adresse au bon nom
-}): Promise<AWAddress | null> {
+  firebaseUid?: string;
+  email?: string;
+  cachedSupabaseUserId?: string; // depuis userProfile.awSupabaseUserId
+}): Promise<{ addr: AWAddress | null; supabaseUserId: string | null }> {
   try {
-    // Résoudre le vrai supabaseUserId de l'utilisateur
-    let userId: string | undefined;
+    // Résoudre le supabaseUserId — cache d'abord, sinon appel aw-auth
+    let supabaseUserId: string | null = null;
     if (params.firebaseUid && params.email) {
-      const supabaseId = await getOrCreateAWUserId(params.firebaseUid, params.email);
-      if (supabaseId) userId = supabaseId;
+      supabaseUserId = await resolveSupabaseUserId(
+        params.firebaseUid,
+        params.email,
+        params.cachedSupabaseUserId,
+      );
     }
 
     const res = await fetch('/api/aw-address', {
@@ -84,18 +97,19 @@ async function createAWAddress(params: {
         ville:     params.ville,
         quartier:  params.quartier,
         isPublic:  true,
-        // Si on a le vrai userId → l'adresse appartient à l'utilisateur
-        // Sinon → fallback sur AW_BRUMERIE_USER_ID côté proxy
-        ...(userId ? { userId } : {}),
+        categorie: 'livraison',
+        ...(supabaseUserId ? { supabaseUserId } : {}), // ← vrai propriétaire
       }),
     });
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[AWAddressPicker] Create failed:', res.status, err);
-      return null;
+      return { addr: null, supabaseUserId };
     }
+
     const data = await res.json();
-    return {
+    const addr: AWAddress = {
       addressCode:    data.addressCode    || '',
       latitude:       data.latitude       || params.latitude,
       longitude:      data.longitude      || params.longitude,
@@ -106,10 +120,12 @@ async function createAWAddress(params: {
       shareLink:      data.shareLink      || `https://addressweb.brumerie.com/${data.addressCode}`,
       googleMapsLink: data.googleMaps     || data.googleMapsLink
         || `https://www.google.com/maps?q=${params.latitude},${params.longitude}`,
+      editLink:       data.editLink,
     };
+    return { addr, supabaseUserId };
   } catch (err) {
     console.error('[AWAddressPicker] Create exception:', err);
-    return null;
+    return { addr: null, supabaseUserId: null };
   }
 }
 
@@ -335,6 +351,12 @@ export function AWAddressPicker({
               <a href={activeAddr.googleMapsLink} target="_blank" rel="noopener noreferrer"
                 className="text-[9px] text-blue-600 font-bold underline mt-1 inline-block">
                 📍 Voir sur Google Maps
+              </a>
+            )}
+            {activeAddr.editLink && (
+              <a href={activeAddr.editLink} target="_blank" rel="noopener noreferrer"
+                className="text-[9px] text-green-700 font-bold underline mt-0.5 inline-block">
+                ✏️ Modifier / ajouter photos
               </a>
             )}
           </div>
