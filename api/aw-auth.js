@@ -30,71 +30,83 @@ export default async function handler(req, res) {
   };
 
   try {
-    // 1. Chercher si le compte Supabase existe déjà
-    const searchRes = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-      { headers }
-    );
-    const searchData = await searchRes.json();
-
-    console.log('[AW Auth] Search status:', searchRes.status);
-
+    // 1. Tenter de créer le compte directement
+    // Si email existe déjà → Supabase retourne une erreur qu'on récupère pour faire la recherche
     let supabaseUserId;
 
-    if (searchData.users?.length > 0) {
-      supabaseUserId = searchData.users[0].id;
-      console.log('[AW Auth] Compte existant trouvé:', supabaseUserId);
+    const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        email,
+        email_confirm: true,
+        password: `${uid}_brumerie_${Math.random().toString(36).slice(2)}`,
+        user_metadata: { brumerie_uid: uid, source: 'brumerie' },
+      }),
+    });
+
+    const createText = await createRes.text();
+    console.log('[AW Auth] Create status:', createRes.status, createText.substring(0, 200));
+    
+    let created;
+    try { created = JSON.parse(createText); } catch { created = {}; }
+
+    if (created.id) {
+      // Compte créé avec succès
+      supabaseUserId = created.id;
+      console.log('[AW Auth] Nouveau compte créé:', supabaseUserId);
     } else {
-      // Créer le compte Supabase
-      const createRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          email,
-          email_confirm: true,
-          password: `${uid}_brumerie_${Math.random().toString(36).slice(2)}`,
-          user_metadata: { brumerie_uid: uid, source: 'brumerie' },
-        }),
-      });
-
-      const created = await createRes.json();
-      console.log('[AW Auth] Create status:', createRes.status, JSON.stringify(created).substring(0, 200));
-
-      if (!created.id) {
-        // Deuxième tentative — parfois l'email existe déjà avec une casse différente
-        // ou a été créé entre la recherche et la création
-        if (created.msg?.includes('already') || created.code === 'email_exists') {
-          console.log('[AW Auth] Email existe déjà — nouvelle recherche');
-          const retry = await fetch(
-            `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-            { headers }
-          );
-          const retryData = await retry.json();
-          if (retryData.users?.length > 0) {
-            supabaseUserId = retryData.users[0].id;
-            console.log('[AW Auth] Trouvé en retry:', supabaseUserId);
-          }
-        }
-        if (!supabaseUserId) {
-          throw new Error(`Création compte échouée: ${JSON.stringify(created)}`);
-        }
+      // Compte existe déjà → chercher par listing (page 1, filtrer par email)
+      console.log('[AW Auth] Compte existant — recherche dans la liste');
+      
+      // Supabase Admin: lister les utilisateurs et filtrer
+      const listRes = await fetch(
+        `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,
+        { headers }
+      );
+      const listText = await listRes.text();
+      let listData;
+      try { listData = JSON.parse(listText); } catch { listData = {}; }
+      
+      console.log('[AW Auth] List status:', listRes.status);
+      
+      const users = listData.users || [];
+      const found = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (found?.id) {
+        supabaseUserId = found.id;
+        console.log('[AW Auth] Compte existant trouvé:', supabaseUserId);
       } else {
-        supabaseUserId = created.id;
-        console.log('[AW Auth] Nouveau compte créé:', supabaseUserId);
+        throw new Error(`Impossible de trouver ou créer le compte pour: ${email}`);
       }
     }
 
-    // 2. Générer un magic link
-    const linkRes = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users/${supabaseUserId}/magiclink`,
-      { method: 'POST', headers }
-    );
-    const linkData = await linkRes.json();
-    console.log('[AW Auth] Magic link status:', linkRes.status);
+    // 2. Générer un magic link (optionnel — ne bloque pas si ça échoue)
+    let magicLink = null;
+    try {
+      const linkRes = await fetch(
+        `${SUPABASE_URL}/auth/v1/admin/generateLink`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ type: 'magiclink', email }),
+        }
+      );
+      const linkText = await linkRes.text();
+      console.log('[AW Auth] Magic link status:', linkRes.status, linkText.substring(0, 100));
+      try {
+        const linkData = JSON.parse(linkText);
+        magicLink = linkData.action_link || linkData.hashed_token || null;
+      } catch { /* pas de magic link — non bloquant */ }
+    } catch (linkErr) {
+      console.log('[AW Auth] Magic link skipped:', linkErr.message);
+    }
 
+    // Retourner supabaseUserId même sans magic link
+    // C'est la clé — aw-address peut créer l'adresse au bon nom
     return res.status(200).json({
       supabaseUserId,
-      magicLink: linkData.action_link || null,
+      magicLink,
     });
 
   } catch (err) {
