@@ -27,8 +27,7 @@ interface Props {
   label?: string;
   required?: boolean;
   className?: string;
-  firebaseUid?: string;   // UID Firebase de l'utilisateur connecté
-  email?: string;         // Email Firebase — pour créer son compte AW
+  firebaseUid?: string;   // UID Firebase — tracé dans brumerie_uid
 }
 
 type Mode = 'idle' | 'enter_code' | 'create_gps' | 'create_manual';
@@ -44,72 +43,34 @@ const QUARTIERS_ABIDJAN = [
 
 // ── Proxy calls ───────────────────────────────────────────────
 
-// Étape 1 — récupérer ou créer le compte Supabase de l'utilisateur
-// Retourne le supabaseUserId ET le stocke dans Firebase pour les prochaines fois
-async function resolveSupabaseUserId(
-  firebaseUid: string,
-  email: string,
-  cachedSupabaseUserId?: string,
-): Promise<string | null> {
-  // Si déjà en cache (profil Firebase) → pas besoin d'appeler aw-auth
-  if (cachedSupabaseUserId) return cachedSupabaseUserId;
-
-  try {
-    const res = await fetch('/api/aw-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid: firebaseUid, email }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.supabaseUserId || null;
-  } catch {
-    return null;
-  }
-}
-
-// Étape 2 — créer l'adresse au nom de l'utilisateur réel
 async function createAWAddress(params: {
   latitude: number; longitude: number;
   repere: string; ville: string; quartier?: string;
+  categorie?: string;
   firebaseUid?: string;
-  email?: string;
-  cachedSupabaseUserId?: string; // depuis userProfile.awSupabaseUserId
-}): Promise<{ addr: AWAddress | null; supabaseUserId: string | null }> {
+}): Promise<AWAddress | null> {
   try {
-    // Résoudre le supabaseUserId — cache d'abord, sinon appel aw-auth
-    let supabaseUserId: string | null = null;
-    if (params.firebaseUid && params.email) {
-      supabaseUserId = await resolveSupabaseUserId(
-        params.firebaseUid,
-        params.email,
-        params.cachedSupabaseUserId,
-      );
-    }
-
     const res = await fetch('/api/aw-address', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        latitude:  params.latitude,
-        longitude: params.longitude,
-        repere:    params.repere,
-        ville:     params.ville,
-        quartier:  params.quartier,
-        isPublic:  true,
-        categorie: params.categorie || 'maison',
-        ...(supabaseUserId ? { supabaseUserId } : {}), // ← vrai propriétaire
+        latitude:    params.latitude,
+        longitude:   params.longitude,
+        repere:      params.repere,
+        ville:       params.ville,
+        quartier:    params.quartier,
+        isPublic:    true,
+        categorie:   params.categorie || 'maison',
+        firebaseUid: params.firebaseUid, // tracé dans brumerie_uid
       }),
     });
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('[AWAddressPicker] Create failed:', res.status, err);
-      return { addr: null, supabaseUserId };
+      return null;
     }
-
     const data = await res.json();
-    const addr: AWAddress = {
+    return {
       addressCode:    data.addressCode    || '',
       latitude:       data.latitude       || params.latitude,
       longitude:      data.longitude      || params.longitude,
@@ -118,14 +79,13 @@ async function createAWAddress(params: {
       quartier:       data.quartier       || params.quartier,
       isVerified:     false,
       shareLink:      data.shareLink      || `https://addressweb.brumerie.com/${data.addressCode}`,
-      googleMapsLink: data.googleMaps     || data.googleMapsLink
+      googleMapsLink: data.googleMapsLink || data.googleMaps
         || `https://www.google.com/maps?q=${params.latitude},${params.longitude}`,
-      editLink:       data.editLink,
+      editEndpoint:   data.editEndpoint,
     };
-    return { addr, supabaseUserId };
   } catch (err) {
     console.error('[AWAddressPicker] Create exception:', err);
-    return { addr: null, supabaseUserId: null };
+    return null;
   }
 }
 
@@ -140,7 +100,6 @@ export function AWAddressPicker({
   required = false,
   className = '',
   firebaseUid,
-  email,
 }: Props) {
   const [mode, setMode]               = useState<Mode>('idle');
   const [inputCode, setInputCode]     = useState(value);
@@ -262,14 +221,13 @@ export function AWAddressPicker({
     setCreateError('');
     try {
       const addr = await createAWAddress({
-        latitude:     coords.lat,
-        longitude:    coords.lng,
-        repere:       repere.trim(),
-        ville:        ville,
-        quartier:     finalQuartier,
+        latitude:    coords.lat,
+        longitude:   coords.lng,
+        repere:      repere.trim(),
+        ville:       ville,
+        quartier:    finalQuartier,
         categorie,
         firebaseUid,
-        email,
       });
 
       if (!addr || !addr.addressCode) {
@@ -355,11 +313,22 @@ export function AWAddressPicker({
                 📍 Voir sur Google Maps
               </a>
             )}
-            {activeAddr.editLink && (
-              <a href={activeAddr.editLink} target="_blank" rel="noopener noreferrer"
-                className="text-[9px] text-green-700 font-bold underline mt-0.5 inline-block">
+            {activeAddr.addressCode && firebaseUid && (
+              <button
+                onClick={async () => {
+                  try {
+                    const r = await fetch('https://addressweb.brumerie.com/api/brumerie-edit', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ code: activeAddr.addressCode, uid: firebaseUid }),
+                    });
+                    const d = await r.json();
+                    if (d.editUrl) window.open(d.editUrl, '_blank', 'noopener,noreferrer');
+                  } catch { /* silent */ }
+                }}
+                className="text-[9px] text-green-700 font-bold underline mt-0.5 bg-transparent border-none cursor-pointer p-0 block">
                 ✏️ Modifier / ajouter photos
-              </a>
+              </button>
             )}
           </div>
           <button onClick={() => { reset(); setInputCode(''); onChange?.('', null); }}

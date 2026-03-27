@@ -295,7 +295,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             label="Adresse de livraison"
             placeholder="AW-ABJ-84321 (optionnel)"
             firebaseUid={currentUser?.uid}
-            email={currentUser?.email || undefined}
           />
         </div>
 

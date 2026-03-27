@@ -1,10 +1,10 @@
 // api/aw-address.js — Proxy Brumerie → Address-Web
-// ES Module — compatible "type": "module"
+// Architecture sans Supabase Auth — brumerie_uid tracé dans addresses
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const ANON_KEY     = process.env.SUPABASE_ANON_KEY;
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY;
-const BRUMERIE_UID = process.env.BRUMERIE_USER_ID; // fallback si pas de supabaseUserId
+const BRUMERIE_UID = process.env.BRUMERIE_USER_ID; // compte API unique Address-Web
 
 const supabaseHeaders = {
   'apikey':        ANON_KEY,
@@ -29,10 +29,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── Health check ──────────────────────────────────────────────
   if (req.method === 'GET' && req.query.health === '1') {
     return res.status(200).json({
-      ok:          true,
+      ok: true,
       supabaseUrl: SUPABASE_URL  ? '✓' : '✗',
       anonKey:     ANON_KEY      ? '✓' : '✗',
       serviceKey:  SERVICE_KEY   ? '✓' : '✗',
@@ -67,9 +66,9 @@ export default async function handler(req, res) {
       pays:        a.pays,
       isPublic:    a.is_public,
       isVerified:  a.is_verified,
+      brumerieUid: a.brumerie_uid,
       shareLink:   `https://addressweb.brumerie.com/${a.address_code}`,
       googleMapsLink: `https://www.google.com/maps?q=${a.latitude},${a.longitude}`,
-      editLink:    `https://addressweb.brumerie.com/${a.address_code}/modifier`,
     });
   }
 
@@ -77,19 +76,15 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const {
       latitude, longitude, repere, ville,
-      quartier, pays, isPublic,
-      supabaseUserId, // ← ID réel de l'utilisateur (retourné par /api/aw-auth)
+      quartier, pays, isPublic, categorie,
+      firebaseUid, // ← Firebase UID de l'utilisateur Brumerie (pour traçage)
     } = req.body || {};
 
     if (!latitude || !longitude || !ville) {
       return res.status(400).json({ error: 'latitude, longitude et ville sont requis' });
     }
-
-    // Utiliser le vrai user_id de l'utilisateur si disponible
-    // Sinon fallback sur le compte Brumerie générique
-    const userId = supabaseUserId || BRUMERIE_UID;
-    if (!userId) {
-      return res.status(500).json({ error: 'userId manquant — fournir supabaseUserId ou configurer BRUMERIE_USER_ID' });
+    if (!BRUMERIE_UID) {
+      return res.status(500).json({ error: 'Variable BRUMERIE_USER_ID manquante' });
     }
 
     const addressCode = generateAddressCode(ville);
@@ -102,7 +97,8 @@ export default async function handler(req, res) {
       quartier:     quartier || null,
       pays:         pays || "Côte d'Ivoire",
       is_public:    isPublic !== false,
-      user_id:      userId,  // ← vrai propriétaire = peut modifier sur Address-Web
+      user_id:      BRUMERIE_UID,       // compte API Brumerie
+      brumerie_uid: firebaseUid || null, // vrai propriétaire Firebase
       categorie:    categorie || 'autre',
     };
 
@@ -117,11 +113,12 @@ export default async function handler(req, res) {
     return res.status(201).json({
       addressCode: created.address_code,
       shareLink:   `https://addressweb.brumerie.com/${created.address_code}`,
-      editLink:    `https://addressweb.brumerie.com/${created.address_code}/modifier`,
       googleMapsLink: `https://www.google.com/maps?q=${created.latitude},${created.longitude}`,
       latitude:    created.latitude,
       longitude:   created.longitude,
       ville:       created.ville,
+      // Pour modifier : appeler /api/brumerie-edit?code=AW-XXX&uid=FIREBASE_UID
+      editEndpoint: `https://addressweb.brumerie.com/api/brumerie-edit`,
     });
   }
 

@@ -296,7 +296,6 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
             label="Mon adresse de livraison"
             placeholder="AW-ABJ-84321"
             firebaseUid={currentUser?.uid}
-            email={currentUser?.email || undefined}
           />
         </div>
         <button onClick={() => onNavigate?.('switch-to-seller')}
