@@ -330,7 +330,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
             )}
             {/* Un seul input sans capture — Android affiche le menu caméra/galerie nativement */}
             <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
-            <input ref={cameraRef} type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="hidden" />
           </div>
         )}
 

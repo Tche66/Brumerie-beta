@@ -123,6 +123,16 @@ export function AWAddressPicker({
   const [savedToProfile, setSavedToProfile] = useState(false);
   const [savingProfile, setSavingProfile]   = useState(false);
 
+  // Auto-résoudre le code si value arrive depuis l'extérieur (ex: après sauvegarde profil)
+  // et qu'on n'a pas encore d'adresse résolue
+  React.useEffect(() => {
+    if (value && isValidAWCode(value) && !resolvedAddr && !createdAddr) {
+      resolveAWCode(value).then(addr => {
+        if (addr) setResolvedAddr(addr);
+      }).catch(() => {});
+    }
+  }, [value]);
+
   // ── Résolution d'un code existant ────────────────────────────
   const handleCodeInput = useCallback(async (raw: string) => {
     const clean = formatAWCode(raw);

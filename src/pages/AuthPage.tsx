@@ -197,10 +197,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
     const r   = 16;
     const circ = 2 * Math.PI * r;
 
-    {showForgotModal && (
-    <ForgotPasswordModal onClose={() => setShowForgotModal(false)}/>
-  )}
-    return (
+      return (
       <div className="min-h-screen bg-white flex flex-col font-sans">
 
         {/* Header */}
@@ -359,6 +356,9 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   // ════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
+      {showForgotModal && (
+        <ForgotPasswordModal onClose={() => setShowForgotModal(false)}/>
+      )}
       {/* Hero */}
       <div className="relative overflow-hidden flex flex-col items-center justify-center pt-20 pb-16 px-6 text-center"
         style={{ background: 'linear-gradient(160deg,#16A34A 0%,#115E2E 100%)' }}>
@@ -529,11 +529,17 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
                 {terms && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>}
               </div>
               <label className="text-[11px] text-slate-500 leading-snug cursor-pointer" onClick={() => setTerms((v: boolean) => !v)}>
-                J'accepte la{' '}
+                En continuant, j'accepte les{' '}
+                <button type="button" onClick={e => { e.stopPropagation(); onNavigate('terms'); }}
+                  className="text-slate-900 font-bold underline decoration-green-600/30">
+                  Conditions d'utilisation
+                </button>
+                {' '}et la{' '}
                 <button type="button" onClick={e => { e.stopPropagation(); onNavigate('privacy'); }}
                   className="text-slate-900 font-bold underline decoration-green-600/30">
                   Politique de Confidentialité
                 </button>
+                {' '}de Brumerie.
               </label>
             </div>
           )}
