@@ -388,11 +388,14 @@ export default async function handler(req, res) {
 
     otpStore.delete(resetKey);
 
-    // OTP valide — générer un resetToken temporaire (valable 5 min)
-    // Ce token sera utilisé côté client pour confirmer le changement
-    const resetToken = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    const tokenExpiry = Date.now() + 5 * 60 * 1000;
-    otpStore.set('rtoken_' + email.toLowerCase(), { token: resetToken, expires: tokenExpiry });
+    // OTP valide — générer un resetToken HMAC signé (auto-validant, pas de mémoire)
+    // Format : base64(email + ':' + expiry + ':' + hmac)
+    const { createHmac } = await import('crypto');
+    const secret = process.env.RESET_TOKEN_SECRET || 'brumerie-reset-secret-2026';
+    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const payload = email.toLowerCase() + ':' + expiry;
+    const hmac = createHmac('sha256', secret).update(payload).digest('hex');
+    const resetToken = Buffer.from(payload + ':' + hmac).toString('base64url');
 
     return res.status(200).json({ result: 'valid', resetToken, email });
   }
@@ -408,13 +411,27 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Mot de passe trop court (min 6 caractères)' });
     }
 
-    // Vérifier le resetToken
-    const tokenKey   = 'rtoken_' + email.toLowerCase();
-    const tokenEntry = otpStore.get(tokenKey);
-    if (!tokenEntry || tokenEntry.token !== resetToken || tokenEntry.expires < Date.now()) {
+    // Vérifier le resetToken HMAC (auto-validant — pas besoin de mémoire)
+    let tokenValid = false;
+    try {
+      const { createHmac } = await import('crypto');
+      const secret = process.env.RESET_TOKEN_SECRET || 'brumerie-reset-secret-2026';
+      const decoded = Buffer.from(resetToken, 'base64url').toString('utf8');
+      const parts = decoded.split(':');
+      if (parts.length === 3) {
+        const [tokenEmail, expiry, tokenHmac] = parts;
+        const payload = tokenEmail + ':' + expiry;
+        const expectedHmac = createHmac('sha256', secret).update(payload).digest('hex');
+        const notExpired = parseInt(expiry) > Date.now();
+        const emailMatch = tokenEmail === email.toLowerCase();
+        const hmacMatch  = tokenHmac === expectedHmac;
+        tokenValid = notExpired && emailMatch && hmacMatch;
+      }
+    } catch { tokenValid = false; }
+
+    if (!tokenValid) {
       return res.status(200).json({ result: 'invalid', error: 'Token expiré ou invalide' });
     }
-    otpStore.delete(tokenKey);
 
     // Firebase Admin SDK pour changer le mot de passe
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
