@@ -30,12 +30,20 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET' && req.query.health === '1') {
+    // Lister toutes les variables qui contiennent BRUMERIE ou USER_ID
+    const relevantKeys = Object.keys(process.env)
+      .filter(k => k.includes('BRUMERIE') || k.includes('USER_ID') || k.includes('SUPABASE'))
+      .reduce((acc, k) => {
+        acc[k] = process.env[k] ? `✓ (${process.env[k].substring(0,8)}...)` : '✗ vide';
+        return acc;
+      }, {});
     return res.status(200).json({
       ok: true,
       supabaseUrl: SUPABASE_URL  ? '✓' : '✗',
       anonKey:     ANON_KEY      ? '✓' : '✗',
       serviceKey:  SERVICE_KEY   ? '✓' : '✗',
       brumeUserId: BRUMERIE_UID  ? '✓' : '✗',
+      allRelevantEnvVars: relevantKeys,
     });
   }
 
