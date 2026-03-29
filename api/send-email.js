@@ -441,7 +441,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const admin = require('firebase-admin');
+      const { default: admin } = await import('firebase-admin');
       if (!admin.apps.length) {
         const serviceAccount = JSON.parse(serviceAccountJson);
         admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
@@ -593,7 +593,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const admin = require('firebase-admin');
+      const { default: admin } = await import('firebase-admin');
       if (!admin.apps.length) {
         admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountJson)) });
       }
@@ -614,7 +614,7 @@ export default async function handler(req, res) {
       });
 
       // Mettre à jour dans Firestore aussi
-      const { getFirestore } = require('firebase-admin/firestore');
+      const { getFirestore } = await import('firebase-admin/firestore');
       const adminDb = getFirestore();
       await adminDb.collection('users').doc(uid).update({ email: newEmail });
 
@@ -636,7 +636,7 @@ export default async function handler(req, res) {
     if (!serviceAccountJson) return res.status(200).json({ result: 'needs_setup' });
 
     try {
-      const admin = require('firebase-admin');
+      const { default: admin } = await import('firebase-admin');
       if (!admin.apps.length) {
         admin.initializeApp({ credential: admin.credential.cert(JSON.parse(serviceAccountJson)) });
       }
@@ -662,7 +662,7 @@ export default async function handler(req, res) {
       }
 
       await admin.auth().updateUser(targetUid, { email: newEmail, emailVerified: true });
-      const { getFirestore } = require('firebase-admin/firestore');
+      const { getFirestore } = await import('firebase-admin/firestore');
       await getFirestore().collection('users').doc(targetUid).update({ email: newEmail });
 
       return res.status(200).json({ result: 'success' });
