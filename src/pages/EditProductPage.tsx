@@ -20,6 +20,7 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
   const [quantity, setQuantity]         = useState(String(product.quantity || 1));
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
+  const [hideStats, setHideStats]       = useState(product.hideStats || false);
 
   const discountPercent = (() => {
     const op = parseFloat(originalPrice);
@@ -52,6 +53,7 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
       else                         updatePayload.condition = null;
       if (parseInt(quantity) > 1)  updatePayload.quantity  = parseInt(quantity);
       else                         updatePayload.quantity  = null;
+      updatePayload.hideStats = hideStats;
       await updateProduct(product.id, updatePayload as any);
       onSaved();
     } catch {
@@ -173,6 +175,34 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-4 font-medium text-slate-700 text-sm focus:outline-none focus:border-green-500 transition-colors resize-none"
             placeholder="Décris ton article..." />
           <p className="text-[9px] text-slate-300 font-bold text-right mt-1">{description.length}/800</p>
+        </div>
+
+        {/* Toggle masquer les compteurs */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+              <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center flex-shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </div>
+              <div>
+                <p className="font-black text-[13px] text-slate-900">Masquer les compteurs</p>
+                <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                  Les visiteurs ne verront pas le nombre de vues et contacts. Utile au lancement.
+                </p>
+              </div>
+            </div>
+            <button onClick={() => setHideStats(v => !v)}
+              className={`w-14 h-7 rounded-full transition-all flex-shrink-0 relative ${hideStats ? 'bg-green-500' : 'bg-slate-200'}`}>
+              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all ${hideStats ? 'left-7' : 'left-0.5'}`}/>
+            </button>
+          </div>
+          {hideStats && (
+            <p className="text-[10px] text-green-700 font-bold mt-3 pl-13 ml-13">
+              ✓ Les compteurs sont masqués sur ta fiche produit
+            </p>
+          )}
         </div>
 
         {error && (

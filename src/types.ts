@@ -244,6 +244,7 @@ export interface Product {
   whatsappClickCount?: number;
   viewCount?: number;
   bookmarkCount?: number;
+  hideStats?: boolean;   // Vendeur peut masquer les compteurs vues/contacts (MVP launch)
   priceHistory?: { price: number; date: string }[];
   createdAt?: any;
   paymentMethods?: PaymentInfo[];

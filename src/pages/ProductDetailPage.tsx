@@ -385,25 +385,90 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           <p className="text-slate-700 text-sm leading-relaxed font-medium">{product.description || 'Aucune description fournie.'}</p>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-white rounded-2xl p-4 text-center border border-slate-100 shadow-sm">
-            <p className="text-xl font-black text-slate-900">
-              {liveContactCount === -1 ? '…' : liveContactCount}
-            </p>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">intéressés</p>
+        {/* ── SIGNAUX DE CONFIANCE ── */}
+        <div className="mb-6 space-y-3">
+
+          {/* Compteurs — masquables par le vendeur */}
+          {!product.hideStats && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                <p className="text-lg font-black text-slate-900">
+                  {liveContactCount === -1 ? '…' : liveContactCount}
+                </p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">intéressés</p>
+              </div>
+              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                <p className="text-lg font-black text-slate-900">
+                  {liveViewCount === -1 ? '…' : liveViewCount}
+                </p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vues</p>
+              </div>
+              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                <p className={`text-sm font-black ${product.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
+                  {product.status === 'sold' ? 'Vendu' : 'Dispo'}
+                </p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Statut</p>
+              </div>
+            </div>
+          )}
+          {product.hideStats && (
+            <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <span className="text-green-600 text-base">✅</span>
+              <span className="text-[11px] font-bold text-green-700">Article disponible · Publié sur Brumerie</span>
+            </div>
+          )}
+
+          {/* Badges de confiance */}
+          <div className="grid grid-cols-2 gap-2">
+            {/* Vendeur vérifié */}
+            {(product.sellerVerified || product.sellerPremium) && (
+              <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
+                <div>
+                  <p className="text-[10px] font-black text-green-800">Vendeur Vérifié</p>
+                  <p className="text-[9px] text-green-600">Identité contrôlée</p>
+                </div>
+              </div>
+            )}
+            {/* Paiement sécurisé */}
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <div>
+                <p className="text-[10px] font-black text-blue-800">Paiement Mobile Money</p>
+                <p className="text-[9px] text-blue-600">Wave · Orange · MTN</p>
+              </div>
+            </div>
+            {/* Article récent */}
+            {isNew && (
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                <div>
+                  <p className="text-[10px] font-black text-amber-800">Nouveau</p>
+                  <p className="text-[9px] text-amber-600">Publié récemment</p>
+                </div>
+              </div>
+            )}
+            {/* Livraison disponible */}
+            {sellerDelivery?.phone && (
+              <div className="bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="16" r="1"/><circle cx="20" cy="16" r="1"/></svg>
+                <div>
+                  <p className="text-[10px] font-black text-purple-800">Livraison dispo</p>
+                  <p className="text-[9px] text-purple-600">Dans ton quartier</p>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="bg-white rounded-2xl p-4 text-center border border-slate-100 shadow-sm">
-            <p className="text-xl font-black text-slate-900">
-              {liveViewCount === -1 ? '…' : liveViewCount}
-            </p>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vues</p>
-          </div>
-          <div className="bg-white rounded-2xl p-4 text-center border border-slate-100 shadow-sm">
-            <p className={`text-sm font-black ${product.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
-              {product.status === 'sold' ? 'Vendu' : 'Dispo'}
-            </p>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Statut</p>
+
+          {/* Garantie Brumerie */}
+          <div className="bg-slate-900 rounded-2xl px-5 py-4 flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">🛡️</span>
+            <div>
+              <p className="text-[11px] font-black text-white mb-1">Protection acheteur Brumerie</p>
+              <p className="text-[10px] text-slate-400 leading-snug">
+                Problème avec ta commande ? Notre équipe intervient sur WhatsApp <span className="text-green-400 font-bold">+225 05 86 86 76 93</span>. Chaque vendeur est soumis à nos règles d'utilisation.
+              </p>
+            </div>
           </div>
         </div>
 
