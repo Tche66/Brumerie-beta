@@ -4,7 +4,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const ANON_KEY     = process.env.SUPABASE_ANON_KEY;
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_KEY;
-const BRUMERIE_UID = process.env.BRUMERIE_USER_ID; // compte API unique Address-Web
+const BRUMERIE_UID = process.env.AW_BRUMERIE_USER_ID || process.env.BRUMERIE_USER_ID; // compte API unique Address-Web
 
 const supabaseHeaders = {
   'apikey':        ANON_KEY,
