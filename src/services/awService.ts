@@ -16,6 +16,7 @@ export interface AWAddress {
   isVerified?: boolean;
   shareLink: string;
   googleMapsLink: string;
+  editLink?: string;
 }
 
 // ── Validation format AW-ABJ-84321 ───────────────────────────

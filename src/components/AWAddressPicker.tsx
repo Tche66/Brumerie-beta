@@ -122,6 +122,8 @@ export function AWAddressPicker({
   const [createdAddr, setCreatedAddr]     = useState<AWAddress | null>(null);
   const [savedToProfile, setSavedToProfile] = useState(false);
   const [savingProfile, setSavingProfile]   = useState(false);
+  const [editLoading, setEditLoading]       = useState(false);
+  const [editError, setEditError]           = useState('');
 
   // Auto-résoudre le code si value arrive depuis l'extérieur (ex: après sauvegarde profil)
   // et qu'on n'a pas encore d'adresse résolue
@@ -324,21 +326,37 @@ export function AWAddressPicker({
               </a>
             )}
             {activeAddr.addressCode && firebaseUid && (
-              <button
-                onClick={async () => {
-                  try {
-                    const r = await fetch('https://addressweb.brumerie.com/api/brumerie-edit', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ code: activeAddr.addressCode, uid: firebaseUid }),
-                    });
-                    const d = await r.json();
-                    if (d.editUrl) window.open(d.editUrl, '_blank', 'noopener,noreferrer');
-                  } catch { /* silent */ }
-                }}
-                className="text-[9px] text-green-700 font-bold underline mt-0.5 bg-transparent border-none cursor-pointer p-0 block">
-                ✏️ Modifier / ajouter photos
-              </button>
+              <div className="mt-1">
+                <button
+                  disabled={editLoading}
+                  onClick={async () => {
+                    setEditLoading(true);
+                    setEditError('');
+                    try {
+                      const r = await fetch('https://addressweb.brumerie.com/api/brumerie-edit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: activeAddr.addressCode, uid: firebaseUid }),
+                      });
+                      const d = await r.json();
+                      if (d.editUrl) {
+                        window.open(d.editUrl, '_blank', 'noopener,noreferrer');
+                      } else {
+                        setEditError('Lien indisponible. Réessaie.');
+                      }
+                    } catch {
+                      setEditError('Impossible d'ouvrir l'éditeur.');
+                    } finally {
+                      setEditLoading(false);
+                    }
+                  }}
+                  className="text-[9px] text-green-700 font-bold underline bg-transparent border-none cursor-pointer p-0 flex items-center gap-1 disabled:opacity-50">
+                  {editLoading
+                    ? <><span className="w-2.5 h-2.5 border border-green-600 border-t-transparent rounded-full animate-spin inline-block"/>Chargement...</>
+                    : <>✏️ Modifier / ajouter photos</>}
+                </button>
+                {editError && <p className="text-[9px] text-red-500 font-bold mt-0.5">{editError}</p>}
+              </div>
             )}
           </div>
           <button onClick={() => { reset(); setInputCode(''); onChange?.('', null); }}
