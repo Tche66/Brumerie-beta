@@ -345,7 +345,7 @@ export function AWAddressPicker({
                         setEditError('Lien indisponible. Réessaie.');
                       }
                     } catch {
-                      setEditError('Impossible d'ouvrir l'éditeur.');
+                      setEditError("Impossible d'ouvrir l'éditeur.");
                     } finally {
                       setEditLoading(false);
                     }
