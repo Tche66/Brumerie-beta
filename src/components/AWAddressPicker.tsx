@@ -338,14 +338,21 @@ export function AWAddressPicker({
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code: activeAddr.addressCode, uid: firebaseUid }),
                       });
+                      if (!r.ok) {
+                        // Endpoint pas encore déployé → ouvrir la page AW directement
+                        window.open(`https://addressweb.brumerie.com/${activeAddr.addressCode}`, '_blank', 'noopener,noreferrer');
+                        return;
+                      }
                       const d = await r.json();
                       if (d.editUrl) {
                         window.open(d.editUrl, '_blank', 'noopener,noreferrer');
                       } else {
-                        setEditError('Lien indisponible. Réessaie.');
+                        // Pas d'editUrl → fallback page AW
+                        window.open(`https://addressweb.brumerie.com/${activeAddr.addressCode}`, '_blank', 'noopener,noreferrer');
                       }
                     } catch {
-                      setEditError("Impossible d'ouvrir l'éditeur.");
+                      // Réseau → fallback page AW
+                      window.open(`https://addressweb.brumerie.com/${activeAddr.addressCode}`, '_blank', 'noopener,noreferrer');
                     } finally {
                       setEditLoading(false);
                     }
