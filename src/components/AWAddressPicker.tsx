@@ -407,31 +407,13 @@ export function AWAddressPicker({
           {resolveError && (
             <p className="text-[10px] text-red-500 font-bold px-1">{resolveError}</p>
           )}
-
-          {/* Séparateur */}
-          <div className="flex items-center gap-3 py-1">
-            <div className="flex-1 h-px bg-slate-100"/>
-            <span className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">ou</span>
-            <div className="flex-1 h-px bg-slate-100"/>
-          </div>
-
-          {/* Créer une nouvelle adresse */}
-          <p className="text-[9px] text-slate-400 font-medium text-center mb-1">
-            Pas encore d'adresse AddressWeb ?
+          <p className="text-[9px] text-slate-400 mt-1 px-1">
+            Pas encore d'adresse ?{' '}
+            <a href="https://addressweb.brumerie.com/creer" target="_blank" rel="noopener noreferrer"
+              className="text-green-600 font-bold underline">
+              Créer sur AddressWeb →
+            </a>
           </p>
-          <button onClick={handleGetGPS} disabled={gpsLoading}
-            className="w-full py-3.5 rounded-2xl bg-green-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-green disabled:opacity-60">
-            {gpsLoading
-              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Localisation en cours...</>
-              : <>📍 Créer mon adresse avec GPS</>}
-          </button>
-          <button onClick={() => { setMode('create_manual'); setCreateStep('repere'); }}
-            className="w-full py-3 rounded-2xl border-2 border-slate-200 bg-white text-[10px] font-bold text-slate-500 uppercase tracking-widest active:scale-[0.98] transition-all">
-            ✏️ Créer sans GPS (manuel)
-          </button>
-          {gpsError && (
-            <p className="text-[10px] text-amber-600 font-medium px-1 text-center">{gpsError}</p>
-          )}
         </div>
       )}
 

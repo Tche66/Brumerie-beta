@@ -205,7 +205,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                   <div className="space-y-2 mb-3">
                     {paymentMethods.map((pm, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3">
-                        <PaymentLogo method={pm.method} size={28}/>
+                        {(() => { const m = MOBILE_PAYMENT_METHODS.find(x => x.id === pm.method); return m ? <PaymentLogo logo={m.logo} name={m.name} color={m.color} size={28}/> : null; })()}
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-bold text-slate-800">{pm.holderName}</p>
                           <p className="text-[10px] text-slate-400 font-mono">{pm.phone}</p>
@@ -224,7 +224,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                       {MOBILE_PAYMENT_METHODS.map(m => (
                         <button key={m.id} onClick={() => setNewPM(p => ({ ...p, method: m.id }))}
                           className={`flex items-center gap-2 py-2.5 px-3 rounded-xl border-2 text-[11px] font-bold transition-all ${newPM.method === m.id ? 'border-green-500 bg-green-50 text-green-800' : 'border-slate-100 bg-white text-slate-600'}`}>
-                          <PaymentLogo method={m.id} size={20}/>{m.name}
+                          <PaymentLogo logo={m.logo} name={m.name} color={m.color} size={20}/>{m.name}
                         </button>
                       ))}
                     </div>

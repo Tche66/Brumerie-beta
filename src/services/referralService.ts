@@ -8,12 +8,13 @@ import { REFERRAL_REWARDS } from '@/types';
 
 // ── Générer un code unique basé sur le nom + 4 chars aléatoires ──
 export function generateReferralCode(name: string): string {
+  // Format court et mémorisable : 3 lettres + 4 chiffres, ex: BRU1234
   const base = name
     .toUpperCase()
     .replace(/[^A-Z]/g, '')
-    .slice(0, 5) || 'USER';
-  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `${base}-${rand}`;
+    .slice(0, 3) || 'BRU';
+  const nums = Math.floor(1000 + Math.random() * 9000); // 4 chiffres
+  return `${base}${nums}`;
 }
 
 // ── Assigner un code parrainage à l'user s'il n'en a pas encore ──

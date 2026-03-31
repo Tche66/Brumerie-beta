@@ -382,7 +382,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* Description */}
         <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Description</p>
-          <p className="text-slate-700 text-sm leading-relaxed font-medium">{product.description || 'Aucune description fournie.'}</p>
+          <p className="text-slate-700 text-sm leading-relaxed font-medium" style={{ whiteSpace: 'pre-line' }}>{product.description || 'Aucune description fournie.'}</p>
         </div>
 
         {/* ── SIGNAUX DE CONFIANCE ── */}
