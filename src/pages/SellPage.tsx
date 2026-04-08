@@ -192,6 +192,44 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
     }
   };
 
+  // ── Sauvegarder en brouillon ──────────────────────────────────
+  const handleSaveDraft = async () => {
+    if (!userProfile || !title.trim()) {
+      setError('Ajoute un titre pour sauvegarder en brouillon.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const draftPayload: Record<string, any> = {
+        title:         title.trim(),
+        price:         parseFloat(price) || 0,
+        description:   description.trim(),
+        category,
+        neighborhood:  selectedCities[0] || '',
+        neighborhoods: selectedCities,
+        sellerId:      userProfile.id,
+        sellerName:    userProfile.name,
+        sellerPhone:   userProfile.phone || '',
+        sellerVerified: userProfile.isVerified || false,
+        status:        'draft',
+        images:        [],
+      };
+      if (originalPrice.trim() && parseFloat(originalPrice) > parseFloat(price)) {
+        draftPayload.originalPrice = parseFloat(originalPrice);
+      }
+      if (condition) draftPayload.condition = condition;
+      if (parseInt(quantity) > 1) draftPayload.quantity = parseInt(quantity);
+      if (userProfile.photoURL) draftPayload.sellerPhoto = userProfile.photoURL;
+      await createProduct(draftPayload as any, images);
+      setSuccess(true);
+      setTimeout(() => onSuccess(), 1800);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la sauvegarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (success) {
     return (
       <div className="fixed inset-0 bg-white z-[70] flex flex-col items-center justify-center px-8 text-center"
@@ -474,21 +512,29 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
 
       {/* Footer navigation */}
       <div className="p-6 border-t border-slate-50 bg-white">
-        <div className="flex gap-3">
-          {step > 0 && (
-            <button onClick={() => setStep(step - 1)}
-              className="flex-1 py-5 rounded-[2rem] bg-slate-50 text-slate-500 font-bold text-xs uppercase tracking-widest active:scale-95 transition-all">
-              Retour
+        <div className="space-y-2">
+          <div className="flex gap-3">
+            {step > 0 && (
+              <button onClick={() => setStep(step - 1)}
+                className="flex-1 py-5 rounded-[2rem] bg-slate-50 text-slate-500 font-bold text-xs uppercase tracking-widest active:scale-95 transition-all">
+                Retour
+              </button>
+            )}
+            <button
+              onClick={() => step < 2 ? setStep(step + 1) : handleSubmit()}
+              disabled={loading || (step === 0 && images.length < 2) || (step === 1 && (!title || !price)) || (step === 2 && (!category || selectedCities.length === 0))}
+              className="flex-[2] py-5 rounded-[2rem] bg-green-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-green-100 disabled:opacity-30 transition-all active:scale-95 flex items-center justify-center gap-2">
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : step === 2 ? 'Publier 🎉' : 'Continuer'}
+            </button>
+          </div>
+          {step === 2 && title.trim() && (
+            <button onClick={handleSaveDraft} disabled={loading}
+              className="w-full py-3 rounded-[2rem] border-2 border-slate-200 bg-white text-slate-500 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-40">
+              📝 Enregistrer en brouillon
             </button>
           )}
-          <button
-            onClick={() => step < 2 ? setStep(step + 1) : handleSubmit()}
-            disabled={loading || (step === 0 && images.length < 2) || (step === 1 && (!title || !price)) || (step === 2 && (!category || selectedCities.length === 0))}
-            className="flex-[2] py-5 rounded-[2rem] bg-green-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-green-100 disabled:opacity-30 transition-all active:scale-95 flex items-center justify-center gap-2">
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : step === 2 ? 'Publier 🎉' : 'Continuer'}
-          </button>
         </div>
       </div>
     </div>

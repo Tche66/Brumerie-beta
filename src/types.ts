@@ -220,7 +220,7 @@ export interface User {
 }
 
 // ─── PRODUCT ──────────────────────────────────────────────
-export type ProductStatus = 'active' | 'sold' | 'paused';
+export type ProductStatus = 'active' | 'sold' | 'paused' | 'draft';
 
 export interface Product {
   id: string;

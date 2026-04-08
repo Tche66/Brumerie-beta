@@ -34,6 +34,11 @@ export interface AppConfig {
   contactEmail?:       string;   // Email contact général
   supportEmail?:       string;   // Email support
 
+  // ── Liens communauté ──────────────────────────────────
+  whatsappCommunity?:  string;
+  telegramCommunity?:  string;
+  facebookGroup?:      string;
+
   // ── Meta ─────────────────────────────────────────────
   updatedAt?:          any;
   updatedBy?:          string;

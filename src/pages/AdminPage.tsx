@@ -1035,6 +1035,40 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 />
               </div>
 
+              {/* ── Liens Communauté ── */}
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🤝 Liens Communauté</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider mb-1">💬 Groupe WhatsApp</p>
+                    <input
+                      value={settingsDraft.whatsappCommunity ?? globalSettings.whatsappCommunity ?? ''}
+                      onChange={e => setSettingsDraft((s: any) => ({ ...s, whatsappCommunity: e.target.value }))}
+                      placeholder="https://chat.whatsapp.com/..."
+                      className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider mb-1">✈️ Groupe Telegram</p>
+                    <input
+                      value={settingsDraft.telegramCommunity ?? globalSettings.telegramCommunity ?? ''}
+                      onChange={e => setSettingsDraft((s: any) => ({ ...s, telegramCommunity: e.target.value }))}
+                      placeholder="https://t.me/brumerie"
+                      className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider mb-1">👥 Groupe Facebook</p>
+                    <input
+                      value={settingsDraft.facebookGroup ?? globalSettings.facebookGroup ?? ''}
+                      onChange={e => setSettingsDraft((s: any) => ({ ...s, facebookGroup: e.target.value }))}
+                      placeholder="https://facebook.com/groups/..."
+                      className="w-full bg-slate-50 border-2 border-transparent focus:border-green-400 rounded-xl px-3 py-2.5 text-[11px] font-mono outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between py-1">
                 <div>
                   <p className="font-black text-slate-800 text-[13px]">🔧 Maintenance</p>

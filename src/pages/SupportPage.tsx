@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendFeedbackViaEmail } from '@/services/productService';
 import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from '@/types';
-import { getAppConfig } from '@/services/appConfigService';
+import { getAppConfig, subscribeAppConfig, AppConfig } from '@/services/appConfigService';
 
 interface SupportPageProps {
   onBack: () => void;
@@ -38,7 +38,11 @@ export function SupportPage({ onBack }: SupportPageProps) {
     window.open(`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const config = getAppConfig();
+  const [config, setConfig] = React.useState<AppConfig>(getAppConfig());
+  React.useEffect(() => {
+    const unsub = subscribeAppConfig(cfg => setConfig(cfg));
+    return unsub;
+  }, []);
   const ytLink = config.youtubeChannel || 'https://youtube.com/@brumerie';
 
   return (
@@ -99,6 +103,57 @@ export function SupportPage({ onBack }: SupportPageProps) {
             <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </a>
+
+        {/* Communauté */}
+        {(config.whatsappCommunity || config.telegramCommunity || config.facebookGroup) && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Rejoins la communauté</p>
+            <div className="space-y-2">
+              {config.whatsappCommunity && (
+                <a href={config.whatsappCommunity} target="_blank" rel="noopener noreferrer"
+                  className="bg-white rounded-[2rem] p-4 flex items-center gap-4 border border-slate-100 shadow-sm active:scale-95 transition-all block">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9.956 9.956 0 01-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M11.99 2C6.465 2 2.011 6.46 2.011 11.985a9.916 9.916 0 001.337 5.003L2 22l5.16-1.321a9.955 9.955 0 004.83 1.24c5.524 0 9.979-4.452 9.979-9.977A9.97 9.97 0 0011.99 2z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-slate-900 text-[13px]">Groupe WhatsApp</p>
+                    <p className="text-[10px] text-green-600 font-bold mt-0.5">Communauté Brumerie</p>
+                  </div>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-slate-200"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>
+                </a>
+              )}
+              {config.telegramCommunity && (
+                <a href={config.telegramCommunity} target="_blank" rel="noopener noreferrer"
+                  className="bg-white rounded-[2rem] p-4 flex items-center gap-4 border border-slate-100 shadow-sm active:scale-95 transition-all block">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#2AABEE,#229ED9)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.023 9.531c-.144.665-.539.826-1.093.514l-3.013-2.22-1.455 1.401c-.16.16-.295.295-.607.295l.215-3.063 5.588-5.048c.243-.215-.053-.334-.376-.119L6.54 14.605l-2.964-.924c-.645-.203-.658-.645.134-.954l11.57-4.461c.537-.194 1.006.131.282.982z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-slate-900 text-[13px]">Groupe Telegram</p>
+                    <p className="text-[10px] text-blue-500 font-bold mt-0.5">Communauté Brumerie</p>
+                  </div>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-slate-200"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>
+                </a>
+              )}
+              {config.facebookGroup && (
+                <a href={config.facebookGroup} target="_blank" rel="noopener noreferrer"
+                  className="bg-white rounded-[2rem] p-4 flex items-center gap-4 border border-slate-100 shadow-sm active:scale-95 transition-all block">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#1877F2,#0D5DBD)' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.098 10.125 24v-8.437H7.078V12.07h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796V24C19.612 23.098 24 18.1 24 12.073z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-slate-900 text-[13px]">Groupe Facebook</p>
+                    <p className="text-[10px] text-blue-600 font-bold mt-0.5">Communauté Brumerie</p>
+                  </div>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-slate-200"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* FAQ Premium */}
         <div className="space-y-4">
