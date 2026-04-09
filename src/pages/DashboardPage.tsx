@@ -78,6 +78,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [boostProduct, setBoostProduct] = useState<Product | null>(null);
   const [actionProduct, setActionProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [articlesFilter, setArticlesFilter] = useState<'actifs' | 'brouillons'>('actifs');
   const [activeBoosts, setActiveBoosts] = useState<Record<string, any>>({}); // productId → boost data
 
   const tier     = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
@@ -118,6 +119,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
 
   const activeProducts  = products.filter((p: Product) => p.status === 'active');
   const soldProducts    = products.filter((p: Product) => p.status === 'sold');
+  const draftProducts   = products.filter((p: Product) => p.status === 'draft' || p.status === 'paused');
   const totalViews      = products.reduce((s: number, p: Product) => s + (p.viewCount || 0), 0);
   const totalContacts   = products.reduce((s: number, p: Product) => s + (p.whatsappClickCount || 0), 0);
   const activeOrders    = orders.filter((o: Order) => !['delivered', 'cancelled'].includes(o.status));
@@ -131,7 +133,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
 
   const TABS: { id: Tab; label: string; badge?: number }[] = [
     { id: 'stats',     label: 'Aperçu' },
-    { id: 'articles',  label: 'Articles',  badge: activeProducts.length },
+    { id: 'articles',  label: 'Articles',  badge: activeProducts.length + draftProducts.length },
     { id: 'commandes', label: 'Commandes', badge: activeOrders.length },
     { id: 'offres',    label: 'Offres',    badge: pendingOffers.length },
     ...(!isSimple ? [{ id: 'ventes' as Tab, label: 'Ventes', badge: completedSales.length }] : []),
@@ -434,8 +436,69 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 <p className="font-black text-slate-400 text-[10px] uppercase">Aucun article publié</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
-                {[...products].sort((a: Product, b: Product) => (b.whatsappClickCount || 0) - (a.whatsappClickCount || 0)).map(p => (
+              <>
+                {/* Sous-onglets Actifs / Brouillons */}
+                <div className="flex gap-1 p-3 bg-slate-50 border-b border-slate-100">
+                  <button onClick={() => setArticlesFilter('actifs')}
+                    className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all ${articlesFilter === 'actifs' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+                    En ligne <span className="ml-1 text-[8px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">{activeProducts.length}</span>
+                  </button>
+                  <button onClick={() => setArticlesFilter('brouillons')}
+                    className={`flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all ${articlesFilter === 'brouillons' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+                    Brouillons <span className="ml-1 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{draftProducts.length}</span>
+                  </button>
+                </div>
+                {/* Liste filtrée */}
+                {articlesFilter === 'brouillons' ? (
+                  draftProducts.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <p className="text-3xl mb-2">📝</p>
+                      <p className="font-black text-slate-400 text-[10px] uppercase">Aucun brouillon</p>
+                      <p className="text-[9px] text-slate-300 mt-1">Enregistre un article en brouillon lors de la publication</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-50">
+                      {draftProducts.map((p: Product) => (
+                        <div key={p.id} className="flex items-center gap-3 p-4">
+                          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                            {p.images?.[0] && <img src={p.images[0]} alt="" className="w-full h-full object-cover"/>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-black text-slate-900 text-[11px] truncate">{p.title}</p>
+                            <p className="text-[9px] text-slate-500 font-bold">{p.price.toLocaleString('fr-FR')} FCFA</p>
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full mt-0.5 inline-block ${p.status === 'draft' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                              {p.status === 'draft' ? '📝 Brouillon' : '⏸ Suspendu'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                            {onEditProduct && (
+                              <button onClick={() => onEditProduct(p)}
+                                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all text-slate-500">
+                                {Icon.edit}
+                              </button>
+                            )}
+                            <button onClick={async () => {
+                              const { updateProduct } = await import('@/services/productService');
+                              const { increment } = await import('firebase/firestore');
+                              const { db: fdb } = await import('@/config/firebase');
+                              const { doc: fdoc, updateDoc } = await import('firebase/firestore');
+                              await updateProduct(p.id, { status: 'active' });
+                              if (currentUser) {
+                                try { await updateDoc(fdoc(fdb, 'users', currentUser.uid), { publicationCount: increment(1), productCount: increment(1) }); } catch {}
+                              }
+                              const updated = await import('@/services/productService').then(m => m.getSellerProducts(userProfile!.id));
+                              setProducts(updated);
+                            }} className="w-8 h-8 flex items-center justify-center rounded-xl bg-green-100 active:scale-90 transition-all">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                <div className="divide-y divide-slate-50">
+                {[...activeProducts, ...soldProducts].sort((a: Product, b: Product) => (b.whatsappClickCount || 0) - (a.whatsappClickCount || 0)).map(p => (
                   <div key={p.id} className="flex items-center gap-3 p-4">
                     <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
                       {p.images?.[0] && <img src={p.images[0]} alt="" className="w-full h-full object-cover"/>}
@@ -493,6 +556,8 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                   </div>
                 ))}
               </div>
+                )}
+              </>
             )}
           </div>
         )}

@@ -508,7 +508,6 @@ export function SellerProfilePage({
               {([
                 { id: 'actifs',     label: 'En ligne',   count: activeProducts.length },
                 { id: 'vendus',     label: 'Vendus',     count: soldProducts.length },
-                ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length + pausedProducts.length }] : []),
               ] as { id: Tab; label: string; count: number }[]).map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${

@@ -1,12 +1,12 @@
 // src/pages/ComptaPage.tsx — Mini Comptabilité Vendeur Vérifié
 // "Ce que j'ai gagné · Ce que j'ai dépensé · Ce qu'il me reste"
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { subscribeOrdersAsSeller } from '@/services/orderService';
 import { db } from '@/config/firebase';
 import {
   collection, query, where, onSnapshot,
-  addDoc, deleteDoc, doc, serverTimestamp, orderBy,
+  addDoc, deleteDoc, doc, serverTimestamp,
 } from 'firebase/firestore';
 
 interface ComptaPageProps {

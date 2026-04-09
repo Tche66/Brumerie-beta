@@ -621,8 +621,16 @@ useEffect(() => {
             onSellerClick={(sellerId) => { setSelectedSellerId(sellerId); navigate('seller-profile'); }}
           />
         )}
-        {activePage === 'profile' && !isBuyer && (
-          <ProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} />
+        {activePage === 'profile' && !isBuyer && currentUser && (
+          <SellerProfilePage
+            sellerId={currentUser.uid}
+            onBack={goBack}
+            onProductClick={handleProductClick}
+            onStartChat={(sid, sname) => handleOpenChatWithSeller(sid, sname, undefined, 'Contact direct')}
+            onEditProduct={(product: Product) => { setProductToEdit(product); navigate('edit-product'); }}
+            onNavigate={handleNavigate}
+            isGuest={false}
+          />
         )}
         {activePage === 'messages' && (
           <ConversationsListPage
