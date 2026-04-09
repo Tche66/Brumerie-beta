@@ -180,6 +180,15 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               onClick={() => onNavigate('shop-customize')}
             />
           )}
+          {(userProfile?.isVerified || userProfile?.isPremium) && (
+            <SettingItem
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
+              label="💰 Ma Comptabilité"
+              sublabel="Recettes · Dépenses · Bénéfice net"
+              onClick={() => onNavigate('compta')}
+              badge="Vérifié"
+            />
+          )}
           {!isBuyer && (
             <div className="divide-y divide-slate-50">
               {/* Moyens de paiement */}

@@ -29,6 +29,7 @@ import { NotificationsPage } from '@/pages/NotificationsPage';
 import { ShopCustomizePage } from '@/pages/ShopCustomizePage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { EditProductPage } from '@/pages/EditProductPage';
+import { ComptaPage } from '@/pages/ComptaPage';
 import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
@@ -54,7 +55,7 @@ type Page =
   | 'product-detail' | 'seller-profile' | 'chat'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
-  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin'
+  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta'
   | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────

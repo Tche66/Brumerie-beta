@@ -50,20 +50,23 @@ export async function createProduct(
       images: imageUrls,
       whatsappClickCount: 0,
       viewCount: 0,
-      status: 'active' as const,
+      // Respecter le status fourni (ex: 'draft') sinon 'active' par défaut
+      status: (productData as any).status || 'active',
       createdAt: serverTimestamp(),
       priceHistory: [{ price: productData.price, date: new Date().toISOString() }],
     };
 
     const docRef = await addDoc(collection(db, 'products'), cleanUndefined(product as Record<string, any>));
     
-    // Incrémenter le compteur de publications du vendeur
-    try {
-      await updateDoc(doc(db, 'users', productData.sellerId), {
-        publicationCount: increment(1),
-        productCount: increment(1),
-      });
-    } catch (e) { console.warn('publicationCount non mis à jour:', e); }
+    // Incrémenter le compteur uniquement pour les vraies publications (pas les brouillons)
+    if ((productData as any).status !== 'draft') {
+      try {
+        await updateDoc(doc(db, 'users', productData.sellerId), {
+          publicationCount: increment(1),
+          productCount: increment(1),
+        });
+      } catch (e) { console.warn('publicationCount non mis à jour:', e); }
+    }
 
     return docRef.id;
 

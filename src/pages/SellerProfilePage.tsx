@@ -6,7 +6,7 @@ import { Review, Product, User } from '@/types';
 import { ProductCard } from '@/components/ProductCard';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { SocialBar } from '@/components/SocialIcon';
-import { getUserById } from '@/services/userService';
+import { getUserById, updateUserProfile } from '@/services/userService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
@@ -154,7 +154,19 @@ export function SellerProfilePage({
     setPublishingId(product.id);
     try {
       await updateProduct(product.id, { status: 'active' });
-      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, status: 'active' } : p));
+      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, status: 'active' as const } : p));
+      // Incrémenter le compteur de publications maintenant que c'est publié
+      if (currentUser) {
+        try {
+          const { increment } = await import('firebase/firestore');
+          const { db } = await import('@/config/firebase');
+          const { doc, updateDoc } = await import('firebase/firestore');
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            publicationCount: increment(1),
+            productCount: increment(1),
+          });
+        } catch { /* silent */ }
+      }
     } finally {
       setPublishingId(null);
     }
