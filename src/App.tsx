@@ -738,6 +738,9 @@ useEffect(() => {
         {activePage === 'admin' && (
           <AdminPage onBack={goBack} />
         )}
+        {activePage === 'compta' && (
+          <ComptaPage onBack={goBack} />
+        )}
         {activePage === 'become-deliverer' && (
           <BecomeDelivererPage
             onBack={goBack}
