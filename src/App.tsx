@@ -31,6 +31,10 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { EditProductPage } from '@/pages/EditProductPage';
 import { ComptaPage } from '@/pages/ComptaPage';
 import { DettesPage } from '@/pages/DettesPage';
+import { MargeCalculatorPage } from '@/pages/MargeCalculatorPage';
+import { CarnetClientsPage } from '@/pages/CarnetClientsPage';
+import { CataloguePage } from '@/pages/CataloguePage';
+import { RapportPage } from '@/pages/RapportPage';
 import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
@@ -56,7 +60,7 @@ type Page =
   | 'product-detail' | 'seller-profile' | 'chat'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
-  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes'
+  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport'
   | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
@@ -744,6 +748,18 @@ useEffect(() => {
         )}
         {activePage === 'dettes' && (
           <DettesPage onBack={goBack} />
+        )}
+        {activePage === 'marge' && (
+          <MargeCalculatorPage onBack={goBack} />
+        )}
+        {activePage === 'carnet-clients' && (
+          <CarnetClientsPage onBack={goBack} />
+        )}
+        {activePage === 'catalogue' && (
+          <CataloguePage onBack={goBack} />
+        )}
+        {activePage === 'rapport' && (
+          <RapportPage onBack={goBack} />
         )}
         {activePage === 'become-deliverer' && (
           <BecomeDelivererPage

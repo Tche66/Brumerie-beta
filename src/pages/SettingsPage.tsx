@@ -276,6 +276,31 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               </div>
             </div>
           )}
+          {/* Outils vendeur */}
+          <SettingItem
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
+            label="📇 Carnet Clients"
+            sublabel="Mini-CRM · Relance WhatsApp · CA par client"
+            onClick={() => onNavigate('carnet-clients')}
+          />
+          <SettingItem
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
+            label="🖼️ Catalogue WhatsApp"
+            sublabel="Partage tous tes articles en 1 tap"
+            onClick={() => onNavigate('catalogue')}
+          />
+          <SettingItem
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
+            label="📊 Calculateur de Marge"
+            sublabel="Est-ce que je gagne vraiment ?"
+            onClick={() => onNavigate('marge')}
+          />
+          <SettingItem
+            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>}
+            label="📬 Rapport Hebdomadaire"
+            sublabel="Tes stats de la semaine en un coup d'œil"
+            onClick={() => onNavigate('rapport')}
+          />
           {/* Journal de dettes */}
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
