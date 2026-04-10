@@ -30,6 +30,7 @@ import { ShopCustomizePage } from '@/pages/ShopCustomizePage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { EditProductPage } from '@/pages/EditProductPage';
 import { ComptaPage } from '@/pages/ComptaPage';
+import { DettesPage } from '@/pages/DettesPage';
 import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
@@ -55,7 +56,7 @@ type Page =
   | 'product-detail' | 'seller-profile' | 'chat'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
-  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta'
+  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes'
   | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
@@ -740,6 +741,9 @@ useEffect(() => {
         )}
         {activePage === 'compta' && (
           <ComptaPage onBack={goBack} />
+        )}
+        {activePage === 'dettes' && (
+          <DettesPage onBack={goBack} />
         )}
         {activePage === 'become-deliverer' && (
           <BecomeDelivererPage
