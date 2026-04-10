@@ -405,7 +405,6 @@ export function ComptaPage({ onBack }: ComptaPageProps) {
           </div>
         )}
       </div>
-      </div>
 
       {/* MODALE CONFIRMATION SUPPRESSION */}
       {deleteConfirm && (
