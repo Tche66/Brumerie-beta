@@ -43,6 +43,7 @@ export function ComptaPage({ onBack }: ComptaPageProps) {
   });
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); // id en attente de suppression
 
   const isVerified = !!(userProfile?.isVerified || (userProfile as any)?.isPremium);
 
@@ -118,8 +119,14 @@ export function ComptaPage({ onBack }: ComptaPageProps) {
   };
 
   const handleDelete = async (id: string) => {
-    try { await deleteDoc(doc(db, 'compta', id)); }
+    setDeleteConfirm(id); // demander confirmation d'abord
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    try { await deleteDoc(doc(db, 'compta', deleteConfirm)); }
     catch (e) { console.error('ComptaPage delete:', e); }
+    finally { setDeleteConfirm(null); }
   };
 
   const handleExport = () => {
@@ -398,6 +405,33 @@ export function ComptaPage({ onBack }: ComptaPageProps) {
           </div>
         )}
       </div>
+      </div>
+
+      {/* MODALE CONFIRMATION SUPPRESSION */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-end justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', height: '100dvh' }}
+          onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-6 space-y-4"
+            onClick={e => e.stopPropagation()}>
+            <div className="text-center">
+              <div className="text-4xl mb-3">🗑️</div>
+              <p className="font-black text-slate-900 text-[15px] mb-1">Supprimer cette entrée ?</p>
+              <p className="text-[12px] text-slate-400">Cette action est irréversible.</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all">
+                Annuler
+              </button>
+              <button onClick={confirmDelete}
+                className="flex-[2] py-3.5 rounded-2xl bg-red-500 text-white font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-red-100">
+                🗑️ Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

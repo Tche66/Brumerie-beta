@@ -180,14 +180,35 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               onClick={() => onNavigate('shop-customize')}
             />
           )}
-          {(userProfile?.isVerified || userProfile?.isPremium) && (
+          {/* Comptabilité — visible pour tous, accès conditionnel au badge */}
+          {(userProfile?.isVerified || userProfile?.isPremium) ? (
             <SettingItem
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
               label="💰 Ma Comptabilité"
               sublabel="Recettes · Dépenses · Bénéfice net"
               onClick={() => onNavigate('compta')}
-              badge="Vérifié"
+              badge="Actif"
             />
+          ) : (
+            <button
+              onClick={() => onNavigate('verification')}
+              className="w-full flex items-center gap-4 px-6 py-5 hover:bg-slate-50 active:bg-slate-100 transition-all text-left group">
+              <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-bold text-slate-900">💰 Ma Comptabilité</p>
+                <p className="text-[10px] text-amber-600 font-bold mt-0.5 leading-tight">
+                  🔒 Réservé aux Vendeurs Vérifiés · Active ton badge →
+                </p>
+              </div>
+              <span className="text-[9px] font-black px-2.5 py-1 rounded-full text-white bg-amber-500 uppercase tracking-widest flex-shrink-0 mr-1">
+                Vérifié requis
+              </span>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-slate-200">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           )}
           {!isBuyer && (
             <div className="divide-y divide-slate-50">
