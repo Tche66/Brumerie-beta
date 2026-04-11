@@ -25,7 +25,6 @@ export function ReferralPage({ onBack }: ReferralPageProps) {
   const [copied, setCopied]       = useState(false);
   const [loading, setLoading]     = useState(true);
   const [expandedTier, setExpandedTier] = useState<number | null>(null);
-  const [regenerating, setRegenerating]   = useState(false);
 
   useEffect(() => {
     if (!currentUser || !userProfile) return;
@@ -62,28 +61,6 @@ export function ReferralPage({ onBack }: ReferralPageProps) {
     } else {
       handleCopy(referralLink);
     }
-  };
-
-  // Regénérer un nouveau code court (BRU1234)
-  const handleRegenerate = async () => {
-    if (!currentUser || !userProfile) return;
-    setRegenerating(true);
-    try {
-      const { generateReferralCode } = await import('@/services/referralService');
-      const { updateUserProfile } = await import('@/services/userService');
-      // Générer jusqu'à trouver un code unique
-      let newCode = generateReferralCode(userProfile.name);
-      // Vérifier unicité
-      const { getUserByReferralCode } = await import('@/services/referralService');
-      let attempts = 0;
-      while (await getUserByReferralCode(newCode) && attempts < 10) {
-        newCode = generateReferralCode(userProfile.name);
-        attempts++;
-      }
-      await updateUserProfile(currentUser.uid, { referralCode: newCode });
-      setCode(newCode);
-    } catch { /* silent */ }
-    finally { setRegenerating(false); }
   };
 
   const nextReward  = REFERRAL_REWARDS.find(r => r.threshold > count);
@@ -198,7 +175,7 @@ export function ReferralPage({ onBack }: ReferralPageProps) {
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Ton invitation</p>
 
             {/* Code */}
-            <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3 border-2 border-dashed border-slate-200 mb-2">
+            <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3 border-2 border-dashed border-slate-200 mb-3">
               <span className="text-[9px] font-black text-slate-400 uppercase">Code</span>
               <p className="font-black text-lg text-slate-900 tracking-[0.2em] flex-1">{code}</p>
               <button onClick={() => handleCopy(code)}
@@ -206,15 +183,6 @@ export function ReferralPage({ onBack }: ReferralPageProps) {
                 {copied ? '✓' : 'Copier'}
               </button>
             </div>
-            {/* Bouton regénérer si code ancien format (avec tiret) */}
-            {code.includes('-') && (
-              <button onClick={handleRegenerate} disabled={regenerating}
-                className="w-full mb-3 py-2 rounded-xl border border-slate-200 text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50">
-                {regenerating
-                  ? <><span className="w-3 h-3 border border-slate-400 border-t-transparent rounded-full animate-spin"/>Génération...</>
-                  : <>🔄 Obtenir un code plus court</>}
-              </button>
-            )}
 
             {/* Lien */}
             <div className="bg-slate-50 rounded-2xl px-4 py-2.5 mb-3">
