@@ -205,6 +205,20 @@ export interface User {
   shopThemeColor?: string;   // ex: '#16A34A'
   shopBanner?: string;       // URL image bannière
   shopSlogan?: string;       // ex: "La mode à prix imbattable"
+  shopUsername?: string;     // ex: "adjoua-mode" → brumerie.com/adjoua-mode
+  shopBio?: string;          // Description longue de la boutique
+  shopCategories?: string[]; // Collections ex: ['Nouveautés','Pagnes','Promos']
+  shopHours?: {              // Horaires magasin physique
+    lundi?: string; mardi?: string; mercredi?: string; jeudi?: string;
+    vendredi?: string; samedi?: string; dimanche?: string;
+  };
+  shopAddress?: string;      // Adresse physique texte libre
+  shopWhatsapp?: string;     // Numéro WhatsApp boutique
+  shopInstagram?: string;    // @handle Instagram
+  shopTiktok?: string;       // @handle TikTok
+  flashSaleActive?: boolean; // Vente flash en cours
+  flashSaleLabel?: string;   // ex: "SOLDES -30% jusqu'à dimanche"
+  flashSaleExpiry?: string;  // ISO datetime
   // ─── Parrainage ──────────────────────────────────────────
   advancePaymentAllowed?: boolean; // Ce vendeur peut recevoir des paiements à l'avance (override global)
   referralCode?: string;     // Code unique ex: "KOFFI-X7K2"

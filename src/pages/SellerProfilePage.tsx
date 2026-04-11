@@ -261,6 +261,12 @@ export function SellerProfilePage({
             <div className="w-full h-40 overflow-hidden relative">
               <img src={(seller as any).shopBanner} alt="Bannière" className="w-full h-full object-cover"/>
               <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.4))' }}/>
+              {(seller as any).flashSaleActive && (seller as any).flashSaleLabel &&
+               (!((seller as any).flashSaleExpiry) || new Date((seller as any).flashSaleExpiry) > new Date()) && (
+                <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse shadow-lg">
+                  ⚡ {(seller as any).flashSaleLabel}
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full h-24" style={{
@@ -306,6 +312,19 @@ export function SellerProfilePage({
                 <p className="text-[11px] font-bold italic mb-2" style={{ color: (seller as any).shopThemeColor || '#16A34A' }}>
                   "{(seller as any).shopSlogan}"
                 </p>
+              )}
+
+              {/* Collections */}
+              {(seller as any).shopCategories?.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap justify-center mb-3">
+                  {(seller as any).shopCategories.map((cat: string) => (
+                    <span key={cat}
+                      className="text-[9px] font-black px-2.5 py-1 rounded-full text-white uppercase"
+                      style={{ background: (seller as any).shopThemeColor || '#16A34A' }}>
+                      {cat}
+                    </span>
+                  ))}
+                </div>
               )}
 
               {/* Bio */}
@@ -355,6 +374,49 @@ export function SellerProfilePage({
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.07 1.18 2 2 0 012.03 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
                   <span className="font-black text-slate-700 text-[12px]">{seller.phone}</span>
                 </a>
+              )}
+
+              {/* Infos magasin physique */}
+              {seller.hasPhysicalShop && (seller as any).shopAddress && (
+                <div className="bg-slate-50 rounded-2xl px-4 py-3 w-full max-w-xs mb-3">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🏪 Boutique physique</p>
+                  <p className="text-[11px] font-bold text-slate-800 flex items-start gap-1.5">
+                    <span>📍</span>{(seller as any).shopAddress}
+                  </p>
+                  {(seller as any).shopHours && Object.entries((seller as any).shopHours).filter(([,v]) => v).slice(0,3).map(([day, val]) => (
+                    <p key={day} className="text-[10px] text-slate-500 capitalize mt-0.5">{day} : {val as string}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* Liens réseaux sociaux boutique */}
+              {((seller as any).shopInstagram || (seller as any).shopTiktok || (seller as any).shopWhatsapp) && (
+                <div className="flex gap-2 mb-3 flex-wrap justify-center">
+                  {(seller as any).shopWhatsapp && (
+                    <a href={`https://wa.me/${((seller as any).shopWhatsapp).replace(/\D/g,'')}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[9px] font-black active:scale-95"
+                      style={{ background: '#25D366' }}>
+                      💬 WhatsApp
+                    </a>
+                  )}
+                  {(seller as any).shopInstagram && (
+                    <a href={`https://instagram.com/${(seller as any).shopInstagram}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[9px] font-black active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#E1306C,#F77737)' }}>
+                      📸 Instagram
+                    </a>
+                  )}
+                  {(seller as any).shopTiktok && (
+                    <a href={`https://tiktok.com/@${(seller as any).shopTiktok}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[9px] font-black active:scale-95"
+                      style={{ background: '#000000' }}>
+                      🎵 TikTok
+                    </a>
+                  )}
+                </div>
               )}
 
               {/* Réseaux sociaux */}
