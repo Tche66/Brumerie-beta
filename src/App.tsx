@@ -744,7 +744,11 @@ useEffect(() => {
           <AdminPage onBack={goBack} />
         )}
         {activePage === 'compta' && (
-          <ComptaPage onBack={goBack} />
+          <ComptaPage
+            onBack={goBack}
+            onOpenChat={(uid, name) => handleOpenChatWithSeller(uid, name, undefined, 'Contact comptabilité')}
+            onNavigate={handleNavigate}
+          />
         )}
         {activePage === 'dettes' && (
           <DettesPage onBack={goBack} onOpenChat={(uid, name) => handleOpenChatWithSeller(uid, name, undefined, 'Rappel dette')} />

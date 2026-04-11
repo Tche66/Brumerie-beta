@@ -2,6 +2,7 @@
 // "Garde le contact · Relance · Fidélise"
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserByPhone } from '@/services/userService';
 import { db } from '@/config/firebase';
 import {
   collection, query, where, onSnapshot,
@@ -53,6 +54,7 @@ export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [editMode, setEditMode]     = useState(false);
   // Achat rapide
   const [achatModal, setAchatModal] = useState<Client | null>(null);
@@ -396,16 +398,40 @@ export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps
 
             {/* Contact — Brumerie en primaire, WhatsApp en secondaire */}
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Contacter</p>
-            {/* Messagerie Brumerie — si le client a un compte */}
-            {selected.brumarieUid && onOpenChat ? (
+            {/* Messagerie Brumerie — lookup auto par téléphone */}
+            {onOpenChat && (
               <button
-                onClick={() => onOpenChat(selected.brumarieUid!, selected.nom)}
-                className="w-full py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                disabled={lookupLoading}
+                onClick={async () => {
+                  // Si brumarieUid déjà connu → ouvrir directement
+                  if (selected.brumarieUid) {
+                    onOpenChat(selected.brumarieUid, selected.nom);
+                    return;
+                  }
+                  // Sinon → chercher par téléphone
+                  if (selected.phone) {
+                    setLookupLoading(true);
+                    try {
+                      const user = await getUserByPhone(selected.phone);
+                      if (user) {
+                        onOpenChat(user.uid, selected.nom);
+                      } else {
+                        alert('Ce client n\'a pas encore de compte Brumerie. Utilise WhatsApp pour le contacter.');
+                      }
+                    } finally { setLookupLoading(false); }
+                  } else {
+                    alert('Ajoute le numéro du client pour retrouver son compte Brumerie.');
+                  }
+                }}
+                className="w-full py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                 style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                Messagerie Brumerie
+                {lookupLoading
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    Messagerie Brumerie</>
+                }
               </button>
-            ) : null}
+            )}
             {/* WhatsApp — toujours disponible si numéro renseigné */}
             <div className="grid grid-cols-3 gap-2">
               {[

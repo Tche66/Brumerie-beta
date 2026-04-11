@@ -2,6 +2,7 @@
 // "Qui me doit quoi depuis quand ?" — outil le plus viral pour vendeurs informels
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserByPhone } from '@/services/userService';
 import { db } from '@/config/firebase';
 import {
   collection, query, where, onSnapshot,
@@ -69,6 +70,7 @@ export function DettesPage({ onBack, onOpenChat }: DettesPageProps) {
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
   const [payModal, setPayModal]     = useState<Dette | null>(null);
   const [payAmount, setPayAmount]   = useState('');
   const [search, setSearch]         = useState('');
@@ -448,14 +450,36 @@ export function DettesPage({ onBack, onOpenChat }: DettesPageProps) {
                     style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
                     💰 Enregistrer un paiement
                   </button>
-                  {/* Messagerie Brumerie — en primaire si UID disponible */}
-                  {selected.brumarieUid && onOpenChat && (
+                  {/* Messagerie Brumerie — toujours visible, lookup auto */}
+                  {onOpenChat && (
                     <button
-                      onClick={() => onOpenChat(selected.brumarieUid!, selected.clientNom)}
-                      className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                      disabled={lookupLoading}
+                      onClick={async () => {
+                        if (selected.brumarieUid) {
+                          onOpenChat(selected.brumarieUid, selected.clientNom);
+                          return;
+                        }
+                        if (selected.clientPhone) {
+                          setLookupLoading(true);
+                          try {
+                            const user = await getUserByPhone(selected.clientPhone);
+                            if (user) {
+                              onOpenChat(user.uid, selected.clientNom);
+                            } else {
+                              alert('Ce client n\'a pas de compte Brumerie. Utilise WhatsApp pour le rappel.');
+                            }
+                          } finally { setLookupLoading(false); }
+                        } else {
+                          alert('Ajoute le téléphone du client pour accéder à la messagerie Brumerie.');
+                        }
+                      }}
+                      className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
                       style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                      Message Brumerie
+                      {lookupLoading
+                        ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                        : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                          Message Brumerie</>
+                      }
                     </button>
                   )}
                   {/* Rappel WhatsApp — fallback ou complément */}

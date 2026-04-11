@@ -1,5 +1,5 @@
 // src/services/userService.ts
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/config/firebase';
 import { User } from '@/types';
@@ -96,4 +96,21 @@ export async function getAllActiveSellers(): Promise<User[]> {
     where('role', 'in', ['seller', 'both']),
   ));
   return snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id } as User));
+}
+
+// Chercher un utilisateur par numéro de téléphone
+export async function getUserByPhone(phone: string): Promise<User | null> {
+  try {
+    const clean = phone.replace(/\D/g, '');
+    const variants = [clean, '0' + clean.slice(-8), '+225' + clean.slice(-8), '225' + clean.slice(-8)];
+    for (const v of variants) {
+      const q = query(collection(db, 'users'), where('phone', '==', v), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        return { id: d.id, uid: d.id, ...d.data() } as User;
+      }
+    }
+    return null;
+  } catch { return null; }
 }
