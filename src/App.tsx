@@ -747,13 +747,13 @@ useEffect(() => {
           <ComptaPage onBack={goBack} />
         )}
         {activePage === 'dettes' && (
-          <DettesPage onBack={goBack} />
+          <DettesPage onBack={goBack} onOpenChat={(uid, name) => handleOpenChatWithSeller(uid, name, undefined, 'Rappel dette')} />
         )}
         {activePage === 'marge' && (
           <MargeCalculatorPage onBack={goBack} />
         )}
         {activePage === 'carnet-clients' && (
-          <CarnetClientsPage onBack={goBack} />
+          <CarnetClientsPage onBack={goBack} onOpenChat={(uid, name) => handleOpenChatWithSeller(uid, name, undefined, 'Contact client')} />
         )}
         {activePage === 'catalogue' && (
           <CataloguePage onBack={goBack} />

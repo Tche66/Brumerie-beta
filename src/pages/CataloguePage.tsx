@@ -161,6 +161,21 @@ export function CataloguePage({ onBack }: CataloguePageProps) {
             {/* CTA */}
             {choisis.length > 0 && (
               <div className="space-y-2">
+                {/* Lien boutique Brumerie — pour partager entre utilisateurs */}
+                <button onClick={async () => {
+                  const url = profileUrl;
+                  if (navigator.share) {
+                    try { await navigator.share({ title: userProfile?.name + ' sur Brumerie', url }); } catch {}
+                  } else {
+                    await navigator.clipboard.writeText(url);
+                  }
+                }}
+                  className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  Partager ma boutique Brumerie
+                </button>
+                <p className="text-[9px] text-center text-slate-400">— ou envoyer le catalogue complet sur —</p>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
                   className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2 block text-center"
                   style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>

@@ -8,7 +8,10 @@ import {
   addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from 'firebase/firestore';
 
-interface CarnetClientsPageProps { onBack: () => void; }
+interface CarnetClientsPageProps {
+  onBack: () => void;
+  onOpenChat?: (userId: string, userName: string) => void;
+}
 
 interface Client {
   id: string;
@@ -20,6 +23,7 @@ interface Client {
   nbCommandes: number;
   dernierAchat?: string; // ISO
   tags: string[];        // ex: ['fidèle', 'crédit', 'gros client']
+  brumarieUid?: string;  // UID Firebase si le client a un compte Brumerie
   createdAt?: any;
 }
 
@@ -35,9 +39,9 @@ function daysAgo(d?: string) {
 }
 
 const TAGS_OPTIONS = ['Fidèle', 'Gros client', 'Crédit', 'VIP', 'À relancer', 'Nouveau'];
-const EMPTY_FORM = { nom: '', phone: '', quartier: '', note: '', tags: [] as string[] };
+const EMPTY_FORM = { nom: '', phone: '', quartier: '', note: '', brumarieUid: '', tags: [] as string[] };
 
-export function CarnetClientsPage({ onBack }: CarnetClientsPageProps) {
+export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps) {
   const { currentUser } = useAuth();
 
   const [clients, setClients]       = useState<Client[]>([]);
@@ -94,6 +98,7 @@ export function CarnetClientsPage({ onBack }: CarnetClientsPageProps) {
         quartier: form.quartier.trim() || null,
         note: form.note.trim() || null,
         tags: form.tags,
+        brumarieUid: (form as any).brumarieUid || null,
         totalAchats: 0,
         nbCommandes: 0,
         dernierAchat: null,
@@ -304,6 +309,15 @@ export function CarnetClientsPage({ onBack }: CarnetClientsPageProps) {
                 ))}
               </div>
             </div>
+            {/* UID Brumerie optionnel */}
+            <div>
+              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">ID Brumerie (optionnel)</p>
+              <input value={(form as any).brumarieUid}
+                onChange={e => setForm(prev => ({ ...prev, brumarieUid: e.target.value.trim() }))}
+                placeholder="Si ce client a un compte Brumerie"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-green-400 transition-all"/>
+              <p className="text-[9px] text-slate-400 mt-1">Colle son ID pour lui envoyer des messages via Brumerie</p>
+            </div>
             {/* Note */}
             <div>
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Note</p>
@@ -380,8 +394,19 @@ export function CarnetClientsPage({ onBack }: CarnetClientsPageProps) {
               🛍 Enregistrer un achat
             </button>
 
-            {/* WhatsApp messages */}
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Messages WhatsApp</p>
+            {/* Contact — Brumerie en primaire, WhatsApp en secondaire */}
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Contacter</p>
+            {/* Messagerie Brumerie — si le client a un compte */}
+            {selected.brumarieUid && onOpenChat ? (
+              <button
+                onClick={() => onOpenChat(selected.brumarieUid!, selected.nom)}
+                className="w-full py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Messagerie Brumerie
+              </button>
+            ) : null}
+            {/* WhatsApp — toujours disponible si numéro renseigné */}
             <div className="grid grid-cols-3 gap-2">
               {[
                 { type: 'bonjour', label: '👋 Bonjour', color: '#25D366' },
@@ -395,6 +420,9 @@ export function CarnetClientsPage({ onBack }: CarnetClientsPageProps) {
                 </a>
               ))}
             </div>
+            {!selected.phone && (
+              <p className="text-[9px] text-slate-400 text-center">Ajoute le numéro du client pour activer WhatsApp</p>
+            )}
 
             <button onClick={() => setDeleteConfirm(selected.id)}
               className="w-full py-3.5 rounded-2xl border-2 border-red-100 text-red-500 font-black text-[11px] uppercase active:scale-95 bg-white">

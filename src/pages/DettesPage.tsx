@@ -8,7 +8,10 @@ import {
   addDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from 'firebase/firestore';
 
-interface DettesPageProps { onBack: () => void; }
+interface DettesPageProps {
+  onBack: () => void;
+  onOpenChat?: (userId: string, userName: string) => void;
+}
 
 interface Dette {
   id: string;
@@ -21,6 +24,7 @@ interface Dette {
   echeance?: string;   // date limite optionnelle
   statut: 'en_cours' | 'partiel' | 'solde';
   note?: string;
+  brumarieUid?: string; // UID Firebase si l'acheteur a un compte Brumerie
   createdAt?: any;
 }
 
@@ -50,9 +54,10 @@ function whatsappRappel(d: Dette) {
 const EMPTY_FORM = {
   clientNom: '', clientPhone: '', article: '',
   montant: '', montantPaye: '0', date: todayISO(), echeance: '', note: '',
+  brumarieUid: '',
 };
 
-export function DettesPage({ onBack }: DettesPageProps) {
+export function DettesPage({ onBack, onOpenChat }: DettesPageProps) {
   const { currentUser, userProfile } = useAuth();
 
   // ── Tous les hooks d'abord ──────────────────────────────────
@@ -108,6 +113,7 @@ export function DettesPage({ onBack }: DettesPageProps) {
         montantPaye: payeNum,
         date: form.date,
         echeance: form.echeance || null,
+        brumarieUid: (form as any).brumarieUid?.trim() || null,
         statut,
         note: form.note.trim() || null,
         createdAt: serverTimestamp(),
@@ -442,7 +448,17 @@ export function DettesPage({ onBack }: DettesPageProps) {
                     style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
                     💰 Enregistrer un paiement
                   </button>
-                  {/* Rappel WhatsApp */}
+                  {/* Messagerie Brumerie — en primaire si UID disponible */}
+                  {selected.brumarieUid && onOpenChat && (
+                    <button
+                      onClick={() => onOpenChat(selected.brumarieUid!, selected.clientNom)}
+                      className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      Message Brumerie
+                    </button>
+                  )}
+                  {/* Rappel WhatsApp — fallback ou complément */}
                   <a href={whatsappRappel(selected)} target="_blank" rel="noopener noreferrer"
                     className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-2 block text-center"
                     style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
