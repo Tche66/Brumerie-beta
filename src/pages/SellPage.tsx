@@ -439,7 +439,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
             <div>
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest block mb-3">1. Choisir la catégorie</label>
               <div className="grid grid-cols-2 gap-2.5 bg-slate-50 p-4 rounded-[2rem]">
-                {CATEGORIES.map(cat => (
+                {[...CATEGORIES, ...customCategories.map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' }))].map(cat => (
                   <button key={cat.id} onClick={() => setCategory(cat.id)}
                     className={`py-3.5 px-3 rounded-2xl text-[11px] font-bold transition-all border flex items-center gap-2 ${
                       category === cat.id ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-600'
@@ -478,7 +478,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
               )}
 
               <div className="grid grid-cols-2 gap-2 bg-green-50/50 p-4 rounded-[2rem] border border-green-100/50 max-h-72 overflow-y-auto">
-                {NEIGHBORHOODS.map(n => {
+                {[...NEIGHBORHOODS, ...customNeighborhoods].map(n => {
                   const isSelected = selectedCities.includes(n);
                   const isDisabled = !isSelected && selectedCities.length >= MAX_CITIES;
                   return (

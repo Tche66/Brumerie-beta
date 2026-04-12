@@ -34,6 +34,10 @@ export interface AppConfig {
   contactEmail?:       string;   // Email contact général
   supportEmail?:       string;   // Email support
 
+  // ── Contenu personnalisé par les utilisateurs ────────
+  customNeighborhoods?: string[]; // Quartiers/villes ajoutés par les users
+  customCategories?: string[];    // Catégories ajoutées par les users
+
   // ── Liens communauté ──────────────────────────────────
   whatsappCommunity?:  string;
   telegramCommunity?:  string;
