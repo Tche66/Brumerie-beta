@@ -5,6 +5,7 @@ import { createProduct, canUserPublish } from '@/services/productService';
 import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
 import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS } from '@/types';
+import { subscribeAppConfig } from '@/services/appConfigService';
 
 interface SellPageProps {
   onClose: () => void;
@@ -45,8 +46,21 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  // Catégories et quartiers personnalisés (ajoutés via SuggestionsPage)
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customNeighborhoods, setCustomNeighborhoods] = useState<string[]>([]);
+
   // Avertissement si pas de photo de profil
   const hasProfilePhoto = !!userProfile?.photoURL;
+
+  // Charger les catégories et quartiers custom depuis Firestore en temps réel
+  useEffect(() => {
+    const unsub = subscribeAppConfig(cfg => {
+      setCustomCategories(cfg.customCategories || []);
+      setCustomNeighborhoods(cfg.customNeighborhoods || []);
+    });
+    return unsub;
+  }, []);
 
   useEffect(() => {
     if (userProfile) {
