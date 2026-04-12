@@ -23,6 +23,8 @@ interface FilterDrawerProps {
   filters: FilterState;
   onApply: (f: FilterState) => void;
   onClose: () => void;
+  customCategories?: string[];
+  customNeighborhoods?: string[];
 }
 
 const SORT_OPTIONS = [
@@ -39,8 +41,14 @@ const CONDITIONS = [
   { value: 'second_hand', label: '🟡 Occasion' },
 ];
 
-export function FilterDrawer({ visible, filters, onApply, onClose }: FilterDrawerProps) {
+export function FilterDrawer({ visible, filters, onApply, onClose, customCategories = [], customNeighborhoods = [] }: FilterDrawerProps) {
   const [local, setLocal] = useState<FilterState>(filters);
+
+  const allCategories = [
+    ...CATEGORIES,
+    ...customCategories.map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' })),
+  ];
+  const allNeighborhoods = [...NEIGHBORHOODS, ...customNeighborhoods];
 
   const set = (key: keyof FilterState, val: string) =>
     setLocal((prev: FilterState) => ({ ...prev, [key]: val }));
@@ -138,7 +146,7 @@ export function FilterDrawer({ visible, filters, onApply, onClose }: FilterDrawe
                 }`}>
                 🏪 Toutes
               </button>
-              {CATEGORIES.map(cat => (
+              {allCategories.map(cat => (
                 <button key={cat.id} onClick={() => set('category', cat.id)}
                   className={`py-3 px-4 rounded-2xl text-[11px] font-bold transition-all text-left ${
                     local.category === cat.id ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600 border border-slate-100'
@@ -170,7 +178,7 @@ export function FilterDrawer({ visible, filters, onApply, onClose }: FilterDrawe
             <select value={local.neighborhood} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set('neighborhood', e.target.value)}
               className="w-full px-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold focus:border-green-500 outline-none appearance-none">
               <option value="all">📍 Tous les quartiers</option>
-              {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+              {allNeighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
         </div>

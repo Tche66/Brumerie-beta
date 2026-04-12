@@ -8,12 +8,7 @@ import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterD
 import { SearchAlertButton } from '@/components/SearchAlertButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
-
-// Catégories avec option 'Tout' en tête
-const ALL_CATEGORIES = [
-  { id: 'all', label: 'Tout', icon: '🏪' },
-  ...CATEGORIES,
-];
+import { useAppConfig } from '@/hooks/useAppConfig';
 import { subscribeBoostedProductIds } from '@/services/boostService';
 import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -71,6 +66,7 @@ const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGue
 
 export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
+  const appConfig = useAppConfig();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,6 +78,17 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [neighborhoodSellerCount, setNeighborhoodSellerCount] = useState<number>(0);
+
+  // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
+  const ALL_CATEGORIES = [
+    { id: 'all', label: 'Tout', icon: '🏪' },
+    ...CATEGORIES,
+    ...(appConfig.customCategories || []).map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' })),
+  ];
+  const ALL_NEIGHBORHOODS = [
+    ...NEIGHBORHOODS,
+    ...(appConfig.customNeighborhoods || []),
+  ];
 
   // Écouter les produits boostés
   useEffect(() => {
@@ -273,6 +280,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         filters={filters}
         onApply={f => { setFilters(f); }}
         onClose={() => setShowFilters(false)}
+        customCategories={appConfig.customCategories || []}
+        customNeighborhoods={appConfig.customNeighborhoods || []}
       />
 
       {/* Ancrage local — vendeurs dans le même quartier */}
@@ -374,7 +383,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
             Tout Abidjan
           </button>
-          {NEIGHBORHOODS.map((n) => (
+          {ALL_NEIGHBORHOODS.map((n) => (
             <button key={n} onClick={() => setFilters(f => ({ ...f, neighborhood: n }))}
               className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${filters.neighborhood === n ? 'border-green-600 bg-green-50 text-green-700 shadow-md' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
               <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>

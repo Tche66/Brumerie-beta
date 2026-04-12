@@ -5,6 +5,7 @@ import { getProducts } from '@/services/productService';
 import { ProductCard } from '@/components/ProductCard';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
+import { useAppConfig } from '@/hooks/useAppConfig';
 
 interface DiscoverPageProps {
   onProductClick: (product: Product) => void;
@@ -24,11 +25,18 @@ function timeAgo(ts: any): string {
 
 export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProps) {
   const { userProfile, currentUser } = useAuth();
+  const appConfig = useAppConfig();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookmarkIds, setBookmarkIds] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Catégories enrichies avec les custom
+  const allCustomCategories = [
+    ...CATEGORIES,
+    ...(appConfig.customCategories || []).map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' })),
+  ];
 
   useEffect(() => {
     setBookmarkIds(new Set(userProfile?.bookmarkedProductIds || []));
@@ -132,7 +140,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
             }`}>
             🏪 Tout
           </button>
-          {CATEGORIES.map(cat => (
+          {allCustomCategories.map(cat => (
             <button key={cat.id}
               onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap flex-shrink-0 transition-all active:scale-95 ${
@@ -149,7 +157,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         {/* ── Section filtrée si catégorie active ── */}
         {activeCategory && (
           <Section
-            title={`${CATEGORIES.find(c => c.id === activeCategory)?.icon} ${CATEGORIES.find(c => c.id === activeCategory)?.label}`}
+            title={`${allCustomCategories.find(c => c.id === activeCategory)?.icon} ${allCustomCategories.find(c => c.id === activeCategory)?.label}`}
             count={filtered.length}>
             {filtered.length === 0 ? (
               <p className="text-[11px] text-slate-400 font-bold text-center py-8">Aucun article dans cette catégorie</p>
@@ -306,7 +314,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         {!activeCategory && (
           <Section title="🗂️ Toutes les catégories">
             <div className="grid grid-cols-2 gap-3">
-              {CATEGORIES.map(cat => {
+              {allCustomCategories.map(cat => {
                 const count = allProducts.filter(p => p.category === cat.id).length;
                 return (
                   <button key={cat.id}
