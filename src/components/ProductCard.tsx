@@ -13,16 +13,12 @@ interface ProductCardProps {
   isBoosted?: boolean;
 }
 
-// Badge Vérifié — bleu réseau social
-
-
 export function ProductCard({ product, onClick, onBookmark, isBookmarked = false, isBoosted = false }: ProductCardProps) {
   const imgSrc = (product.images?.length ? product.images[0] : null) ||
     (product as any).imageUrl || null;
-  const [imgLoaded, setImgLoaded] = useState(!imgSrc); // si pas d image → pas de skeleton
+  const [imgLoaded, setImgLoaded] = useState(!imgSrc);
   const [saved, setSaved] = useState(isBookmarked);
-  
-  // Sync with prop when it changes externally
+
   React.useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
 
   const isNew = product.createdAt
@@ -33,12 +29,12 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
     e.stopPropagation();
     e.preventDefault();
     const newSaved = !saved;
-    setSaved(newSaved); // optimistic update
+    setSaved(newSaved);
     if ('vibrate' in navigator) navigator.vibrate(15);
     try {
       await onBookmark?.(product.id);
     } catch {
-      setSaved(!newSaved); // revert on error
+      setSaved(!newSaved);
     }
   };
 
@@ -107,9 +103,9 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
             className={`bookmark-btn ${saved ? 'saved' : ''}`}
             title={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? '#1D9BF0' : 'none'} stroke={saved ? '#1D9BF0' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-          </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? '#1D9BF0' : 'none'} stroke={saved ? '#1D9BF0' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
           </button>
           {((product as any).bookmarkCount || 0) > 0 && (
             <span className="text-[8px] font-black text-blue-600 bg-white/90 rounded-full px-1 py-0.5 leading-none shadow-sm">
@@ -118,7 +114,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           )}
         </div>
 
-        {/* Stock badge bottom right — dans l'image, toujours contenu */}
+        {/* Stock badge bottom right */}
         {product.quantity && product.quantity > 1 && product.status !== 'sold' && (
           <div className="absolute bottom-3 right-3">
             <span className="bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2.5 py-1 rounded-xl shadow-lg">
@@ -127,7 +123,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           </div>
         )}
 
-        {/* WhatsApp Count — décalé si stock badge présent */}
+        {/* WhatsApp Count */}
         {product.whatsappClickCount > 0 && !product.hideStats && (
           <div className={`absolute right-3 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${product.quantity && product.quantity > 1 && product.status !== 'sold' ? 'bottom-10' : 'bottom-3'}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2.008C6.465 2.008 2.011 6.46 2.011 11.985a9.916 9.916 0 001.337 5.003L2 22l5.16-1.321a9.955 9.955 0 004.83 1.24c5.524 0 9.979-4.452 9.979-9.977 0-2.665-1.038-5.168-2.921-7.054A9.926 9.926 0 0011.99 2.008z"/></svg>
@@ -138,14 +134,13 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
 
       {/* Content */}
       <div className="p-4">
-        {/* Prix - Font Syne unique Brumerie */}
+        {/* Prix */}
         <div className="flex items-baseline gap-1.5 flex-wrap">
           <p className="price-brumerie text-[18px] text-gray-900">
             {product.price.toLocaleString('fr-FR')}
           </p>
           <span className="text-[10px] font-bold text-slate-400 ml-0.5">FCFA</span>
-
-        {product.originalPrice && product.originalPrice > product.price && (() => {
+          {product.originalPrice && product.originalPrice > product.price && (() => {
             const pct = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
             return (
               <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-lg">-{pct}%</span>
@@ -166,7 +161,6 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
         {/* Vendeur & Quartier */}
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
           <div className="flex items-center gap-2 max-w-[65%]">
-            {/* Avatar */}
             <div className="w-6 h-6 rounded-lg overflow-hidden bg-green-50 flex-shrink-0 border border-gray-100">
               {product.sellerPhoto ? (
                 <img src={product.sellerPhoto} alt={product.sellerName} className="w-full h-full object-cover" />
@@ -176,7 +170,6 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
                 </div>
               )}
             </div>
-            {/* Nom + badge sur même ligne, badge APRÈS le nom */}
             <div className="flex items-center gap-1 min-w-0 flex-1">
               <span className="text-[10px] font-black text-gray-800 truncate flex-shrink min-w-0">{product.sellerName}</span>
               {(product.sellerVerified || product.sellerPremium) && (
@@ -196,6 +189,22 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
             <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{product.neighborhood}</span>
           </div>
         </div>
+
+        {/* ── Social proof + Livraison ── */}
+        {((product.whatsappClickCount && product.whatsappClickCount > 0 && !product.hideStats) || product.sellerManagesDelivery) && (
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {product.whatsappClickCount && product.whatsappClickCount > 0 && !product.hideStats ? (
+              <span className="text-[8px] font-black text-green-700 bg-green-50 px-2 py-0.5 rounded-lg">
+                💬 {product.whatsappClickCount} contact{product.whatsappClickCount > 1 ? 's' : ''}
+              </span>
+            ) : null}
+            {product.sellerManagesDelivery && (
+              <span className="text-[8px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg">
+                📦 Livraison dispo
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

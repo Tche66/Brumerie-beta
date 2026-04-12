@@ -35,9 +35,10 @@ interface HeroBadgesProps {
   onNavigateToChat?: () => void;
   isGuest?: boolean;
   onGuestAction?: (reason: string) => void;
+  productCount?: number;
 }
 
-const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGuestAction }: HeroBadgesProps) => (
+const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGuestAction, productCount = 0 }: HeroBadgesProps) => (
   <div className="flex gap-2 mt-5 flex-wrap">
     <button
       onClick={() => isGuest ? onGuestAction?.('verification') : onNavigateToVerification?.()}
@@ -55,11 +56,11 @@ const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGue
       </svg>
       Chat Direct
     </button>
-    <div className="trust-badge opacity-75">
+    <div className="trust-badge">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
-      Mobile Money escrow bientôt 🔒
+      Livraison locale
     </div>
   </div>
 );
@@ -319,7 +320,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                   <p className="text-white font-black text-[11px] uppercase tracking-[0.2em] mb-1">🇨🇮 Abidjan · En direct</p>
                   <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '1.6rem' }}>{heroText}</h2>
                   <p className="text-white/80 text-[11px] font-bold mt-2 uppercase tracking-[0.1em]">{products.length} pépites dénichées</p>
-                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} />
+                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} productCount={products.length} />
                 </div>
               </div>
             ) : (
@@ -336,7 +337,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                   <p className="text-green-50 text-[11px] font-bold mt-3 uppercase tracking-[0.1em] opacity-80">
                     {products.length} pépites dénichées
                   </p>
-                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} />
+                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} productCount={products.length} />
                 </div>
                 <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
                 <div className="absolute right-6 top-6 opacity-40 select-none pointer-events-none">
@@ -345,6 +346,27 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── TRUST BAR — Réassurance acheteur/vendeur ── */}
+      {!searchTerm && (
+        <div className="flex gap-3 overflow-x-auto px-5 pt-5 pb-1 scrollbar-hide">
+          {[
+            { icon: '🛡️', title: 'Achat protégé', sub: 'Signalement en 1 clic' },
+            { icon: '✅', title: 'Vendeurs vérifiés', sub: 'Identité contrôlée' },
+            { icon: '📦', title: 'Livraison locale', sub: 'Dans ton quartier' },
+            { icon: '💬', title: 'Chat direct', sub: 'Répond en quelques min' },
+            { icon: '💰', title: 'Mobile Money', sub: 'Wave · Orange · MTN' },
+          ].map(item => (
+            <div key={item.title} className="flex-shrink-0 flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl px-4 py-3 shadow-sm">
+              <span className="text-lg">{item.icon}</span>
+              <div>
+                <p className="text-[10px] font-black text-slate-900 whitespace-nowrap">{item.title}</p>
+                <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap">{item.sub}</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -413,6 +435,77 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
               className="flex-shrink-0 bg-white text-sky-700 font-black text-[8px] uppercase tracking-widest px-3 py-2 rounded-xl active:scale-90 transition-all">
               Essayer →
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* ── CTA VENDRE — Conversion vendeur en contexte ── */}
+      {!searchTerm && !userProfile?.role?.includes('seller') && (
+        <div className="mx-5 mt-4">
+          <div className="rounded-[2rem] overflow-hidden relative"
+            style={{ background: 'linear-gradient(135deg, #1A1A18 0%, #2d2d2a 100%)' }}>
+            <div className="px-5 py-4 flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-1">💡 Vendeurs d'Abidjan</p>
+                <p className="text-white font-black text-[14px] leading-tight">Ta boutique en ligne<br/>gratuite t'attend.</p>
+                <p className="text-slate-400 text-[10px] mt-1">Vends. Sois payé. Livre. Tout en un.</p>
+              </div>
+              <div className="flex-shrink-0">
+                <div className="bg-green-500 rounded-2xl px-4 py-3 flex items-center gap-1.5 shadow-lg shadow-green-900/30">
+                  <span className="text-white font-black text-[11px] uppercase tracking-wide">Commencer</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ARTICLES LES PLUS CONSULTÉS — Social proof dynamique ── */}
+      {!searchTerm && products.filter(p => (p.viewCount || 0) > 0 || (p.whatsappClickCount || 0) > 0).length >= 3 && (
+        <div className="mt-8">
+          <div className="px-5 flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔥</span>
+              <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tight">Tendances maintenant</h3>
+            </div>
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-full">
+              Les + vus
+            </span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto px-5 pb-2 scrollbar-hide">
+            {[...products]
+              .sort((a, b) => ((b.viewCount || 0) + (b.whatsappClickCount || 0) * 3) - ((a.viewCount || 0) + (a.whatsappClickCount || 0) * 3))
+              .slice(0, 8)
+              .map(product => {
+                const imgSrc = product.images?.[0] || (product as any).imageUrl;
+                const heat = (product.viewCount || 0) + (product.whatsappClickCount || 0) * 3;
+                return (
+                  <button key={product.id} onClick={() => onProductClick(product)}
+                    className="flex-shrink-0 w-36 bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-sm active:scale-95 transition-all text-left">
+                    <div className="relative aspect-square bg-slate-50 overflow-hidden">
+                      <img src={imgSrc} alt={product.title} className="w-full h-full object-cover" />
+                      {heat > 5 && (
+                        <span className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg">
+                          🔥 {heat > 20 ? 'Très demandé' : 'Populaire'}
+                        </span>
+                      )}
+                      {product.sellerVerified && (
+                        <span className="absolute bottom-2 right-2 bg-green-600 rounded-lg w-5 h-5 flex items-center justify-center">
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2.5">
+                      <p className="text-[11px] font-black text-slate-900">{product.price.toLocaleString('fr-FR')} <span className="text-[9px] font-bold text-slate-400">FCFA</span></p>
+                      <p className="text-[9px] font-bold text-slate-500 truncate mt-0.5">{product.title}</p>
+                      {product.whatsappClickCount && product.whatsappClickCount > 0 && !product.hideStats ? (
+                        <p className="text-[8px] font-black text-green-600 mt-1">💬 {product.whatsappClickCount} contact{product.whatsappClickCount > 1 ? 's' : ''}</p>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}
