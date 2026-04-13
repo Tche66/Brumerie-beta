@@ -258,14 +258,29 @@ export function subscribeTrustScore(
 
 // ─── Récupérer tous les signalements en attente (admin) ───
 export async function getPendingReports(): Promise<TrustReport[]> {
-  const q = query(
-    collection(db, 'trust_reports'),
-    where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc'),
-    limit(100),
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustReport));
+  try {
+    const q = query(
+      collection(db, 'trust_reports'),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+      limit(100),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustReport));
+  } catch {
+    // Fallback sans orderBy si index pas encore créé
+    try {
+      const qFallback = query(
+        collection(db, 'trust_reports'),
+        where('status', '==', 'pending'),
+        limit(100),
+      );
+      const snap = await getDocs(qFallback);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustReport));
+    } catch {
+      return [];
+    }
+  }
 }
 
 // ─── Récupérer tous les scores à risque (admin dashboard) ─
@@ -278,13 +293,28 @@ export async function getRiskUsers(minLevel: RiskLevel = 'watch'): Promise<Trust
 
   const results: TrustScore[] = [];
   for (const level of levels) {
-    const q = query(
-      collection(db, 'trust_scores'),
-      where('riskLevel', '==', level),
-      orderBy('updatedAt', 'desc'),
-    );
-    const snap = await getDocs(q);
-    results.push(...snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustScore)));
+    try {
+      // Requête avec orderBy (nécessite index Firestore composite)
+      const q = query(
+        collection(db, 'trust_scores'),
+        where('riskLevel', '==', level),
+        orderBy('updatedAt', 'desc'),
+      );
+      const snap = await getDocs(q);
+      results.push(...snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustScore)));
+    } catch {
+      try {
+        // Fallback sans orderBy si l'index n'existe pas encore
+        const qFallback = query(
+          collection(db, 'trust_scores'),
+          where('riskLevel', '==', level),
+        );
+        const snap = await getDocs(qFallback);
+        results.push(...snap.docs.map(d => ({ id: d.id, ...d.data() } as TrustScore)));
+      } catch {
+        // Index pas encore créé — retourner tableau vide proprement
+      }
+    }
   }
   return results;
 }

@@ -1,13 +1,10 @@
-// src/pages/TrustPage.tsx
-// ── Page Communauté de Confiance Brumerie ─────────────────
-// Accessible depuis Paramètres > "Signaler un arnaqueur"
-// Affiche : score de l'utilisateur courant + formulaire de signalement
+// src/pages/TrustPage.tsx — v2
+// Fix : try/catch Firestore, imports nettoyés, signalement vendeur + acheteur
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  getTrustScore, getReportsForUser, getRiskUsers,
-  TrustScore, TrustReport,
-  RISK_LABELS, REPORT_REASONS,
+  getTrustScore, getRiskUsers,
+  TrustScore, RISK_LABELS,
 } from '@/services/trustService';
 import { RiskBadge } from '@/components/RiskBadge';
 import { ReportUserModal } from '@/components/ReportUserModal';
@@ -22,39 +19,48 @@ export function TrustPage({ onBack }: TrustPageProps) {
   const [myScore, setMyScore]     = useState<TrustScore | null>(null);
   const [riskUsers, setRiskUsers] = useState<TrustScore[]>([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportTarget, setReportTarget] = useState<{
     id: string; name: string; phone?: string; role: 'buyer' | 'seller' | 'livreur';
   } | null>(null);
 
-  // Champ recherche pour signaler un utilisateur inconnu
-  const [searchPhone, setSearchPhone] = useState('');
+  // Signalement manuel
+  const [searchPhone, setSearchPhone]   = useState('');
+  const [searchName, setSearchName]     = useState('');
+  const [targetRole, setTargetRole]     = useState<'buyer' | 'seller'>('buyer');
 
   useEffect(() => {
-    if (!userProfile) return;
-    Promise.all([
-      getTrustScore(userProfile.id),
-      getRiskUsers('watch'),
-    ]).then(([score, risks]) => {
-      setMyScore(score);
-      setRiskUsers(risks);
-      setLoading(false);
-    });
+    if (!userProfile) { setLoading(false); return; }
+    const load = async () => {
+      try {
+        const [score, risks] = await Promise.all([
+          getTrustScore(userProfile.id).catch(() => null),
+          getRiskUsers('watch').catch(() => []),
+        ]);
+        setMyScore(score);
+        setRiskUsers(risks);
+      } catch {
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [userProfile]);
 
-  const handleReportUser = (user: TrustScore) => {
-    setReportTarget({
-      id: user.userId,
-      name: user.userName,
-      phone: user.userPhone,
-      role: user.userRole as 'buyer' | 'seller' | 'livreur',
-    });
-    setShowReportModal(true);
-  };
+  if (!userProfile) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <p className="text-slate-400 font-bold text-[12px]">Connecte-toi pour accéder à cette page.</p>
+    </div>
+  );
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="w-8 h-8 border-3 border-green-600/30 border-t-green-600 rounded-full animate-spin" />
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-3 border-green-200 border-t-green-600 rounded-full animate-spin" />
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Chargement...</p>
+      </div>
     </div>
   );
 
@@ -80,11 +86,11 @@ export function TrustPage({ onBack }: TrustPageProps) {
         )}
       </div>
 
-      {/* HERO EXPLICATION */}
+      {/* HERO */}
       <div className="mx-4 mt-4 rounded-[2rem] overflow-hidden"
         style={{ background: 'linear-gradient(135deg,#1A1A18,#2d2d2a)' }}>
         <div className="p-5">
-          <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-2">Le réseau de confiance informel, formalisé</p>
+          <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-2">Réseau de confiance informel, formalisé</p>
           <p className="text-white font-black text-[15px] leading-tight mb-3">
             Les vendeurs d'Abidjan se protègent entre eux.
           </p>
@@ -94,7 +100,7 @@ export function TrustPage({ onBack }: TrustPageProps) {
           <div className="flex gap-2 flex-wrap">
             <span className="bg-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded-full">🤝 Réseau communautaire</span>
             <span className="bg-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded-full">⚡ Alerte automatique</span>
-            <span className="bg-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded-full">🕵️ Signalement anonyme</span>
+            <span className="bg-white/10 text-white text-[9px] font-black px-3 py-1.5 rounded-full">🕵️ Anonyme</span>
           </div>
         </div>
       </div>
@@ -103,10 +109,11 @@ export function TrustPage({ onBack }: TrustPageProps) {
       <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 mx-4 mt-4">
         {[
           { key: 'community', label: '🛡️ Communauté' },
-          { key: 'my_score',  label: '⭐ Mon score' },
+          { key: 'my_score',  label: '⭐ Mon score'  },
+          { key: 'report',    label: '🚨 Signaler'   },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key as any)}
-            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${
+            className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all ${
               tab === t.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
             }`}>
             {t.label}
@@ -119,29 +126,25 @@ export function TrustPage({ onBack }: TrustPageProps) {
         {/* ── TAB COMMUNAUTÉ ── */}
         {tab === 'community' && (
           <>
-            {/* CTA Signaler */}
-            <div className="bg-red-50 border-2 border-red-100 rounded-2xl p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-200">
-                <span className="text-2xl">🚨</span>
+            {loadError && (
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="font-black text-amber-900 text-[11px] mb-1">Index Firestore en cours de création</p>
+                  <p className="text-[10px] text-amber-700 leading-snug">
+                    La liste des profils signalés sera disponible dans 2-3 minutes. Les signalements fonctionnent déjà.
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-black text-red-900 text-[12px] mb-0.5">Tu as eu un problème ?</p>
-                <p className="text-[10px] text-red-700">Signale ce profil pour protéger les autres membres.</p>
-              </div>
-              <button
-                onClick={() => setTab('report')}
-                className="bg-red-600 text-white text-[10px] font-black px-4 py-2.5 rounded-xl active:scale-95 flex-shrink-0">
-                Signaler
-              </button>
-            </div>
+            )}
 
-            {/* Liste des profils à risque */}
+            {/* Liste profils à risque */}
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
                 Profils signalés par la communauté ({riskUsers.length})
               </p>
 
-              {riskUsers.length === 0 ? (
+              {riskUsers.length === 0 && !loadError ? (
                 <div className="bg-green-50 border border-green-100 rounded-2xl p-6 text-center">
                   <span className="text-3xl block mb-2">✅</span>
                   <p className="font-black text-green-800 text-[12px]">Aucun profil signalé</p>
@@ -159,13 +162,14 @@ export function TrustPage({ onBack }: TrustPageProps) {
                           {cfg.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <p className="font-black text-slate-900 text-[12px] truncate">{user.userName}</p>
                             <RiskBadge level={user.riskLevel} size="sm" />
                           </div>
                           <p className="text-[9px] font-bold text-slate-400">
                             {user.reportCount} signalement{user.reportCount > 1 ? 's' : ''} validé{user.reportCount > 1 ? 's' : ''}
                             {user.userPhone ? ` · ${user.userPhone}` : ''}
+                            {' · '}{user.userRole === 'buyer' ? 'Acheteur' : user.userRole === 'seller' ? 'Vendeur' : 'Livreur'}
                           </p>
                         </div>
                       </div>
@@ -179,16 +183,16 @@ export function TrustPage({ onBack }: TrustPageProps) {
             <div className="bg-white rounded-2xl p-5 border border-slate-100">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Comment ça marche</p>
               {[
-                { step: '1', text: 'Un vendeur ou acheteur signale un profil problématique.', icon: '🚨' },
-                { step: '2', text: "L'équipe Brumerie vérifie le signalement sous 24h.", icon: '🔍' },
-                { step: '3', text: 'Dès 3 signalements distincts → marqué "À risque" automatiquement.', icon: '⚠️' },
-                { step: '4', text: 'Chaque vendeur reçoit une alerte discrète quand ce profil passe commande.', icon: '🔔' },
+                { n: '1', text: 'Un vendeur ou acheteur signale un profil problématique.', icon: '🚨' },
+                { n: '2', text: 'L\'équipe Brumerie vérifie le signalement sous 24h.', icon: '🔍' },
+                { n: '3', text: 'Dès 3 signalements distincts → marqué "À risque" automatiquement.', icon: '⚠️' },
+                { n: '4', text: 'Chaque vendeur reçoit une alerte discrète quand ce profil passe commande.', icon: '🔔' },
               ].map(item => (
-                <div key={item.step} className="flex gap-3 mb-3 last:mb-0">
+                <div key={item.n} className="flex gap-3 mb-3 last:mb-0">
                   <div className="w-8 h-8 rounded-xl bg-slate-900 text-white text-[11px] font-black flex items-center justify-center flex-shrink-0">
-                    {item.step}
+                    {item.n}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2 pt-1">
                     <span>{item.icon}</span>
                     <p className="text-[11px] text-slate-600 leading-snug">{item.text}</p>
                   </div>
@@ -203,25 +207,23 @@ export function TrustPage({ onBack }: TrustPageProps) {
           <>
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Ton profil de confiance</p>
-
-              {/* Score visuel */}
               <div className="flex items-center gap-4 mb-5">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-                  style={{ background: RISK_LABELS[(myScore?.riskLevel || 'safe')].bg }}>
-                  {RISK_LABELS[(myScore?.riskLevel || 'safe')].icon}
+                  style={{ background: RISK_LABELS[myScore?.riskLevel || 'safe'].bg }}>
+                  {RISK_LABELS[myScore?.riskLevel || 'safe'].icon}
                 </div>
                 <div>
                   <p className="font-black text-[22px] text-slate-900 leading-none mb-1">
-                    {RISK_LABELS[(myScore?.riskLevel || 'safe')].label}
+                    {RISK_LABELS[myScore?.riskLevel || 'safe'].label}
                   </p>
                   <p className="text-[10px] text-slate-400 font-bold">
-                    {myScore?.reportCount || 0} signalement{(myScore?.reportCount || 0) > 1 ? 's' : ''} reçu{(myScore?.reportCount || 0) > 1 ? 's' : ''}
+                    {myScore?.reportCount || 0} signalement{(myScore?.reportCount || 0) !== 1 ? 's' : ''} reçu{(myScore?.reportCount || 0) !== 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
 
               {/* Barre de progression */}
-              <div className="mb-4">
+              <div className="mb-5">
                 <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
                   <span>Fiable</span><span>Surveillance</span><span>À risque</span>
                 </div>
@@ -229,35 +231,39 @@ export function TrustPage({ onBack }: TrustPageProps) {
                   <div className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(100, ((myScore?.reportCount || 0) / 5) * 100)}%`,
-                      background: (myScore?.riskLevel === 'safe') ? '#16A34A'
-                        : (myScore?.riskLevel === 'watch') ? '#D97706' : '#DC2626',
+                      background: !myScore || myScore.riskLevel === 'safe' ? '#16A34A'
+                        : myScore.riskLevel === 'watch' ? '#D97706' : '#DC2626',
                     }} />
                 </div>
               </div>
 
-              {(myScore?.riskLevel === 'safe' || !myScore) && (
+              {(!myScore || myScore.riskLevel === 'safe') && (
                 <p className="text-[11px] text-green-700 font-black bg-green-50 rounded-xl px-4 py-3">
                   ✅ Ton profil est en bonne santé. Continue comme ça !
                 </p>
               )}
               {myScore?.riskLevel === 'watch' && (
                 <p className="text-[11px] text-amber-700 font-black bg-amber-50 rounded-xl px-4 py-3">
-                  👁️ Ton profil est sous surveillance. Contacte le support Brumerie si tu penses que des signalements sont injustifiés.
+                  👁️ Ton profil est sous surveillance. Contacte le support si tu penses que des signalements sont injustifiés.
+                </p>
+              )}
+              {myScore?.riskLevel === 'risk' && (
+                <p className="text-[11px] text-red-700 font-black bg-red-50 rounded-xl px-4 py-3">
+                  ⚠️ Ton profil est marqué "À risque". Contacte immédiatement le support Brumerie.
                 </p>
               )}
             </div>
 
-            {/* Conseils */}
             <div className="bg-slate-900 rounded-2xl p-5">
-              <p className="text-[9px] font-black text-green-400 uppercase tracking-widest mb-3">Conseils pour maintenir un bon score</p>
+              <p className="text-[9px] font-black text-green-400 uppercase tracking-widest mb-3">Conseils pour un bon score</p>
               {[
                 'Toujours livrer ce qui est annoncé dans les photos',
                 'Confirmer le paiement avant de livrer',
-                'Répondre rapidement aux messages des clients',
-                'Signaler immédiatement tout problème dans les commandes',
+                'Répondre rapidement aux messages',
+                'Signaler tout problème directement dans la commande',
               ].map((tip, i) => (
                 <div key={i} className="flex gap-2 mb-2 last:mb-0">
-                  <span className="text-green-400 font-black text-[11px] flex-shrink-0">→</span>
+                  <span className="text-green-400 font-black text-[11px] flex-shrink-0 mt-0.5">→</span>
                   <p className="text-[11px] text-slate-300 leading-snug">{tip}</p>
                 </div>
               ))}
@@ -269,41 +275,86 @@ export function TrustPage({ onBack }: TrustPageProps) {
         {tab === 'report' && (
           <>
             <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
-              <span className="text-xl flex-shrink-0">⚠️</span>
+              <span className="text-xl flex-shrink-0">🛡️</span>
               <div>
-                <p className="font-black text-amber-900 text-[11px] mb-1">Signalement manuel</p>
+                <p className="font-black text-amber-900 text-[11px] mb-1">Signalement anonyme et protégé</p>
                 <p className="text-[10px] text-amber-700 leading-snug">
-                  Si tu n'as pas de commande liée, tu peux signaler directement un profil par numéro de téléphone. Le signalement reste toujours anonyme.
+                  Tu peux signaler un client mauvais payeur OU un vendeur arnaqueur. Ton identité n'est pas révélée.
                 </p>
               </div>
             </div>
 
+            {/* Choix du type de profil à signaler */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Signaler par numéro</p>
-              <div className="flex gap-2">
-                <input
-                  value={searchPhone}
-                  onChange={e => setSearchPhone(e.target.value)}
-                  placeholder="+225 07 XX XX XX XX"
-                  className="flex-1 px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400 transition-all"
-                />
-                <button
-                  disabled={searchPhone.length < 8}
-                  onClick={() => {
-                    setReportTarget({ id: searchPhone, name: searchPhone, phone: searchPhone, role: 'buyer' });
-                    setShowReportModal(true);
-                  }}
-                  className="px-4 py-3.5 rounded-xl bg-red-600 text-white font-black text-[11px] uppercase active:scale-95 disabled:opacity-40 flex-shrink-0">
-                  Signaler
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                Qui veux-tu signaler ?
+              </p>
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                <button onClick={() => setTargetRole('buyer')}
+                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
+                    targetRole === 'buyer'
+                      ? 'bg-red-600 border-red-600 text-white'
+                      : 'bg-slate-50 border-slate-100 text-slate-700'
+                  }`}>
+                  <span className="text-2xl">🛒</span>
+                  <span className="text-[11px] font-black uppercase tracking-wide">Un client</span>
+                  <span className={`text-[9px] font-bold text-center leading-snug ${targetRole === 'buyer' ? 'text-red-100' : 'text-slate-400'}`}>
+                    Mauvais payeur,{'\n'}commande fantôme
+                  </span>
+                </button>
+                <button onClick={() => setTargetRole('seller')}
+                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
+                    targetRole === 'seller'
+                      ? 'bg-red-600 border-red-600 text-white'
+                      : 'bg-slate-50 border-slate-100 text-slate-700'
+                  }`}>
+                  <span className="text-2xl">🏪</span>
+                  <span className="text-[11px] font-black uppercase tracking-wide">Un vendeur</span>
+                  <span className={`text-[9px] font-bold text-center leading-snug ${targetRole === 'seller' ? 'text-red-100' : 'text-slate-400'}`}>
+                    Produit faux,{'\n'}livraison non faite
+                  </span>
                 </button>
               </div>
-              <p className="text-[9px] text-slate-400 mt-2">
-                💡 Préfère signaler depuis une commande — c'est plus précis et plus fiable.
+
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                Nom du {targetRole === 'buyer' ? 'client' : 'vendeur'}
               </p>
+              <input
+                value={searchName}
+                onChange={e => setSearchName(e.target.value)}
+                placeholder={targetRole === 'buyer' ? 'Ex: Konan Koffi' : 'Ex: Adjoua Mode'}
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400 transition-all mb-3"
+              />
+
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                Numéro de téléphone (optionnel)
+              </p>
+              <input
+                value={searchPhone}
+                onChange={e => setSearchPhone(e.target.value)}
+                placeholder="+225 07 XX XX XX XX"
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400 transition-all mb-4"
+              />
+
+              <button
+                disabled={searchName.trim().length < 2}
+                onClick={() => {
+                  setReportTarget({
+                    id: searchPhone || `manual_${Date.now()}`,
+                    name: searchName.trim(),
+                    phone: searchPhone || undefined,
+                    role: targetRole,
+                  });
+                  setShowReportModal(true);
+                }}
+                className="w-full py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white shadow-xl active:scale-[0.98] transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#991B1B,#DC2626)' }}>
+                🚨 Continuer le signalement
+              </button>
             </div>
 
             <p className="text-center text-[9px] text-slate-400 font-bold leading-snug px-4">
-              Les faux signalements malveillants entraînent la suspension permanente du compte.
+              Les faux signalements malveillants entraînent la suspension du compte.
             </p>
           </>
         )}
@@ -316,7 +367,13 @@ export function TrustPage({ onBack }: TrustPageProps) {
           reportedName={reportTarget.name}
           reportedPhone={reportTarget.phone}
           reportedRole={reportTarget.role}
-          onClose={() => { setShowReportModal(false); setReportTarget(null); setTab('community'); }}
+          onClose={() => {
+            setShowReportModal(false);
+            setReportTarget(null);
+            setSearchName('');
+            setSearchPhone('');
+            setTab('community');
+          }}
         />
       )}
     </div>
