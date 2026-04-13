@@ -28,7 +28,7 @@ export function TrustPage({ onBack }: TrustPageProps) {
   // Signalement manuel
   const [searchPhone, setSearchPhone]   = useState('');
   const [searchName, setSearchName]     = useState('');
-  const [targetRole, setTargetRole]     = useState<'buyer' | 'seller'>('buyer');
+  const [targetRole, setTargetRole] = useState<'buyer' | 'seller' | 'livreur'>('buyer');
 
   useEffect(() => {
     if (!userProfile) { setLoading(false); return; }
@@ -279,7 +279,7 @@ export function TrustPage({ onBack }: TrustPageProps) {
               <div>
                 <p className="font-black text-amber-900 text-[11px] mb-1">Signalement anonyme et protégé</p>
                 <p className="text-[10px] text-amber-700 leading-snug">
-                  Tu peux signaler un client mauvais payeur OU un vendeur arnaqueur. Ton identité n'est pas révélée.
+                  Tu peux signaler un client mauvais payeur, un vendeur arnaqueur ou un livreur malhonnête. Ton identité n'est pas révélée.
                 </p>
               </div>
             </div>
@@ -289,40 +289,35 @@ export function TrustPage({ onBack }: TrustPageProps) {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
                 Qui veux-tu signaler ?
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                <button onClick={() => setTargetRole('buyer')}
-                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
-                    targetRole === 'buyer'
-                      ? 'bg-red-600 border-red-600 text-white'
-                      : 'bg-slate-50 border-slate-100 text-slate-700'
-                  }`}>
-                  <span className="text-2xl">🛒</span>
-                  <span className="text-[11px] font-black uppercase tracking-wide">Un client</span>
-                  <span className={`text-[9px] font-bold text-center leading-snug ${targetRole === 'buyer' ? 'text-red-100' : 'text-slate-400'}`}>
-                    Mauvais payeur,{'\n'}commande fantôme
-                  </span>
-                </button>
-                <button onClick={() => setTargetRole('seller')}
-                  className={`flex flex-col items-center gap-2 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
-                    targetRole === 'seller'
-                      ? 'bg-red-600 border-red-600 text-white'
-                      : 'bg-slate-50 border-slate-100 text-slate-700'
-                  }`}>
-                  <span className="text-2xl">🏪</span>
-                  <span className="text-[11px] font-black uppercase tracking-wide">Un vendeur</span>
-                  <span className={`text-[9px] font-bold text-center leading-snug ${targetRole === 'seller' ? 'text-red-100' : 'text-slate-400'}`}>
-                    Produit faux,{'\n'}livraison non faite
-                  </span>
-                </button>
+              <div className="grid grid-cols-3 gap-2 mb-5">
+                {([
+                  { role: 'buyer',   icon: '🛒', label: 'Un client',  sub: 'Mauvais payeur' },
+                  { role: 'seller',  icon: '🏪', label: 'Un vendeur', sub: 'Arnaque, faux produit' },
+                  { role: 'livreur', icon: '🏍️', label: 'Un livreur', sub: 'Vol, disparition' },
+                ] as const).map(item => (
+                  <button key={item.role}
+                    onClick={() => setTargetRole(item.role)}
+                    className={`flex flex-col items-center gap-1.5 py-4 rounded-2xl border-2 transition-all active:scale-95 ${
+                      targetRole === item.role
+                        ? 'bg-red-600 border-red-600 text-white'
+                        : 'bg-slate-50 border-slate-100 text-slate-700'
+                    }`}>
+                    <span className="text-xl">{item.icon}</span>
+                    <span className="text-[9px] font-black uppercase tracking-wide leading-tight text-center">{item.label}</span>
+                    <span className={`text-[8px] font-bold text-center leading-snug px-1 ${targetRole === item.role ? 'text-red-100' : 'text-slate-400'}`}>
+                      {item.sub}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                Nom du {targetRole === 'buyer' ? 'client' : 'vendeur'}
+                Nom du {targetRole === 'buyer' ? 'client' : targetRole === 'seller' ? 'vendeur' : 'livreur'}
               </p>
               <input
                 value={searchName}
                 onChange={e => setSearchName(e.target.value)}
-                placeholder={targetRole === 'buyer' ? 'Ex: Konan Koffi' : 'Ex: Adjoua Mode'}
+                placeholder={targetRole === 'buyer' ? 'Ex: Konan Koffi' : targetRole === 'seller' ? 'Ex: Adjoua Mode' : 'Ex: Moussa Express'}
                 className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400 transition-all mb-3"
               />
 

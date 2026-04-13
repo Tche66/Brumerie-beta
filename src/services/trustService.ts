@@ -32,6 +32,7 @@ export type ReportReason =
   | 'non_payment'        // Client n'a pas payé
   | 'fake_product'       // Produit différent de l'annonce
   | 'no_delivery'        // Vendeur n'a pas livré
+  | 'stolen_package'     // Livreur a volé le colis
   | 'scam'               // Arnaque confirmée
   | 'harassment'         // Harcèlement / menaces
   | 'fake_profile'       // Faux profil / identité usurpée
@@ -70,14 +71,15 @@ export interface TrustScore {
 }
 
 // Labels lisibles
-export const REPORT_REASONS: Record<ReportReason, { label: string; icon: string; targetRole: 'buyer' | 'seller' | 'both' }> = {
-  non_payment:   { label: 'Non-paiement',          icon: '💸', targetRole: 'buyer'  },
-  fake_product:  { label: 'Produit non conforme',  icon: '📦', targetRole: 'seller' },
-  no_delivery:   { label: 'Livraison non effectuée', icon: '🚫', targetRole: 'seller' },
-  scam:          { label: 'Arnaque avérée',         icon: '⚠️', targetRole: 'both'   },
-  harassment:    { label: 'Harcèlement / menaces',  icon: '🚨', targetRole: 'both'   },
-  fake_profile:  { label: 'Faux profil',            icon: '🎭', targetRole: 'both'   },
-  other:         { label: 'Autre problème',         icon: '❓', targetRole: 'both'   },
+export const REPORT_REASONS: Record<ReportReason, { label: string; icon: string; targetRole: 'buyer' | 'seller' | 'livreur' | 'both' }> = {
+  non_payment:      { label: 'Non-paiement',             icon: '💸', targetRole: 'buyer'   },
+  fake_product:     { label: 'Produit non conforme',     icon: '📦', targetRole: 'seller'  },
+  no_delivery:      { label: 'Livraison non effectuée',  icon: '🚫', targetRole: 'seller'  },
+  stolen_package:   { label: 'Colis volé / détourné',   icon: '🏍️', targetRole: 'livreur' },
+  scam:             { label: 'Arnaque avérée',           icon: '⚠️', targetRole: 'both'    },
+  harassment:       { label: 'Harcèlement / menaces',   icon: '🚨', targetRole: 'both'    },
+  fake_profile:     { label: 'Faux profil',              icon: '🎭', targetRole: 'both'    },
+  other:            { label: 'Autre problème',           icon: '❓', targetRole: 'both'    },
 };
 
 export const RISK_LABELS: Record<RiskLevel, { label: string; color: string; bg: string; icon: string }> = {

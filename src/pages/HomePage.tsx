@@ -25,6 +25,7 @@ interface HomePageProps {
   onOpenChatWithSeller?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
   onNavigateToVerification?: () => void;
   onNavigateToChat?: () => void;
+  onSwitchToSeller?: () => void;
   onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
   onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
 }
@@ -65,7 +66,7 @@ const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGue
   </div>
 );
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat }: HomePageProps) {
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const appConfig = useAppConfig();
   const [products, setProducts] = useState<Product[]>([]);
@@ -451,10 +452,12 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                 <p className="text-slate-400 text-[10px] mt-1">Vends. Sois payé. Livre. Tout en un.</p>
               </div>
               <div className="flex-shrink-0">
-                <div className="bg-green-500 rounded-2xl px-4 py-3 flex items-center gap-1.5 shadow-lg shadow-green-900/30">
+                <button
+                  onClick={() => isGuest ? onGuestAction?.('switch-to-seller') : onSwitchToSeller?.()}
+                  className="bg-green-500 rounded-2xl px-4 py-3 flex items-center gap-1.5 shadow-lg shadow-green-900/30 active:scale-95 transition-all">
                   <span className="text-white font-black text-[11px] uppercase tracking-wide">Commencer</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
+                </button>
               </div>
             </div>
           </div>

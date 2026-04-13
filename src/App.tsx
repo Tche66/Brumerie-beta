@@ -562,6 +562,7 @@ useEffect(() => {
             onOpenChatWithSeller={handleOpenChatWithSeller}
             onNavigateToVerification={() => navigate('verification')}
             onNavigateToChat={() => navigate('messages')}
+            onSwitchToSeller={() => setShowRoleSwitch(true)}
             onOrderFromStory={async (productRef, sellerId, sellerName) => {
               try {
                 const snap = await getDoc(doc(db, 'products', productRef.id));
