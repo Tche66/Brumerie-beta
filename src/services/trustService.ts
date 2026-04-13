@@ -99,32 +99,51 @@ export async function submitTrustReport(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // 1. Anti-doublon : 1 signalement par paire
-    const existing = await getDocs(query(
-      collection(db, 'trust_reports'),
-      where('reporterId', '==', report.reporterId),
-      where('reportedId', '==', report.reportedId),
-    ));
-    if (!existing.empty) {
-      return { success: false, error: 'Tu as déjà signalé cet utilisateur.' };
+    // Si l'index n'est pas encore prêt, on skip la vérification (ne bloque pas)
+    try {
+      const existing = await getDocs(query(
+        collection(db, 'trust_reports'),
+        where('reporterId', '==', report.reporterId),
+        where('reportedId', '==', report.reportedId),
+      ));
+      if (!existing.empty) {
+        return { success: false, error: 'Tu as déjà signalé cet utilisateur.' };
+      }
+    } catch {
+      // Index composite pas encore actif — on continue sans vérification
     }
 
-    // 2. Anti-vengeance : si le reported a déjà signalé le reporter, on accepte quand même
-    // mais on flag pour revue admin
-
-    // 3. Créer le signalement
+    // 2. Créer le signalement
     await addDoc(collection(db, 'trust_reports'), {
       ...report,
       status: 'pending',
       createdAt: serverTimestamp(),
     });
 
-    // 4. Mettre à jour le TrustScore du reported
-    await updateTrustScore(report.reportedId, report.reportedName, report.reporterRole === 'buyer' ? 'buyer' : 'seller', report.reporterId);
+    // 3. Mettre à jour le TrustScore du reported
+    // On passe isManual=true si l'ID est un identifiant manuel (pas un UID Firebase)
+    const isManualId = report.reportedId.startsWith('manual_')
+      || report.reportedId.startsWith('+')
+      || report.reportedId.length < 15;
+    await updateTrustScore(
+      report.reportedId,
+      report.reportedName,
+      report.reporterRole,
+      report.reporterId,
+      isManualId,
+    );
 
     return { success: true };
-  } catch (e) {
+  } catch (e: any) {
     console.error('submitTrustReport error', e);
-    return { success: false, error: 'Erreur réseau, réessaie.' };
+    // Message d'erreur lisible selon le code Firestore
+    if (e?.code === 'permission-denied') {
+      return { success: false, error: 'Permission refusée. Vérifie que tu es bien connecté.' };
+    }
+    if (e?.code === 'unavailable' || e?.message?.includes('network')) {
+      return { success: false, error: 'Connexion internet instable. Réessaie.' };
+    }
+    return { success: false, error: 'Une erreur est survenue. Réessaie.' };
   }
 }
 
@@ -134,12 +153,12 @@ async function updateTrustScore(
   userName: string,
   userRole: string,
   newReporterId: string,
+  isManualId: boolean = false,
 ): Promise<void> {
   const scoreRef = doc(db, 'trust_scores', userId);
   const snap = await getDoc(scoreRef);
 
   if (!snap.exists()) {
-    // Première fois
     await setDoc(scoreRef, {
       userId,
       userName,
@@ -148,6 +167,7 @@ async function updateTrustScore(
       reportCount: 0,
       pendingCount: 1,
       reporterIds: [newReporterId],
+      isManualEntry: isManualId,   // signalement sans UID Firebase
       lastReportAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -208,11 +228,22 @@ export async function validateReport(
         updatedAt: serverTimestamp(),
       });
 
-      // Propager riskLevel sur le document user
-      await updateDoc(doc(db, 'users', report.reportedId), {
-        riskLevel,
-        riskReportCount: newReportCount,
-      });
+      // Propager riskLevel sur le document user (seulement si UID Firebase réel)
+      const scoreData = scoreSnap.data() as TrustScore;
+      const isManual = scoreData.isManualEntry === true
+        || report.reportedId.startsWith('manual_')
+        || report.reportedId.startsWith('+')
+        || report.reportedId.length < 15;
+      if (!isManual) {
+        try {
+          await updateDoc(doc(db, 'users', report.reportedId), {
+            riskLevel,
+            riskReportCount: newReportCount,
+          });
+        } catch {
+          // User document inexistant — on ignore, le trust_score suffit
+        }
+      }
     }
   } else {
     // Rejeté : décrémenter pendingCount uniquement
@@ -234,10 +265,20 @@ export async function banUser(userId: string, adminNote: string): Promise<void> 
     adminNote,
     updatedAt: serverTimestamp(),
   });
-  await updateDoc(doc(db, 'users', userId), {
-    riskLevel: 'banned',
-    isBanned: true,
-  });
+  // Propager sur le user document uniquement si c'est un UID Firebase réel
+  const isManual = userId.startsWith('manual_')
+    || userId.startsWith('+')
+    || userId.length < 15;
+  if (!isManual) {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        riskLevel: 'banned',
+        isBanned: true,
+      });
+    } catch {
+      // User document inexistant — trust_score suffit
+    }
+  }
 }
 
 // ─── Obtenir le score d'un utilisateur ────────────────────
