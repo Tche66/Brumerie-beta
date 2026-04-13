@@ -231,6 +231,10 @@ export interface User {
   emailVerified?: boolean;   // Email vérifié par OTP
   otpCode?: string;          // Code OTP temporaire (stocké hashé)
   otpExpires?: any;          // Expiration OTP
+  // ─── Anti-Arnaque / Trust System ─────────────────────────
+  riskLevel?: 'safe' | 'watch' | 'risk' | 'banned';
+  riskReportCount?: number;  // Nb signalements validés reçus
+  isBanned?: boolean;        // Compte banni (accès bloqué)
 }
 
 // ─── PRODUCT ──────────────────────────────────────────────

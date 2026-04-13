@@ -36,6 +36,7 @@ import { CarnetClientsPage } from '@/pages/CarnetClientsPage';
 import { CataloguePage } from '@/pages/CataloguePage';
 import { RapportPage } from '@/pages/RapportPage';
 import { SuggestionsPage } from '@/pages/SuggestionsPage';
+import { TrustPage } from '@/pages/TrustPage';
 import { OrderFlowPage } from '@/pages/OrderFlowPage';
 import { OrderStatusPage } from '@/pages/OrderStatusPage';
 import { ReferralPage } from '@/pages/ReferralPage';
@@ -61,7 +62,7 @@ type Page =
   | 'product-detail' | 'seller-profile' | 'chat'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
-  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions'
+  | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions' | 'trust'
   | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
@@ -768,6 +769,9 @@ useEffect(() => {
         )}
         {activePage === 'suggestions' && (
           <SuggestionsPage onBack={goBack} />
+        )}
+        {activePage === 'trust' && (
+          <TrustPage onBack={goBack} />
         )}
         {activePage === 'become-deliverer' && (
           <BecomeDelivererPage

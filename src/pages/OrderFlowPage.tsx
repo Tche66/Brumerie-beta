@@ -11,6 +11,8 @@ import { getAppConfig, subscribeAppConfig } from '@/services/appConfigService';
 import { AWAddress } from '@/services/awService';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
 import { PaymentLogo } from '@/components/PaymentLogo';
+import { getTrustScore, TrustScore } from '@/services/trustService';
+import { RiskAlertBanner } from '@/components/RiskBadge';
 
 interface OrderFlowPageProps {
   product: Product;
@@ -57,10 +59,20 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [orderError, setOrderError] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Anti-Arnaque : score de risque de l'acheteur courant
+  const [buyerRiskScore, setBuyerRiskScore] = useState<TrustScore | null>(null);
 
   // Prix effectif = prix négocié ou prix normal
   const effectivePrice = acceptedPrice ?? product.price;
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Charger le score de risque de l'acheteur (alerter le vendeur)
+  React.useEffect(() => {
+    if (!currentUser?.uid) return;
+    getTrustScore(currentUser.uid).then(score => {
+      if (score && score.riskLevel !== 'safe') setBuyerRiskScore(score);
+    });
+  }, [currentUser?.uid]);
 
 
 
@@ -213,6 +225,16 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
+
+        {/* ── Alerte Anti-Arnaque — acheteur signalé ── */}
+        {buyerRiskScore && buyerRiskScore.riskLevel !== 'safe' && (
+          <RiskAlertBanner
+            level={buyerRiskScore.riskLevel}
+            reportCount={buyerRiskScore.reportCount}
+            userName={buyerRiskScore.userName}
+          />
+        )}
+
         {/* Produit */}
         <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-3xl">
           <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0">

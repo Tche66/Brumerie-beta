@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import { supabase, signOut } from '../utils/supabaseService';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { TrustAdminPanel } from '@/components/TrustAdminPanel';
 
 interface AdminStats {
   total_addresses: number; public_addresses: number;
@@ -38,7 +39,7 @@ export function AdminPage() {
   const navigate = useNavigate();
   const [stats, setStats]         = useState<AdminStats | null>(null);
   const [loading, setLoading]     = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview'|'addresses'|'users'|'plans'|'api'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview'|'addresses'|'users'|'plans'|'api'|'trust'>('overview');
 
   // Adresses
   const [addresses, setAddresses]   = useState<any[]>([]);
@@ -227,6 +228,7 @@ export function AdminPage() {
             { key: 'users',      label: `👥 Utilisateurs${usersTotal > 0 ? ` (${usersTotal})` : ''}` },
             { key: 'plans',      label: '💰 Forfaits & Prix' },
             { key: 'api',        label: '🔑 API Keys' },
+            { key: 'trust',      label: '🛡️ Anti-Arnaque' },
           ].map(t => (
             <button key={t.key} onClick={() => handleTab(t.key as any)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
@@ -541,6 +543,13 @@ export function AdminPage() {
               </div>
             )}
           </Card>
+        )}
+
+        {/* ===== ANTI-ARNAQUE ===== */}
+        {activeTab === 'trust' && (
+          <div className="p-2">
+            <TrustAdminPanel />
+          </div>
         )}
       </div>
     </div>
