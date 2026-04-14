@@ -41,15 +41,15 @@ export function ReportUserModal({
     setLoading(true);
     const result = await submitTrustReport({
       reporterId:    userProfile.id,
-      reporterName:  userProfile.name,
-      reporterRole:  userProfile.role as 'buyer' | 'seller' | 'livreur',
-      reportedId,
-      reportedName,
-      reportedPhone,
+      reporterName:  userProfile.name || 'Anonyme',
+      reporterRole:  (userProfile.role || 'buyer') as 'buyer' | 'seller' | 'livreur',
+      reportedId:    reportedId || `manual_${Date.now()}`,
+      reportedName:  reportedName || 'Inconnu',
+      ...(reportedPhone ? { reportedPhone } : {}),
       reason: reason as ReportReason,
       details: details.trim(),
-      orderId,
-      productId,
+      ...(orderId   ? { orderId }   : {}),
+      ...(productId ? { productId } : {}),
     });
     setLoading(false);
     if (result.success) {

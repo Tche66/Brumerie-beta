@@ -113,12 +113,24 @@ export async function submitTrustReport(
       // Index composite pas encore actif — on continue sans vérification
     }
 
-    // 2. Créer le signalement
-    await addDoc(collection(db, 'trust_reports'), {
-      ...report,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-    });
+    // 2. Créer le signalement — nettoyer les champs undefined (Firestore les refuse)
+    const cleanReport: Record<string, any> = {
+      reporterId:   report.reporterId,
+      reporterName: report.reporterName,
+      reporterRole: report.reporterRole,
+      reportedId:   report.reportedId,
+      reportedName: report.reportedName,
+      reason:       report.reason,
+      details:      report.details,
+      status:       'pending',
+      createdAt:    serverTimestamp(),
+    };
+    // Ajouter les champs optionnels seulement s'ils ont une valeur
+    if (report.reportedPhone) cleanReport.reportedPhone = report.reportedPhone;
+    if (report.orderId)       cleanReport.orderId       = report.orderId;
+    if (report.productId)     cleanReport.productId     = report.productId;
+
+    await addDoc(collection(db, 'trust_reports'), cleanReport);
 
     // 3. Mettre à jour le TrustScore du reported
     // On passe isManual=true si l'ID est un identifiant manuel (pas un UID Firebase)
