@@ -18,6 +18,7 @@ import { CountdownBadge } from '@/components/CountdownBadge';
 import { doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
+import { TrustAdminPanel } from '@/components/TrustAdminPanel';
 
 const ADMIN_UID = (import.meta as any).env?.VITE_ADMIN_UID || '';
 
@@ -36,7 +37,7 @@ const timeLeft = (ts: any) => {
   return h > 24 ? `${Math.floor(h / 24)}j ${h % 24}h` : `${h}h ${Math.floor((diff % 3600000) / 60000)}m`;
 };
 
-type Tab = 'stats' | 'boosts' | 'users' | 'products' | 'orders' | 'broadcast' | 'settings' | 'logs';
+type Tab = 'stats' | 'boosts' | 'users' | 'products' | 'orders' | 'broadcast' | 'settings' | 'logs' | 'trust';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:          'bg-amber-100 text-amber-800',
@@ -317,6 +318,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
     { id: 'broadcast', icon: '📢', label: 'Broadcast' },
     { id: 'settings',  icon: '⚙️', label: 'Config' },
     { id: 'logs',      icon: '🗂', label: 'Logs' },
+    { id: 'trust',     icon: '🛡️', label: 'Anti-arnaque' },
   ];
 
   if (!isAdmin) {
@@ -1119,6 +1121,13 @@ export function AdminPage({ onBack }: AdminPageProps) {
               </div>
             ))}
           </>
+        )}
+
+        {/* ── ANTI-ARNAQUE / TRUST SYSTEM ── */}
+        {tab === 'trust' && (
+          <div className="bg-white rounded-2xl p-4">
+            <TrustAdminPanel />
+          </div>
         )}
       </div>
 

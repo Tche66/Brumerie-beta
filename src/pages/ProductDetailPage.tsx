@@ -14,6 +14,9 @@ import { ProductCard } from '@/components/ProductCard';
 import { onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { shareProduct } from '@/utils/shareProduct';
+import { ReportUserModal } from '@/components/ReportUserModal';
+import { getTrustScore, TrustScore } from '@/services/trustService';
+import { RiskAlertBanner } from '@/components/RiskBadge';
 
 
 interface ProductDetailPageProps {
@@ -54,6 +57,9 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportSent, setReportSent] = useState(false);
+  // Trust system — signalement lié au vendeur + score de risque vendeur
+  const [showTrustModal, setShowTrustModal] = useState(false);
+  const [sellerRiskScore, setSellerRiskScore] = useState<TrustScore | null>(null);
   const [sellerDelivery, setSellerDelivery] = useState<{ name?: string; phone?: string } | null>(null);
   // Compteurs live — initialisés à -1 (chargement) pour éviter le flash
   const [liveViewCount, setLiveViewCount] = useState<number>(-1);
@@ -115,6 +121,14 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       if (data.managesDelivery && (data.deliveryPartnerName || data.deliveryPartnerPhone)) {
         setSellerDelivery({ name: data.deliveryPartnerName, phone: data.deliveryPartnerPhone });
       }
+    }).catch(() => {});
+  }, [product.sellerId]);
+
+  // Charger le score de risque du vendeur pour afficher une alerte si nécessaire
+  useEffect(() => {
+    if (!product.sellerId) return;
+    getTrustScore(product.sellerId).then(score => {
+      if (score && score.riskLevel !== 'safe') setSellerRiskScore(score);
     }).catch(() => {});
   }, [product.sellerId]);
 
@@ -418,6 +432,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             </div>
           )}
 
+          {/* ── Alerte vendeur à risque ── */}
+          {sellerRiskScore && sellerRiskScore.riskLevel !== 'safe' && !isSelf && (
+            <RiskAlertBanner
+              level={sellerRiskScore.riskLevel}
+              reportCount={sellerRiskScore.reportCount}
+              userName={product.sellerName}
+            />
+          )}
+
           {/* Badges de confiance */}
           <div className="grid grid-cols-2 gap-2">
             {/* Vendeur vérifié */}
@@ -575,12 +598,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         )}
 
         {/* Signaler */}
-        <button onClick={() => setShowReportModal(true)}
+        <button onClick={() => setShowTrustModal(true)}
           className="w-full py-3 flex items-center justify-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          Signaler cette annonce
+          Signaler ce vendeur
         </button>
       </div>
 
@@ -639,41 +662,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         )}
       </div>
 
-      {/* ── MODAL SIGNALEMENT ── */}
-      {showReportModal && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
-            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
-            {reportSent ? (
-              <div className="text-center py-6">
-                <p className="text-3xl mb-3">✅</p>
-                <p className="font-black text-slate-900 text-lg uppercase">Signalement envoyé</p>
-                <p className="text-slate-400 text-[11px] mt-1">Merci, nous allons examiner cette annonce.</p>
-              </div>
-            ) : (
-              <>
-                <p className="font-black text-slate-900 text-lg uppercase tracking-tight mb-1">Signaler cette annonce</p>
-                <p className="text-slate-400 text-[11px] mb-6">{product.title} · {product.sellerName}</p>
-                <div className="space-y-2 mb-6">
-                  {['Produit frauduleux / arnaque', 'Photos trompeuses', 'Prix abusif', 'Vendeur non réactif', 'Contenu interdit', 'Autre'].map(r => (
-                    <button key={r} onClick={() => setReportReason(r)}
-                      className={`w-full text-left px-4 py-3 rounded-2xl text-[12px] font-bold transition-all border ${reportReason === r ? 'bg-red-50 border-red-300 text-red-700' : 'bg-slate-50 border-slate-100 text-slate-700'}`}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowReportModal(false)}
-                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-black text-[11px] uppercase">Annuler</button>
-                  <button onClick={handleReport} disabled={!reportReason}
-                    className="flex-[2] py-4 rounded-2xl bg-red-600 text-white font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all">
-                    Envoyer le signalement
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {/* ── MODAL SIGNALEMENT — branché sur Trust System ── */}
+      {showTrustModal && (
+        <ReportUserModal
+          reportedId={product.sellerId}
+          reportedName={product.sellerName}
+          reportedRole="seller"
+          productId={product.id}
+          onClose={() => setShowTrustModal(false)}
+        />
       )}
 
       {lightboxOpen && (
