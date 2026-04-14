@@ -114,25 +114,41 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
   return (
     <div className="min-h-screen pb-24 font-sans" style={{ background: '#F8FAFC' }}>
 
-      {/* Header */}
-      <div className="bg-white px-5 pt-14 pb-4 border-b border-slate-100">
-        <div className="flex items-center justify-between mb-1">
+      {/* Header sticky avec recherche fonctionnelle */}
+      <div className="bg-white px-5 pt-14 pb-4 border-b border-slate-100 sticky top-0 z-50">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="font-black text-slate-900 text-[20px] uppercase tracking-tight">Découvrir</h1>
             <p className="text-[10px] text-slate-400 font-bold">
-              {allProducts.length} articles à Abidjan
+              {searchTerm
+                ? `${allProducts.filter(p => p.title?.toLowerCase().includes(searchTerm.toLowerCase()) || p.description?.toLowerCase().includes(searchTerm.toLowerCase()) || p.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase())).length} résultat${allProducts.filter(p => p.title?.toLowerCase().includes(searchTerm.toLowerCase())).length > 1 ? 's' : ''}`
+                : `${allProducts.length} articles à Abidjan`}
             </p>
-          </div>
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#1B5E20,#16A34A)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
           </div>
         </div>
 
-        {/* Filtres catégories */}
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {/* Barre de recherche — fonctionnelle */}
+        <div className="relative mb-3">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            value={searchTerm}
+            onChange={e => { setSearchTerm(e.target.value); setActiveCategory(null); }}
+            placeholder="Chercher un article, une marque..."
+            className="w-full pl-11 pr-10 py-3 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-green-400 outline-none text-[13px] font-medium transition-all"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 active:scale-90">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          )}
+        </div>
+
+        {/* Filtres catégories — masqués si recherche active */}
+        {!searchTerm && (
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           <button
             onClick={() => setActiveCategory(null)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap flex-shrink-0 transition-all active:scale-95 ${
@@ -150,9 +166,33 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
             </button>
           ))}
         </div>
+        )}
       </div>
 
       <div className="px-4 pt-5 space-y-8">
+
+        {/* ── Résultats de recherche ── */}
+        {searchTerm && (
+          <Section title={`🔍 Résultats pour "${searchTerm}"`} count={filtered.length}>
+            {filtered.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-3xl mb-2">🔍</p>
+                <p className="font-black text-slate-700 text-[13px]">Aucun résultat</p>
+                <p className="text-[11px] text-slate-400 mt-1">Essaie un autre mot-clé ou une catégorie</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {filtered.map(p => (
+                  <ProductCard key={p.id} product={p}
+                    onClick={() => onProductClick(p)}
+                    onBookmark={handleBookmark}
+                    isBookmarked={bookmarkIds.has(p.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* ── Section filtrée si catégorie active ── */}
         {activeCategory && (
@@ -175,29 +215,8 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
           </Section>
         )}
 
-        {/* ── BARRE DE RECHERCHE ── */}
-      <div className="px-4 mb-4">
-        <div className="relative">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Chercher un article, une marque..."
-            className="w-full pl-11 pr-4 py-3.5 bg-white rounded-2xl border-2 border-slate-100 focus:border-green-400 outline-none text-[13px] font-medium shadow-sm transition-all"
-          />
-          {searchTerm && (
-            <button onClick={() => setSearchTerm('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 active:scale-90">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* ── CARD ADDRESS-WEB ── */}
-        {!activeCategory && (
+        {!activeCategory && !searchTerm && (
           <div className="px-4 mb-2">
             <div className="rounded-[2rem] overflow-hidden"
               style={{ background: 'linear-gradient(135deg,#0369A1,#0EA5E9)' }}>
@@ -228,7 +247,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         )}
 
         {/* ── Vendeurs Vérifiés en vedette ── */}
-        {!activeCategory && verifiedSellers.length > 0 && (
+        {!activeCategory && !searchTerm && verifiedSellers.length > 0 && (
           <Section title="✅ Vendeurs vérifiés" subtitle="Identité contrôlée par Brumerie">
             <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {verifiedSellers.map(seller => (
@@ -266,7 +285,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         )}
 
         {/* ── Près de chez toi ── */}
-        {!activeCategory && localProducts.length > 0 && neighborhood && (
+        {!activeCategory && !searchTerm && localProducts.length > 0 && neighborhood && (
           <Section title={`📍 Près de chez toi — ${neighborhood}`} subtitle="Articles dans ton quartier">
             <div className="grid grid-cols-2 gap-4">
               {localProducts.map(p => (
@@ -281,7 +300,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         )}
 
         {/* ── Promos en cours ── */}
-        {!activeCategory && promos.length > 0 && (
+        {!activeCategory && !searchTerm && promos.length > 0 && (
           <Section title="🔥 Promotions" subtitle="Articles avec prix réduit">
             <div className="grid grid-cols-2 gap-4">
               {promos.map(p => (
@@ -296,7 +315,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         )}
 
         {/* ── Nouvelles arrivées ── */}
-        {!activeCategory && newArrivals.length > 0 && (
+        {!activeCategory && !searchTerm && newArrivals.length > 0 && (
           <Section title="🆕 Nouvelles arrivées" subtitle="Publiés récemment">
             <div className="grid grid-cols-2 gap-4">
               {newArrivals.map(p => (
@@ -311,7 +330,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
         )}
 
         {/* ── Toutes les catégories ── */}
-        {!activeCategory && (
+        {!activeCategory && !searchTerm && (
           <Section title="🗂️ Toutes les catégories">
             <div className="grid grid-cols-2 gap-3">
               {allCustomCategories.map(cat => {

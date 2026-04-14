@@ -22,6 +22,7 @@ interface Props {
   value?: string;                                      // code AW actuel (contrôlé)
   onChange?: (code: string, addr: AWAddress | null) => void;
   onSaveToProfile?: (code: string, addr: AWAddress) => Promise<void>;
+  onRemoveFromProfile?: () => Promise<void>;           // Supprimer l'adresse du profil
   showSaveToProfile?: boolean;
   placeholder?: string;
   label?: string;
@@ -100,6 +101,7 @@ export function AWAddressPicker({
   required = false,
   className = '',
   firebaseUid,
+  onRemoveFromProfile,
 }: Props) {
   const [mode, setMode]               = useState<Mode>('idle');
   const [inputCode, setInputCode]     = useState(value);
@@ -120,7 +122,9 @@ export function AWAddressPicker({
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError]     = useState('');
   const [createdAddr, setCreatedAddr]     = useState<AWAddress | null>(null);
-  const [savedToProfile, setSavedToProfile] = useState(false);
+  // Si value est déjà défini au montage → adresse déjà sauvegardée dans le profil
+  const [savedToProfile, setSavedToProfile] = useState(!!value);
+  const [removingProfile, setRemovingProfile] = useState(false);
   const [savingProfile, setSavingProfile]   = useState(false);
   const [editLoading, setEditLoading]       = useState(false);
   const [editError, setEditError]           = useState('');
@@ -276,6 +280,22 @@ export function AWAddressPicker({
     }
   };
 
+  // ── Supprimer l'adresse du profil ─────────────────────────────
+  const handleRemoveFromProfile = async () => {
+    if (!onRemoveFromProfile) return;
+    setRemovingProfile(true);
+    try {
+      await onRemoveFromProfile();
+      reset();
+      setInputCode('');
+      onChange?.('', null);
+    } catch {
+      // silent
+    } finally {
+      setRemovingProfile(false);
+    }
+  };
+
   // ── Reset ─────────────────────────────────────────────────────
   const reset = () => {
     setMode('idle');
@@ -373,7 +393,7 @@ export function AWAddressPicker({
         </div>
       )}
 
-      {/* Bouton sauvegarder dans le profil */}
+      {/* Bouton sauvegarder dans le profil — nouvelle adresse pas encore sauvegardée */}
       {showSaveToProfile && activeAddr && !savedToProfile && onSaveToProfile && (
         <button onClick={handleSaveToProfile} disabled={savingProfile}
           className="w-full mb-3 py-2.5 rounded-2xl bg-green-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-60">
@@ -382,10 +402,26 @@ export function AWAddressPicker({
             : <>💾 Sauvegarder dans mon profil</>}
         </button>
       )}
-      {savedToProfile && (
-        <p className="text-[10px] text-green-600 font-bold text-center mb-3">
-          ✅ Adresse sauvegardée dans ton profil
-        </p>
+
+      {/* Adresse déjà sauvegardée → boutons Remplacer + Supprimer */}
+      {showSaveToProfile && savedToProfile && (
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => { setSavedToProfile(false); reset(); setInputCode(''); onChange?.('', null); }}
+            className="flex-1 py-2.5 rounded-2xl bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+            🔄 Remplacer
+          </button>
+          {onRemoveFromProfile && (
+            <button
+              onClick={handleRemoveFromProfile}
+              disabled={removingProfile}
+              className="flex-1 py-2.5 rounded-2xl bg-red-50 text-red-600 border border-red-100 text-[10px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50">
+              {removingProfile
+                ? <><span className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin"/>...</>
+                : <>🗑️ Supprimer</>}
+            </button>
+          )}
+        </div>
       )}
 
       {/* ── Mode idle — pas encore d'adresse ── */}

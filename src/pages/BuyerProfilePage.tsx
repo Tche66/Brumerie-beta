@@ -292,6 +292,11 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
                 await updateUserProfile(currentUser.uid, { awAddressCode: code });
               }
             }}
+            onRemoveFromProfile={async () => {
+              if (currentUser) {
+                await updateUserProfile(currentUser.uid, { awAddressCode: '' });
+              }
+            }}
             showSaveToProfile
             label="Mon adresse de livraison"
             placeholder="AW-ABJ-84321"
