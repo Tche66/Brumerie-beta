@@ -73,6 +73,10 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const [showCustomPriceModal, setShowCustomPriceModal] = useState(false);
   const [customPriceInput, setCustomPriceInput] = useState('');
   const [sendingCustomOffer, setSendingCustomOffer] = useState(false);
+  // Modal signalement message
+  const [pendingReportMsgId, setPendingReportMsgId] = useState<string | null>(null);
+  const [reportConfirmDone, setReportConfirmDone] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
   const [respondingOffer, setRespondingOffer] = useState<string | null>(null);
   const [counterOfferMsgId, setCounterOfferMsgId] = useState<string | null>(null);
   const [counterOfferInput, setCounterOfferInput] = useState('');
@@ -207,21 +211,28 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
     finally { setSendingCustomOffer(false); }
   };
 
-  const handleReport = async (msgId: string) => {
+  const handleReport = (msgId: string) => {
     if (reportedIds.has(msgId)) return;
-    if (!confirm('Signaler ce message à Brumerie ?')) return;
-    // Trouver le message pour récupérer l'expéditeur
-    const msg = messages.find(m => m.id === msgId);
+    setReportConfirmDone(false);
+    setPendingReportMsgId(msgId);
+  };
+
+  const handleConfirmReport = async () => {
+    if (!pendingReportMsgId) return;
+    setReportSending(true);
+    const msg = messages.find(m => m.id === pendingReportMsgId);
     await reportMessage(
       conversation.id,
-      msgId,
+      pendingReportMsgId,
       currentUser?.uid,
       userProfile?.name,
       msg?.senderId,
       msg?.senderName,
       msg?.text,
     );
-    setReportedIds(prev => new Set([...prev, msgId]));
+    setReportedIds(prev => new Set([...prev, pendingReportMsgId]));
+    setReportSending(false);
+    setReportConfirmDone(true);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -637,6 +648,85 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
           currentUserId={currentUser?.uid || ''}
           onClose={() => setShowGroupSettings(false)}
         />
+      )}
+
+      {/* ── MODAL SIGNALEMENT MESSAGE ── */}
+      {pendingReportMsgId && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[400] flex items-end justify-center p-4"
+          onClick={() => !reportSending && setPendingReportMsgId(null)}>
+          <div className="bg-white w-full max-w-md rounded-[3rem] overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+
+              {!reportConfirmDone ? (
+                <>
+                  {/* Icône */}
+                  <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                  </div>
+
+                  <h3 className="font-black text-[16px] text-slate-900 text-center mb-1">Signaler ce message</h3>
+                  <p className="text-[11px] text-slate-500 text-center leading-snug mb-5">
+                    Ce message sera examiné par l'équipe Brumerie. Le signalement est anonyme.
+                  </p>
+
+                  {/* Aperçu du message */}
+                  <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-5 border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Message signalé</p>
+                    <p className="text-[12px] text-slate-700 leading-snug italic line-clamp-3">
+                      "{messages.find(m => m.id === pendingReportMsgId)?.text || 'Message multimédia'}"
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1.5">
+                      De : {messages.find(m => m.id === pendingReportMsgId)?.senderName || 'Utilisateur'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setPendingReportMsgId(null)}
+                      disabled={reportSending}
+                      className="flex-1 py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleConfirmReport}
+                      disabled={reportSending}
+                      className="flex-[2] py-4 rounded-[2rem] text-white font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      style={{ background: 'linear-gradient(135deg,#991B1B,#DC2626)' }}>
+                      {reportSending ? (
+                        <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Envoi...</>
+                      ) : '🚨 Confirmer le signalement'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Confirmation envoyée */
+                <div className="py-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="3" strokeLinecap="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
+                    </svg>
+                  </div>
+                  <h3 className="font-black text-[16px] text-slate-900 mb-1">Signalement envoyé</h3>
+                  <p className="text-[11px] text-slate-500 leading-snug mb-5">
+                    L'équipe Brumerie va examiner ce message sous 24h. Merci de contribuer à la sécurité de la communauté.
+                  </p>
+                  <button
+                    onClick={() => setPendingReportMsgId(null)}
+                    className="w-full py-4 rounded-[2rem] font-black text-[12px] uppercase tracking-widest text-white"
+                    style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+                    Fermer
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

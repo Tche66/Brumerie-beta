@@ -285,16 +285,19 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
             onChange={async (code, addr) => {
               if (currentUser && code) {
                 await updateUserProfile(currentUser.uid, { awAddressCode: code });
+                await refreshUserProfile();
               }
             }}
             onSaveToProfile={async (code, addr) => {
               if (currentUser) {
                 await updateUserProfile(currentUser.uid, { awAddressCode: code });
+                await refreshUserProfile();
               }
             }}
             onRemoveFromProfile={async () => {
               if (currentUser) {
                 await updateUserProfile(currentUser.uid, { awAddressCode: '' });
+                await refreshUserProfile();
               }
             }}
             showSaveToProfile
