@@ -218,9 +218,41 @@ export async function markConversationAsRead(convId: string, userId: string): Pr
 }
 
 // ── Signaler un message ────────────────────────────────────
-export async function reportMessage(convId: string, messageId: string): Promise<void> {
+export async function reportMessage(
+  convId: string,
+  messageId: string,
+  reporterId?: string,
+  reporterName?: string,
+  reportedUserId?: string,
+  reportedUserName?: string,
+  messageText?: string,
+): Promise<void> {
+  // 1. Marquer le message comme signalé dans Firestore
   const ref = doc(db, 'conversations', convId, 'messages', messageId);
-  await updateDoc(ref, { reported: true });
+  await updateDoc(ref, { reported: true, reportedAt: serverTimestamp() });
+
+  // 2. Créer un trust_report visible dans le dashboard admin
+  if (reporterId && reportedUserId) {
+    try {
+      await addDoc(collection(db, 'trust_reports'), {
+        reporterId:     reporterId,
+        reporterName:   reporterName || 'Anonyme',
+        reporterRole:   'buyer',
+        reportedId:     reportedUserId,
+        reportedName:   reportedUserName || 'Utilisateur',
+        reason:         'harassment',
+        details:        'Message signalé dans la conversation ' + convId + '. Contenu: "' + (messageText || '').slice(0, 200) + '"',
+        conversationId: convId,
+        messageId:      messageId,
+        status:         'pending',
+        createdAt:      serverTimestamp(),
+        source:         'chat',
+      })
+    } catch (e) {
+      console.warn('[reportMessage] trust_report creation failed:', e);
+      // Non bloquant — le message est déjà marqué reported
+    }
+  }
 }
 
 // ── Listener temps réel — messages ────────────────────────

@@ -52,9 +52,19 @@ export function TrustAdminPanel() {
     <div className="space-y-4">
 
       {/* Stats rapides */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 mb-1">
         {[
           { label: 'En attente', value: pending.length, color: '#D97706', bg: '#FEF3C7' },
+          { label: 'Dont chat', value: pending.filter(r => (r as any).source === 'chat').length, color: '#3B82F6', bg: '#EFF6FF' },
+        ].map(s => (
+          <div key={s.label} className="rounded-2xl p-4 text-center border" style={{ background: s.bg, borderColor: s.color + '33' }}>
+            <p className="font-black text-[26px] leading-none" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-[9px] font-black uppercase tracking-widest mt-1" style={{ color: s.color }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {[
           { label: 'Sous surveillance', value: riskUsers.filter(u => u.riskLevel === 'watch').length, color: '#7C3AED', bg: '#F5F3FF' },
           { label: 'À risque / Bannis', value: riskUsers.filter(u => u.riskLevel === 'risk' || u.riskLevel === 'banned').length, color: '#DC2626', bg: '#FEF2F2' },
         ].map(s => (
@@ -94,17 +104,25 @@ export function TrustAdminPanel() {
             </div>
           )}
           {pending.map(report => {
-            const reasonCfg = REPORT_REASONS[report.reason];
+            const reasonCfg = REPORT_REASONS[report.reason as keyof typeof REPORT_REASONS];
             const isActive = activeReportId === report.id;
+            const isChat = (report as any).source === 'chat';
             return (
               <div key={report.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start gap-3 mb-3">
-                    <span className="text-2xl flex-shrink-0">{reasonCfg?.icon || '❓'}</span>
+                    <span className="text-2xl flex-shrink-0">
+                      {isChat ? '💬' : (reasonCfg?.icon || '❓')}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="text-[9px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase tracking-wide">
-                          {reasonCfg?.label}
+                        {/* Badge source */}
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide ${
+                          isChat
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {isChat ? '💬 Signalement chat' : reasonCfg?.label}
                         </span>
                         <span className="text-[9px] text-slate-400 font-bold">{formatDate(report.createdAt)}</span>
                       </div>
@@ -112,8 +130,14 @@ export function TrustAdminPanel() {
                         {report.reporterName} → signale → {report.reportedName}
                       </p>
                       <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                        Reporter : {report.reporterRole} · Signalé : {report.reportedPhone || 'N/A'}
+                        Reporter : {report.reporterRole} · Signalé : {(report as any).reportedPhone || 'N/A'}
                       </p>
+                      {/* Lien conversation si chat */}
+                      {isChat && (report as any).conversationId && (
+                        <p className="text-[9px] font-bold text-blue-600 mt-0.5">
+                          💬 Conv: {(report as any).conversationId.slice(0, 16)}…
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -121,8 +145,8 @@ export function TrustAdminPanel() {
                     <p className="text-[11px] text-slate-700 leading-snug italic">"{report.details}"</p>
                   </div>
 
-                  {report.orderId && (
-                    <p className="text-[9px] font-bold text-blue-600 mb-3">🛒 Commande liée : {report.orderId}</p>
+                  {(report as any).orderId && (
+                    <p className="text-[9px] font-bold text-blue-600 mb-3">🛒 Commande : {(report as any).orderId}</p>
                   )}
 
                   {!isActive ? (

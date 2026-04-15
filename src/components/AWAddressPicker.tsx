@@ -139,6 +139,16 @@ export function AWAddressPicker({
     }
   }, [value]);
 
+  // Synchroniser savedToProfile si value change depuis l'extérieur
+  // (ex: après save, userProfile se met à jour et value devient le nouveau code)
+  React.useEffect(() => {
+    if (value && isValidAWCode(value)) {
+      setSavedToProfile(true);
+    } else if (!value) {
+      setSavedToProfile(false);
+    }
+  }, [value]);
+
   // ── Résolution d'un code existant ────────────────────────────
   const handleCodeInput = useCallback(async (raw: string) => {
     const clean = formatAWCode(raw);

@@ -210,7 +210,17 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const handleReport = async (msgId: string) => {
     if (reportedIds.has(msgId)) return;
     if (!confirm('Signaler ce message à Brumerie ?')) return;
-    await reportMessage(conversation.id, msgId);
+    // Trouver le message pour récupérer l'expéditeur
+    const msg = messages.find(m => m.id === msgId);
+    await reportMessage(
+      conversation.id,
+      msgId,
+      currentUser?.uid,
+      userProfile?.name,
+      msg?.senderId,
+      msg?.senderName,
+      msg?.text,
+    );
     setReportedIds(prev => new Set([...prev, msgId]));
   };
 
