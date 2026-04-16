@@ -312,6 +312,7 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
   const [viewerStories, setViewerStories] = useState<Story[] | null>(null);
   const [viewerStart, setViewerStart] = useState(0);
   const isVerifiedSeller = userProfile?.role === 'seller' && userProfile?.isVerified;
+  const isPremiumSeller  = userProfile?.role === 'seller' && userProfile?.isPremium;
   const [showPublish, setShowPublish] = useState(false);
 
   useEffect(() => { return subscribeActiveStories(setStories); }, []);
@@ -322,13 +323,13 @@ export function StoriesBar({ onSellerClick, onOpenChatWithSeller, onRequestPubli
     setViewerStart(0);
   };
 
-  if (stories.length === 0 && !isVerifiedSeller) return null;
+  if (stories.length === 0 && !isPremiumSeller) return null;
 
   return (
     <>
       <div className="px-4 pt-3 pb-1">
         <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1">
-          {isVerifiedSeller && (
+          {isPremiumSeller && (
             <button onClick={() => setShowPublish(true)}
               className="flex flex-col items-center gap-1.5 flex-shrink-0 active:scale-95 transition-all">
               <div className="w-14 h-14 rounded-full border-2 border-dashed border-green-400 flex items-center justify-center bg-green-50">

@@ -58,6 +58,35 @@ function SettingSection({ title, emoji, children }: { title: string; emoji: stri
   );
 }
 
+// ── Composant fonctionnalité verrouillée ─────────────────────
+function LockedFeature({ label, sublabel, requiredBadge, onNavigate }: {
+  label: string; sublabel: string;
+  requiredBadge: 'verified' | 'premium';
+  onNavigate: (page: string) => void;
+}) {
+  const isVerified = requiredBadge === 'verified';
+  const badgeColor = isVerified ? '#1D9BF0' : '#F59E0B';
+  const badgeText  = isVerified ? '🔵 Vérifié requis' : '⭐ Premium requis';
+  return (
+    <button onClick={() => onNavigate('verification')}
+      className="w-full flex items-center gap-4 px-6 py-4 hover:bg-slate-50 active:bg-slate-100 transition-all text-left opacity-70">
+      <div className="w-11 h-11 rounded-2xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-bold text-slate-500">{label}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{sublabel}</p>
+      </div>
+      <span className="text-[8px] font-black px-2.5 py-1 rounded-full text-white flex-shrink-0"
+        style={{ background: badgeColor }}>
+        {badgeText}
+      </span>
+    </button>
+  );
+}
+
 // ── Page principale ───────────────────────────────────────────
 export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPageProps) {
   const { currentUser, userProfile, signOut, refreshUserProfile } = useAuth();
@@ -65,6 +94,12 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // ── Helpers tiers ─────────────────────────────────────────
+  const isVerified = !!(userProfile?.isVerified);
+  const isPremium  = !!(userProfile?.isPremium);
+  const isAtLeastVerified = isVerified || isPremium;
+  const tierLabel = isPremium ? '⭐ Premium' : isVerified ? '🔵 Vérifié' : '🔓 Simple';
 
   // Paiement mobile
   const [paymentMethods, setPaymentMethods] = useState<PaymentInfo[]>(userProfile?.defaultPaymentMethods || []);
@@ -132,9 +167,16 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-white ${isBuyer ? 'bg-blue-500' : 'bg-green-600'}`}>
                 {isBuyer ? '🛒 Acheteur' : '🏪 Vendeur'}
               </span>
-              {userProfile?.isVerified && (
-                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-white bg-green-700">
-                  ✓ Vérifié
+              {userProfile?.isVerified && !userProfile?.isPremium && (
+                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-white"
+                  style={{ background: '#1D9BF0' }}>
+                  🔵 Vérifié
+                </span>
+              )}
+              {userProfile?.isPremium && (
+                <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest"
+                  style={{ background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>
+                  ⭐ Premium
                 </span>
               )}
               {userProfile?.neighborhood && (
@@ -165,54 +207,60 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
 
         {/* ══ SECTION 2 : Ma boutique ═══════════════════════ */}
         <SettingSection title="Ma boutique" emoji="🏪">
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
-            label="Badge Vendeur Vérifié"
-            sublabel={userProfile?.isVerified ? '✓ Ton badge est actif' : 'Boost ta crédibilité — 3 000 FCFA/mois'}
-            badge={userProfile?.isVerified ? 'Actif' : undefined}
-            onClick={() => onNavigate('verification')}
-          />
-          {(userProfile?.isVerified || userProfile?.isPremium) && (
+
+          {/* ── Badge actuel + accès upgrade ── */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between p-3 rounded-2xl mb-2"
+              style={{ background: isPremium ? 'linear-gradient(135deg,#1a1a1a,#2d2d2a)' : isVerified ? '#EFF6FF' : '#F8FAFC' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-base">{isPremium ? '⭐' : isVerified ? '🔵' : '🔓'}</span>
+                <div>
+                  <p className="font-black text-[12px]" style={{ color: isPremium ? '#F59E0B' : isVerified ? '#1D4ED8' : '#64748B' }}>
+                    {tierLabel}
+                  </p>
+                  <p className="text-[9px] font-bold" style={{ color: isPremium ? '#92400E' : isVerified ? '#3B82F6' : '#94A3B8' }}>
+                    {isPremium ? 'Accès complet à toutes les fonctionnalités' : isVerified ? '20 articles · Outils vendeur inclus' : '5 articles · Passe au niveau supérieur'}
+                  </p>
+                </div>
+              </div>
+              {!isPremium && (
+                <button onClick={() => onNavigate('verification')}
+                  className="text-[9px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+                  style={{ background: isVerified ? 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', color: '#F59E0B' }}>
+                  {isVerified ? '⭐ Premium' : '🔵 Vérifié →'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Personnalisation boutique — PREMIUM uniquement ── */}
+          {isPremium ? (
             <SettingItem
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>}
-              label="Personnaliser ma boutique"
-              sublabel="Bannière, couleur, slogan"
+              label="🎨 Personnaliser ma boutique"
+              sublabel="Bannière · Couleur · Slogan · Vente flash"
               onClick={() => onNavigate('shop-customize')}
+              badge="Premium"
             />
+          ) : (
+            <LockedFeature label="🎨 Personnaliser ma boutique" sublabel="Bannière, couleur, slogan, vente flash" requiredBadge="premium" onNavigate={onNavigate}/>
           )}
-          {/* Comptabilité — visible pour tous, accès conditionnel au badge */}
-          {(userProfile?.isVerified || userProfile?.isPremium) ? (
+
+          {/* ── Comptabilité — VÉRIFIÉ ou PREMIUM ── */}
+          {isAtLeastVerified ? (
             <SettingItem
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
               label="💰 Ma Comptabilité"
               sublabel="Recettes · Dépenses · Bénéfice net"
               onClick={() => onNavigate('compta')}
-              badge="Actif"
             />
           ) : (
-            <button
-              onClick={() => onNavigate('verification')}
-              className="w-full flex items-center gap-4 px-6 py-5 hover:bg-slate-50 active:bg-slate-100 transition-all text-left group">
-              <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-slate-900">💰 Ma Comptabilité</p>
-                <p className="text-[10px] text-amber-600 font-bold mt-0.5 leading-tight">
-                  🔒 Réservé aux Vendeurs Vérifiés · Active ton badge →
-                </p>
-              </div>
-              <span className="text-[9px] font-black px-2.5 py-1 rounded-full text-white bg-amber-500 uppercase tracking-widest flex-shrink-0 mr-1">
-                Vérifié requis
-              </span>
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="text-slate-200">
-                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <LockedFeature label="💰 Ma Comptabilité" sublabel="Recettes, dépenses, bénéfice net" requiredBadge="verified" onNavigate={onNavigate}/>
           )}
+
+          {/* ── Moyens de paiement Mobile Money ── */}
           {!isBuyer && (
             <div className="divide-y divide-slate-50">
-              {/* Moyens de paiement */}
               <div className="px-6 py-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -240,8 +288,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                           <p className="text-[12px] font-bold text-slate-800">{pm.holderName}</p>
                           <p className="text-[10px] text-slate-400 font-mono">{pm.phone}</p>
                         </div>
-                        <button onClick={() => handleDeletePaymentMethod(idx)}
-                          className="text-red-400 active:scale-90 transition-all p-1">
+                        <button onClick={() => handleDeletePaymentMethod(idx)} className="text-red-400 active:scale-90 transition-all p-1">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                       </div>
@@ -276,39 +323,52 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               </div>
             </div>
           )}
-          {/* Outils vendeur */}
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
-            label="📇 Carnet Clients"
-            sublabel="Mini-CRM · Relance WhatsApp · CA par client"
-            onClick={() => onNavigate('carnet-clients')}
-          />
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
-            label="🖼️ Catalogue WhatsApp"
-            sublabel="Partage tous tes articles en 1 tap"
-            onClick={() => onNavigate('catalogue')}
-          />
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
-            label="📊 Calculateur de Marge"
-            sublabel="Est-ce que je gagne vraiment ?"
-            onClick={() => onNavigate('marge')}
-          />
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>}
-            label="📬 Rapport Hebdomadaire"
-            sublabel="Tes stats de la semaine en un coup d'œil"
-            onClick={() => onNavigate('rapport')}
-          />
-          {/* Journal de dettes */}
-          <SettingItem
-            icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
-            label="📒 Journal de Dettes"
-            sublabel="Suivi des ventes à crédit · Rappel WhatsApp"
-            onClick={() => onNavigate('dettes')}
-          />
-          {/* Changer de mode */}
+
+          {/* ── Outils vendeur — VÉRIFIÉ ou PREMIUM ── */}
+          {isAtLeastVerified ? (
+            <>
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
+                label="📇 Carnet Clients"
+                sublabel="Mini-CRM · Relance WhatsApp · CA par client"
+                onClick={() => onNavigate('carnet-clients')}
+              />
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
+                label="🖼️ Catalogue WhatsApp"
+                sublabel="Partage tous tes articles en 1 tap"
+                onClick={() => onNavigate('catalogue')}
+              />
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
+                label="📊 Calculateur de Marge"
+                sublabel="Est-ce que je gagne vraiment ?"
+                onClick={() => onNavigate('marge')}
+              />
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>}
+                label="📬 Rapport Hebdomadaire"
+                sublabel="Tes stats de la semaine en un coup d'œil"
+                onClick={() => onNavigate('rapport')}
+              />
+            </>
+          ) : (
+            <LockedFeature label="📇 Outils vendeur (Carnet, Catalogue, Marge, Rapport)" sublabel="Carnet clients, catalogue, marge et rapport" requiredBadge="verified" onNavigate={onNavigate}/>
+          )}
+
+          {/* ── Journal de dettes — PREMIUM uniquement ── */}
+          {isPremium ? (
+            <SettingItem
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
+              label="📒 Journal de Dettes"
+              sublabel="Suivi des ventes à crédit · Rappel WhatsApp"
+              onClick={() => onNavigate('dettes')}
+            />
+          ) : (
+            <LockedFeature label="📒 Journal de Dettes" sublabel="Suivi ventes à crédit, rappels WhatsApp" requiredBadge="premium" onNavigate={onNavigate}/>
+          )}
+
+          {/* ── Changer de mode ── */}
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>}
             label={isBuyer ? 'Passer en mode Vendeur' : 'Passer en mode Acheteur'}

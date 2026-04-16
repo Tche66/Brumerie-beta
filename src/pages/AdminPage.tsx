@@ -11,6 +11,7 @@ import {
   publishSystemBanner, subscribeAdminLogs, logAdminAction, getGlobalSettings,
   saveGlobalSettings, subscribeActiveBanners,
   sendAdminDirectMessage, broadcastNotificationToAll, toggleUserVerification,
+  forcePremiumUser, revokePremium, revokeAll,
 } from '@/services/adminService';
 import { adminChangeEmail } from '@/services/emailChangeService';
 import { ProductBoost, BOOST_PLANS } from '@/types';
@@ -505,13 +506,25 @@ export function AdminPage({ onBack }: AdminPageProps) {
                 </div>
                 {u.isBanned && u.banReason && <div className="mx-4 mb-2 bg-red-50 rounded-xl px-3 py-1.5"><p className="text-[10px] text-red-600 font-bold">🚫 {u.banReason}</p></div>}
 
-                {/* Infos badge */}
-                {u.isVerified && u.verifiedUntil && (
-                  <div className="mx-4 mb-2 bg-green-50 rounded-xl px-3 py-1.5 flex items-center justify-between">
-                    <p className="text-[10px] text-green-700 font-bold">🏅 Badge expire {fmtDate(u.verifiedUntil)}</p>
-                    <button onClick={() => handleToggleBadge(u.id, true)} disabled={busy==='badge_'+u.id}
+                {/* Infos badges actifs */}
+                {(u.isVerified || u.isPremium) && (
+                  <div className="mx-4 mb-2 rounded-xl px-3 py-1.5 flex items-center justify-between"
+                    style={{ background: u.isPremium ? 'rgba(245,158,11,0.1)' : 'rgba(22,163,74,0.08)' }}>
+                    <div>
+                      <p className="text-[10px] font-bold" style={{ color: u.isPremium ? '#B45309' : '#15803D' }}>
+                        {u.isPremium ? '⭐ Premium' : '🔵 Vérifié'} · expire {fmtDate(u.isPremium ? u.premiumUntil : u.verifiedUntil)}
+                      </p>
+                    </div>
+                    <button onClick={async () => {
+                      setBusy('badge_'+u.id);
+                      try {
+                        await revokeAll(u.id, currentUser!.uid);
+                        showToast('Badges retirés');
+                      } catch { showToast('Erreur'); }
+                      finally { setBusy(''); }
+                    }} disabled={busy==='badge_'+u.id}
                       className="text-[9px] font-black text-red-500 px-2 py-0.5 bg-red-50 rounded-lg active:scale-95 disabled:opacity-50">
-                      Désactiver
+                      Retirer tout
                     </button>
                   </div>
                 )}
@@ -554,18 +567,25 @@ export function AdminPage({ onBack }: AdminPageProps) {
                         ? <button onClick={() => handleUnban(u.id)} disabled={busy===u.id} className="flex-1 py-2 rounded-xl bg-green-50 text-green-700 font-black text-[10px] uppercase disabled:opacity-50">✅ Débannir</button>
                         : <button onClick={() => { setBanUserId(u.id); setBanReason(''); }} className="flex-1 py-2 rounded-xl bg-red-50 text-red-600 font-black text-[10px] uppercase">🚫 Bannir</button>
                       }
-                      {/* Toggle badge avec durée */}
+                      {/* Badges 3 niveaux */}
                       <div className="flex gap-1 flex-1">
-                        {u.isVerified
-                          ? <button onClick={() => handleToggleBadge(u.id, true)} disabled={busy==='badge_'+u.id}
-                              className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-600 font-black text-[10px] uppercase disabled:opacity-50">
-                              🏅 OFF
-                            </button>
-                          : <button onClick={() => handleToggleBadge(u.id, false)} disabled={busy==='badge_'+u.id}
-                              className="flex-1 py-2 rounded-xl bg-amber-50 text-amber-700 font-black text-[10px] uppercase disabled:opacity-50">
-                              🏅 ON
-                            </button>
-                        }
+                        <button onClick={async () => {
+                          setBusy('badge_'+u.id);
+                          try { await toggleUserVerification(u.id, false, currentUser!.uid, parseInt(badgeDays)||30); await toggleUserVerification(u.id, true, currentUser!.uid, parseInt(badgeDays)||30); showToast(`🔵 Vérifié ${badgeDays}j`); }
+                          catch { showToast('Erreur'); } finally { setBusy(''); }
+                        }} disabled={busy==='badge_'+u.id}
+                          className={`flex-1 py-2 rounded-xl font-black text-[9px] uppercase disabled:opacity-50 ${u.isVerified && !u.isPremium ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}>
+                          🔵 Vérifié
+                        </button>
+                        <button onClick={async () => {
+                          setBusy('badge_'+u.id);
+                          try { await forcePremiumUser(u.id, currentUser!.uid, parseInt(badgeDays)||30); showToast(`⭐ Premium ${badgeDays}j`); }
+                          catch { showToast('Erreur'); } finally { setBusy(''); }
+                        }} disabled={busy==='badge_'+u.id}
+                          className={`flex-1 py-2 rounded-xl font-black text-[9px] uppercase disabled:opacity-50 ${u.isPremium ? 'text-amber-900' : 'bg-amber-50 text-amber-700'}`}
+                          style={u.isPremium ? { background: 'linear-gradient(135deg,#F59E0B,#D97706)', color: 'white' } : {}}>
+                          ⭐ Premium
+                        </button>
                         <select value={badgeDays} onChange={e => setBadgeDays(e.target.value)}
                           className="bg-slate-50 border border-slate-200 rounded-xl px-1.5 text-[10px] font-bold text-slate-600 outline-none">
                           <option value="7">7j</option>

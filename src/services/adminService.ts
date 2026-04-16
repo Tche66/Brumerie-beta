@@ -399,3 +399,57 @@ export async function toggleUserVerification(
   });
   await logAdminAction(adminUid, enable ? 'BADGE_ENABLED' : 'BADGE_DISABLED', userId, enable ? `${durationDays} jours` : '');
 }
+
+// ─── BADGE PREMIUM ────────────────────────────────────────────
+
+export async function forcePremiumUser(
+  userId: string,
+  adminUid: string,
+  durationDays = 30,
+): Promise<void> {
+  const { doc: d, updateDoc: upd, serverTimestamp: now, Timestamp } = await import('firebase/firestore');
+  const expiresAt = new Date(Date.now() + durationDays * 24 * 3600000);
+  await upd(d(db, 'users', userId), {
+    isPremium: true,
+    isVerified: true,          // Premium inclut Vérifié
+    tier: 'premium',
+    premiumUntil: Timestamp.fromDate(expiresAt),
+    premiumByAdmin: adminUid,
+    premiumAt: now(),
+    verifiedUntil: Timestamp.fromDate(expiresAt),
+    verificationPending: false,
+  });
+  // Propager les deux badges sur les produits
+  try {
+    await syncSellerDataToProducts(userId, { sellerVerified: true, sellerPremium: true });
+  } catch {}
+  await logAdminAction(adminUid, 'PREMIUM_ENABLED', userId, `${durationDays} jours`);
+}
+
+export async function revokePremium(userId: string, adminUid: string): Promise<void> {
+  const { doc: d, updateDoc: upd } = await import('firebase/firestore');
+  await upd(d(db, 'users', userId), {
+    isPremium: false,
+    tier: 'verified',          // Rétrogradation → garde Vérifié
+    premiumUntil: null,
+  });
+  try {
+    await syncSellerDataToProducts(userId, { sellerPremium: false });
+  } catch {}
+  await logAdminAction(adminUid, 'PREMIUM_REVOKED', userId, '');
+}
+
+export async function revokeAll(userId: string, adminUid: string): Promise<void> {
+  const { doc: d, updateDoc: upd } = await import('firebase/firestore');
+  await upd(d(db, 'users', userId), {
+    isPremium: false,
+    isVerified: false,
+    tier: 'simple',
+    premiumUntil: null,
+    verifiedUntil: null,
+  });
+  try {
+    await syncSellerDataToProducts(userId, { sellerVerified: false, sellerPremium: false });
+  } catch {}
+  await logAdminAction(adminUid, 'ALL_BADGES_REVOKED', userId, '');
+}
