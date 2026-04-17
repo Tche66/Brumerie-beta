@@ -35,6 +35,7 @@ interface DashboardPageProps {
   onEditProduct?: (product: Product) => void;
   onOpenOrder?: (orderId: string) => void;
   onOpenChat?: (convId: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 type Tab = 'stats' | 'articles' | 'commandes' | 'ventes' | 'offres';
@@ -65,7 +66,7 @@ function Sparkline({ value, max }: { value: number; max: number }) {
   );
 }
 
-export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, onOpenChat }: DashboardPageProps) {
+export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, onOpenChat, onNavigate }: DashboardPageProps) {
   const { userProfile, currentUser } = useAuth();
   const [products, setProducts]       = useState<Product[]>([]);
   const [orders, setOrders]           = useState<Order[]>([]);
@@ -77,6 +78,9 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [respondingOffer, setRespondingOffer] = useState<string | null>(null);
   const [boostProduct, setBoostProduct] = useState<Product | null>(null);
   const [actionProduct, setActionProduct] = useState<Product | null>(null);
+  const [confirmDeleteProduct, setConfirmDeleteProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
+  const [relistingProduct, setRelistingProduct] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [articlesFilter, setArticlesFilter] = useState<'actifs' | 'brouillons'>('actifs');
   const [activeBoosts, setActiveBoosts] = useState<Record<string, any>>({}); // productId → boost data
@@ -417,6 +421,41 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 </div>
               </div>
             )}
+
+            {/* ── OUTILS VÉRIFIÉ / PREMIUM ── */}
+            {!isSimple && onNavigate && (
+              <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    {tier === 'premium' ? '⭐ Outils Premium' : '🔵 Outils Vérifié'}
+                  </p>
+                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full text-white"
+                    style={{ background: tier === 'premium' ? 'linear-gradient(135deg,#F59E0B,#D97706)' : '#1D9BF0' }}>
+                    {tier === 'premium' ? 'Premium' : 'Vérifié'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { icon: '💰', label: 'Comptabilité', page: 'compta', tier: 'verified' },
+                    { icon: '📇', label: 'Carnet clients', page: 'carnet-clients', tier: 'verified' },
+                    { icon: '🖼️', label: 'Catalogue', page: 'catalogue', tier: 'verified' },
+                    { icon: '📊', label: 'Marge', page: 'marge', tier: 'verified' },
+                    { icon: '📬', label: 'Rapport', page: 'rapport', tier: 'verified' },
+                    ...(tier === 'premium' ? [
+                      { icon: '📒', label: 'Journal dettes', page: 'dettes', tier: 'premium' },
+                      { icon: '🎨', label: 'Ma boutique', page: 'shop-customize', tier: 'premium' },
+                    ] : []),
+                  ].map(tool => (
+                    <button key={tool.page} onClick={() => onNavigate(tool.page)}
+                      className="flex items-center gap-2.5 px-3 py-3 rounded-2xl active:scale-95 transition-all text-left"
+                      style={{ background: tool.tier === 'premium' ? 'rgba(245,158,11,0.08)' : '#F8FAFC', border: `1px solid ${tool.tier === 'premium' ? 'rgba(245,158,11,0.2)' : '#F1F5F9'}` }}>
+                      <span className="text-lg flex-shrink-0">{tool.icon}</span>
+                      <p className="text-[10px] font-black text-slate-700 leading-tight">{tool.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -752,6 +791,21 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
             <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center mb-5 truncate px-4">
               {actionProduct.title}
             </p>
+            {actionProduct.status === 'sold' && (
+              <button onClick={async () => {
+                setRelistingProduct(true);
+                await updateProductStatus(actionProduct.id, 'active');
+                setProducts(prev => prev.map((p: Product) => p.id === actionProduct.id ? { ...p, status: 'active' as any } : p));
+                setRelistingProduct(false);
+                setActionProduct(null);
+              }} disabled={relistingProduct}
+                className="w-full py-5 rounded-3xl font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#1D9BF0,#0E6FC7)', color: 'white' }}>
+                {relistingProduct
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Remise en vente...</>
+                  : <>🔄 Remettre en vente</>}
+              </button>
+            )}
             {actionProduct.status !== 'sold' && (
               <button onClick={async () => {
                 await updateProductStatus(actionProduct.id, 'sold');
@@ -761,12 +815,8 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 🎉 Marquer comme vendu
               </button>
             )}
-            <button onClick={async () => {
-              if (!window.confirm('Supprimer définitivement cette annonce ?')) return;
-              await deleteProduct(actionProduct.id, actionProduct.sellerId);
-              setActionProduct(null);
-              setProducts(prev => prev.filter((p: Product) => p.id !== actionProduct.id));
-            }} className="w-full py-5 rounded-3xl bg-red-50 text-red-600 font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all">
+            <button onClick={() => { setConfirmDeleteProduct(actionProduct); setActionProduct(null); }}
+              className="w-full py-5 rounded-3xl bg-red-50 text-red-600 font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all">
               Supprimer l'annonce
             </button>
             {actionProduct.status !== 'sold' && (
@@ -779,6 +829,55 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               className="w-full py-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
               Annuler
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL CONFIRMATION SUPPRESSION ── */}
+      {confirmDeleteProduct && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[300] flex items-end justify-center p-4"
+          onClick={() => !deletingProduct && setConfirmDeleteProduct(null)}>
+          <div className="bg-white w-full max-w-md rounded-[3rem] overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+              <h3 className="font-black text-[16px] text-slate-900 text-center mb-1">Supprimer cette annonce ?</h3>
+              <p className="text-[11px] text-slate-500 text-center leading-snug mb-2">Cette action est irréversible.</p>
+              <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-5 flex items-center gap-3">
+                {confirmDeleteProduct.images?.[0] && (
+                  <img src={confirmDeleteProduct.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>
+                )}
+                <div className="min-w-0">
+                  <p className="font-black text-[13px] text-slate-900 truncate">{confirmDeleteProduct.title}</p>
+                  <p className="text-[10px] text-slate-400 font-bold">{confirmDeleteProduct.price?.toLocaleString('fr-FR')} FCFA</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmDeleteProduct(null)} disabled={deletingProduct}
+                  className="flex-1 py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                  Annuler
+                </button>
+                <button onClick={async () => {
+                  setDeletingProduct(true);
+                  try {
+                    await deleteProduct(confirmDeleteProduct.id, confirmDeleteProduct.sellerId);
+                    setProducts(prev => prev.filter((p: Product) => p.id !== confirmDeleteProduct.id));
+                    setConfirmDeleteProduct(null);
+                  } finally { setDeletingProduct(false); }
+                }} disabled={deletingProduct}
+                  className="flex-[2] py-4 rounded-[2rem] text-white font-black text-[11px] uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#991B1B,#DC2626)' }}>
+                  {deletingProduct
+                    ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Suppression...</>
+                    : '🗑️ Supprimer définitivement'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

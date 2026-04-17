@@ -493,9 +493,13 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                           🔥 {heat > 20 ? 'Très demandé' : 'Populaire'}
                         </span>
                       )}
-                      {product.sellerVerified && (
-                        <span className="absolute bottom-2 right-2 bg-green-600 rounded-lg w-5 h-5 flex items-center justify-center">
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
+                      {(product.sellerVerified || product.sellerPremium) && (
+                        <span className="absolute bottom-2 right-2 rounded-lg w-5 h-5 flex items-center justify-center"
+                          style={{ background: product.sellerPremium ? 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', border: product.sellerPremium ? '1px solid rgba(245,158,11,0.5)' : 'none' }}>
+                          {product.sellerPremium
+                            ? <svg width="9" height="9" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
+                          }
                         </span>
                       )}
                     </div>

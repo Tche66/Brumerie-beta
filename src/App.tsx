@@ -693,6 +693,7 @@ useEffect(() => {
             onEditProduct={(product: Product) => { setProductToEdit(product); navigate('edit-product'); }}
             onOpenOrder={(orderId: string) => { setSelectedOrderId(orderId); navigate('order-status'); }}
             onOpenChat={async (convId: string) => { await handleStartChat(convId); }}
+            onNavigate={(page: string) => navigate(page as any)}
           />
         )}
         {activePage === 'sell' && !isBuyer && (
