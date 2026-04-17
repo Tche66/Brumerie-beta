@@ -226,7 +226,9 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               {!isPremium && (
                 <button onClick={() => onNavigate('verification')}
                   className="text-[9px] font-black px-3 py-1.5 rounded-xl active:scale-95 transition-all"
-                  style={{ background: isVerified ? 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', color: '#F59E0B' }}>
+                  style={isVerified
+                    ? { background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', color: '#F59E0B' }
+                    : { background: '#1D9BF0', color: 'white' }}>
                   {isVerified ? '⭐ Premium' : '🔵 Vérifié →'}
                 </button>
               )}

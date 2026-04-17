@@ -959,6 +959,32 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   </p>
                 )}
               </div>
+
+              {/* ── Prix badge Premium ── */}
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base">⭐</span>
+                  <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#D97706' }}>Prix badge Premium — officiel (FCFA)</p>
+                </div>
+                <p className="text-[9px] text-slate-400 mb-2">Prix de référence affiché barré si promo active.</p>
+                <input type="number"
+                  value={settingsDraft['premiumPrice'] ?? globalSettings['premiumPrice'] ?? 10000}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, premiumPrice: parseInt(e.target.value) || 10000 }))}
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-amber-400 rounded-xl px-4 py-3 text-[13px] font-black outline-none"/>
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: '#D97706' }}>🔥 Prix promo badge Premium (FCFA)</p>
+                <p className="text-[9px] text-slate-400 mb-2">Mettre <strong>0</strong> pour désactiver la promo.</p>
+                <input type="number"
+                  value={settingsDraft['premiumPromoPrice'] ?? globalSettings['premiumPromoPrice'] ?? 0}
+                  onChange={e => setSettingsDraft((s: any) => ({ ...s, premiumPromoPrice: parseInt(e.target.value) || 0 }))}
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-amber-400 rounded-xl px-4 py-3 text-[13px] font-black outline-none"/>
+                {((settingsDraft['premiumPromoPrice'] ?? globalSettings['premiumPromoPrice'] ?? 0) > 0) && (
+                  <p className="text-[9px] font-bold mt-1" style={{ color: '#D97706' }}>
+                    ✅ Promo Premium active — vendeurs voient {(settingsDraft['premiumPromoPrice'] ?? globalSettings['premiumPromoPrice'])} FCFA
+                  </p>
+                )}
+              </div>
               {/* ── Liens Wave par plan ── */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
