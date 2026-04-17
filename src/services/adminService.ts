@@ -397,6 +397,15 @@ export async function toggleUserVerification(
     isVerified: false,
     verifiedUntil: null,
   });
+  // Sync badge sur tous les produits du vendeur
+  // Si on désactive Vérifié → retirer aussi sellerPremium pour éviter le badge or orphelin
+  try {
+    if (enable) {
+      await syncSellerDataToProducts(userId, { sellerVerified: true });
+    } else {
+      await syncSellerDataToProducts(userId, { sellerVerified: false, sellerPremium: false });
+    }
+  } catch {}
   await logAdminAction(adminUid, enable ? 'BADGE_ENABLED' : 'BADGE_DISABLED', userId, enable ? `${durationDays} jours` : '');
 }
 
