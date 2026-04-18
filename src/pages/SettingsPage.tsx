@@ -248,18 +248,6 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             <LockedFeature label="🎨 Personnaliser ma boutique" sublabel="Bannière, couleur, slogan, vente flash" requiredBadge="premium" onNavigate={onNavigate}/>
           )}
 
-          {/* ── Comptabilité — VÉRIFIÉ ou PREMIUM ── */}
-          {isAtLeastVerified ? (
-            <SettingItem
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
-              label="💰 Ma Comptabilité"
-              sublabel="Recettes · Dépenses · Bénéfice net"
-              onClick={() => onNavigate('compta')}
-            />
-          ) : (
-            <LockedFeature label="💰 Ma Comptabilité" sublabel="Recettes, dépenses, bénéfice net" requiredBadge="verified" onNavigate={onNavigate}/>
-          )}
-
           {/* ── Moyens de paiement Mobile Money ── */}
           {!isBuyer && (
             <div className="divide-y divide-slate-50">
@@ -326,9 +314,15 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             </div>
           )}
 
-          {/* ── Outils vendeur — VÉRIFIÉ ou PREMIUM ── */}
-          {isAtLeastVerified ? (
+          {/* ── Compta, Carnet, Catalogue, Marge, Rapport, Dettes — PREMIUM uniquement ── */}
+          {isPremium ? (
             <>
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
+                label="💰 Ma Comptabilité"
+                sublabel="Recettes · Dépenses · Bénéfice net"
+                onClick={() => onNavigate('compta')}
+              />
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
                 label="📇 Carnet Clients"
@@ -353,21 +347,20 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                 sublabel="Tes stats de la semaine en un coup d'œil"
                 onClick={() => onNavigate('rapport')}
               />
+              <SettingItem
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
+                label="📒 Journal de Dettes"
+                sublabel="Suivi des ventes à crédit · Rappel WhatsApp"
+                onClick={() => onNavigate('dettes')}
+              />
             </>
           ) : (
-            <LockedFeature label="📇 Outils vendeur (Carnet, Catalogue, Marge, Rapport)" sublabel="Carnet clients, catalogue, marge et rapport" requiredBadge="verified" onNavigate={onNavigate}/>
-          )}
-
-          {/* ── Journal de dettes — PREMIUM uniquement ── */}
-          {isPremium ? (
-            <SettingItem
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
-              label="📒 Journal de Dettes"
-              sublabel="Suivi des ventes à crédit · Rappel WhatsApp"
-              onClick={() => onNavigate('dettes')}
+            <LockedFeature
+              label="💼 Outils business (Compta, Carnet, Catalogue, Marge, Rapport, Dettes)"
+              sublabel="Tous les outils de gestion — réservés Premium"
+              requiredBadge="premium"
+              onNavigate={onNavigate}
             />
-          ) : (
-            <LockedFeature label="📒 Journal de Dettes" sublabel="Suivi ventes à crédit, rappels WhatsApp" requiredBadge="premium" onNavigate={onNavigate}/>
           )}
 
           {/* ── Changer de mode ── */}
