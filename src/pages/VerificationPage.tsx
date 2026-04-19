@@ -72,7 +72,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
   // Fonctionnalités par badge
   const FEATURES_SIMPLE = [
     { icon: '❌', text: <>Aucun badge d'identité vérifiée</> },
-    { icon: '📸', text: <>Caméra uniquement (pas de galerie)</> },
+    { icon: '📷', text: <>Caméra uniquement (pas de galerie)</> },
     { icon: '📍', text: <>Visibilité normale</> },
     { icon: '💬', text: <>Max <strong>5 chats / jour</strong></> },
     { icon: '📦', text: <>Max <strong>5 produits</strong></> },
@@ -81,13 +81,12 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
   const FEATURES_VERIFIED = [
     { icon: '🔵', text: <><strong style={{ color: '#1D9BF0' }}>Badge Bleu</strong> "Vérifié"</> },
-    { icon: '📸', text: <>Galerie photos + Catalogue WhatsApp</> },
+    { icon: '🖼️', text: <>Galerie photos complète</> },
     { icon: '🚀', text: <>Visibilité <strong>boostée (+20%)</strong></> },
     { icon: '💬', text: <>Messagerie <strong>illimitée</strong></> },
     { icon: '🌐', text: <>Bio + Liens réseaux sociaux</> },
     { icon: '📊', text: <>Stats de vues de base</> },
-    { icon: '💰', text: <>Comptabilité · Carnet clients · Catalogue</> },
-    { icon: '📊', text: <>Marge · Rapport hebdomadaire</> },
+    { icon: '📸', text: <>Stories <strong>24h</strong></> },
     { icon: '📦', text: <>Max <strong>20 produits</strong></> },
   ];
 
@@ -96,11 +95,10 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     { icon: '🎬', text: <>Photos Studio + <strong style={{ color: '#F59E0B' }}>Vidéos</strong> (bientôt)</> },
     { icon: '🥇', text: <><strong style={{ color: '#F59E0B' }}>Priorité Max</strong> (Top Page)</> },
     { icon: '🤖', text: <>Messagerie illimitée + Auto-réponse</> },
-    { icon: '🎨', text: <>Boutique <strong style={{ color: '#F59E0B' }}>100% personnalisée</strong></> },
-    { icon: '🔥', text: <>Vente flash activable</> },
-    { icon: '📸', text: <>Stories <strong style={{ color: '#F59E0B' }}>24h</strong></> },
-    { icon: '📈', text: <>Analyse détaillée des ventes</> },
-    { icon: '📒', text: <>Journal de dettes</> },
+    { icon: '🎨', text: <>Boutique <strong style={{ color: '#F59E0B' }}>100% personnalisée</strong> + Vente flash</> },
+    { icon: '💰', text: <>Comptabilité · Carnet clients · Catalogue</> },
+    { icon: '📊', text: <>Marge · Rapport hebdomadaire · Dettes</> },
+    { icon: '📈', text: <>Analyse <strong style={{ color: '#F59E0B' }}>détaillée</strong> des ventes</> },
     { icon: '📦', text: <><strong style={{ color: '#F59E0B' }}>Produits illimités</strong></> },
   ];
 

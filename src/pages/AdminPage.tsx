@@ -74,6 +74,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
   const [tab, setTab] = useState<Tab>('stats');
   const [toast, setToast] = useState('');
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   const [stats, setStats] = useState<any>(null);
@@ -378,35 +379,196 @@ export function AdminPage({ onBack }: AdminPageProps) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard label="Utilisateurs" value={fmt(stats.totalUsers)} sub={stats.newUsersToday > 0 ? `+${stats.newUsersToday} aujourd'hui` : `+${stats.newUsersThisWeek ?? 0} cette semaine`} color="text-blue-600"/>
-              <StatCard label="Vendeurs" value={fmt(stats.totalSellers)} sub={`${stats.verifiedSellers} vérifiés`} color="text-green-600"/>
-              <StatCard label="Articles" value={fmt(stats.totalProducts)} sub={`${stats.activeProducts} actifs`} color="text-slate-800"/>
-              <StatCard label="Commandes" value={fmt(stats.totalOrders)} sub={`${disputeCount} litiges`} color="text-purple-600"/>
+            {/* ─── Date + Refresh ─── */}
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                Mis à jour {new Date().toLocaleDateString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+              </p>
+              <button onClick={() => getAdminStats().then(setStats).catch(() => {})}
+                className="text-[9px] font-black text-green-400 px-3 py-1 bg-green-900/30 rounded-xl active:scale-95 uppercase tracking-wide">
+                ↻ Rafraîchir
+              </button>
             </div>
-            <div className="bg-white rounded-2xl p-4 space-y-3">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Revenus estimés</p>
-              <div className="flex justify-between">
-                <div><p className="text-[11px] text-slate-400">⚡ Boosts</p><p className="font-black text-green-700 text-[17px]">{fmt(stats.totalBoostRevenue)} FCFA</p></div>
-                <div className="text-right"><p className="text-[11px] text-slate-400">🏅 Badges</p><p className="font-black text-blue-600 text-[17px]">{fmt(stats.totalVerifRevenue)} FCFA</p></div>
+
+            {/* ─── KPIs CROISSANCE ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📈 Croissance</p>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <StatCard label="Utilisateurs" value={fmt(stats.totalUsers)}
+                  sub={stats.newUsersToday > 0 ? `+${stats.newUsersToday} auj.` : `+${stats.newUsersThisWeek ?? 0} /semaine`}
+                  color="text-blue-400"/>
+                <StatCard label="Vendeurs" value={fmt(stats.totalSellers)}
+                  sub={`${stats.verifiedSellers ?? 0} badge actif`}
+                  color="text-green-400"/>
+                <StatCard label="Premium ⭐" value={fmt(stats.premiumSellers ?? 0)}
+                  sub={stats.totalSellers > 0 ? `${Math.round(((stats.premiumSellers ?? 0) / stats.totalSellers) * 100)}% des vendeurs` : '—'}
+                  color="text-amber-400"/>
+                <StatCard label="Acheteurs" value={fmt(stats.totalBuyers ?? 0)}
+                  sub={`Taux conv. ${stats.conversionRate ?? 0}%`}
+                  color="text-purple-400"/>
               </div>
-              <div className="h-px bg-slate-100"/>
-              <div className="flex justify-between items-center">
-                <p className="font-black text-slate-600 text-[12px]">Total</p>
-                <p className="font-black text-slate-900 text-[20px]">{fmt(stats.totalBoostRevenue + stats.totalVerifRevenue)} FCFA</p>
+              {/* Barre taux vendeurs vérifiés */}
+              {stats.totalSellers > 0 && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                    <span>Vendeurs avec badge</span>
+                    <span className="font-black">{Math.round(((stats.verifiedSellers ?? 0) / stats.totalSellers) * 100)}%</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, Math.round(((stats.verifiedSellers ?? 0) / stats.totalSellers) * 100))}%`, background: 'linear-gradient(90deg,#1D9BF0,#F59E0B)' }}/>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── KPIs CATALOGUE ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📦 Catalogue</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { l: 'Actifs', v: stats.activeProducts, c: '#22C55E' },
+                  { l: 'Vendus', v: stats.soldProducts ?? 0, c: '#3B82F6' },
+                  { l: 'Brouillons', v: stats.draftProducts ?? 0, c: '#F59E0B' },
+                  { l: 'Stories', v: stats.totalStories ?? 0, c: '#8B5CF6' },
+                ].map(k => (
+                  <div key={k.l} className="bg-white/5 rounded-xl p-2 text-center">
+                    <p className="font-black text-[18px]" style={{ color: k.c }}>{k.v}</p>
+                    <p className="text-[8px] text-slate-500 font-bold uppercase">{k.l}</p>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+
+            {/* ─── KPIs COMMANDES ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">🛒 Commandes</p>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <StatCard label="Total" value={fmt(stats.totalOrders)} sub={`${stats.completedOrders ?? 0} livrées`} color="text-green-400"/>
+                <StatCard label="En cours" value={fmt(stats.pendingOrders ?? 0)} sub={`${disputeCount} litiges`} color="text-amber-400"/>
+              </div>
+              {stats.totalOrders > 0 && (
+                <div>
+                  <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                    <span>Taux livraison</span>
+                    <span className="font-black text-green-400">{Math.round(((stats.completedOrders ?? 0) / stats.totalOrders) * 100)}%</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round(((stats.completedOrders ?? 0) / stats.totalOrders) * 100)}%` }}/>
+                  </div>
+                </div>
+              )}
+              {stats.avgOrderValue > 0 && (
+                <div className="mt-3 bg-white/5 rounded-xl p-3 flex justify-between items-center">
+                  <p className="text-[10px] text-slate-400 font-bold">Panier moyen</p>
+                  <p className="font-black text-white">{fmt(stats.avgOrderValue)} FCFA</p>
+                </div>
+              )}
+            </div>
+
+            {/* ─── REVENUS ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">💰 Revenus Brumerie</p>
               {[
-                { l: 'Boosts actifs', v: allBoosts.filter(b => b.status === 'active').length, c: 'text-green-400', bg: 'bg-green-900/30' },
-                { l: 'En attente', v: pendingBoosts.length, c: 'text-amber-400', bg: 'bg-amber-900/30' },
-                { l: 'Bannis', v: users.filter(u => u.isBanned).length, c: 'text-red-400', bg: 'bg-red-900/30' },
-              ].map(s => (
-                <div key={s.l} className={`${s.bg} rounded-2xl p-3 text-center`}>
-                  <p className={`font-black text-[22px] ${s.c}`}>{s.v}</p>
-                  <p className="text-[9px] text-slate-500 font-bold">{s.l}</p>
+                { label: '⭐ Badges Premium', value: stats.totalPremiumRevenue ?? 0, color: '#F59E0B' },
+                { label: '🔵 Badges Vérifiés', value: stats.totalVerifRevenue ?? 0, color: '#1D9BF0' },
+                { label: '⚡ Boosts', value: stats.totalBoostRevenue, color: '#22C55E' },
+                { label: '🛒 Commissions ventes', value: stats.totalRevenue ?? 0, color: '#8B5CF6' },
+              ].map(r => (
+                <div key={r.label} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                  <p className="text-[11px] text-slate-400">{r.label}</p>
+                  <p className="font-black text-[13px]" style={{ color: r.color }}>{fmt(r.value)} FCFA</p>
                 </div>
               ))}
+              <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+                <p className="font-black text-slate-300 text-[12px]">Total estimé</p>
+                <p className="font-black text-white text-[20px]">{fmt((stats.totalPremiumRevenue ?? 0) + (stats.totalVerifRevenue ?? 0) + stats.totalBoostRevenue)} FCFA</p>
+              </div>
+            </div>
+
+            {/* ─── SANTÉ PROJET ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">🏥 Santé du projet</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { l: 'Boosts actifs', v: allBoosts.filter(b => b.status === 'active').length, c: '#22C55E', bg: 'rgba(34,197,94,0.1)' },
+                  { l: 'Boosts attente', v: pendingBoosts.length, c: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+                  { l: 'Bannis', v: stats.bannedUsers ?? users.filter((u: any) => u.isBanned).length, c: '#EF4444', bg: 'rgba(239,68,68,0.1)' },
+                  { l: 'Annulées', v: stats.cancelledOrders ?? 0, c: '#EF4444', bg: 'rgba(239,68,68,0.1)' },
+                  { l: 'Signalements', v: (stats as any).pendingReports ?? 0, c: '#F97316', bg: 'rgba(249,115,22,0.1)' },
+                  { l: 'Litiges', v: disputeCount, c: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
+                ].map(k => (
+                  <div key={k.l} className="rounded-xl p-3 text-center" style={{ background: k.bg }}>
+                    <p className="font-black text-[22px]" style={{ color: k.c }}>{k.v}</p>
+                    <p className="text-[8px] text-slate-500 font-bold uppercase leading-tight mt-0.5">{k.l}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ─── EXPORT DONNÉES ─── */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📥 Export données</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: '👥 Utilisateurs', key: 'users', data: () => users.map((u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role, isVerified: u.isVerified || false, isPremium: u.isPremium || false, neighborhood: u.neighborhood || '', createdAt: u.createdAt?.toDate?.()?.toISOString?.() || '' })) },
+                  { label: '📦 Articles', key: 'products', data: () => products.map((p: any) => ({ id: p.id, title: p.title, price: p.price, status: p.status, category: p.category, sellerName: p.sellerName || '', neighborhood: p.neighborhood || '', viewCount: p.viewCount || 0, createdAt: p.createdAt?.toDate?.()?.toISOString?.() || '' })) },
+                ].map(exp => (
+                  <button key={exp.key}
+                    disabled={downloading === exp.key}
+                    onClick={async () => {
+                      setDownloading(exp.key);
+                      try {
+                        const data = exp.data();
+                        const json = JSON.stringify(data, null, 2);
+                        const blob = new Blob([json], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `brumerie_${exp.key}_${new Date().toISOString().slice(0,10)}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } finally { setDownloading(null); }
+                    }}
+                    className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 active:scale-95 transition-all disabled:opacity-50">
+                    <span className="text-base">{downloading === exp.key ? '⏳' : '⬇️'}</span>
+                    <div className="text-left">
+                      <p className="text-[10px] font-black text-slate-300">{exp.label}</p>
+                      <p className="text-[9px] text-slate-500 font-bold">JSON · {exp.key === 'users' ? fmt(stats.totalUsers) : fmt(stats.totalProducts)} lignes</p>
+                    </div>
+                  </button>
+                ))}
+                {/* Export CSV Revenus */}
+                <button
+                  disabled={downloading === 'revenue'}
+                  onClick={() => {
+                    setDownloading('revenue');
+                    try {
+                      const rows = [
+                        ['Source', 'Montant FCFA'],
+                        ['Badges Premium', (stats.totalPremiumRevenue ?? 0).toString()],
+                        ['Badges Vérifiés', (stats.totalVerifRevenue ?? 0).toString()],
+                        ['Boosts', stats.totalBoostRevenue.toString()],
+                        ['Total', ((stats.totalPremiumRevenue ?? 0) + (stats.totalVerifRevenue ?? 0) + stats.totalBoostRevenue).toString()],
+                      ];
+                      const csv = rows.map(r => r.join(',')).join('
+');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `brumerie_revenus_${new Date().toISOString().slice(0,10)}.csv`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } finally { setDownloading(null); }
+                  }}
+                  className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 active:scale-95 transition-all disabled:opacity-50 col-span-2">
+                  <span className="text-base">{downloading === 'revenue' ? '⏳' : '📊'}</span>
+                  <div className="text-left">
+                    <p className="text-[10px] font-black text-slate-300">💰 Rapport revenus</p>
+                    <p className="text-[9px] text-slate-500 font-bold">CSV · Tous les revenus Brumerie</p>
+                  </div>
+                </button>
+              </div>
             </div>
           </>
         ))}

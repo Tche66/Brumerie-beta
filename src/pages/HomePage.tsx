@@ -98,7 +98,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   }, []);
 
   // ── Texte hero modifiable depuis admin ──
-  const [heroText, setHeroText] = useState('Trouve ton bonheur à Babi 🤩');
+  const [heroText, setHeroText] = useState('');  // Vide par défaut — admin définit le texte
   const [heroBannerUrl, setHeroBannerUrl] = useState('');
   const [heroBannerExpiry, setHeroBannerExpiry] = useState<number | null>(null);
   useEffect(() => {
@@ -319,7 +319,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                 <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <p className="text-white font-black text-[11px] uppercase tracking-[0.2em] mb-1">🇨🇮 Abidjan · En direct</p>
-                  <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '1.6rem' }}>{heroText}</h2>
+                  {heroText && <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '1.6rem' }}>{heroText}</h2>}
                   <p className="text-white/80 text-[11px] font-bold mt-2 uppercase tracking-[0.1em]">{products.length} pépites dénichées</p>
                   <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} productCount={products.length} />
                 </div>
@@ -332,9 +332,11 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                       🇨🇮 Abidjan · En direct
                     </span>
                   </div>
-                  <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '2rem' }}>
-                    {heroText}
-                  </h2>
+                  {heroText && (
+                    <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '2rem' }}>
+                      {heroText}
+                    </h2>
+                  )}
                   <p className="text-green-50 text-[11px] font-bold mt-3 uppercase tracking-[0.1em] opacity-80">
                     {products.length} pépites dénichées
                   </p>

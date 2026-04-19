@@ -10,73 +10,87 @@ import { VERIFICATION_PRICE } from '@/types';
 
 // ─── STATISTIQUES ─────────────────────────────────────────────
 export async function getAdminStats(): Promise<{
-  totalUsers: number;
-  totalSellers: number;
-  verifiedSellers: number;
-  totalProducts: number;
-  activeProducts: number;
-  totalOrders: number;
-  totalBoostRevenue: number;
-  totalVerifRevenue: number;
-  newUsersToday: number;
-  newUsersThisWeek: number;
-  newProductsToday: number;
+  totalUsers: number; totalBuyers: number; totalSellers: number;
+  verifiedSellers: number; premiumSellers: number; bannedUsers: number;
+  totalProducts: number; activeProducts: number; soldProducts: number; draftProducts: number;
+  totalOrders: number; completedOrders: number; pendingOrders: number; cancelledOrders: number;
+  totalRevenue: number; totalBoostRevenue: number; totalVerifRevenue: number; totalPremiumRevenue: number;
+  newUsersToday: number; newUsersThisWeek: number; newProductsToday: number;
+  conversionRate: number; avgOrderValue: number; totalStories: number;
 }> {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const todayTs = Timestamp.fromDate(today);
-  // Fenêtre 7 jours pour fallback si createdAt absent sur anciens comptes
   const week = new Date(today); week.setDate(week.getDate() - 7);
   const weekTs = Timestamp.fromDate(week);
 
-  const [users, products, orders, boosts] = await Promise.all([
+  const [users, products, orders, boosts, storiesSnap] = await Promise.all([
     getDocs(collection(db, 'users')),
     getDocs(collection(db, 'products')),
     getDocs(collection(db, 'orders')),
     getDocs(query(collection(db, 'boosts'), where('status', '!=', 'pending'))),
+    getDocs(collection(db, 'stories')).catch(() => ({ size: 0, docs: [] as any[] })),
   ]);
 
-  const usersData = users.docs.map(d => d.data());
+  const usersData    = users.docs.map(d => d.data());
   const productsData = products.docs.map(d => d.data());
-  const boostsData = boosts.docs.map(d => d.data());
+  const ordersData   = orders.docs.map(d => d.data());
+  const boostsData   = boosts.docs.map(d => d.data());
+
+  const verifiedCount = usersData.filter(u => u.isVerified && !u.isPremium).length;
+  const premiumCount  = usersData.filter(u => u.isPremium).length;
+
+  const completedOrders = ordersData.filter(o => o.status === 'delivered').length;
+  const totalOrderValue = ordersData
+    .filter(o => o.status === 'delivered')
+    .reduce((s, o) => s + (o.totalAmount || 0), 0);
 
   const totalBoostRevenue = boostsData
     .filter(b => b.status === 'active')
     .reduce((s, b) => s + (b.price || 0), 0);
 
-  const verifiedCount = usersData.filter(u => u.isVerified).length;
+  let verifPrice = VERIFICATION_PRICE;
+  let premiumPriceVal = 10000;
+  try {
+    const settingsSnap = await getDoc(doc(db, 'system', 'settings'));
+    if (settingsSnap.exists()) {
+      const s = settingsSnap.data();
+      verifPrice = (s.verificationPromoPrice > 0) ? s.verificationPromoPrice : (s.verificationPrice || VERIFICATION_PRICE);
+      premiumPriceVal = (s.premiumPromoPrice > 0) ? s.premiumPromoPrice : (s.premiumPrice || 10000);
+    }
+  } catch {}
+
+  const uniqueBuyers = new Set(ordersData.map((o: any) => o.buyerId).filter(Boolean)).size;
+  const totalBuyers  = usersData.filter(u => u.role !== 'seller').length;
+
+  const tsOk = (u: any, ref: number) => {
+    const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
+    return ms !== null && ms > ref;
+  };
 
   return {
-    totalUsers: users.size,
+    totalUsers: users.size, totalBuyers,
     totalSellers: usersData.filter(u => u.role === 'seller').length,
-    verifiedSellers: verifiedCount,
+    verifiedSellers: verifiedCount + premiumCount,
+    premiumSellers: premiumCount,
+    bannedUsers: usersData.filter(u => u.isBanned).length,
     totalProducts: products.size,
     activeProducts: productsData.filter(p => p.status === 'active').length,
-    totalOrders: orders.size,
+    soldProducts: productsData.filter(p => p.status === 'sold').length,
+    draftProducts: productsData.filter(p => p.status === 'draft').length,
+    totalOrders: orders.size, completedOrders,
+    pendingOrders: ordersData.filter(o => ['pending','accepted','in_transit'].includes(o.status)).length,
+    cancelledOrders: ordersData.filter(o => o.status === 'cancelled').length,
+    totalRevenue: totalOrderValue,
     totalBoostRevenue,
-    totalVerifRevenue: await (async () => {
-      // Utiliser le prix réellement payé : promo si active, sinon prix officiel
-      try {
-        const settingsSnap = await getDoc(doc(db, 'system', 'settings'));
-        const s = settingsSnap.exists() ? settingsSnap.data() : {};
-        const effectivePrice = (s.verificationPromoPrice && s.verificationPromoPrice > 0)
-          ? s.verificationPromoPrice
-          : (s.verificationPrice || VERIFICATION_PRICE);
-        return verifiedCount * effectivePrice;
-      } catch { return verifiedCount * VERIFICATION_PRICE; }
-    })(),
-    newUsersToday: usersData.filter(u => {
-      const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
-      return ms !== null && ms > todayTs.toMillis();
-    }).length,
-    newProductsToday: productsData.filter(p => {
-      const ms = p.createdAt?.toMillis?.() ?? (p.createdAt?.seconds ? p.createdAt.seconds * 1000 : null);
-      return ms !== null && ms > todayTs.toMillis();
-    }).length,
-    newUsersThisWeek: usersData.filter(u => {
-      const ms = u.createdAt?.toMillis?.() ?? (u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null);
-      return ms !== null && ms > weekTs.toMillis();
-    }).length,
+    totalVerifRevenue: verifiedCount * verifPrice,
+    totalPremiumRevenue: premiumCount * premiumPriceVal,
+    newUsersToday: usersData.filter(u => tsOk(u, todayTs.toMillis())).length,
+    newProductsToday: productsData.filter(p => tsOk(p, todayTs.toMillis())).length,
+    newUsersThisWeek: usersData.filter(u => tsOk(u, weekTs.toMillis())).length,
+    conversionRate: totalBuyers > 0 ? Math.round((uniqueBuyers / totalBuyers) * 100) : 0,
+    avgOrderValue: completedOrders > 0 ? Math.round(totalOrderValue / completedOrders) : 0,
+    totalStories: (storiesSnap as any).size || 0,
   };
 }
 
