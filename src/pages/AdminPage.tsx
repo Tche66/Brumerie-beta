@@ -550,8 +550,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
                         ['Boosts', stats.totalBoostRevenue.toString()],
                         ['Total', ((stats.totalPremiumRevenue ?? 0) + (stats.totalVerifRevenue ?? 0) + stats.totalBoostRevenue).toString()],
                       ];
-                      const csv = rows.map(r => r.join(',')).join('
-');
+                      const csv = rows.map(r => r.join(',')).join('\n');
                       const blob = new Blob([csv], { type: 'text/csv' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
