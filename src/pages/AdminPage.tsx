@@ -38,7 +38,7 @@ const timeLeft = (ts: any) => {
   return h > 24 ? `${Math.floor(h / 24)}j ${h % 24}h` : `${h}h ${Math.floor((diff % 3600000) / 60000)}m`;
 };
 
-type Tab = 'stats' | 'boosts' | 'users' | 'products' | 'orders' | 'broadcast' | 'settings' | 'logs' | 'trust';
+type Tab = 'stats' | 'boosts' | 'users' | 'livreurs' | 'products' | 'orders' | 'broadcast' | 'settings' | 'logs' | 'trust';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:          'bg-amber-100 text-amber-800',
@@ -315,6 +315,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
     { id: 'stats',     icon: '📊', label: 'Stats' },
     { id: 'boosts',    icon: '⚡', label: 'Boosts',    badge: pendingBoosts.length },
     { id: 'users',     icon: '👥', label: 'Users' },
+    { id: 'livreurs',  icon: '🛵', label: 'Livreurs' },
     { id: 'products',  icon: '📦', label: 'Articles' },
     { id: 'orders',    icon: '💰', label: 'Commandes', badge: disputeCount },
     { id: 'broadcast', icon: '📢', label: 'Broadcast' },
@@ -507,33 +508,98 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
             {/* ─── EXPORT DONNÉES ─── */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📥 Export données</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📥 Export données CSV</p>
+              <p className="text-[9px] text-slate-500 mb-3">Fichiers CSV — ouvrable dans Excel, Google Sheets, LibreOffice.</p>
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: '👥 Utilisateurs', key: 'users', data: () => users.map((u: any) => ({ id: u.id, name: u.name, email: u.email, role: u.role, isVerified: u.isVerified || false, isPremium: u.isPremium || false, neighborhood: u.neighborhood || '', createdAt: u.createdAt?.toDate?.()?.toISOString?.() || '' })) },
-                  { label: '📦 Articles', key: 'products', data: () => products.map((p: any) => ({ id: p.id, title: p.title, price: p.price, status: p.status, category: p.category, sellerName: p.sellerName || '', neighborhood: p.neighborhood || '', viewCount: p.viewCount || 0, createdAt: p.createdAt?.toDate?.()?.toISOString?.() || '' })) },
-                ].map(exp => (
+                {([
+                  {
+                    label: '👥 Utilisateurs',
+                    key: 'users-csv',
+                    sub: `${fmt(stats.totalUsers)} lignes`,
+                    headers: ['ID','Nom','Email','Rôle','Vérifié','Premium','Quartier','Date inscription'],
+                    rows: () => users.map((u: any) => [
+                      u.id || '',
+                      (u.name || '').replace(/,/g, ' '),
+                      (u.email || '').replace(/,/g, ' '),
+                      u.role || 'buyer',
+                      u.isVerified ? 'OUI' : 'NON',
+                      u.isPremium ? 'OUI' : 'NON',
+                      (u.neighborhood || '').replace(/,/g, ' '),
+                      u.createdAt?.toDate?.()?.toLocaleDateString('fr-FR') || u.createdAt?.seconds ? new Date((u.createdAt.seconds||0)*1000).toLocaleDateString('fr-FR') : '',
+                    ]),
+                  },
+                  {
+                    label: '📦 Articles en ligne',
+                    key: 'articles-csv',
+                    sub: `${fmt(stats.activeProducts)} actifs`,
+                    headers: ['ID','Titre','Prix FCFA','Statut','Catégorie','Vendeur','Quartier','Vues','Contacts','Date'],
+                    rows: () => products.filter((p: any) => p.status === 'active').map((p: any) => [
+                      p.id || '',
+                      (p.title || '').replace(/,/g, ' ').slice(0, 60),
+                      p.price || 0,
+                      p.status || '',
+                      (p.category || '').replace(/,/g, ' '),
+                      (p.sellerName || '').replace(/,/g, ' '),
+                      (p.neighborhood || '').replace(/,/g, ' '),
+                      p.viewCount || 0,
+                      p.whatsappClickCount || 0,
+                      p.createdAt?.toDate?.()?.toLocaleDateString('fr-FR') || p.createdAt?.seconds ? new Date((p.createdAt.seconds||0)*1000).toLocaleDateString('fr-FR') : '',
+                    ]),
+                  },
+                  {
+                    label: '🛵 Livreurs',
+                    key: 'livreurs-csv',
+                    sub: `${users.filter((u: any) => u.role === 'livreur').length} livreurs`,
+                    headers: ['ID','Nom','Téléphone','Quartiers','Dispo','Livraisons','Gains FCFA','Véhicule'],
+                    rows: () => users.filter((u: any) => u.role === 'livreur').map((u: any) => [
+                      u.id || '',
+                      (u.name || '').replace(/,/g, ' '),
+                      (u.phone || '').replace(/,/g, ' '),
+                      (u.deliveryZones || []).join(' / '),
+                      u.deliveryAvailable ? 'OUI' : 'NON',
+                      u.totalDeliveries || 0,
+                      u.totalEarnings || 0,
+                      (u.vehicleType || u.vehicleType || '').replace(/,/g, ' '),
+                    ]),
+                  },
+                  {
+                    label: '🛒 Commandes',
+                    key: 'orders-csv',
+                    sub: `${fmt(stats.totalOrders)} total`,
+                    headers: ['ID','Produit','Acheteur','Vendeur','Montant FCFA','Statut','Quartier','Date'],
+                    rows: () => orders.map((o: any) => [
+                      o.id || '',
+                      (o.productTitle || '').replace(/,/g, ' ').slice(0, 50),
+                      (o.buyerName || '').replace(/,/g, ' '),
+                      (o.sellerName || '').replace(/,/g, ' '),
+                      o.totalAmount || 0,
+                      o.status || '',
+                      (o.neighborhood || o.deliveryAddress || '').replace(/,/g, ' ').slice(0, 40),
+                      o.createdAt?.toDate?.()?.toLocaleDateString('fr-FR') || o.createdAt?.seconds ? new Date((o.createdAt.seconds||0)*1000).toLocaleDateString('fr-FR') : '',
+                    ]),
+                  },
+                ] as { label: string; key: string; sub: string; headers: string[]; rows: () => any[][] }[]).map(exp => (
                   <button key={exp.key}
                     disabled={downloading === exp.key}
-                    onClick={async () => {
+                    onClick={() => {
                       setDownloading(exp.key);
                       try {
-                        const data = exp.data();
-                        const json = JSON.stringify(data, null, 2);
-                        const blob = new Blob([json], { type: 'application/json' });
+                        const csvRows = [exp.headers, ...exp.rows()];
+                        const csv = csvRows.map(r => r.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+                        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `brumerie_${exp.key}_${new Date().toISOString().slice(0,10)}.json`;
+                        a.download = `brumerie_${exp.key}_${new Date().toISOString().slice(0,10)}.csv`;
                         a.click();
                         URL.revokeObjectURL(url);
                       } finally { setDownloading(null); }
                     }}
                     className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 active:scale-95 transition-all disabled:opacity-50">
-                    <span className="text-base">{downloading === exp.key ? '⏳' : '⬇️'}</span>
+                    <span className="text-base">{downloading === exp.key ? '⏳' : '📄'}</span>
                     <div className="text-left">
                       <p className="text-[10px] font-black text-slate-300">{exp.label}</p>
-                      <p className="text-[9px] text-slate-500 font-bold">JSON · {exp.key === 'users' ? fmt(stats.totalUsers) : fmt(stats.totalProducts)} lignes</p>
+                      <p className="text-[9px] text-slate-500 font-bold">CSV · {exp.sub}</p>
                     </div>
                   </button>
                 ))}
@@ -835,6 +901,150 @@ export function AdminPage({ onBack }: AdminPageProps) {
         )}
 
         {/* ── PRODUCTS ── */}
+        {/* ── LIVREURS ── */}
+        {tab === 'livreurs' && (() => {
+          const livreurs = users.filter((u: any) => u.role === 'livreur');
+          const dispo = livreurs.filter((u: any) => u.deliveryAvailable);
+          return (
+            <>
+              {/* Stats rapides */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/5 rounded-2xl p-3 text-center">
+                  <p className="font-black text-2xl text-green-400">{livreurs.length}</p>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase">Total</p>
+                </div>
+                <div className="bg-white/5 rounded-2xl p-3 text-center">
+                  <p className="font-black text-2xl text-amber-400">{dispo.length}</p>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase">Disponibles</p>
+                </div>
+                <div className="bg-white/5 rounded-2xl p-3 text-center">
+                  <p className="font-black text-2xl text-blue-400">
+                    {livreurs.reduce((s: number, u: any) => s + (u.totalDeliveries || 0), 0)}
+                  </p>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase">Livraisons</p>
+                </div>
+              </div>
+
+              {livreurs.length === 0 ? (
+                <div className="text-center py-16">
+                  <p className="text-4xl mb-3">🛵</p>
+                  <p className="font-black text-slate-400 text-[13px]">Aucun livreur inscrit</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Les livreurs s'inscrivent via l'app</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {livreurs.map((u: any) => (
+                    <div key={u.id} className="bg-white rounded-2xl overflow-hidden">
+                      <div className="px-4 pt-4 pb-3">
+                        <div className="flex items-center gap-3 mb-3">
+                          {/* Avatar */}
+                          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                            {u.photoURL
+                              ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/>
+                              : <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-black text-lg">{(u.name||'?').charAt(0).toUpperCase()}</div>
+                            }
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-black text-slate-900 text-[13px] truncate">{u.name || 'Sans nom'}</p>
+                              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${u.deliveryAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                                {u.deliveryAvailable ? '🟢 Dispo' : '⚫ Indispo'}
+                              </span>
+                              {u.isBanned && <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">🚫 Banni</span>}
+                            </div>
+                            <p className="text-[10px] text-slate-400">{u.phone || 'Pas de téléphone'}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-black text-[15px] text-green-700">{(u.totalDeliveries || 0)}</p>
+                            <p className="text-[8px] text-slate-400 uppercase">livraisons</p>
+                          </div>
+                        </div>
+
+                        {/* Zones */}
+                        {u.deliveryZones?.length > 0 && (
+                          <div className="flex gap-1.5 flex-wrap mb-2">
+                            {u.deliveryZones.map((z: string) => (
+                              <span key={z} className="text-[9px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+                                📍 {z}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Bio livraison */}
+                        {u.deliveryBio && (
+                          <p className="text-[10px] text-slate-500 italic mb-2">"{u.deliveryBio}"</p>
+                        )}
+
+                        {/* Stats + gains */}
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          <div className="bg-slate-50 rounded-xl p-2 text-center">
+                            <p className="font-black text-[13px] text-blue-600">{u.totalDeliveries || 0}</p>
+                            <p className="text-[8px] text-slate-400 uppercase">Livraisons</p>
+                          </div>
+                          <div className="bg-slate-50 rounded-xl p-2 text-center">
+                            <p className="font-black text-[13px] text-green-600">{(u.totalEarnings || 0).toLocaleString('fr-FR')}</p>
+                            <p className="text-[8px] text-slate-400 uppercase">Gains FCFA</p>
+                          </div>
+                          <div className="bg-slate-50 rounded-xl p-2 text-center">
+                            <p className="font-black text-[13px] text-amber-600">{u.avgRating ? u.avgRating.toFixed(1) : '—'}</p>
+                            <p className="text-[8px] text-slate-400 uppercase">Note</p>
+                          </div>
+                        </div>
+
+                        {/* Tarifs */}
+                        {u.deliveryRates?.length > 0 && (
+                          <div className="bg-slate-50 rounded-xl p-2 mb-2">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tarifs</p>
+                            <div className="space-y-0.5">
+                              {u.deliveryRates.slice(0, 3).map((r: any, i: number) => (
+                                <div key={i} className="flex justify-between text-[10px]">
+                                  <span className="text-slate-600">{r.zone || r.label || `Zone ${i+1}`}</span>
+                                  <span className="font-black text-slate-800">{(r.price || 0).toLocaleString('fr-FR')} FCFA</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex border-t border-slate-50 divide-x divide-slate-50">
+                        {u.phone && (
+                          <a href={`https://wa.me/${u.phone.replace(/\D/g,'')}`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center gap-1.5 active:bg-slate-50 transition-all">
+                            💬 WhatsApp
+                          </a>
+                        )}
+                        {!u.isBanned ? (
+                          <button onClick={async () => {
+                            setBusy('ban_'+u.id);
+                            try { await banUser(u.id, 'Banni par admin', currentUser!.uid); showToast('🚫 Banni'); }
+                            catch { showToast('Erreur'); } finally { setBusy(''); }
+                          }} disabled={busy === 'ban_'+u.id}
+                            className="flex-1 py-2.5 text-[10px] font-black text-red-500 uppercase tracking-wide flex items-center justify-center active:bg-red-50 transition-all disabled:opacity-50">
+                            🚫 Bannir
+                          </button>
+                        ) : (
+                          <button onClick={async () => {
+                            setBusy('unban_'+u.id);
+                            try { await unbanUser(u.id); showToast('✅ Débanni'); }
+                            catch { showToast('Erreur'); } finally { setBusy(''); }
+                          }} disabled={busy === 'unban_'+u.id}
+                            className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center active:bg-green-50 transition-all disabled:opacity-50">
+                            ✅ Débannir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
         {tab === 'products' && (
           <>
             <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="🔍 Rechercher..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
