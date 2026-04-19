@@ -86,9 +86,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
     <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
       style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
       <div className="flex items-center justify-around h-16 px-2">
-        <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
-          icon={HomeIcon(activePage === 'home', CO)}/>
-        <NavBtn id="deliverer-dashboard" label="Missions" active={activePage === 'deliverer-dashboard'} onClick={() => onNavigate('deliverer-dashboard')}
+        <NavBtn id="deliverer-dashboard" label="BruMove" active={activePage === 'deliverer-dashboard'} onClick={() => onNavigate('deliverer-dashboard')}
           badge={activeMissions}
           icon={TruckIcon(activePage === 'deliverer-dashboard', CO)}/>
         <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
