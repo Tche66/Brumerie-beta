@@ -422,38 +422,60 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               </div>
             )}
 
-            {/* ── OUTILS VÉRIFIÉ / PREMIUM ── */}
-            {!isSimple && onNavigate && (
+            {/* ── OUTILS BUSINESS — visibles pour tous, accès Premium uniquement ── */}
+            {onNavigate && (
               <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                    {tier === 'premium' ? '⭐ Outils Premium' : '🔵 Outils Vérifié'}
+                    💼 Outils business
                   </p>
                   <span className="text-[8px] font-black px-2 py-0.5 rounded-full text-white"
-                    style={{ background: tier === 'premium' ? 'linear-gradient(135deg,#F59E0B,#D97706)' : '#1D9BF0' }}>
-                    {tier === 'premium' ? 'Premium' : 'Vérifié'}
+                    style={{ background: tier === 'premium' ? 'linear-gradient(135deg,#F59E0B,#D97706)' : '#94A3B8' }}>
+                    {tier === 'premium' ? '⭐ Premium actif' : '⭐ Premium requis'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { icon: '💰', label: 'Comptabilité', page: 'compta', tier: 'verified' },
-                    { icon: '📇', label: 'Carnet clients', page: 'carnet-clients', tier: 'verified' },
-                    { icon: '🖼️', label: 'Catalogue', page: 'catalogue', tier: 'verified' },
-                    { icon: '📊', label: 'Marge', page: 'marge', tier: 'verified' },
-                    { icon: '📬', label: 'Rapport', page: 'rapport', tier: 'verified' },
-                    ...(tier === 'premium' ? [
-                      { icon: '📒', label: 'Journal dettes', page: 'dettes', tier: 'premium' },
-                      { icon: '🎨', label: 'Ma boutique', page: 'shop-customize', tier: 'premium' },
-                    ] : []),
+                    { icon: '💰', label: 'Comptabilité',   page: 'compta' },
+                    { icon: '📇', label: 'Carnet clients', page: 'carnet-clients' },
+                    { icon: '🖼️', label: 'Catalogue',      page: 'catalogue' },
+                    { icon: '📊', label: 'Marge',          page: 'marge' },
+                    { icon: '📬', label: 'Rapport',        page: 'rapport' },
+                    { icon: '📒', label: 'Journal dettes', page: 'dettes' },
+                    { icon: '🎨', label: 'Ma boutique',    page: 'shop-customize' },
                   ].map(tool => (
-                    <button key={tool.page} onClick={() => onNavigate(tool.page)}
-                      className="flex items-center gap-2.5 px-3 py-3 rounded-2xl active:scale-95 transition-all text-left"
-                      style={{ background: tool.tier === 'premium' ? 'rgba(245,158,11,0.08)' : '#F8FAFC', border: `1px solid ${tool.tier === 'premium' ? 'rgba(245,158,11,0.2)' : '#F1F5F9'}` }}>
-                      <span className="text-lg flex-shrink-0">{tool.icon}</span>
-                      <p className="text-[10px] font-black text-slate-700 leading-tight">{tool.label}</p>
-                    </button>
+                    tier === 'premium' ? (
+                      // Premium → accès libre
+                      <button key={tool.page} onClick={() => onNavigate(tool.page)}
+                        className="flex items-center gap-2.5 px-3 py-3 rounded-2xl active:scale-95 transition-all text-left"
+                        style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)' }}>
+                        <span className="text-lg flex-shrink-0">{tool.icon}</span>
+                        <p className="text-[10px] font-black text-slate-700 leading-tight">{tool.label}</p>
+                      </button>
+                    ) : (
+                      // Simple/Vérifié → bouton verrouillé → redirect vers upgrade
+                      <button key={tool.page} onClick={() => onUpgrade?.()}
+                        className="flex items-center gap-2.5 px-3 py-3 rounded-2xl active:scale-95 transition-all text-left relative overflow-hidden"
+                        style={{ background: '#F8FAFC', border: '1px solid #F1F5F9' }}>
+                        <span className="text-lg flex-shrink-0 opacity-40">{tool.icon}</span>
+                        <p className="text-[10px] font-black text-slate-400 leading-tight">{tool.label}</p>
+                        <span className="ml-auto flex-shrink-0">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+                          </svg>
+                        </span>
+                      </button>
+                    )
                   ))}
                 </div>
+                {tier !== 'premium' && (
+                  <button onClick={() => onUpgrade?.()}
+                    className="mt-3 w-full py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span style={{ color: '#F59E0B' }}>Passer Premium pour débloquer</span>
+                  </button>
+                )}
               </div>
             )}
           </>

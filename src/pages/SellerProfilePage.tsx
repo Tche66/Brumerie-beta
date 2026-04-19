@@ -1,8 +1,9 @@
-// src/pages/SellerProfilePage.tsx — v4 · Design professionnel sans répétitions
+// src/pages/SellerProfilePage.tsx — v5 · Bannière grande, logos réseaux, horaires accordéon
 import React, { useState, useEffect } from 'react';
 import { Review, Product, User } from '@/types';
 import { ProductCard } from '@/components/ProductCard';
 import { VerifiedTag } from '@/components/VerifiedTag';
+import { SocialIcon, SocialBar, SocialNetwork } from '@/components/SocialIcon';
 import { getUserById, updateUserProfile } from '@/services/userService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
@@ -79,6 +80,7 @@ export function SellerProfilePage({
   const [reviewCount, setReviewCount]   = useState(0);
   const [tab, setTab]                   = useState<Tab>('actifs');
   const [showQR, setShowQR]             = useState(false);
+  const [showAllHours, setShowAllHours] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
@@ -210,7 +212,7 @@ export function SellerProfilePage({
 
           {/* Bannière */}
           {s?.shopBanner ? (
-            <div className="w-full h-44 overflow-hidden relative">
+            <div className="w-full h-56 overflow-hidden relative">
               <img src={s.shopBanner} alt="Bannière" className="w-full h-full object-cover"/>
               <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5))' }}/>
               {hasFlash && (
@@ -220,7 +222,7 @@ export function SellerProfilePage({
               )}
             </div>
           ) : (
-            <div className="w-full h-28 relative overflow-hidden" style={{
+            <div className="w-full h-40 relative overflow-hidden" style={{
               background: s?.shopThemeColor
                 ? `linear-gradient(135deg, ${s.shopThemeColor}40, ${s.shopThemeColor}15)`
                 : 'linear-gradient(135deg,#e8f5e9,#f0fdf4)'
@@ -417,52 +419,55 @@ export function SellerProfilePage({
                 </a>
               )}
 
-              {/* Boutique physique */}
+              {/* Boutique physique — avec accordéon horaires */}
               {seller.hasPhysicalShop && s?.shopAddress && (
                 <div className="px-5 py-4 border-b border-slate-50">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">🏪 Boutique physique</p>
-                  <p className="text-[12px] font-bold text-slate-800 flex items-start gap-1.5">
+                  <p className="text-[12px] font-bold text-slate-800 flex items-start gap-1.5 mb-2">
                     <span className="flex-shrink-0">📍</span>{s.shopAddress}
                   </p>
-                  {s?.shopHours && Object.entries(s.shopHours).filter(([,v]) => v).slice(0, 3).map(([day, val]) => (
-                    <p key={day} className="text-[10px] text-slate-500 capitalize mt-0.5">{day} : {val as string}</p>
-                  ))}
+                  {s?.shopHours && (() => {
+                    const allHours = Object.entries(s.shopHours).filter(([,v]) => v);
+                    if (allHours.length === 0) return null;
+                    const visible = showAllHours ? allHours : allHours.slice(0, 2);
+                    return (
+                      <div>
+                        {visible.map(([day, val]) => (
+                          <p key={day} className="text-[10px] text-slate-500 capitalize mt-0.5">{day} : {val as string}</p>
+                        ))}
+                        {allHours.length > 2 && (
+                          <button onClick={() => setShowAllHours(v => !v)}
+                            className="mt-1.5 text-[9px] font-black text-green-600 flex items-center gap-1 active:scale-95 transition-all">
+                            {showAllHours ? (
+                              <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 15l-6-6-6 6"/></svg>Masquer</>
+                            ) : (
+                              <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>Voir tous les {allHours.length} jours</>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
-              {/* Réseaux sociaux boutique */}
-              {hasSocials && (
-                <div className="px-5 py-4 flex gap-2 flex-wrap">
+              {/* Réseaux sociaux — WhatsApp boutique + SocialBar (logos officiels) */}
+              {(s?.shopWhatsapp || (s?.socialLinks && Object.values(s.socialLinks).some(Boolean))) && (
+                <div className="px-5 py-4">
+                  {/* WhatsApp boutique en premier — bouton vert */}
                   {s?.shopWhatsapp && (
                     <a href={`https://wa.me/${s.shopWhatsapp.replace(/\D/g,'')}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-white text-[10px] font-black active:scale-95 transition-all"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-white text-[11px] font-black active:scale-95 transition-all mb-4"
                       style={{ background: '#25D366' }}>
-                      💬 WhatsApp
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2.0001C6.477 2.0001 2 6.4771 2 11.9991c0 1.993.577 3.85 1.568 5.422L2.005 22.0001l4.698-1.539A9.976 9.976 0 0012 21.9991c5.523 0 9.999-4.477 9.999-9.999C21.999 6.4771 17.522 2.0001 11.999 2.0001z"/></svg>
+                      WhatsApp
                     </a>
                   )}
-                  {s?.shopInstagram && (
-                    <a href={`https://instagram.com/${s.shopInstagram}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-white text-[10px] font-black active:scale-95 transition-all"
-                      style={{ background: 'linear-gradient(135deg,#E1306C,#F77737)' }}>
-                      📸 Instagram
-                    </a>
+                  {/* Logos officiels via SocialBar */}
+                  {s?.socialLinks && Object.values(s.socialLinks).some(Boolean) && (
+                    <SocialBar links={s.socialLinks} size={38}/>
                   )}
-                  {s?.shopTiktok && (
-                    <a href={`https://tiktok.com/@${s.shopTiktok}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-white text-[10px] font-black active:scale-95 transition-all"
-                      style={{ background: '#000000' }}>
-                      🎵 TikTok
-                    </a>
-                  )}
-                  {s?.socialLinks && Object.entries(s.socialLinks).filter(([,v]) => !!v).map(([key, url]) => (
-                    <a key={key} href={url as string} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-slate-100 text-slate-700 text-[10px] font-black active:scale-95 transition-all capitalize">
-                      {key}
-                    </a>
-                  ))}
                 </div>
               )}
             </div>
