@@ -1,12 +1,15 @@
 // src/pages/DelivererDashboardPage.tsx — v18 BruMove
 // Interface dédiée livreur : Accueil | Radar | Gains | Profil
-// Inspire du prototype BruMove — sans wallet, juste historique + compteur gains
+// ⚠️ BecomeDelivererPage gère l'onboarding (5 étapes CGU + identité + zones + tarifs + bio)
+// Ce composant n'est affiché que si role === 'livreur' && deliveryCGUAccepted === true
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   subscribeDelivererOrders,
   subscribeOpenOrdersInZone,
+  confirmDeliveryByBuyer,
+  confirmPickupByDeliverer,
   toggleDelivererAvailability,
   rejectDelivery,
 } from '@/services/deliveryService';
@@ -24,14 +27,12 @@ interface Props {
 
 type Tab = 'home' | 'radar' | 'earnings' | 'profile';
 
-// ── Helpers gains ─────────────────────────────────────────────
-function getStartOfDay()   { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
-function getStartOfWeek()  { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d.getTime(); }
-function getStartOfMonth() { const d = new Date(); d.setHours(0,0,0,0); d.setDate(1); return d.getTime(); }
-
-function getOrderTimestamp(order: any): number {
-  return order.deliveredAt?.toMillis?.() ?? order.deliveredAt?.seconds * 1000 ?? 0;
-}
+// ── Helpers ───────────────────────────────────────────────────
+const getTs = (o: any): number =>
+  o.deliveredAt?.toMillis?.() ?? (o.deliveredAt?.seconds ? o.deliveredAt.seconds * 1000 : 0);
+const startOfDay   = () => { const d = new Date(); d.setHours(0,0,0,0); return d.getTime(); };
+const startOfWeek  = () => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d.getTime(); };
+const startOfMonth = () => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(1); return d.getTime(); };
 
 export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
@@ -54,27 +55,22 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     return subscribeOpenOrdersInZone(zones, setOpenOrders);
   }, [JSON.stringify(userProfile?.deliveryZones)]);
 
-  // ── Calculs ──────────────────────────────────────────────────
-  const myDone     = orders.filter(o => ['delivered','cod_delivered'].includes(o.status));
-  const myOngoing  = orders.filter(o => ['ready','cod_confirmed','picked','cod_delivered'].includes(o.status));
-  const myAssigned = orders.filter(o => o.status === 'confirmed');
-  const openInZone = openOrders.filter(o => !orders.some(m => m.id === o.id));
-  const allMissions = [...myAssigned, ...openInZone];
-
-  const now = Date.now();
-  const gainsToday = myDone.filter(o => getOrderTimestamp(o) >= getStartOfDay()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
-  const gainsWeek  = myDone.filter(o => getOrderTimestamp(o) >= getStartOfWeek()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
-  const gainsMonth = myDone.filter(o => getOrderTimestamp(o) >= getStartOfMonth()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
-  const totalGains = myDone.reduce((s,o) => s + ((o as any).deliveryFee || 0), 0) || userProfile?.totalEarnings || 0;
-  const totalCount = myDone.length || userProfile?.totalDeliveries || 0;
-
-  // Dernière livraison terminée (notification course terminée)
-  const lastDone = myDone.sort((a,b) => getOrderTimestamp(b) - getOrderTimestamp(a))[0];
-  const lastFee  = lastDone ? ((lastDone as any).deliveryFee || 0) : 0;
-  const showLastDone = lastDone && (now - getOrderTimestamp(lastDone)) < 3600000; // < 1h
+  // ── Données calculées ────────────────────────────────────────
+  const myAssignedPending = orders.filter(o => o.status === 'confirmed');
+  const myOpenOrders      = openOrders.filter(o => !orders.some(mo => mo.id === o.id));
+  const allMissions       = [...myAssignedPending, ...myOpenOrders];
+  const myOngoing         = orders.filter(o => ['ready','cod_confirmed','picked','cod_delivered'].includes(o.status));
+  const myDone            = orders.filter(o => ['delivered','cod_delivered'].includes(o.status));
+  const totalGains        = myDone.reduce((s,o) => s + ((o as any).deliveryFee || 0), 0) || userProfile?.totalEarnings || 0;
+  const totalCount        = myDone.length || userProfile?.totalDeliveries || 0;
+  const gainsToday        = myDone.filter(o => getTs(o) >= startOfDay()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
+  const gainsWeek         = myDone.filter(o => getTs(o) >= startOfWeek()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
+  const gainsMonth        = myDone.filter(o => getTs(o) >= startOfMonth()).reduce((s,o) => s + ((o as any).deliveryFee || 0), 0);
+  const lastDone          = [...myDone].sort((a,b) => getTs(b) - getTs(a))[0];
+  const showLastBonus     = lastDone && (Date.now() - getTs(lastDone)) < 3600000 && ((lastDone as any).deliveryFee || 0) > 0;
 
   const handleToggle = async () => {
-    if (!currentUser) return;
+    if (!currentUser || toggling) return;
     setToggling(true);
     await toggleDelivererAvailability(currentUser.uid, !available);
     setAvailable(v => !v);
@@ -82,33 +78,50 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     setToggling(false);
   };
 
+  const OG = '#E05A00'; // orange BruMove
+
+  // ── Sous-pages ───────────────────────────────────────────────
   if (showEditProfile) {
-    return <EditDelivererProfilePage onBack={() => setShowEditProfile(false)} onSaved={() => { setShowEditProfile(false); refreshUserProfile(); }}/>;
+    return <EditDelivererProfilePage
+      onBack={() => setShowEditProfile(false)}
+      onSaved={() => { setShowEditProfile(false); refreshUserProfile(); }}
+    />;
   }
   if (showQRDelivery) {
     const ord = showQRDelivery as any;
-    return <QRDisplay title="Mon QR de livraison" subtitle="Montre ce QR à l'acheteur"
+    return <QRDisplay
+      title="Mon QR de livraison"
+      subtitle="Montre ce QR à l'acheteur"
       code={ord.deliveryCode || '------'}
       qrPayload={ord.qrDeliveryPayload || buildQRPayload('delivery', showQRDelivery.id, ord.deliveryCode || '')}
       color="#D97706" emoji="🛵"
       instruction="L'acheteur va scanner ce QR pour confirmer la réception."
-      onClose={() => setShowQRDelivery(null)}/>;
+      onClose={() => setShowQRDelivery(null)}
+    />;
   }
 
-  // ── BOTTOM NAV interne ────────────────────────────────────────
-  const TABS: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
+  // ── Bottom nav interne livreur ────────────────────────────────
+  // Nav tabs internes + actions externes (Messages/Paramètres via onNavigate)
+  type NavAction = Tab | 'messages' | 'settings';
+  const NAV_TABS: { id: NavAction; label: string; badge?: number; isExternal?: boolean; icon: React.ReactNode }[] = [
     {
       id: 'home', label: 'Accueil',
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>,
     },
     {
-      id: 'radar', label: 'Radar',
+      id: 'radar', label: 'Missions',
       badge: allMissions.length + myOngoing.length,
-      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/></svg>,
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 3v5h-8V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
     },
     {
       id: 'earnings', label: 'Gains',
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+    },
+    {
+      id: 'messages', label: 'Messages',
+      isExternal: true,
+      badge: undefined, // pas de compteur ici — géré par App.tsx
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
     },
     {
       id: 'profile', label: 'Profil',
@@ -116,18 +129,17 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     },
   ];
 
-  const orange = '#E05A00';
-
   return (
     <div className="min-h-screen font-sans pb-24" style={{ background: '#F5F5F5' }}>
 
       {/* ══════════════════════════════════════
-          TAB : ACCUEIL
+          ONGLET ACCUEIL
       ══════════════════════════════════════ */}
       {tab === 'home' && (
-        <div>
-          {/* Header hero orange */}
-          <div className="px-5 pt-14 pb-6" style={{ background: `linear-gradient(160deg, ${orange}, #FF7A1A)` }}>
+        <>
+          {/* Hero orange */}
+          <div className="px-5 pt-14 pb-6" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
+            {/* Header profil */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl overflow-hidden bg-white/20 flex-shrink-0">
@@ -138,11 +150,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 </div>
                 <div>
                   <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Bonjour 👋</p>
-                  <p className="text-white font-black text-[15px] leading-tight">{userProfile?.name || 'Livreur'}</p>
-                  {userProfile?.phone && <p className="text-white/60 text-[10px] font-bold">{userProfile.phone}</p>}
+                  <p className="text-white font-black text-[15px]">{userProfile?.deliveryPartnerName || userProfile?.name}</p>
+                  {userProfile?.phone && <p className="text-white/60 text-[10px]">{userProfile.phone}</p>}
                 </div>
               </div>
-              {/* Toggle dispo */}
+              {/* Toggle disponibilité */}
               <button onClick={handleToggle} disabled={toggling}
                 className="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95"
                 style={{ background: available ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)', color: 'white' }}>
@@ -151,29 +163,25 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </button>
             </div>
 
-            {/* Gains aujourd'hui */}
+            {/* Card gains du jour */}
             <div className="bg-white/15 backdrop-blur-sm rounded-3xl p-5">
-              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1">Gains d'aujourd'hui</p>
+              <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1">Aujourd'hui</p>
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-white font-black leading-none" style={{ fontSize: '2.4rem' }}>
                     {gainsToday.toLocaleString('fr-FR')} <span className="text-[1.2rem] opacity-80">FCFA</span>
                   </p>
                   <div className="flex gap-5 mt-3">
-                    <div>
-                      <p className="text-white/60 text-[9px] uppercase font-bold">Courses</p>
-                      <p className="text-white font-black text-[18px]">
-                        {myDone.filter(o => getOrderTimestamp(o) >= getStartOfDay()).length}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-white/60 text-[9px] uppercase font-bold">En cours</p>
-                      <p className="text-white font-black text-[18px]">{myOngoing.length}</p>
-                    </div>
-                    <div>
-                      <p className="text-white/60 text-[9px] uppercase font-bold">Disponibles</p>
-                      <p className="text-white font-black text-[18px]">{openInZone.length}</p>
-                    </div>
+                    {[
+                      { label: 'Courses', val: myDone.filter(o => getTs(o) >= startOfDay()).length },
+                      { label: 'En cours', val: myOngoing.length },
+                      { label: 'Dispo', val: myOpenOrders.length },
+                    ].map(k => (
+                      <div key={k.label}>
+                        <p className="text-white/60 text-[9px] uppercase font-bold">{k.label}</p>
+                        <p className="text-white font-black text-[18px]">{k.val}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -184,103 +192,120 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           </div>
 
           <div className="px-4 pt-4 space-y-3">
-            {/* Notification course terminée */}
-            {showLastDone && lastFee > 0 && (
-              <div className="rounded-3xl p-5 flex items-center gap-4"
-                style={{ background: `linear-gradient(135deg, ${orange}20, ${orange}08)`, border: `1px solid ${orange}30` }}>
+            {/* Bonus dernière course */}
+            {showLastBonus && (
+              <div className="rounded-3xl p-4 flex items-center gap-4"
+                style={{ background: `${OG}15`, border: `1px solid ${OG}30` }}>
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${orange}20` }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  style={{ background: `${OG}20` }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={OG} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div>
-                  <p className="font-black text-[14px]" style={{ color: orange }}>Course terminée !</p>
-                  <p className="text-slate-600 text-[11px] font-bold">+{lastFee.toLocaleString('fr-FR')} FCFA ajoutés à tes gains</p>
+                  <p className="font-black text-[14px]" style={{ color: OG }}>Course terminée !</p>
+                  <p className="text-slate-600 text-[11px] font-bold">+{((lastDone as any)?.deliveryFee || 0).toLocaleString('fr-FR')} FCFA ajoutés</p>
                 </div>
               </div>
             )}
 
-            {/* 3 cartes stats semaine/mois/total */}
+            {/* Indispo warning */}
+            {!available && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                <p className="font-black text-amber-700 text-[12px]">Tu es hors service</p>
+                <button onClick={handleToggle} className="mt-2 px-5 py-2 rounded-xl font-black text-[11px] uppercase text-white"
+                  style={{ background: `linear-gradient(135deg,${OG},#FF7A1A)` }}>
+                  Activer ma disponibilité
+                </button>
+              </div>
+            )}
+
+            {/* Stats 3 périodes */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: "Aujourd'hui", value: gainsToday, color: orange, bg: '#FFF5EE' },
-                { label: 'Cette semaine', value: gainsWeek, color: '#8B5CF6', bg: '#F5F3FF' },
+                { label: "Aujourd'hui", value: gainsToday, color: OG, bg: '#FFF5EE' },
+                { label: 'Semaine', value: gainsWeek, color: '#8B5CF6', bg: '#F5F3FF' },
                 { label: 'Ce mois', value: gainsMonth, color: '#16A34A', bg: '#F0FDF4' },
               ].map(k => (
-                <div key={k.label} className="rounded-2xl p-3 text-center"
-                  style={{ background: k.bg }}>
-                  <svg className="mx-auto mb-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={k.color} strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                <div key={k.label} className="rounded-2xl p-3 text-center" style={{ background: k.bg }}>
                   <p className="font-black text-[15px] leading-none" style={{ color: k.color }}>{k.value.toLocaleString('fr-FR')}</p>
-                  <p className="text-[8px] font-black text-slate-500 uppercase mt-1 leading-tight">{k.label}</p>
+                  <p className="text-[8px] font-black text-slate-500 uppercase mt-0.5 leading-tight">{k.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Mission disponible — carte principale */}
-            {openInZone.length > 0 && (
+            {/* Mission disponible */}
+            {myOpenOrders.length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                  {openInZone.length} course{openInZone.length > 1 ? 's' : ''} dans ta zone
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    {myOpenOrders.length} course{myOpenOrders.length > 1 ? 's' : ''} dans ta zone
+                  </p>
+                  {myOpenOrders.length > 1 && (
+                    <button onClick={() => setTab('radar')} className="text-[9px] font-black uppercase tracking-widest" style={{ color: OG }}>
+                      Voir tout →
+                    </button>
+                  )}
+                </div>
                 <MissionCardCompact
-                  order={openInZone[0]}
-                  isAssigned={false}
-                  onChatBuyer={() => openInZone[0].buyerId && onChat(openInZone[0].buyerId, openInZone[0].buyerName)}
-                  onChatSeller={() => openInZone[0].sellerId && onChat(openInZone[0].sellerId, openInZone[0].sellerName)}
-                  onViewAll={() => setTab('radar')}
-                  showViewAll={openInZone.length > 1}
+                  order={myOpenOrders[0]}
+                  onChatBuyer={() => myOpenOrders[0].buyerId && onChat(myOpenOrders[0].buyerId, myOpenOrders[0].buyerName)}
+                  onChatSeller={() => myOpenOrders[0].sellerId && onChat(myOpenOrders[0].sellerId, myOpenOrders[0].sellerName)}
                 />
+              </div>
+            )}
+
+            {/* Assignées en attente */}
+            {myAssignedPending.length > 0 && (
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
+                {myAssignedPending.map(order => (
+                  <MissionCard key={order.id} order={order} isAssigned={true}
+                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    currentDelivererId={currentUser?.uid}
+                    currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
+                  />
+                ))}
               </div>
             )}
 
             {/* En cours */}
             {myOngoing.length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                  🛵 {myOngoing.length} livraison{myOngoing.length > 1 ? 's' : ''} en cours
-                </p>
-                {myOngoing.slice(0, 2).map(order => (
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🛵 En cours ({myOngoing.length})</p>
+                {myOngoing.map(order => (
                   <ActiveDeliveryCard key={order.id} order={order}
                     onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
-                    currentDelivererName={userProfile?.name || ''}
+                    currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
                 ))}
               </div>
             )}
 
             {/* État vide */}
-            {openInZone.length === 0 && myOngoing.length === 0 && (
+            {allMissions.length === 0 && myOngoing.length === 0 && (
               <div className="bg-white rounded-3xl p-8 text-center border border-slate-100">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ background: `${orange}15` }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-                </div>
-                <p className="font-black text-slate-700 text-[14px] mb-1">Aucune mission</p>
-                <p className="text-[11px] text-slate-400">Aucune commande dans ta zone pour l'instant</p>
-                {!available && (
-                  <button onClick={handleToggle} className="mt-4 px-6 py-3 rounded-2xl font-black text-[11px] uppercase text-white active:scale-95"
-                    style={{ background: `linear-gradient(135deg,${orange},#FF7A1A)` }}>
-                    Activer ma disponibilité
-                  </button>
-                )}
+                <div className="text-4xl mb-3">📡</div>
+                <p className="font-black text-slate-700 text-[14px] mb-1">Aucune mission pour l'instant</p>
+                <p className="text-[11px] text-slate-400">Zones couvertes : {(userProfile?.deliveryZones || []).join(' · ') || '—'}</p>
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* ══════════════════════════════════════
-          TAB : RADAR
+          ONGLET RADAR / MISSIONS
       ══════════════════════════════════════ */}
       {tab === 'radar' && (
-        <div>
-          <div className="px-5 pt-14 pb-4" style={{ background: `linear-gradient(160deg, ${orange}, #FF7A1A)` }}>
+        <>
+          <div className="px-5 pt-14 pb-4" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-white font-black text-[20px] uppercase tracking-tight">Radar</h1>
+                <h1 className="text-white font-black text-[20px] uppercase tracking-tight">Missions</h1>
                 <p className="text-white/70 text-[10px] font-bold">
-                  {allMissions.length + myOngoing.length} mission{allMissions.length + myOngoing.length !== 1 ? 's' : ''} active{allMissions.length + myOngoing.length !== 1 ? 's' : ''}
+                  📍 {(userProfile?.deliveryZones || []).join(' · ')}
                 </p>
               </div>
               <button onClick={handleToggle} disabled={toggling}
@@ -295,12 +320,10 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           <div className="px-4 pt-4 space-y-4">
             {!available && (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
-                <p className="font-black text-amber-700 text-[12px]">Tu es hors service</p>
-                <p className="text-amber-600 text-[11px]">Active ta disponibilité pour accepter des courses</p>
+                <p className="font-black text-amber-700 text-[12px]">Tu es hors service — active ta disponibilité pour recevoir des missions</p>
               </div>
             )}
 
-            {/* En cours */}
             {myOngoing.length > 0 && (
               <div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🛵 En cours ({myOngoing.length})</p>
@@ -309,32 +332,30 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                     onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
-                    currentDelivererName={userProfile?.name || ''}
+                    currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
                 ))}
               </div>
             )}
 
-            {/* Assignées */}
-            {myAssigned.length > 0 && (
+            {myAssignedPending.length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssigned.length})</p>
-                {myAssigned.map(order => (
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
+                {myAssignedPending.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={true}
                     onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
-                    currentDelivererName={userProfile?.name || ''}
+                    currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
                 ))}
               </div>
             )}
 
-            {/* Disponibles dans la zone */}
-            {openInZone.length > 0 && (
+            {myOpenOrders.length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Disponibles dans ta zone ({openInZone.length})</p>
-                {openInZone.map(order => (
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Disponibles dans ta zone ({myOpenOrders.length})</p>
+                {myOpenOrders.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={false}
                     onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
@@ -345,23 +366,22 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 
             {allMissions.length === 0 && myOngoing.length === 0 && (
               <div className="text-center py-16">
-                <div className="text-5xl mb-4">📡</div>
+                <div className="text-5xl mb-4">📦</div>
                 <p className="font-black text-slate-400 text-[13px]">Aucune mission disponible</p>
-                <p className="text-[10px] text-slate-400 mt-2">Reviens plus tard ou vérifie tes zones de livraison</p>
+                <p className="text-[10px] text-slate-400 mt-2">Aucune commande dans tes zones pour l'instant</p>
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* ══════════════════════════════════════
-          TAB : GAINS
+          ONGLET GAINS / HISTORIQUE
       ══════════════════════════════════════ */}
       {tab === 'earnings' && (
-        <div>
-          <div className="px-5 pt-14 pb-6" style={{ background: `linear-gradient(160deg, ${orange}, #FF7A1A)` }}>
+        <>
+          <div className="px-5 pt-14 pb-6" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
             <h1 className="text-white font-black text-[20px] uppercase tracking-tight mb-4">Mes Gains</h1>
-            {/* Total cumulé */}
             <div className="bg-white/15 backdrop-blur-sm rounded-3xl p-5 mb-4">
               <p className="text-white/70 text-[10px] font-bold uppercase tracking-widest mb-1">Total cumulé</p>
               <p className="text-white font-black leading-none mb-1" style={{ fontSize: '2.2rem' }}>
@@ -369,11 +389,10 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </p>
               <p className="text-white/70 text-[11px] font-bold">{totalCount} livraison{totalCount !== 1 ? 's' : ''} réalisée{totalCount !== 1 ? 's' : ''}</p>
             </div>
-            {/* 3 périodes */}
             <div className="grid grid-cols-3 gap-2">
               {[
                 { label: "Aujourd'hui", value: gainsToday },
-                { label: 'Cette semaine', value: gainsWeek },
+                { label: 'Semaine', value: gainsWeek },
                 { label: 'Ce mois', value: gainsMonth },
               ].map(k => (
                 <div key={k.label} className="bg-white/15 rounded-2xl p-3 text-center">
@@ -385,8 +404,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           </div>
 
           <div className="px-4 pt-4 space-y-3">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Historique des gains</p>
-
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Historique livraisons</p>
             {myDone.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 text-center border border-slate-100">
                 <p className="text-3xl mb-3">📦</p>
@@ -394,28 +412,39 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </div>
             ) : (
               <div className="space-y-2">
-                {myDone.sort((a,b) => getOrderTimestamp(b) - getOrderTimestamp(a)).map(order => {
+                {[...myDone].sort((a,b) => getTs(b) - getTs(a)).map(order => {
                   const ord = order as any;
                   const fee = ord.deliveryFee || 0;
-                  const ts  = getOrderTimestamp(order);
-                  const dateStr = ts ? new Date(ts).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null;
-                  const timeStr = ts ? new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
+                  const ts  = getTs(order);
+                  const date = ts ? new Date(ts) : null;
+                  const isCOD = ord.isCOD;
+                  const method = isCOD ? '💵 Espèces' : '📱 Mobile';
                   return (
-                    <div key={order.id} className="bg-white rounded-2xl overflow-hidden border border-slate-100">
+                    <div key={order.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                       <div className="flex items-center gap-3 p-4">
                         <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: `${orange}15` }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={orange} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          style={{ background: `${OG}15` }}>
+                          {ord.productImage
+                            ? <img src={ord.productImage} alt="" className="w-full h-full object-cover rounded-2xl"/>
+                            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={OG} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          }
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-black text-slate-900 text-[12px] truncate">{order.productTitle}</p>
                           <p className="text-[10px] text-slate-500">{ord.sellerNeighborhood || '—'} → {ord.buyerNeighborhood || '—'}</p>
-                          {dateStr && <p className="text-[9px] text-slate-400">{dateStr} à {timeStr}</p>}
+                          {date && <p className="text-[9px] text-slate-400">{date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · {date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · {method}</p>}
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="font-black text-[15px]" style={{ color: orange }}>+{fee.toLocaleString('fr-FR')}</p>
+                          <p className="font-black text-[15px]" style={{ color: OG }}>+{fee.toLocaleString('fr-FR')}</p>
                           <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
                         </div>
+                      </div>
+                      <div className="border-t border-slate-50 px-4 py-2 bg-slate-50/50 flex items-center justify-between">
+                        <div className="flex gap-4">
+                          <div><p className="text-[8px] text-slate-400 uppercase font-bold">Vendeur</p><p className="text-[10px] font-black text-slate-700 truncate max-w-[80px]">{ord.sellerName || '—'}</p></div>
+                          <div><p className="text-[8px] text-slate-400 uppercase font-bold">Acheteur</p><p className="text-[10px] font-black text-slate-700 truncate max-w-[80px]">{ord.buyerName || '—'}</p></div>
+                        </div>
+                        <span className="text-[9px] bg-green-100 text-green-700 font-black px-2 py-0.5 rounded-full">Livré ✓</span>
                       </div>
                     </div>
                   );
@@ -428,33 +457,42 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               const rejected = orders.filter(o => (o as any).rejectedDeliverers?.some((r: any) => r.delivererId === currentUser?.uid));
               if (!rejected.length) return null;
               return (
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Refusées ({rejected.length})</p>
-                  {rejected.map(order => (
-                    <div key={order.id} className="bg-white rounded-2xl border border-red-100 overflow-hidden mb-2">
-                      <div className="flex items-center gap-3 p-3">
-                        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 text-lg">✕</div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-slate-700 text-[12px] truncate">{order.productTitle}</p>
-                          <p className="text-[10px] text-slate-500">{(order as any).sellerNeighborhood} → {(order as any).buyerNeighborhood}</p>
+                <div className="space-y-2 mt-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Refusées ({rejected.length})</p>
+                  {rejected.map(order => {
+                    const ord = order as any;
+                    const myRefusal = ord.rejectedDeliverers?.find((r: any) => r.delivererId === currentUser?.uid);
+                    return (
+                      <div key={order.id} className="bg-white rounded-2xl border border-red-100 overflow-hidden">
+                        <div className="flex items-center gap-3 p-3">
+                          <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0 text-xl">✕</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-black text-slate-700 text-[12px] truncate">{order.productTitle}</p>
+                            <p className="text-[10px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
+                          </div>
+                          <span className="text-[9px] bg-red-50 text-red-600 font-black px-2 py-0.5 rounded-full">Refusé</span>
                         </div>
-                        <span className="text-[9px] bg-red-50 text-red-600 font-black px-2 py-0.5 rounded-full">Refusé</span>
+                        {myRefusal?.reason && (
+                          <div className="border-t border-red-50 px-3 py-2 bg-red-50 flex items-start gap-2">
+                            <p className="text-[10px] text-red-700 font-bold">💬 {myRefusal.reason}</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
           </div>
-        </div>
+        </>
       )}
 
       {/* ══════════════════════════════════════
-          TAB : PROFIL
+          ONGLET PROFIL
       ══════════════════════════════════════ */}
       {tab === 'profile' && (
-        <div>
-          <div className="px-5 pt-14 pb-8" style={{ background: `linear-gradient(160deg, ${orange}, #FF7A1A)` }}>
+        <>
+          <div className="px-5 pt-14 pb-8" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-[2rem] overflow-hidden bg-white/20 border-4 border-white/30 shadow-xl mb-3">
                 {userProfile?.photoURL
@@ -462,22 +500,17 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                   : <div className="w-full h-full flex items-center justify-center text-white font-black text-4xl">{(userProfile?.name || 'L').charAt(0).toUpperCase()}</div>
                 }
               </div>
-              <h2 className="text-white font-black text-[18px] uppercase tracking-tight">{userProfile?.name || 'Livreur'}</h2>
-              {userProfile?.phone && <p className="text-white/70 text-[11px] font-bold">{userProfile.phone}</p>}
+              <h2 className="text-white font-black text-[18px] uppercase tracking-tight">{userProfile?.deliveryPartnerName || userProfile?.name}</h2>
+              <p className="text-white/70 text-[10px] mt-0.5 font-bold">
+                {userProfile?.phone} · {(userProfile as any)?.deliveryStatus === 'service' ? 'Service de livraison' : (userProfile as any)?.deliveryStatus === 'chauffeur' ? 'Chauffeur / Zem' : 'Livreur indépendant'}
+              </p>
               {(userProfile?.deliveryZones || []).length > 0 && (
                 <p className="text-white/70 text-[10px] mt-1">📍 {(userProfile?.deliveryZones || []).join(' · ')}</p>
               )}
-              {/* Stats */}
               <div className="flex gap-6 mt-4">
-                <div className="text-center">
-                  <p className="text-white font-black text-[20px]">{totalCount}</p>
-                  <p className="text-white/60 text-[9px] uppercase font-bold">Livraisons</p>
-                </div>
+                <div className="text-center"><p className="text-white font-black text-[20px]">{totalCount}</p><p className="text-white/60 text-[9px] uppercase font-bold">Livraisons</p></div>
                 <div className="w-px bg-white/20"/>
-                <div className="text-center">
-                  <p className="text-white font-black text-[20px]">{totalGains.toLocaleString('fr-FR')}</p>
-                  <p className="text-white/60 text-[9px] uppercase font-bold">FCFA gagnés</p>
-                </div>
+                <div className="text-center"><p className="text-white font-black text-[20px]">{totalGains.toLocaleString('fr-FR')}</p><p className="text-white/60 text-[9px] uppercase font-bold">FCFA gagnés</p></div>
               </div>
             </div>
           </div>
@@ -487,7 +520,25 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             {userProfile?.deliveryBio && (
               <div className="bg-white rounded-2xl p-4 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">À propos</p>
-                <p className="text-[12px] text-slate-600 leading-relaxed">"{userProfile.deliveryBio}"</p>
+                <p className="text-[12px] text-slate-600 leading-relaxed italic">"{userProfile.deliveryBio}"</p>
+              </div>
+            )}
+
+            {/* Infos véhicule */}
+            {(userProfile as any)?.deliveryVehicles?.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 border border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Véhicule(s)</p>
+                <div className="flex gap-2 flex-wrap">
+                  {(userProfile as any).deliveryVehicles.map((v: string) => {
+                    const icons: Record<string,string> = { moto: '🛵', voiture: '🚗', velo: '🚲', tricycle: '🛺', pied: '🚶' };
+                    const labels: Record<string,string> = { moto: 'Moto / Zem', voiture: 'Voiture', velo: 'Vélo', tricycle: 'Tricycle', pied: 'À pied' };
+                    return (
+                      <span key={v} className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700">
+                        {icons[v] || '🛵'} {labels[v] || v}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -504,36 +555,58 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </div>
             )}
 
+            {/* Toggle dispo */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="font-black text-slate-900 text-[13px]">{available ? '🟢 En service' : '⚫ Hors service'}</p>
+                <p className="text-[11px] text-slate-400">{available ? 'Tu reçois des missions' : 'Aucune mission envoyée'}</p>
+              </div>
+              <button onClick={handleToggle} disabled={toggling}
+                className={'w-14 h-7 rounded-full transition-all relative ' + (available ? 'bg-green-500' : 'bg-slate-300')}>
+                <div className={'w-6 h-6 bg-white rounded-full shadow-md absolute top-0.5 transition-all ' + (available ? 'left-7' : 'left-0.5')}/>
+              </button>
+            </div>
+
             {/* Actions */}
             <button onClick={() => setShowEditProfile(true)}
-              className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-700 active:scale-95 transition-all border border-slate-100 flex items-center justify-center gap-2">
+              className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-700 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ✏️ Modifier mon profil livreur
             </button>
             <button onClick={() => onNavigate('settings')}
-              className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-500 active:scale-95 transition-all border border-slate-100 flex items-center justify-center gap-2">
+              className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ⚙️ Paramètres
             </button>
           </div>
-        </div>
+        </>
       )}
 
-      {/* ── BOTTOM NAV LIVREUR ── */}
+      {/* ── BOTTOM NAV livreur (5 tabs : Accueil / Missions / Gains / Messages / Profil) ── */}
       <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
         style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
-        <div className="flex items-center justify-around h-16 px-2">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className="flex flex-col items-center gap-0.5 py-2 px-4 relative transition-all active:scale-95"
-              style={{ color: tab === t.id ? orange : '#94A3B8' }}>
-              {t.badge && t.badge > 0 ? (
-                <span className="absolute -top-0.5 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white"
-                  style={{ background: orange }}>{t.badge > 9 ? '9+' : t.badge}</span>
-              ) : null}
-              {t.icon}
-              <span className="text-[9px] font-black uppercase tracking-tight">{t.label}</span>
-              {tab === t.id && <div className="absolute -bottom-0 w-4 h-0.5 rounded-full" style={{ background: orange }}/>}
-            </button>
-          ))}
+        <div className="flex items-center justify-around h-16 px-1">
+          {NAV_TABS.map(t => {
+            const isActive = t.isExternal ? false : tab === t.id;
+            return (
+              <button key={t.id}
+                onClick={() => {
+                  if (t.isExternal) {
+                    onNavigate(t.id as string);
+                  } else {
+                    setTab(t.id as Tab);
+                  }
+                }}
+                className="flex flex-col items-center gap-0.5 py-2 px-3 relative transition-all active:scale-95"
+                style={{ color: isActive ? OG : '#94A3B8' }}>
+                {t.badge != null && t.badge > 0 ? (
+                  <span className="absolute -top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black text-white"
+                    style={{ background: OG }}>{t.badge > 9 ? '9+' : t.badge}</span>
+                ) : null}
+                {t.icon}
+                <span className="text-[9px] font-black uppercase tracking-tight">{t.label}</span>
+                {isActive && <div className="absolute -bottom-0 w-4 h-0.5 rounded-full" style={{ background: OG }}/>}
+              </button>
+            );
+          })}
         </div>
         <div className="h-safe-area-inset-bottom"/>
       </nav>
@@ -541,40 +614,35 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   );
 }
 
-// ── MissionCardCompact — carte mission sur la page Accueil ─────
-function MissionCardCompact({ order, isAssigned, onChatBuyer, onChatSeller, onViewAll, showViewAll }: {
-  order: Order; isAssigned: boolean;
-  onChatBuyer: () => void; onChatSeller: () => void;
-  onViewAll?: () => void; showViewAll?: boolean;
+// ══════════════════════════════════════════════════════════════
+// COMPOSANTS MÉTIER — logique inchangée depuis v17
+// ══════════════════════════════════════════════════════════════
+
+function MissionCardCompact({ order, onChatBuyer, onChatSeller }: {
+  order: Order; onChatBuyer: () => void; onChatSeller: () => void;
 }) {
   const ord = order as any;
-  const orange = '#E05A00';
+  const OG = '#E05A00';
   return (
     <div className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
-      {/* Barre colorée */}
-      <div className="h-1.5" style={{ background: `linear-gradient(90deg,${orange},#FF7A1A)` }}/>
+      <div className="h-1.5" style={{ background: `linear-gradient(90deg,${OG},#FF7A1A)` }}/>
       <div className="p-4">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
-            {ord.productImage
-              ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-            }
+            {ord.productImage ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
             <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood || '—'} → {ord.buyerNeighborhood || '—'}</p>
-            {ord.isCOD && <p className="text-[10px] font-bold text-blue-600 mt-0.5">💵 Paiement à la livraison</p>}
+            {ord.isCOD && <p className="text-[10px] font-bold text-blue-600">💵 Paiement à la livraison</p>}
           </div>
           {ord.deliveryFee > 0 && (
             <div className="text-right flex-shrink-0">
-              <p className="font-black text-[16px]" style={{ color: orange }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p>
+              <p className="font-black text-[16px]" style={{ color: OG }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p>
               <p className="text-[9px] text-slate-400 font-bold">FCFA</p>
             </div>
           )}
         </div>
-
-        {/* Trajet visuel */}
         <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-4 py-3 mb-3">
           <div className="flex flex-col items-center gap-1">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500"/>
@@ -582,48 +650,29 @@ function MissionCardCompact({ order, isAssigned, onChatBuyer, onChatSeller, onVi
             <div className="w-2.5 h-2.5 rounded-full bg-green-500"/>
           </div>
           <div className="flex-1 space-y-2">
-            <div>
-              <p className="text-[8px] text-slate-400 uppercase font-bold">Collecte</p>
-              <p className="text-[11px] font-black text-slate-800">{ord.sellerName || ord.sellerNeighborhood || '—'}</p>
-            </div>
-            <div>
-              <p className="text-[8px] text-slate-400 uppercase font-bold">Livraison</p>
-              <p className="text-[11px] font-black text-slate-800">{ord.buyerNeighborhood || '—'}</p>
-            </div>
+            <div><p className="text-[8px] text-slate-400 uppercase font-bold">Collecte</p><p className="text-[11px] font-black text-slate-800">{ord.sellerName || ord.sellerNeighborhood || '—'}</p></div>
+            <div><p className="text-[8px] text-slate-400 uppercase font-bold">Livraison</p><p className="text-[11px] font-black text-slate-800">{ord.buyerNeighborhood || '—'}</p></div>
           </div>
         </div>
-
         <div className="flex gap-2">
           <button onClick={onChatSeller}
-            className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all flex items-center justify-center gap-1.5"
-            style={{ background: `linear-gradient(135deg,${orange},#FF7A1A)` }}>
+            className="flex-1 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95"
+            style={{ background: `linear-gradient(135deg,${OG},#FF7A1A)` }}>
             Contacter vendeur
           </button>
-          <button onClick={onChatBuyer}
-            className="py-3 px-4 rounded-2xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95 transition-all">
-            👤
-          </button>
+          <button onClick={onChatBuyer} className="py-3 px-4 rounded-2xl bg-slate-100 font-black text-[11px] text-slate-600 active:scale-95">👤</button>
         </div>
-        {showViewAll && onViewAll && (
-          <button onClick={onViewAll}
-            className="w-full mt-2 py-2 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
-            style={{ color: orange }}>
-            Voir toutes les courses →
-          </button>
-        )}
       </div>
     </div>
   );
 }
 
-// ── MissionCard (Radar) ───────────────────────────────────────
 function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer, currentDelivererId, currentDelivererName }: {
-  order: Order; isAssigned: boolean;
-  onChatSeller: () => void; onChatBuyer: () => void;
+  order: Order; isAssigned: boolean; onChatSeller: () => void; onChatBuyer: () => void;
   currentDelivererId?: string; currentDelivererName?: string;
 }) {
   const ord = order as any;
-  const orange = '#E05A00';
+  const OG = '#E05A00';
   return (
     <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 mb-3 ${isAssigned ? 'border-amber-400' : 'border-orange-300'}`}>
       <div className="flex items-start gap-3 mb-3">
@@ -633,48 +682,39 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer, currentDeli
         <div className="flex-1 min-w-0">
           <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
           <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
+          <p className="text-[10px] text-slate-400">Vendeur : {order.sellerName}</p>
           {ord.isCOD && <p className="text-[10px] font-bold text-blue-600">💵 COD</p>}
         </div>
-        <div className="text-right">
-          {ord.deliveryFee > 0 ? (
-            <><p className="font-black text-[15px]" style={{ color: orange }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></>
-          ) : (
-            <p className="text-[10px] text-slate-400">Tarif libre</p>
-          )}
-        </div>
+        <div className="text-right">{ord.deliveryFee > 0 ? (<><p className="font-black text-[15px]" style={{ color: OG }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></>) : (<p className="text-[10px] text-slate-400">Tarif libre</p>)}</div>
       </div>
-      {isAssigned && (
-        <div className="bg-amber-50 rounded-xl p-2 mb-3 border border-amber-100">
-          <p className="text-[10px] font-black text-amber-700">⏳ Assigné — attente code vendeur</p>
-        </div>
+      {isAssigned ? (
+        <div className="bg-amber-50 rounded-xl p-2 mb-3 border border-amber-100"><p className="text-[10px] font-black text-amber-700">⏳ Assigné — attente code vendeur</p></div>
+      ) : (
+        <div className="bg-slate-50 rounded-xl p-2 mb-3 border border-slate-200"><p className="text-[10px] font-black text-slate-500">📦 Mission disponible dans ta zone</p></div>
       )}
       <div className="flex gap-2">
         <button onClick={onChatBuyer} className="flex-1 py-2.5 rounded-xl bg-blue-50 font-black text-[10px] text-blue-600 active:scale-95 flex items-center justify-center gap-1">👤 Acheteur</button>
         <button onClick={onChatSeller} className="flex-1 py-2.5 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 active:scale-95 flex items-center justify-center gap-1">🏪 Vendeur</button>
       </div>
       {isAssigned && currentDelivererId && currentDelivererName && (
-        <div className="mt-2">
-          <RejectDeliveryButton order={order} delivererId={currentDelivererId} delivererName={currentDelivererName}/>
-        </div>
+        <div className="mt-2"><RejectDeliveryButton order={order} delivererId={currentDelivererId} delivererName={currentDelivererName}/></div>
       )}
     </div>
   );
 }
 
-// ── ActiveDeliveryCard, RejectDeliveryButton, CODStepsBlock etc. ─
-// Tous les composants métier conservés à l'identique
 function RejectDeliveryButton({ order, delivererId, delivererName }: { order: Order; delivererId: string; delivererName: string }) {
   const [showModal, setShowModal] = React.useState(false);
   const [reason, setReason] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState(false);
-  const QUICK_REASONS = ['Zone trop éloignée','Indisponible à cet horaire','Colis trop lourd','Problème avec le vendeur','Autre raison'];
+  const QUICK = ['Zone trop éloignée','Indisponible à cet horaire','Colis trop lourd','Problème avec le vendeur','Autre raison'];
   const handleReject = async () => {
     if (!reason.trim()) return;
     setLoading(true);
-    const result = await rejectDelivery({ orderId: order.id, delivererId, delivererName, reason: reason.trim(), order });
+    const r = await rejectDelivery({ orderId: order.id, delivererId, delivererName, reason: reason.trim(), order });
     setLoading(false);
-    if (result.success) { setDone(true); setShowModal(false); }
+    if (r.success) { setDone(true); setShowModal(false); }
   };
   if (done) return <div className="w-full py-2 rounded-xl bg-slate-100 flex items-center justify-center"><span className="text-[10px] font-black text-slate-500">✓ Course refusée</span></div>;
   return (
@@ -684,9 +724,9 @@ function RejectDeliveryButton({ order, delivererId, delivererName }: { order: Or
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[500] flex items-end justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-7 space-y-5 shadow-2xl">
             <div className="w-10 h-1.5 bg-slate-100 rounded-full mx-auto"/>
-            <div className="text-center"><p className="text-2xl mb-2">⚠️</p><h3 className="font-black text-slate-900 text-[16px]">Refuser la mission</h3></div>
-            <div className="flex flex-wrap gap-2">{QUICK_REASONS.map(r => <button key={r} onClick={() => setReason(r)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black ${reason === r ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600'}`}>{r}</button>)}</div>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Précise le motif..." rows={2} className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-[12px] outline-none resize-none"/>
+            <div className="text-center"><p className="text-2xl mb-2">⚠️</p><h3 className="font-black text-slate-900 text-[16px]">Refuser la mission</h3><p className="text-[11px] text-slate-500 mt-1">Action irréversible — le vendeur sera notifié.</p></div>
+            <div className="flex flex-wrap gap-2">{QUICK.map(r => <button key={r} onClick={() => setReason(r)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black ${reason === r ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600'}`}>{r}</button>)}</div>
+            <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Ou précise le motif..." rows={2} className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-[12px] outline-none resize-none"/>
             <div className="flex gap-3">
               <button onClick={() => { setShowModal(false); setReason(''); }} className="flex-1 py-3.5 rounded-2xl bg-slate-100 font-black text-[11px] uppercase text-slate-600">Annuler</button>
               <button onClick={handleReject} disabled={!reason.trim() || loading} className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase text-white bg-red-500 disabled:opacity-40">
@@ -703,17 +743,13 @@ function RejectDeliveryButton({ order, delivererId, delivererName }: { order: Or
 function CashPickupButton({ orderId, order }: { orderId: string; order: Order }) {
   const [loading, setLoading] = React.useState(false);
   const [signed, setSigned] = React.useState(false);
-  const alreadyPicked = order.status === 'picked';
-  const handleSign = async () => {
-    setLoading(true);
-    try { await updateDoc(doc(db, 'orders', orderId), { status: 'picked', deliveryPickedAt: serverTimestamp() }); setSigned(true); }
-    catch (e) { console.error(e); } finally { setLoading(false); }
-  };
-  if (alreadyPicked || signed) return <div className="rounded-xl border-2 border-green-300 bg-green-50 p-3 mb-3 flex items-center gap-2"><span>✅</span><p className="text-[11px] font-black text-green-800">Colis récupéré — en route</p></div>;
+  if (order.status === 'picked' || signed) return <div className="rounded-xl border-2 border-green-300 bg-green-50 p-3 mb-3 flex items-center gap-2"><span>✅</span><p className="text-[11px] font-black text-green-800">Colis récupéré — en route</p></div>;
   return (
     <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 p-3 mb-3">
-      <p className="text-[10px] font-black text-orange-800 mb-2">📦 Confirmer récupération du colis</p>
-      <button onClick={handleSign} disabled={loading} className="w-full py-2.5 rounded-xl font-black text-[11px] uppercase text-white active:scale-95 disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#D4500F,#ea580c)' }}>
+      <p className="text-[10px] font-black text-orange-800 mb-2">📦 Confirmer récupération du colis chez le vendeur</p>
+      <button onClick={async () => { setLoading(true); try { await updateDoc(doc(db, 'orders', orderId), { status: 'picked', deliveryPickedAt: serverTimestamp() }); setSigned(true); } catch(e){console.error(e);} finally{setLoading(false);} }} disabled={loading}
+        className="w-full py-2.5 rounded-xl font-black text-[11px] uppercase text-white active:scale-95 disabled:opacity-50"
+        style={{ background: 'linear-gradient(135deg,#D4500F,#ea580c)' }}>
         {loading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/> : '✍️ Colis récupéré chez le vendeur'}
       </button>
     </div>
@@ -733,13 +769,12 @@ function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Ord
           await updateDoc(doc(db, 'orders', orderId), { status: 'delivered', deliveredAt: serverTimestamp() });
           const { createNotification } = await import('@/services/notificationService');
           await Promise.all([
-            createNotification(ord.buyerId, 'system', '🎉 Livraison confirmée !', `Le livreur confirme t'avoir remis "${ord.productTitle}".`, { orderId, productId: ord.productId }),
-            createNotification(ord.sellerId, 'system', '✅ Livraison terminée', `"${ord.productTitle}" a été livré.`, { orderId, productId: ord.productId }),
+            createNotification(ord.buyerId,'system','🎉 Livraison confirmée !',`Le livreur confirme t'avoir remis "${ord.productTitle}".`,{orderId}),
+            createNotification(ord.sellerId,'system','✅ Livraison terminée',`"${ord.productTitle}" a été livré.`,{orderId}),
           ]);
           setDone(true);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-      }} disabled={loading}
-        className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
+        } catch(e){console.error(e);} finally{setLoading(false);}
+      }} disabled={loading} className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
         style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
         {loading ? '...' : '📦 Colis livré — course terminée'}
       </button>
@@ -748,48 +783,28 @@ function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Ord
 }
 
 function CODStepsBlock({ orderId, order }: { orderId: string; order: Order }) {
-  const [loadingStep2, setLoadingStep2] = React.useState(false);
-  const [loadingStep3, setLoadingStep3] = React.useState(false);
+  const [l2, setL2] = React.useState(false);
+  const [l3, setL3] = React.useState(false);
   const ord = order as any;
-  const step2Done = ord.delivererCashCollected;
-  const step3Done = ord.sellerCashReturned;
+  if (ord.sellerCashReturned) return <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2 mb-3"><span>✅</span><p className="text-[10px] font-black text-green-700">Argent remis — attente confirmation vendeur</p></div>;
+  if (ord.delivererCashCollected) return (
+    <div className="rounded-xl border-2 border-dashed border-green-400 bg-green-50 p-3 space-y-2 mb-3">
+      <p className="text-[10px] font-black text-green-800">🤝 Remettre {(ord.productPrice||0).toLocaleString('fr-FR')} FCFA au vendeur</p>
+      <button onClick={async () => { setL3(true); try { await updateDoc(doc(db,'orders',orderId),{sellerCashReturned:true,sellerCashReturnedAt:serverTimestamp()}); const {createNotification}=await import('@/services/notificationService'); await createNotification(ord.sellerId,'system','💰 Le livreur dit avoir remis ton argent',`Confirme la réception de ${(ord.productPrice||0).toLocaleString('fr-FR')} FCFA.`,{orderId}); } catch(e){console.error(e);} finally{setL3(false);} }} disabled={l3}
+        className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
+        style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+        {l3 ? '...' : "✍️ Argent remis au vendeur"}
+      </button>
+    </div>
+  );
   return (
-    <div className="space-y-2 mb-3">
-      {!step2Done ? (
-        <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 space-y-2">
-          <p className="text-[10px] font-black text-amber-800">💵 Livrer et collecter le paiement</p>
-          <button onClick={async () => {
-            setLoadingStep2(true);
-            try {
-              await updateDoc(doc(db, 'orders', orderId), { delivererCashCollected: true, delivererCashCollectedAt: serverTimestamp() });
-              const { createNotification } = await import('@/services/notificationService');
-              await createNotification(ord.buyerId, 'system', '🚀 Ton article est en route !', `Le livreur arrive avec "${ord.productTitle}".`, { orderId });
-            } catch (e) { console.error(e); } finally { setLoadingStep2(false); }
-          }} disabled={loadingStep2}
-            className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
-            {loadingStep2 ? '...' : "📦 Livré — cash collecté"}
-          </button>
-        </div>
-      ) : !step3Done ? (
-        <div className="rounded-xl border-2 border-dashed border-green-400 bg-green-50 p-3 space-y-2">
-          <p className="text-[10px] font-black text-green-800">🤝 Remettre {(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA au vendeur</p>
-          <button onClick={async () => {
-            setLoadingStep3(true);
-            try {
-              await updateDoc(doc(db, 'orders', orderId), { sellerCashReturned: true, sellerCashReturnedAt: serverTimestamp() });
-              const { createNotification } = await import('@/services/notificationService');
-              await createNotification(ord.sellerId, 'system', '💰 Le livreur dit avoir remis ton argent', `Confirme la réception de ${(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA.`, { orderId });
-            } catch (e) { console.error(e); } finally { setLoadingStep3(false); }
-          }} disabled={loadingStep3}
-            className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
-            {loadingStep3 ? '...' : "✍️ Argent remis au vendeur"}
-          </button>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-3 flex items-center gap-2"><span>✅</span><p className="text-[10px] font-black text-green-700">Argent remis — attente vendeur</p></div>
-      )}
+    <div className="rounded-xl border-2 border-dashed border-amber-300 bg-amber-50 p-3 space-y-2 mb-3">
+      <p className="text-[10px] font-black text-amber-800">💵 Livrer et collecter le paiement</p>
+      <button onClick={async () => { setL2(true); try { await updateDoc(doc(db,'orders',orderId),{delivererCashCollected:true,delivererCashCollectedAt:serverTimestamp()}); const {createNotification}=await import('@/services/notificationService'); await createNotification(ord.buyerId,'system','🚀 Ton article est en route !',`Le livreur arrive avec "${ord.productTitle}".`,{orderId}); } catch(e){console.error(e);} finally{setL2(false);} }} disabled={l2}
+        className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"
+        style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
+        {l2 ? '...' : "📦 Livré — cash collecté"}
+      </button>
     </div>
   );
 }
@@ -801,21 +816,13 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller, currentDeliverer
   const code = ord.deliveryCode || '';
   const [copied, setCopied] = React.useState(false);
   const [showDetail, setShowDetail] = React.useState(false);
-  const orange = '#E05A00';
-
-  const copyCode = async () => {
-    try { await navigator.clipboard.writeText(code); } catch { const el = document.createElement('input'); el.value = code; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); }
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
-
-  const statusLabel = order.status === 'picked'
-    ? { icon: '🛵', text: "En route vers l'acheteur", color: '#16A34A', border: 'border-green-500' }
-    : ord.isCOD && ['cod_confirmed','ready','confirmed'].includes(order.status)
-    ? { icon: '📦', text: 'Récupère le colis chez le vendeur', color: '#2563EB', border: 'border-blue-400' }
-    : { icon: '📦', text: 'Va chercher le colis chez le vendeur', color: orange, border: 'border-orange-400' };
-
+  const OG = '#E05A00';
+  const copyCode = async () => { try{await navigator.clipboard.writeText(code);}catch{const el=document.createElement('input');el.value=code;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);} setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  const statusColor = order.status === 'picked' ? '#16A34A' : ord.isCOD ? '#2563EB' : OG;
+  const statusText  = order.status === 'picked' ? "En route vers l'acheteur" : ord.isCOD ? 'Récupère le colis chez le vendeur' : 'Va chercher le colis chez le vendeur';
+  const borderColor = order.status === 'picked' ? 'border-green-500' : ord.isCOD ? 'border-blue-400' : 'border-orange-400';
   return (
-    <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 ${statusLabel.border} mb-3`}>
+    <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 ${borderColor} mb-3`}>
       <div className="flex items-start gap-3 mb-3">
         <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
           {ord.productImage ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-xl">📦</div>}
@@ -823,11 +830,12 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller, currentDeliverer
         <div className="flex-1 min-w-0">
           <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
           <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
-          <p className="text-[10px] font-bold mt-0.5" style={{ color: statusLabel.color }}>{statusLabel.icon} {statusLabel.text}</p>
+          <p className="text-[10px] font-bold mt-0.5" style={{ color: statusColor }}>
+            {order.status === 'picked' ? '🛵' : ord.isCOD ? '📦' : '📦'} {statusText}
+          </p>
         </div>
-        <div className="text-right"><p className="font-black text-[15px]" style={{ color: orange }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></div>
+        <div className="text-right"><p className="font-black text-[15px]" style={{ color: OG }}>{(ord.deliveryFee||0).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></div>
       </div>
-
       {code ? (
         <div className="rounded-2xl p-4 mb-3" style={{ background: 'linear-gradient(135deg,#0f172a,#1e293b)' }}>
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🔐 Code — transmets-le à l'acheteur</p>
@@ -838,11 +846,11 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller, currentDeliverer
               {copied ? '✓ Copié' : 'Copier'}
             </button>
           </div>
+          <p className="text-[9px] text-slate-500 mt-2">L'acheteur saisit ce code sur Brumerie pour confirmer la réception.</p>
         </div>
       ) : (
         <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100"><p className="text-[11px] text-amber-700 font-bold">⏳ Code en cours de génération...</p></div>
       )}
-
       {!ord.isCOD && ['ready','confirmed'].includes(order.status) && <MobileDeliveryButtons orderId={order.id} order={order}/>}
       {ord.isCOD && ['cod_confirmed','ready','confirmed'].includes(order.status) && <CashPickupButton orderId={order.id} order={order}/>}
       {ord.isCOD && ['picked','cod_delivered'].includes(order.status) && <CODStepsBlock orderId={order.id} order={order}/>}

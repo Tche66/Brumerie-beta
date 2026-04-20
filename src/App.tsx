@@ -156,7 +156,7 @@ function AppShell() {
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', 'deliverer-dashboard', ...(isBuyer ? [] : ['sell' as Page])];
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])]; // 'deliverer-dashboard' exclu → la nav interne BruMove prend le relais
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const navigate = (page: Page) => {
