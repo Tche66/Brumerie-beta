@@ -16,6 +16,7 @@ import {
 import { EditDelivererProfilePage } from '@/pages/EditDelivererProfilePage';
 import { ConversationsListPage } from '@/pages/ConversationsListPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
 import type { Order, Conversation } from '@/types';
@@ -45,9 +46,10 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const [toggling, setToggling]     = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showQRDelivery, setShowQRDelivery]   = useState<Order | null>(null);
-  // Messages intégrés — overlay dans le dashboard sans quitter le mode livreur
+  // Messages + Paramètres intégrés — overlay sans quitter le mode livreur
   const [showMessages, setShowMessages]       = useState(false);
   const [activeConv, setActiveConv]           = useState<Conversation | null>(null);
+  const [showSettings, setShowSettings]       = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -61,13 +63,16 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   }, [JSON.stringify(userProfile?.deliveryZones)]);
 
   // ── Données calculées ────────────────────────────────────────
-  // Assignées à ce livreur : 'confirmed' = en attente code vendeur, 'ready' = code généré
-  // Note : après assignDeliverer(), status 'confirmed' → 'ready' immédiatement
-  const myAssignedPending = orders.filter(o => ['confirmed','ready','cod_confirmed'].includes(o.status));
-  const myOpenOrders      = openOrders.filter(o => !orders.some(mo => mo.id === o.id));
-  const allMissions       = [...myAssignedPending, ...myOpenOrders];
-  // En cours = sous-ensemble des assignées qui ont un code généré et sont actives
+  // Toutes les commandes assignées à ce livreur (subscribeDelivererOrders filtre par delivererId)
+  // On couvre TOUS les statuts actifs, y compris les intermédiaires (proof_sent, cod_pending, etc.)
+  const ACTIVE_STATUSES = ['initiated','proof_sent','confirmed','ready','cod_pending','cod_confirmed','picked','cod_delivered'];
+  const myAllActive       = orders.filter(o => ACTIVE_STATUSES.includes(o.status));
+  // En attente / pas encore en route (code pas encore généré ou vendeur pas encore confirmé)
+  const myAssignedPending = orders.filter(o => ['initiated','proof_sent','confirmed','cod_pending','cod_confirmed'].includes(o.status));
+  // En cours = code généré, livreur actif
   const myOngoing         = orders.filter(o => ['ready','cod_confirmed','picked','cod_delivered'].includes(o.status));
+  const myOpenOrders      = openOrders.filter(o => !orders.some(mo => mo.id === o.id));
+  const allMissions       = [...myAllActive, ...myOpenOrders];
   const myDone            = orders.filter(o => ['delivered','cod_delivered'].includes(o.status));
   const totalGains        = myDone.reduce((s,o) => s + ((o as any).deliveryFee || 0), 0) || userProfile?.totalEarnings || 0;
   const totalCount        = myDone.length || userProfile?.totalDeliveries || 0;
@@ -136,6 +141,22 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
       onClose={() => setShowQRDelivery(null)}
     />;
   }
+  // Paramètres en overlay — sans quitter le mode livreur
+  if (showSettings) {
+    return (
+      <SettingsPage
+        onBack={() => setShowSettings(false)}
+        onNavigate={(page) => {
+          // Si l'utilisateur navigue vers une sous-page des settings, rester dans l'overlay
+          // Pour les pages qui nécessitent une vraie navigation (ex: become-deliverer déjà fait)
+          setShowSettings(false);
+          onNavigate(page);
+        }}
+        role="seller"
+      />
+    );
+  }
+
   // Messages intégrés — sans quitter le mode livreur ni changer activePage dans App
   if (showMessages) {
     if (activeConv) {
@@ -180,7 +201,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     },
     {
       id: 'radar', label: 'Missions',
-      badge: allMissions.length + myOngoing.length,
+      badge: (allMissions.length > 0 ? allMissions.length : 0),
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 3v5h-8V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
     },
     {
@@ -323,11 +344,13 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </div>
             )}
 
-            {/* Assignées en attente */}
-            {myAssignedPending.length > 0 && (
+            {/* Missions assignées à ce livreur (tous statuts actifs) */}
+            {myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
-                {myAssignedPending.map(order => (
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  📌 Assignées à toi ({myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).length})
+                </p>
+                {myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={true}
                     onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
@@ -354,7 +377,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             )}
 
             {/* État vide */}
-            {allMissions.length === 0 && myOngoing.length === 0 && (
+            {myAllActive.length === 0 && myOpenOrders.length === 0 && (
               <div className="bg-white rounded-3xl p-8 text-center border border-slate-100">
                 <div className="text-4xl mb-3">📡</div>
                 <p className="font-black text-slate-700 text-[14px] mb-1">Aucune mission pour l'instant</p>
@@ -408,10 +431,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </div>
             )}
 
-            {myAssignedPending.length > 0 && (
+            {myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).length > 0 && (
               <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
-                {myAssignedPending.map(order => (
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  📌 Assignées à toi ({myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).length})
+                </p>
+                {myAllActive.filter(o => !['ready','cod_confirmed','picked','cod_delivered'].includes(o.status)).map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={true}
                     onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
                     onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
@@ -434,7 +459,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               </div>
             )}
 
-            {allMissions.length === 0 && myOngoing.length === 0 && (
+            {myAllActive.length === 0 && myOpenOrders.length === 0 && (
               <div className="text-center py-16">
                 <div className="text-5xl mb-4">📦</div>
                 <p className="font-black text-slate-400 text-[13px]">Aucune mission disponible</p>
@@ -642,7 +667,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-700 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ✏️ Modifier mon profil livreur
             </button>
-            <button onClick={() => onNavigate('settings')}
+            <button onClick={() => setShowSettings(true)}
               className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ⚙️ Paramètres
             </button>
