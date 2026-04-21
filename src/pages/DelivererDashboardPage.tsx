@@ -14,9 +14,11 @@ import {
   rejectDelivery,
 } from '@/services/deliveryService';
 import { EditDelivererProfilePage } from '@/pages/EditDelivererProfilePage';
+import { ConversationsListPage } from '@/pages/ConversationsListPage';
+import { ChatPage } from '@/pages/ChatPage';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
-import type { Order } from '@/types';
+import type { Order, Conversation } from '@/types';
 import { updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 
@@ -43,6 +45,9 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const [toggling, setToggling]     = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showQRDelivery, setShowQRDelivery]   = useState<Order | null>(null);
+  // Messages intégrés — overlay dans le dashboard sans quitter le mode livreur
+  const [showMessages, setShowMessages]       = useState(false);
+  const [activeConv, setActiveConv]           = useState<Conversation | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -56,9 +61,12 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   }, [JSON.stringify(userProfile?.deliveryZones)]);
 
   // ── Données calculées ────────────────────────────────────────
-  const myAssignedPending = orders.filter(o => o.status === 'confirmed');
+  // Assignées à ce livreur : 'confirmed' = en attente code vendeur, 'ready' = code généré
+  // Note : après assignDeliverer(), status 'confirmed' → 'ready' immédiatement
+  const myAssignedPending = orders.filter(o => ['confirmed','ready','cod_confirmed'].includes(o.status));
   const myOpenOrders      = openOrders.filter(o => !orders.some(mo => mo.id === o.id));
   const allMissions       = [...myAssignedPending, ...myOpenOrders];
+  // En cours = sous-ensemble des assignées qui ont un code généré et sont actives
   const myOngoing         = orders.filter(o => ['ready','cod_confirmed','picked','cod_delivered'].includes(o.status));
   const myDone            = orders.filter(o => ['delivered','cod_delivered'].includes(o.status));
   const totalGains        = myDone.reduce((s,o) => s + ((o as any).deliveryFee || 0), 0) || userProfile?.totalEarnings || 0;
@@ -80,6 +88,35 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
 
   const OG = '#E05A00'; // orange BruMove
 
+  // Wrapper onChat pour ouvrir l'overlay messages au lieu de naviguer dans App
+  const handleChat = async (userId: string, userName: string) => {
+    // Chercher une conversation existante avec cet utilisateur
+    try {
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const { db: fsDb } = await import('@/config/firebase');
+      if (!currentUser) return;
+      // Chercher conv entre currentUser et userId
+      const q = query(collection(fsDb, 'conversations'),
+        where('participants', 'array-contains', currentUser.uid));
+      const snap = await getDocs(q);
+      const existing = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as Conversation))
+        .find(c => (c as any).participants?.includes(userId));
+      if (existing) {
+        setActiveConv(existing);
+        setShowMessages(true);
+      } else {
+        // Pas de conv existante — ouvrir la liste pour que l'utilisateur cherche
+        setShowMessages(true);
+        setActiveConv(null);
+      }
+    } catch {
+      // Fallback : ouvrir la liste de messages
+      setShowMessages(true);
+      setActiveConv(null);
+    }
+  };
+
   // ── Sous-pages ───────────────────────────────────────────────
   if (showEditProfile) {
     return <EditDelivererProfilePage
@@ -98,6 +135,39 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
       instruction="L'acheteur va scanner ce QR pour confirmer la réception."
       onClose={() => setShowQRDelivery(null)}
     />;
+  }
+  // Messages intégrés — sans quitter le mode livreur ni changer activePage dans App
+  if (showMessages) {
+    if (activeConv) {
+      return (
+        <ChatPage
+          conversation={activeConv}
+          onBack={() => setActiveConv(null)}
+          onProductClick={() => {}}
+          onBuyAtPrice={() => {}}
+        />
+      );
+    }
+    return (
+      <div className="min-h-screen font-sans">
+        <ConversationsListPage
+          onOpenConversation={(conv) => setActiveConv(conv)}
+          onOpenConversationById={async (convId) => {
+            const { getDoc, doc: fsDoc } = await import('firebase/firestore');
+            const { db: fsDb } = await import('@/config/firebase');
+            const snap = await getDoc(fsDoc(fsDb, 'conversations', convId));
+            if (snap.exists()) setActiveConv({ id: snap.id, ...snap.data() } as Conversation);
+          }}
+        />
+        {/* Bouton retour vers le dashboard livreur */}
+        <button
+          onClick={() => setShowMessages(false)}
+          className="fixed top-14 left-4 z-50 w-10 h-10 rounded-2xl bg-white shadow-md flex items-center justify-center active:scale-90 transition-all"
+          style={{ border: '1px solid #F1F5F9' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+      </div>
+    );
   }
 
   // ── Bottom nav interne livreur ────────────────────────────────
@@ -247,8 +317,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 </div>
                 <MissionCardCompact
                   order={myOpenOrders[0]}
-                  onChatBuyer={() => myOpenOrders[0].buyerId && onChat(myOpenOrders[0].buyerId, myOpenOrders[0].buyerName)}
-                  onChatSeller={() => myOpenOrders[0].sellerId && onChat(myOpenOrders[0].sellerId, myOpenOrders[0].sellerName)}
+                  onChatBuyer={() => myOpenOrders[0].buyerId && handleChat(myOpenOrders[0].buyerId, myOpenOrders[0].buyerName)}
+                  onChatSeller={() => myOpenOrders[0].sellerId && handleChat(myOpenOrders[0].sellerId, myOpenOrders[0].sellerName)}
                 />
               </div>
             )}
@@ -259,8 +329,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
                 {myAssignedPending.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={true}
-                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
                     currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
@@ -274,8 +344,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🛵 En cours ({myOngoing.length})</p>
                 {myOngoing.map(order => (
                   <ActiveDeliveryCard key={order.id} order={order}
-                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
                     currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
@@ -329,8 +399,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🛵 En cours ({myOngoing.length})</p>
                 {myOngoing.map(order => (
                   <ActiveDeliveryCard key={order.id} order={order}
-                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
                     currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
@@ -343,8 +413,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">📌 Assignées à toi ({myAssignedPending.length})</p>
                 {myAssignedPending.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={true}
-                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
                     currentDelivererId={currentUser?.uid}
                     currentDelivererName={userProfile?.deliveryPartnerName || userProfile?.name || ''}
                   />
@@ -357,8 +427,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🌍 Disponibles dans ta zone ({myOpenOrders.length})</p>
                 {myOpenOrders.map(order => (
                   <MissionCard key={order.id} order={order} isAssigned={false}
-                    onChatBuyer={() => order.buyerId && onChat(order.buyerId, order.buyerName)}
-                    onChatSeller={() => order.sellerId && onChat(order.sellerId, order.sellerName)}
+                    onChatBuyer={() => order.buyerId && handleChat(order.buyerId, order.buyerName)}
+                    onChatSeller={() => order.sellerId && handleChat(order.sellerId, order.sellerName)}
                   />
                 ))}
               </div>
@@ -585,11 +655,15 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
         style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
         <div className="flex items-center justify-around h-16 px-1">
           {NAV_TABS.map(t => {
-            const isActive = t.isExternal ? false : tab === t.id;
+            const isActive = t.id === 'messages' ? showMessages : (!t.isExternal && tab === t.id);
             return (
               <button key={t.id}
                 onClick={() => {
-                  if (t.isExternal) {
+                  if (t.id === 'messages') {
+                    // Ouvre les messages en overlay — sans quitter le dashboard livreur
+                    setShowMessages(true);
+                    setActiveConv(null);
+                  } else if (t.isExternal) {
                     onNavigate(t.id as string);
                   } else {
                     setTab(t.id as Tab);

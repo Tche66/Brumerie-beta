@@ -802,7 +802,7 @@ useEffect(() => {
         )}
       </main>
 
-      {MAIN_PAGES.includes(activePage) && (
+      {MAIN_PAGES.includes(activePage) && !(role === 'livreur') && (
         <BottomNav activePage={activePage} onNavigate={handleBottomNavNavigate} role={role} unreadMessages={unreadMessages} pendingDashboard={pendingDashboard} activeMissions={activeMissions} />
       )}
 
