@@ -279,11 +279,12 @@ export async function toggleDelivererAvailability(uid: string, available: boolea
 
 // ── Mise à jour profil livreur ───────────────────────────────────
 export async function updateDelivererProfile(uid: string, data: {
-  deliveryZones: string[];
-  deliveryRates: any[];
-  deliveryBio: string;
-  deliveryAvailable: boolean;
-  deliveryPartnerName: string;
+  deliveryZones?: string[];
+  deliveryRates?: any[];
+  deliveryBio?: string;
+  deliveryAvailable?: boolean;
+  deliveryPartnerName?: string;
+  deliveryPhotoURL?: string;
 }): Promise<void> {
   await updateDoc(doc(db, 'users', uid), { ...data, role: 'livreur' });
 }

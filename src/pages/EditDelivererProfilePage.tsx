@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateDelivererProfile } from '@/services/deliveryService';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 import { NEIGHBORHOODS, DeliveryRate } from '@/types';
 
 
@@ -23,6 +24,10 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
   const [loading,   setLoading]   = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [zoneSearch, setZoneSearch] = useState('');
+  const [deliveryPhoto, setDeliveryPhoto] = useState<string>(userProfile?.deliveryPhotoURL || userProfile?.photoURL || '');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Entreprise de livraison = zones illimitées
   const isDeliveryCompany = (userProfile as any)?.deliveryStatus === 'service';
@@ -48,18 +53,26 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
     if (!currentUser || !canSave) return;
     setLoading(true);
     try {
+      let finalPhotoURL = deliveryPhoto;
+      // Upload nouvelle photo si sélectionnée
+      if (photoFile) {
+        setUploadingPhoto(true);
+        finalPhotoURL = await uploadToCloudinary(photoFile, 'brumerie_deliverers');
+        setUploadingPhoto(false);
+      }
       await updateDelivererProfile(currentUser.uid, {
         deliveryPartnerName: name.trim(),
         deliveryBio: bio.trim(),
         deliveryZones: zones,
         deliveryRates: rates.filter(r => r.fromZone && r.toZone && r.price > 0),
         deliveryAvailable: available,
+        deliveryPhotoURL: finalPhotoURL,
       });
       await refreshUserProfile();
       setSaved(true);
       setTimeout(onSaved, 800);
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setUploadingPhoto(false); }
   };
 
   return (
@@ -76,6 +89,46 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
       </div>
 
       <div className="px-5 pt-6 flex flex-col gap-6">
+
+        {/* Photo profil livreur */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Photo de profil livreur</p>
+          <div className="flex items-center gap-4">
+            {/* Avatar actuel */}
+            <div className="w-20 h-20 rounded-[1.5rem] overflow-hidden bg-slate-100 flex-shrink-0 border-2 border-slate-200 relative">
+              {(photoPreview || deliveryPhoto)
+                ? <img src={photoPreview || deliveryPhoto} alt="" className="w-full h-full object-cover"/>
+                : <div className="w-full h-full flex items-center justify-center text-3xl font-black text-slate-400">
+                    {(userProfile?.deliveryPartnerName || userProfile?.name || 'L').charAt(0).toUpperCase()}
+                  </div>
+              }
+            </div>
+            <div className="flex-1">
+              <p className="text-[11px] font-bold text-slate-700 mb-1">Photo dédiée à ton service de livraison</p>
+              <p className="text-[10px] text-slate-400 mb-3">Distincte de ta photo personnelle — visible par les vendeurs et acheteurs</p>
+              <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white cursor-pointer active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg,#E05A00,#FF7A1A)' }}>
+                📷 Changer la photo
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    setPhotoFile(f);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+                    reader.readAsDataURL(f);
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+          {uploadingPhoto && (
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-orange-600 font-bold">
+              <span className="w-4 h-4 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin"/>
+              Upload en cours...
+            </div>
+          )}
+        </div>
 
         {/* Disponibilité */}
         <div className="bg-white rounded-2xl p-5 shadow-sm">

@@ -234,8 +234,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl overflow-hidden bg-white/20 flex-shrink-0">
-                  {userProfile?.photoURL
-                    ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
+                  {((userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL)
+                    ? <img src={(userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL} alt="" className="w-full h-full object-cover"/>
                     : <div className="w-full h-full flex items-center justify-center text-white font-black text-lg">{(userProfile?.name || 'L').charAt(0).toUpperCase()}</div>
                   }
                 </div>
@@ -590,8 +590,8 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           <div className="px-5 pt-14 pb-8" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-[2rem] overflow-hidden bg-white/20 border-4 border-white/30 shadow-xl mb-3">
-                {userProfile?.photoURL
-                  ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
+                {((userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL)
+                  ? <img src={(userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL} alt="" className="w-full h-full object-cover"/>
                   : <div className="w-full h-full flex items-center justify-center text-white font-black text-4xl">{(userProfile?.name || 'L').charAt(0).toUpperCase()}</div>
                 }
               </div>
@@ -772,37 +772,252 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer, currentDeli
 }) {
   const ord = order as any;
   const OG = '#E05A00';
+  const [showDetail, setShowDetail] = React.useState(false);
+  const [accepting, setAccepting]   = React.useState(false);
+  const [accepted, setAccepted]     = React.useState(ord.delivererAccepted === true);
+
+  const handleAccept = async () => {
+    setAccepting(true);
+    try {
+      const { updateDoc: ud, doc: fd, serverTimestamp: st } = await import('firebase/firestore');
+      const { db: fdb } = await import('@/config/firebase');
+      await ud(fd(fdb, 'orders', order.id), {
+        delivererAccepted: true,
+        delivererAcceptedAt: st(),
+      });
+      const { createNotification } = await import('@/services/notificationService');
+      await Promise.all([
+        createNotification(order.sellerId, 'system',
+          '🛵 Livreur a accepté la mission !',
+          `${currentDelivererName} a accepté de livrer "${order.productTitle}". Il vous contactera bientôt.`,
+          { orderId: order.id, productId: ord.productId }
+        ),
+        createNotification(order.buyerId, 'system',
+          '✅ Livreur en route !',
+          `${currentDelivererName} a accepté votre livraison pour "${order.productTitle}".`,
+          { orderId: order.id, productId: ord.productId }
+        ),
+      ]);
+      setAccepted(true);
+    } catch (e) { console.error(e); }
+    finally { setAccepting(false); }
+  };
+
   return (
-    <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 mb-3 ${isAssigned ? 'border-amber-400' : 'border-orange-300'}`}>
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-          {ord.productImage ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-xl">📦</div>}
+    <>
+      <div className={`bg-white rounded-2xl p-4 shadow-sm border-l-4 mb-3 ${isAssigned ? (accepted ? 'border-green-500' : 'border-amber-400') : 'border-orange-300'}`}>
+        {/* Header */}
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+            {ord.productImage ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-xl">📦</div>}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
+            <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood || '—'} → {ord.buyerNeighborhood || '—'}</p>
+            <p className="text-[10px] text-slate-400">Vendeur : {order.sellerName}</p>
+            {ord.isCOD && <p className="text-[10px] font-bold text-blue-600">💵 COD — paiement à la livraison</p>}
+          </div>
+          <div className="text-right flex-shrink-0">
+            {ord.deliveryFee > 0
+              ? (<><p className="font-black text-[15px]" style={{ color: OG }}>{(ord.deliveryFee).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></>)
+              : (<p className="text-[10px] text-slate-400">Tarif libre</p>)
+            }
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-black text-slate-900 text-[13px] truncate">{order.productTitle}</p>
-          <p className="text-[11px] text-slate-500">{ord.sellerNeighborhood} → {ord.buyerNeighborhood}</p>
-          <p className="text-[10px] text-slate-400">Vendeur : {order.sellerName}</p>
-          {ord.isCOD && <p className="text-[10px] font-bold text-blue-600">💵 COD</p>}
+
+        {/* Statut */}
+        {isAssigned ? (
+          accepted
+            ? <div className="bg-green-50 rounded-xl p-2 mb-3 border border-green-200"><p className="text-[10px] font-black text-green-700">✅ Mission acceptée — attente code vendeur</p></div>
+            : <div className="bg-amber-50 rounded-xl p-2 mb-3 border border-amber-100"><p className="text-[10px] font-black text-amber-700">⏳ Assigné — lis les détails et accepte ou refuse</p></div>
+        ) : (
+          <div className="bg-slate-50 rounded-xl p-2 mb-3 border border-slate-200"><p className="text-[10px] font-black text-slate-500">📦 Mission disponible dans ta zone</p></div>
+        )}
+
+        {/* Bouton Voir détails */}
+        <button onClick={() => setShowDetail(true)}
+          className="w-full py-2 rounded-xl border border-slate-200 font-black text-[10px] text-slate-600 uppercase tracking-widest mb-2 active:scale-95 bg-slate-50">
+          📋 Voir les détails de la course
+        </button>
+
+        {/* Accepter / Refuser pour les missions assignées non encore acceptées */}
+        {isAssigned && !accepted && currentDelivererId && currentDelivererName && (
+          <div className="flex gap-2 mb-2">
+            <button onClick={handleAccept} disabled={accepting}
+              className="flex-1 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
+              style={{ background: `linear-gradient(135deg,${OG},#FF7A1A)` }}>
+              {accepting ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/> : '✅ Accepter la mission'}
+            </button>
+            <RejectDeliveryButton order={order} delivererId={currentDelivererId} delivererName={currentDelivererName} compact/>
+          </div>
+        )}
+
+        {/* Contacts */}
+        <div className="flex gap-2">
+          <button onClick={onChatBuyer} className="flex-1 py-2.5 rounded-xl bg-blue-50 font-black text-[10px] text-blue-600 active:scale-95 flex items-center justify-center gap-1">👤 Acheteur</button>
+          <button onClick={onChatSeller} className="flex-1 py-2.5 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 active:scale-95 flex items-center justify-center gap-1">🏪 Vendeur</button>
         </div>
-        <div className="text-right">{ord.deliveryFee > 0 ? (<><p className="font-black text-[15px]" style={{ color: OG }}>{(ord.deliveryFee || 0).toLocaleString('fr-FR')}</p><p className="text-[9px] text-slate-400">FCFA</p></>) : (<p className="text-[10px] text-slate-400">Tarif libre</p>)}</div>
+
+        {/* Refus si déjà acceptée */}
+        {isAssigned && accepted && currentDelivererId && currentDelivererName && (
+          <div className="mt-2">
+            <RejectDeliveryButton order={order} delivererId={currentDelivererId} delivererName={currentDelivererName}/>
+          </div>
+        )}
       </div>
-      {isAssigned ? (
-        <div className="bg-amber-50 rounded-xl p-2 mb-3 border border-amber-100"><p className="text-[10px] font-black text-amber-700">⏳ Assigné — attente code vendeur</p></div>
-      ) : (
-        <div className="bg-slate-50 rounded-xl p-2 mb-3 border border-slate-200"><p className="text-[10px] font-black text-slate-500">📦 Mission disponible dans ta zone</p></div>
+
+      {/* Modal détails course */}
+      {showDetail && (
+        <MissionDetailModal order={order} onClose={() => setShowDetail(false)}
+          onAccept={!accepted && isAssigned && currentDelivererId ? () => { handleAccept(); setShowDetail(false); } : undefined}
+          onReject={isAssigned && currentDelivererId && currentDelivererName && !accepted
+            ? { delivererId: currentDelivererId, delivererName: currentDelivererName }
+            : undefined}
+          onChatBuyer={onChatBuyer} onChatSeller={onChatSeller}
+        />
       )}
-      <div className="flex gap-2">
-        <button onClick={onChatBuyer} className="flex-1 py-2.5 rounded-xl bg-blue-50 font-black text-[10px] text-blue-600 active:scale-95 flex items-center justify-center gap-1">👤 Acheteur</button>
-        <button onClick={onChatSeller} className="flex-1 py-2.5 rounded-xl bg-slate-100 font-black text-[10px] text-slate-600 active:scale-95 flex items-center justify-center gap-1">🏪 Vendeur</button>
+    </>
+  );
+}
+
+// ── Modal Détails Course ────────────────────────────────────────
+function MissionDetailModal({ order, onClose, onAccept, onReject, onChatBuyer, onChatSeller }: {
+  order: Order;
+  onClose: () => void;
+  onAccept?: () => void;
+  onReject?: { delivererId: string; delivererName: string };
+  onChatBuyer: () => void;
+  onChatSeller: () => void;
+}) {
+  const ord = order as any;
+  const OG = '#E05A00';
+  const createdAt = ord.createdAt?.toDate?.() || (ord.createdAt?.seconds ? new Date(ord.createdAt.seconds * 1000) : null);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[400] flex items-end justify-center p-4">
+      <div className="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl" style={{ maxHeight: '90dvh', overflowY: 'auto' }}>
+        {/* Handle */}
+        <div className="flex justify-center pt-4 pb-2"><div className="w-10 h-1.5 bg-slate-200 rounded-full"/></div>
+
+        <div className="px-6 pb-8 space-y-4">
+          {/* Titre */}
+          <div className="flex items-center justify-between">
+            <p className="font-black text-slate-900 text-[17px] uppercase tracking-tight">Détails de la course</p>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 active:scale-90">✕</button>
+          </div>
+
+          {/* Article */}
+          <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
+            <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+              {ord.productImage ? <img src={ord.productImage} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-slate-900 text-[14px]">{order.productTitle}</p>
+              <p className="text-[11px] font-bold mt-0.5" style={{ color: OG }}>
+                Frais de livraison : {ord.deliveryFee > 0 ? `${ord.deliveryFee.toLocaleString('fr-FR')} FCFA` : 'À négocier'}
+              </p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold mt-0.5">
+                {ord.isCOD ? '💵 Paiement à la livraison (COD)' : '📱 Paiement mobile money déjà effectué'}
+              </p>
+            </div>
+          </div>
+
+          {/* Trajet */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-4">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">📍 Trajet</p>
+            <div className="flex gap-3">
+              <div className="flex flex-col items-center gap-1 pt-1">
+                <div className="w-3 h-3 rounded-full bg-blue-500 flex-shrink-0"/>
+                <div className="w-0.5 flex-1 bg-slate-200 min-h-[28px]"/>
+                <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"/>
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Collecte chez le vendeur</p>
+                  <p className="font-black text-slate-900 text-[13px]">{ord.sellerNeighborhood || '—'}</p>
+                  <p className="text-[10px] text-slate-500">{order.sellerName}</p>
+                  {ord.sellerPhone && (
+                    <a href={`tel:${ord.sellerPhone}`} className="text-[10px] font-bold text-green-700">{ord.sellerPhone}</a>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase">Livraison chez l'acheteur</p>
+                  <p className="font-black text-slate-900 text-[13px]">{ord.buyerNeighborhood || '—'}</p>
+                  <p className="text-[10px] text-slate-500">{order.buyerName}</p>
+                  {ord.buyerPhone && (
+                    <a href={`tel:${ord.buyerPhone}`} className="text-[10px] font-bold text-blue-700">{ord.buyerPhone}</a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Montants */}
+          <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+            <p className="text-[9px] font-black text-green-800 uppercase tracking-widest mb-2">💰 Ce que tu gagnes</p>
+            <div className="flex justify-between items-center">
+              <p className="text-[12px] text-slate-600">Frais de livraison</p>
+              <p className="font-black text-[18px]" style={{ color: OG }}>
+                {ord.deliveryFee > 0 ? `${ord.deliveryFee.toLocaleString('fr-FR')} FCFA` : 'À négocier'}
+              </p>
+            </div>
+            {ord.isCOD && ord.productPrice > 0 && (
+              <div className="mt-2 pt-2 border-t border-green-100">
+                <p className="text-[10px] text-green-700 font-bold">
+                  ⚠️ Tu collectes aussi {(ord.productPrice || 0).toLocaleString('fr-FR')} FCFA pour le vendeur — à lui remettre après livraison.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Instructions livreur */}
+          {ord.deliveryNotes && (
+            <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+              <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest mb-1">📝 Instructions</p>
+              <p className="text-[12px] text-slate-800 leading-relaxed">{ord.deliveryNotes}</p>
+            </div>
+          )}
+
+          {/* Date commande */}
+          {createdAt && (
+            <p className="text-[10px] text-slate-400 text-center">
+              Commande passée le {createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
+
+          {/* Contacts rapides */}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => { onChatSeller(); onClose(); }}
+              className="py-3 rounded-2xl bg-slate-100 font-black text-[10px] text-slate-600 uppercase tracking-widest active:scale-95">
+              🏪 Contacter vendeur
+            </button>
+            <button onClick={() => { onChatBuyer(); onClose(); }}
+              className="py-3 rounded-2xl bg-blue-50 font-black text-[10px] text-blue-600 uppercase tracking-widest active:scale-95">
+              👤 Contacter acheteur
+            </button>
+          </div>
+
+          {/* Accepter / Fermer */}
+          {onAccept && (
+            <button onClick={onAccept}
+              className="w-full py-4 rounded-2xl font-black text-[13px] uppercase tracking-widest text-white active:scale-95"
+              style={{ background: `linear-gradient(135deg,${OG},#FF7A1A)` }}>
+              ✅ Accepter cette mission
+            </button>
+          )}
+          {!onAccept && (
+            <button onClick={onClose}
+              className="w-full py-4 rounded-2xl bg-slate-100 font-black text-[12px] uppercase tracking-widest text-slate-600 active:scale-95">
+              Fermer
+            </button>
+          )}
+        </div>
       </div>
-      {isAssigned && currentDelivererId && currentDelivererName && (
-        <div className="mt-2"><RejectDeliveryButton order={order} delivererId={currentDelivererId} delivererName={currentDelivererName}/></div>
-      )}
     </div>
   );
 }
 
-function RejectDeliveryButton({ order, delivererId, delivererName }: { order: Order; delivererId: string; delivererName: string }) {
+function RejectDeliveryButton({ order, delivererId, delivererName, compact }: { order: Order; delivererId: string; delivererName: string; compact?: boolean }) {
   const [showModal, setShowModal] = React.useState(false);
   const [reason, setReason] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -815,10 +1030,12 @@ function RejectDeliveryButton({ order, delivererId, delivererName }: { order: Or
     setLoading(false);
     if (r.success) { setDone(true); setShowModal(false); }
   };
-  if (done) return <div className="w-full py-2 rounded-xl bg-slate-100 flex items-center justify-center"><span className="text-[10px] font-black text-slate-500">✓ Course refusée</span></div>;
+  if (done) return <div className="flex-1 py-2.5 rounded-xl bg-slate-100 flex items-center justify-center"><span className="text-[10px] font-black text-slate-500">✓ Refusé</span></div>;
   return (
     <>
-      <button onClick={() => setShowModal(true)} className="w-full py-2.5 rounded-xl bg-red-50 border border-red-100 font-black text-[10px] text-red-600 uppercase tracking-widest active:scale-95">✕ Refuser cette mission</button>
+      <button onClick={() => setShowModal(true)} className={compact ? "px-4 py-2.5 rounded-xl bg-red-50 border border-red-100 font-black text-[10px] text-red-600 uppercase tracking-widest active:scale-95 flex items-center justify-center gap-1" : "w-full py-2.5 rounded-xl bg-red-50 border border-red-100 font-black text-[10px] text-red-600 uppercase tracking-widest active:scale-95"}>
+        {compact ? '✕' : '✕ Refuser cette mission'}
+      </button>
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[500] flex items-end justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-7 space-y-5 shadow-2xl">
