@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { NEIGHBORHOODS } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import { updateDelivererProfile } from '@/services/deliveryService';
 import { CGULivreurPage } from './CGULivreurPage';
 import type { DeliveryRate } from '@/types';
@@ -29,6 +30,8 @@ const STATUSES = [
 
 export function BecomeDelivererPage({ onBack, onDone }: Props) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
+  const appConfig = useAppConfig();
+  const allNeighborhoods = [...new Set([...NEIGHBORHOODS, ...(appConfig.customNeighborhoods || [])])];
 
   useEffect(() => {
     if (userProfile?.role === 'livreur') onDone();
@@ -251,7 +254,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
               </div>
             )}
             <div className="grid grid-cols-2 gap-2">
-              {NEIGHBORHOODS
+              {allNeighborhoods
                 .filter(n => !isDeliveryCompany || !zoneSearch || n.toLowerCase().includes((zoneSearch || '').toLowerCase()))
                 .map(n => {
                   const sel = zones.includes(n);
@@ -286,7 +289,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                     <select value={rate.fromZone} onChange={e => updateRate(i, 'fromZone', e.target.value)}
                       className="w-full px-3 py-3 bg-white border-2 border-slate-200 rounded-xl text-[11px] font-bold focus:border-green-600 outline-none">
                       <option value="">Choisir</option>
-                      {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+                      {allNeighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                   <div>
@@ -295,7 +298,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                       className="w-full px-3 py-3 bg-white border-2 border-slate-200 rounded-xl text-[11px] font-bold focus:border-green-600 outline-none">
                       <option value="">Choisir</option>
                       <option value="same">Meme quartier</option>
-                      {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+                      {allNeighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>

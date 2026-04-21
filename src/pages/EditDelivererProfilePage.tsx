@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import { updateDelivererProfile } from '@/services/deliveryService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { NEIGHBORHOODS, DeliveryRate } from '@/types';
@@ -13,6 +14,8 @@ interface Props { onBack: () => void; onSaved: () => void; }
 
 export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
+  const appConfig = useAppConfig();
+  const allNeighborhoods = [...new Set([...NEIGHBORHOODS, ...(appConfig.customNeighborhoods || [])])];
 
   const [name,      setName]      = useState(userProfile?.deliveryPartnerName || '');
   const [bio,       setBio]       = useState(userProfile?.deliveryBio || '');
@@ -181,7 +184,7 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
             />
           )}
           <div className="flex flex-wrap gap-2">
-            {(NEIGHBORHOODS || [
+            {(allNeighborhoods || [
               'Cocody','Plateau','Marcory','Treichville','Adjamé','Yopougon',
               'Abobo','Koumassi','Port-Bouët','Attécoubé','Jacqueville','Dabou',
             ])
@@ -210,13 +213,13 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
                   <select value={rate.fromZone} onChange={e => setRate(i, 'fromZone', e.target.value)}
                     className="flex-1 bg-white rounded-lg px-2 py-2 text-[11px] border border-slate-200 outline-none">
                     <option value="">De...</option>
-                    {(NEIGHBORHOODS || zones).map(n => <option key={n} value={n}>{n}</option>)}
+                    {(allNeighborhoods || zones).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <span className="flex items-center text-slate-400 font-black text-[12px]">→</span>
                   <select value={rate.toZone} onChange={e => setRate(i, 'toZone', e.target.value)}
                     className="flex-1 bg-white rounded-lg px-2 py-2 text-[11px] border border-slate-200 outline-none">
                     <option value="">Vers...</option>
-                    {(NEIGHBORHOODS || zones).map(n => <option key={n} value={n}>{n}</option>)}
+                    {(allNeighborhoods || zones).map(n => <option key={n} value={n}>{n}</option>)}
                     <option value="same">Même quartier</option>
                   </select>
                 </div>

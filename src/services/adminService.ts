@@ -97,9 +97,9 @@ export async function getAdminStats(): Promise<{
 // ─── UTILISATEURS ─────────────────────────────────────────────
 export function subscribeAllUsers(
   callback: (users: any[]) => void,
-  maxCount = 500,
+  maxCount = 2000,
 ): () => void {
-  // Sans orderBy — tous les users visibles même sans champ createdAt
+  // Sans orderBy — tous les users visibles, limite haute pour inclure les livreurs récents
   const q = query(collection(db, 'users'), limit(maxCount));
   return onSnapshot(q, snap => {
     const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));

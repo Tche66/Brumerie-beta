@@ -351,6 +351,24 @@ useEffect(() => {
     return () => unsub?.();
   }, [currentUser?.uid, userProfile?.role]);
 
+  // ── useEffect #3d — redirection auto livreur ──────────────────
+  // Quand role='livreur' devient actif (après BecomeDelivererPage ou refresh),
+  // rediriger vers deliverer-dashboard si on est sur une page non-livreur
+  // Délai minimal pour laisser le context React se propager complètement
+  useEffect(() => {
+    if (!userProfile || userProfile.role !== 'livreur') return;
+    const NON_DELIVERER_PAGES: Page[] = ['home', 'dashboard', 'sell', 'discover', 'profile', 'become-deliverer'];
+    if (NON_DELIVERER_PAGES.includes(activePage)) {
+      // Petit délai pour s'assurer que Firebase a bien propagé le role
+      const t = setTimeout(() => {
+        navigate('deliverer-dashboard');
+        setNavigationHistory(['deliverer-dashboard']);
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile?.role]);
+
   // ── useEffect #4 — notifications in-app ──────────────────────
   useEffect(() => {
     if (!currentUser) return;
