@@ -193,6 +193,7 @@ export interface User {
   // ─── Livreur partenaire ───────────────────────────────────
   deliveryPartnerName?: string;   // ex: "Kouassi Express"
   deliveryPartnerPhone?: string;  // ex: "+225 07 12 34 56" (WhatsApp)
+  deliveryPhotoURL?: string;       // Photo dédiée au service de livraison
   // Champs spécifiques au rôle livreur
   deliveryZones?: string[];        // Max 2 quartiers couverts
   deliveryRates?: DeliveryRate[];  // Tarifs propres du livreur

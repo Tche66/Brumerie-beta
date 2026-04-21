@@ -140,8 +140,8 @@ export function DelivererPicker({ order, onDone, onClose, onContactDeliverer }: 
                 {/* Header livreur */}
                 <div className="flex items-center gap-3 mb-3">
                   <button onClick={() => setViewProfile(d.id)} className="flex-shrink-0">
-                    {d.photoURL
-                      ? <img src={d.photoURL} alt="" className="w-12 h-12 rounded-xl object-cover"/>
+                    {(d.deliveryPhotoURL || d.photoURL)
+                      ? <img src={d.deliveryPhotoURL || d.photoURL} alt="" className="w-12 h-12 rounded-xl object-cover"/>
                       : <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-xl">🛵</div>
                     }
                   </button>

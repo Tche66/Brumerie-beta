@@ -120,8 +120,8 @@ export function DelivererProfilePage({
 
         {/* Carte identité */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
-          {deliverer.photoURL
-            ? <img src={deliverer.photoURL} alt="" className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"/>
+          {(deliverer.deliveryPhotoURL || deliverer.photoURL)
+            ? <img src={deliverer.deliveryPhotoURL || deliverer.photoURL} alt="" className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"/>
             : <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center text-3xl flex-shrink-0">🛵</div>
           }
           <div className="flex-1 min-w-0">

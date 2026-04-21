@@ -234,7 +234,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-2xl overflow-hidden bg-white/20 flex-shrink-0">
-                  {((userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL)
+                  {(userProfile?.deliveryPhotoURL || userProfile?.photoURL)
                     ? <img src={(userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL} alt="" className="w-full h-full object-cover"/>
                     : <div className="w-full h-full flex items-center justify-center text-white font-black text-lg">{(userProfile?.name || 'L').charAt(0).toUpperCase()}</div>
                   }
@@ -590,7 +590,7 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
           <div className="px-5 pt-14 pb-8" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-[2rem] overflow-hidden bg-white/20 border-4 border-white/30 shadow-xl mb-3">
-                {((userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL)
+                {(userProfile?.deliveryPhotoURL || userProfile?.photoURL)
                   ? <img src={(userProfile as any)?.deliveryPhotoURL || userProfile?.photoURL} alt="" className="w-full h-full object-cover"/>
                   : <div className="w-full h-full flex items-center justify-center text-white font-black text-4xl">{(userProfile?.name || 'L').charAt(0).toUpperCase()}</div>
                 }
