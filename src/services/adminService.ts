@@ -113,6 +113,25 @@ export function subscribeAllUsers(
   }, () => callback([]));
 }
 
+// ── Subscription dédiée aux livreurs (sans limite de count) ─────────────
+export function subscribeDelivererUsers(
+  callback: (users: any[]) => void,
+): () => void {
+  const q = query(
+    collection(db, 'users'),
+    where('role', '==', 'livreur'),
+  );
+  return onSnapshot(q, snap => {
+    const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    users.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.()?.getTime() || (a.createdAt?.seconds || 0) * 1000;
+      const bTime = b.createdAt?.toDate?.()?.getTime() || (b.createdAt?.seconds || 0) * 1000;
+      return bTime - aTime;
+    });
+    callback(users);
+  }, () => callback([]));
+}
+
 export async function banUser(userId: string, reason: string): Promise<void> {
   await updateDoc(doc(db, 'users', userId), {
     isBanned: true,
@@ -129,7 +148,7 @@ export async function unbanUser(userId: string): Promise<void> {
   });
 }
 
-export async function setUserRole(userId: string, role: 'buyer' | 'seller'): Promise<void> {
+export async function setUserRole(userId: string, role: 'buyer' | 'seller' | 'livreur'): Promise<void> {
   await updateDoc(doc(db, 'users', userId), { role });
 }
 

@@ -197,7 +197,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
     try { await revokeVerification(userId); await logAction('USER_UNVERIFIED', userId); showToast('Badge retiré'); }
     catch { showToast('❌ Erreur'); } finally { setBusy(null); }
   };
-  const handleSetRole = async (userId: string, role: 'buyer' | 'seller') => {
+  const handleSetRole = async (userId: string, role: 'buyer' | 'seller' | 'livreur') => {
     setBusy(userId);
     try { await setUserRole(userId, role); await logAction('USER_ROLE', userId, role); showToast(`Rôle → ${role}`); }
     catch { showToast('❌ Erreur'); } finally { setBusy(null); }
@@ -988,7 +988,19 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                                   <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">🚫 Banni</span>
                                 )}
                                 {u.role !== 'livreur' && u.deliveryCGUAccepted && (
-                                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">⚠️ Role non sync</span>
+                                  <button
+                                    disabled={busy === 'sync_'+u.id}
+                                    onClick={async () => {
+                                      setBusy('sync_'+u.id);
+                                      try {
+                                        await setUserRole(u.id, 'livreur');
+                                        showToast('✅ Rôle synchronisé → livreur');
+                                      } catch { showToast('❌ Erreur sync'); }
+                                      finally { setBusy(null); }
+                                    }}
+                                    className="text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase active:scale-95 transition-all border border-amber-200 disabled:opacity-50">
+                                    {busy === 'sync_'+u.id ? '⏳...' : '⚠️ Sync role →'}
+                                  </button>
                                 )}
                               </div>
                               <p className="text-[10px] text-slate-400 mt-0.5">{u.phone || 'Pas de téléphone'}</p>
