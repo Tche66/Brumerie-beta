@@ -763,7 +763,13 @@ useEffect(() => {
           <GuidePage onBack={goBack} />
         )}
         {activePage === 'admin' && (
-          <AdminPage onBack={goBack} />
+          <AdminPage
+            onBack={goBack}
+            onContact={async (userId, userName) => {
+              await handleOpenChatWithSeller(userId, userName, userId, 'Contact Admin');
+              goBack();
+            }}
+          />
         )}
         {activePage === 'compta' && (
           <ComptaPage

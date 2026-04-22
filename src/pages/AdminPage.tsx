@@ -5,7 +5,7 @@ import {
   subscribePendingBoosts, subscribeAllBoosts, activateBoost, rejectBoost,
 } from '@/services/boostService';
 import {
-  getAdminStats, subscribeAllUsers, banUser, unbanUser, setUserRole,
+  getAdminStats, subscribeAllUsers, subscribeDelivererUsers, banUser, unbanUser, setUserRole,
   forceVerifyUser, revokeVerification, subscribeAllProducts,
   adminDeleteProduct, adminHideProduct, subscribeAllOrders, forceResolveOrder,
   publishSystemBanner, subscribeAdminLogs, logAdminAction, getGlobalSettings,
@@ -66,9 +66,9 @@ function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wide ${color}`}>{label}</span>;
 }
 
-interface AdminPageProps { onBack: () => void }
+interface AdminPageProps { onBack: () => void; onContact?: (userId: string, userName: string) => void; }
 
-export function AdminPage({ onBack }: AdminPageProps) {
+export function AdminPage({ onBack, onContact }: AdminPageProps) {
   const { currentUser } = useAuth();
   const isAdmin = !!(currentUser?.uid && ADMIN_UID && currentUser.uid === ADMIN_UID);
 
@@ -146,7 +146,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   }, [isAdmin, currentUser?.uid]);
 
   useEffect(() => { if (!isAdmin) return; return subscribeAllBoosts(setAllBoosts); }, [isAdmin]);
-  useEffect(() => { if (!isAdmin) return; return subscribeAllUsers(setUsers); }, [isAdmin]);
+  useEffect(() => { if (!isAdmin) return; return subscribeAllUsers(setUsers, 2000); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAllProducts(setProducts); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAllOrders(setOrders); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAdminLogs(setLogs); }, [isAdmin]);
@@ -549,9 +549,9 @@ export function AdminPage({ onBack }: AdminPageProps) {
                   {
                     label: '🛵 Livreurs',
                     key: 'livreurs-csv',
-                    sub: `${users.filter((u: any) => u.role === 'livreur').length} livreurs`,
+                    sub: `${users.filter((u: any) => u.role === 'livreur' || u.deliveryCGUAccepted === true).length} livreurs`,
                     headers: ['ID','Nom','Téléphone','Quartiers','Dispo','Livraisons','Gains FCFA','Véhicule'],
-                    rows: () => users.filter((u: any) => u.role === 'livreur').map((u: any) => [
+                    rows: () => users.filter((u: any) => u.role === 'livreur' || u.deliveryCGUAccepted === true).map((u: any) => [
                       u.id || '',
                       (u.name || '').replace(/,/g, ' '),
                       (u.phone || '').replace(/,/g, ' '),
@@ -903,7 +903,10 @@ export function AdminPage({ onBack }: AdminPageProps) {
         {/* ── PRODUCTS ── */}
         {/* ── LIVREURS ── */}
         {tab === 'livreurs' && (() => {
-          const livreurs = users.filter((u: any) => u.role === 'livreur');
+          // Inclure les livreurs par role ET ceux avec CGU acceptée (migration anciens comptes)
+          const livreurs = users.filter((u: any) =>
+            u.role === 'livreur' || u.deliveryCGUAccepted === true
+          );
           const dispo = livreurs.filter((u: any) => u.deliveryAvailable);
           return (
             <>
@@ -1010,13 +1013,11 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
                       {/* Actions */}
                       <div className="flex border-t border-slate-50 divide-x divide-slate-50">
-                        {u.phone && (
-                          <a href={`https://wa.me/${u.phone.replace(/\D/g,'')}`}
-                            target="_blank" rel="noopener noreferrer"
-                            className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center gap-1.5 active:bg-slate-50 transition-all">
-                            💬 WhatsApp
-                          </a>
-                        )}
+                        <button
+                          onClick={() => onContact?.(u.id, u.deliveryPartnerName || u.name || 'Livreur')}
+                          className="flex-1 py-2.5 text-[10px] font-black text-blue-600 uppercase tracking-wide flex items-center justify-center gap-1.5 active:bg-blue-50 transition-all">
+                          💬 Message
+                        </button>
                         {!u.isBanned ? (
                           <button onClick={async () => {
                             setBusy('ban_'+u.id);
