@@ -1088,6 +1088,21 @@ function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Ord
             createNotification(ord.buyerId,'system','🎉 Livraison confirmée !',`Le livreur confirme t'avoir remis "${ord.productTitle}".`,{orderId}),
             createNotification(ord.sellerId,'system','✅ Livraison terminée',`"${ord.productTitle}" a été livré.`,{orderId}),
           ]);
+          // Incrémenter stats livreur
+          if (ord.delivererId) {
+            try {
+              const { getDoc: gd, doc: fd2 } = await import('firebase/firestore');
+              const { db: db2 } = await import('@/config/firebase');
+              const dSnap = await gd(fd2(db2, 'users', ord.delivererId));
+              if (dSnap.exists()) {
+                const d = dSnap.data();
+                await updateDoc(fd2(db2, 'users', ord.delivererId), {
+                  totalDeliveries: (d.totalDeliveries || 0) + 1,
+                  totalEarnings: (d.totalEarnings || 0) + (ord.deliveryFee || 0),
+                });
+              }
+            } catch (e) { console.error('[stats livreur]', e); }
+          }
           setDone(true);
         } catch(e){console.error(e);} finally{setLoading(false);}
       }} disabled={loading} className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95 disabled:opacity-50"

@@ -903,14 +903,25 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         {/* ── PRODUCTS ── */}
         {/* ── LIVREURS ── */}
         {tab === 'livreurs' && (() => {
-          // Inclure les livreurs par role ET ceux avec CGU acceptée (migration anciens comptes)
+          // Livreurs = role='livreur' OU deliveryCGUAccepted=true (migration)
           const livreurs = users.filter((u: any) =>
             u.role === 'livreur' || u.deliveryCGUAccepted === true
           );
           const dispo = livreurs.filter((u: any) => u.deliveryAvailable);
+
+          // Stats calculées en LIVE depuis les commandes (plus fiables que les champs user)
+          const getLivreurStats = (uid: string) => {
+            const myOrders = orders.filter((o: any) => o.delivererId === uid);
+            const done  = myOrders.filter((o: any) => ['delivered','cod_delivered'].includes(o.status));
+            const gains = done.reduce((s: number, o: any) => s + (o.deliveryFee || 0), 0);
+            const rated = done.filter((o: any) => o.delivererRating > 0);
+            const avg   = rated.length ? (rated.reduce((s: number, o: any) => s + o.delivererRating, 0) / rated.length) : null;
+            return { count: done.length, gains, avg, active: myOrders.filter((o: any) => !['delivered','cod_delivered','cancelled'].includes(o.status)).length };
+          };
+
           return (
             <>
-              {/* Stats rapides */}
+              {/* Stats globales */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-white/5 rounded-2xl p-3 text-center">
                   <p className="font-black text-2xl text-green-400">{livreurs.length}</p>
@@ -922,7 +933,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 </div>
                 <div className="bg-white/5 rounded-2xl p-3 text-center">
                   <p className="font-black text-2xl text-blue-400">
-                    {livreurs.reduce((s: number, u: any) => s + (u.totalDeliveries || 0), 0)}
+                    {orders.filter((o: any) => o.delivererId && ['delivered','cod_delivered'].includes(o.status)).length}
                   </p>
                   <p className="text-[9px] text-slate-500 font-bold uppercase">Livraisons</p>
                 </div>
@@ -932,114 +943,145 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 <div className="text-center py-16">
                   <p className="text-4xl mb-3">🛵</p>
                   <p className="font-black text-slate-400 text-[13px]">Aucun livreur inscrit</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Les livreurs s'inscrivent via l'app</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {livreurs.map((u: any) => (
-                    <div key={u.id} className="bg-white rounded-2xl overflow-hidden">
-                      <div className="px-4 pt-4 pb-3">
-                        <div className="flex items-center gap-3 mb-3">
-                          {/* Avatar */}
-                          <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
-                            {u.photoURL
-                              ? <img src={u.photoURL} alt="" className="w-full h-full object-cover"/>
-                              : <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-black text-lg">{(u.name||'?').charAt(0).toUpperCase()}</div>
-                            }
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-black text-slate-900 text-[13px] truncate">{u.name || 'Sans nom'}</p>
-                              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${u.deliveryAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
-                                {u.deliveryAvailable ? '🟢 Dispo' : '⚫ Indispo'}
-                              </span>
-                              {u.isBanned && <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">🚫 Banni</span>}
+                  {livreurs.map((u: any) => {
+                    const stats = getLivreurStats(u.id);
+                    const photo = u.deliveryPhotoURL || u.photoURL;
+                    return (
+                      <div key={u.id} className="bg-white rounded-2xl overflow-hidden">
+                        <div className="px-4 pt-4 pb-3">
+
+                          {/* Header — photo + noms + dispo */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border-2 border-slate-200">
+                              {photo
+                                ? <img src={photo} alt="" className="w-full h-full object-cover"/>
+                                : <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white font-black text-xl">
+                                    {(u.deliveryPartnerName || u.name || '?').charAt(0).toUpperCase()}
+                                  </div>
+                              }
                             </div>
-                            <p className="text-[10px] text-slate-400">{u.phone || 'Pas de téléphone'}</p>
+                            <div className="flex-1 min-w-0">
+                              {/* Nom service de livraison */}
+                              {u.deliveryPartnerName && (
+                                <p className="font-black text-slate-900 text-[14px] leading-tight truncate">
+                                  🛵 {u.deliveryPartnerName}
+                                </p>
+                              )}
+                              {/* Nom personnel */}
+                              <p className={`text-slate-500 leading-tight truncate ${u.deliveryPartnerName ? 'text-[11px]' : 'font-black text-slate-900 text-[13px]'}`}>
+                                {u.deliveryPartnerName ? `Géré par ${u.name || '—'}` : (u.name || 'Sans nom')}
+                              </p>
+                              {/* Statut + badges */}
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${u.deliveryAvailable ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                                  {u.deliveryAvailable ? '🟢 Dispo' : '⚫ Indispo'}
+                                </span>
+                                {stats.active > 0 && (
+                                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 uppercase">
+                                    🛵 {stats.active} en cours
+                                  </span>
+                                )}
+                                {u.isBanned && (
+                                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-600 uppercase">🚫 Banni</span>
+                                )}
+                                {u.role !== 'livreur' && u.deliveryCGUAccepted && (
+                                  <span className="text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">⚠️ Role non sync</span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{u.phone || 'Pas de téléphone'}</p>
+                            </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-black text-[15px] text-green-700">{(u.totalDeliveries || 0)}</p>
-                            <p className="text-[8px] text-slate-400 uppercase">livraisons</p>
-                          </div>
-                        </div>
 
-                        {/* Zones */}
-                        {u.deliveryZones?.length > 0 && (
-                          <div className="flex gap-1.5 flex-wrap mb-2">
-                            {u.deliveryZones.map((z: string) => (
-                              <span key={z} className="text-[9px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-                                📍 {z}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Bio livraison */}
-                        {u.deliveryBio && (
-                          <p className="text-[10px] text-slate-500 italic mb-2">"{u.deliveryBio}"</p>
-                        )}
-
-                        {/* Stats + gains */}
-                        <div className="grid grid-cols-3 gap-2 mb-3">
-                          <div className="bg-slate-50 rounded-xl p-2 text-center">
-                            <p className="font-black text-[13px] text-blue-600">{u.totalDeliveries || 0}</p>
-                            <p className="text-[8px] text-slate-400 uppercase">Livraisons</p>
-                          </div>
-                          <div className="bg-slate-50 rounded-xl p-2 text-center">
-                            <p className="font-black text-[13px] text-green-600">{(u.totalEarnings || 0).toLocaleString('fr-FR')}</p>
-                            <p className="text-[8px] text-slate-400 uppercase">Gains FCFA</p>
-                          </div>
-                          <div className="bg-slate-50 rounded-xl p-2 text-center">
-                            <p className="font-black text-[13px] text-amber-600">{u.avgRating ? u.avgRating.toFixed(1) : '—'}</p>
-                            <p className="text-[8px] text-slate-400 uppercase">Note</p>
-                          </div>
-                        </div>
-
-                        {/* Tarifs */}
-                        {u.deliveryRates?.length > 0 && (
-                          <div className="bg-slate-50 rounded-xl p-2 mb-2">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tarifs</p>
-                            <div className="space-y-0.5">
-                              {u.deliveryRates.slice(0, 3).map((r: any, i: number) => (
-                                <div key={i} className="flex justify-between text-[10px]">
-                                  <span className="text-slate-600">{r.zone || r.label || `Zone ${i+1}`}</span>
-                                  <span className="font-black text-slate-800">{(r.price || 0).toLocaleString('fr-FR')} FCFA</span>
-                                </div>
+                          {/* Zones */}
+                          {u.deliveryZones?.length > 0 && (
+                            <div className="flex gap-1.5 flex-wrap mb-2">
+                              {u.deliveryZones.map((z: string) => (
+                                <span key={z} className="text-[9px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">📍 {z}</span>
                               ))}
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
 
-                      {/* Actions */}
-                      <div className="flex border-t border-slate-50 divide-x divide-slate-50">
-                        <button
-                          onClick={() => onContact?.(u.id, u.deliveryPartnerName || u.name || 'Livreur')}
-                          className="flex-1 py-2.5 text-[10px] font-black text-blue-600 uppercase tracking-wide flex items-center justify-center gap-1.5 active:bg-blue-50 transition-all">
-                          💬 Message
-                        </button>
-                        {!u.isBanned ? (
-                          <button onClick={async () => {
-                            setBusy('ban_'+u.id);
-                            try { await banUser(u.id, 'Banni par admin', currentUser!.uid); showToast('🚫 Banni'); }
-                            catch { showToast('Erreur'); } finally { setBusy(''); }
-                          }} disabled={busy === 'ban_'+u.id}
-                            className="flex-1 py-2.5 text-[10px] font-black text-red-500 uppercase tracking-wide flex items-center justify-center active:bg-red-50 transition-all disabled:opacity-50">
-                            🚫 Bannir
+                          {/* Bio */}
+                          {u.deliveryBio && (
+                            <p className="text-[10px] text-slate-500 italic mb-2">"{u.deliveryBio}"</p>
+                          )}
+
+                          {/* Stats LIVE depuis commandes */}
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="bg-slate-50 rounded-xl p-2 text-center">
+                              <p className="font-black text-[15px] text-blue-600">{stats.count}</p>
+                              <p className="text-[8px] text-slate-400 uppercase">Livraisons</p>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl p-2 text-center">
+                              <p className="font-black text-[13px] text-green-600">{stats.gains.toLocaleString('fr-FR')}</p>
+                              <p className="text-[8px] text-slate-400 uppercase">Gains FCFA</p>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl p-2 text-center">
+                              <p className="font-black text-[15px] text-amber-600">
+                                {stats.avg !== null ? stats.avg.toFixed(1) : '—'}
+                              </p>
+                              <p className="text-[8px] text-slate-400 uppercase">Note moy.</p>
+                            </div>
+                          </div>
+
+                          {/* Tarifs */}
+                          {u.deliveryRates?.length > 0 && (
+                            <div className="bg-slate-50 rounded-xl p-2 mb-2">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tarifs</p>
+                              <div className="space-y-0.5">
+                                {u.deliveryRates.slice(0, 3).map((r: any, i: number) => (
+                                  <div key={i} className="flex justify-between text-[10px]">
+                                    <span className="text-slate-600">{r.fromZone} → {r.toZone === 'same' ? 'même quartier' : r.toZone}</span>
+                                    <span className="font-black text-slate-800">{(r.price || 0).toLocaleString('fr-FR')} FCFA</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Type de livreur */}
+                          {(u.deliveryStatus || u.deliveryVehicle) && (
+                            <p className="text-[10px] text-slate-400 mb-2">
+                              {u.deliveryStatus === 'service' ? '🏢 Service de livraison' : u.deliveryStatus === 'chauffeur' ? '🚗 Chauffeur/Zem' : '🛵 Livreur indépendant'}
+                              {u.deliveryVehicle && ` · ${u.deliveryVehicle}`}
+                              {u.deliveryHasLicense ? ' · Permis ✓' : ''}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex border-t border-slate-50 divide-x divide-slate-50">
+                          <button
+                            onClick={() => onContact?.(u.id, u.deliveryPartnerName || u.name || 'Livreur')}
+                            className="flex-1 py-2.5 text-[10px] font-black text-blue-600 uppercase tracking-wide flex items-center justify-center gap-1.5 active:bg-blue-50 transition-all">
+                            💬 Message
                           </button>
-                        ) : (
-                          <button onClick={async () => {
-                            setBusy('unban_'+u.id);
-                            try { await unbanUser(u.id); showToast('✅ Débanni'); }
-                            catch { showToast('Erreur'); } finally { setBusy(''); }
-                          }} disabled={busy === 'unban_'+u.id}
-                            className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center active:bg-green-50 transition-all disabled:opacity-50">
-                            ✅ Débannir
-                          </button>
-                        )}
+                          {!u.isBanned ? (
+                            <button onClick={async () => {
+                              setBusy('ban_'+u.id);
+                              try { await banUser(u.id, 'Banni par admin', currentUser!.uid); showToast('🚫 Banni'); }
+                              catch { showToast('Erreur'); } finally { setBusy(''); }
+                            }} disabled={busy === 'ban_'+u.id}
+                              className="flex-1 py-2.5 text-[10px] font-black text-red-500 uppercase tracking-wide flex items-center justify-center active:bg-red-50 transition-all disabled:opacity-50">
+                              🚫 Bannir
+                            </button>
+                          ) : (
+                            <button onClick={async () => {
+                              setBusy('unban_'+u.id);
+                              try { await unbanUser(u.id); showToast('✅ Débanni'); }
+                              catch { showToast('Erreur'); } finally { setBusy(''); }
+                            }} disabled={busy === 'unban_'+u.id}
+                              className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center active:bg-green-50 transition-all disabled:opacity-50">
+                              ✅ Débannir
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
