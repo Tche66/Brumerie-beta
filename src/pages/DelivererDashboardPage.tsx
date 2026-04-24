@@ -17,6 +17,8 @@ import { EditDelivererProfilePage } from '@/pages/EditDelivererProfilePage';
 import { ConversationsListPage } from '@/pages/ConversationsListPage';
 import { ChatPage } from '@/pages/ChatPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { getWeeklyLeaderboard, getDelivererReferralStats } from '@/services/delivererLeaderboardService';
+import { ensureReferralCode, buildReferralLink } from '@/services/referralService';
 import { QRDisplay } from '@/components/QRDisplay';
 import { buildQRPayload } from '@/utils/qrCode';
 import type { Order, Conversation } from '@/types';
@@ -28,7 +30,7 @@ interface Props {
   onChat: (userId: string, userName: string) => void;
 }
 
-type Tab = 'home' | 'radar' | 'earnings' | 'profile';
+type Tab = 'home' | 'radar' | 'earnings' | 'leaderboard' | 'referral' | 'profile';
 
 // ── Helpers ───────────────────────────────────────────────────
 const getTs = (o: any): number =>
@@ -50,6 +52,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
   const [showMessages, setShowMessages]       = useState(false);
   const [activeConv, setActiveConv]           = useState<Conversation | null>(null);
   const [showSettings, setShowSettings]       = useState(false);
+  // Classement + Parrainage
+  const [leaderboard, setLeaderboard]   = useState<any[]>([]);
+  const [referralStats, setReferralStats] = useState<any>(null);
+  const [referralCode, setReferralCode]   = useState<string>('');
+  const [copied, setCopied]               = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -61,6 +68,19 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
     if (!zones.length) return;
     return subscribeOpenOrdersInZone(zones, setOpenOrders);
   }, [JSON.stringify(userProfile?.deliveryZones)]);
+
+  // Charger classement et parrainage au montage
+  useEffect(() => {
+    if (!currentUser) return;
+    // Classement
+    getWeeklyLeaderboard().then(setLeaderboard).catch(() => {});
+    // Code parrainage
+    const name = userProfile?.deliveryPartnerName || userProfile?.name || 'BRU';
+    ensureReferralCode(currentUser.uid, name).then(code => {
+      setReferralCode(code);
+      getDelivererReferralStats(currentUser.uid).then(setReferralStats).catch(() => {});
+    }).catch(() => {});
+  }, [currentUser?.uid]);
 
   // ── Données calculées ────────────────────────────────────────
   // Toutes les commandes assignées à ce livreur (subscribeDelivererOrders filtre par delivererId)
@@ -209,9 +229,13 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
     },
     {
+      id: 'leaderboard', label: 'Top',
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>,
+    },
+    {
       id: 'messages', label: 'Messages',
       isExternal: true,
-      badge: undefined, // pas de compteur ici — géré par App.tsx
+      badge: undefined,
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
     },
     {
@@ -471,6 +495,145 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
       )}
 
       {/* ══════════════════════════════════════
+          ONGLET CLASSEMENT
+      ══════════════════════════════════════ */}
+      {tab === 'leaderboard' && (
+        <>
+          <div className="px-5 pt-14 pb-5" style={{ background: `linear-gradient(160deg, ${OG}, #FF7A1A)` }}>
+            <h1 className="text-white font-black text-[20px] uppercase tracking-tight">Top livreurs</h1>
+            <p className="text-white/70 text-[10px] font-bold mt-0.5">Classement de la semaine en cours</p>
+          </div>
+
+          <div className="px-4 pt-4 space-y-3">
+            {leaderboard.length === 0 ? (
+              <div className="bg-white rounded-3xl p-8 text-center border border-slate-100">
+                <p className="text-4xl mb-3">🏆</p>
+                <p className="font-black text-slate-400 text-[13px]">Aucune livraison cette semaine</p>
+                <p className="text-[11px] text-slate-400 mt-1">Sois le premier du classement !</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {leaderboard.slice(0, 10).map((entry, i) => {
+                  const isMe = entry.delivererId === currentUser?.uid;
+                  const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                  return (
+                    <div key={entry.delivererId}
+                      className={`bg-white rounded-2xl p-4 border-2 flex items-center gap-3 ${isMe ? 'border-orange-400' : 'border-slate-100'}`}>
+                      {/* Médaille */}
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: i < 3 ? `${OG}15` : '#F8FAFC' }}>
+                        <span className="text-[18px]">{medal}</span>
+                      </div>
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                        {entry.photoURL
+                          ? <img src={entry.photoURL} alt="" className="w-full h-full object-cover"/>
+                          : <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-sm">{(entry.deliveryPartnerName || entry.delivererName).charAt(0).toUpperCase()}</div>
+                        }
+                      </div>
+                      {/* Infos */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-black text-slate-900 text-[13px] truncate">{entry.deliveryPartnerName || entry.delivererName}</p>
+                          {isMe && <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full text-white flex-shrink-0" style={{ background: OG }}>MOI</span>}
+                        </div>
+                        <p className="text-[10px] text-slate-400">📍 {entry.zone || '—'}</p>
+                      </div>
+                      {/* Stats */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-black text-[16px]" style={{ color: OG }}>{entry.weekDeliveries}</p>
+                        <p className="text-[8px] text-slate-400 uppercase font-bold">courses</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Ma position si hors top 10 */}
+            {leaderboard.length > 10 && (() => {
+              const myEntry = leaderboard.find(e => e.delivererId === currentUser?.uid);
+              if (!myEntry || myEntry.rank <= 10) return null;
+              return (
+                <div className="bg-white rounded-2xl p-4 border-2 border-dashed border-orange-300 flex items-center gap-3">
+                  <span className="text-[16px] font-black text-slate-400">#{myEntry.rank}</span>
+                  <div className="flex-1">
+                    <p className="font-black text-slate-700 text-[12px]">Ta position</p>
+                    <p className="text-[10px] text-slate-400">{myEntry.weekDeliveries} livraisons cette semaine</p>
+                  </div>
+                  <button onClick={() => getWeeklyLeaderboard().then(setLeaderboard).catch(() => {})}
+                    className="text-[9px] font-black uppercase px-3 py-1.5 rounded-xl active:scale-95" style={{ color: OG, background: `${OG}12` }}>
+                    ↻ Refresh
+                  </button>
+                </div>
+              );
+            })()}
+
+            {/* Parrainage livreur */}
+            <div className="mt-2">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🤝 Parrainage livreur</p>
+              <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${OG}15` }}>
+                    <span className="text-2xl">🛵</span>
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 text-[13px]">Invite des livreurs</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Quand ton filleul complète 5 livraisons, tu reçois une notification et ton profil est mis en avant.</p>
+                  </div>
+                </div>
+
+                {/* Code parrainage */}
+                {referralCode ? (
+                  <div className="bg-slate-50 rounded-2xl p-3 mb-3 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Ton code</p>
+                      <p className="font-black text-[20px] tracking-widest" style={{ color: OG }}>{referralCode}</p>
+                    </div>
+                    <button onClick={async () => {
+                      const link = buildReferralLink(referralCode);
+                      try {
+                        if (navigator.share) {
+                          await navigator.share({ title: 'Rejoins Brumerie livreur !', text: `Utilise mon code ${referralCode} pour rejoindre Brumerie comme livreur 🛵`, url: link });
+                        } else {
+                          await navigator.clipboard.writeText(link);
+                          setCopied(true); setTimeout(() => setCopied(false), 2000);
+                        }
+                      } catch {}
+                    }}
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase text-white active:scale-95"
+                      style={{ background: copied ? '#16A34A' : `linear-gradient(135deg,${OG},#FF7A1A)` }}>
+                      {copied ? '✓ Copié' : '📤 Partager'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 rounded-xl p-3 mb-3">
+                    <p className="text-[11px] text-slate-400 font-bold">Chargement du code...</p>
+                  </div>
+                )}
+
+                {/* Stats filleuls */}
+                {referralStats && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'Invités', val: referralStats.filleulsTotal },
+                      { label: 'Actifs', val: referralStats.filleulsActifs },
+                      { label: 'Bonus ✓', val: referralStats.filleulsBonus },
+                    ].map(k => (
+                      <div key={k.label} className="bg-slate-50 rounded-xl p-2 text-center">
+                        <p className="font-black text-[18px]" style={{ color: OG }}>{k.val}</p>
+                        <p className="text-[8px] text-slate-400 uppercase font-bold">{k.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════
           ONGLET GAINS / HISTORIQUE
       ══════════════════════════════════════ */}
       {tab === 'earnings' && (
@@ -667,6 +830,11 @@ export function DelivererDashboardPage({ onNavigate, onChat }: Props) {
               className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-700 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ✏️ Modifier mon profil livreur
             </button>
+            <button onClick={() => setTab('leaderboard')}
+              className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 flex items-center justify-center gap-2"
+              style={{ background: `linear-gradient(135deg,#E05A00,#FF7A1A)` }}>
+              🏆 Classement & Parrainage
+            </button>
             <button onClick={() => setShowSettings(true)}
               className="w-full py-4 bg-white rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 active:scale-95 border border-slate-100 flex items-center justify-center gap-2">
               ⚙️ Paramètres
@@ -763,6 +931,102 @@ function MissionCardCompact({ order, onChatBuyer, onChatSeller }: {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Matrice ETA inter-quartiers Abidjan (minutes estimées) ────────
+const ETA_MATRIX: Record<string, Record<string, number>> = {
+  'Yopougon':    { 'Yopougon': 10, 'Cocody': 40, 'Plateau': 35, 'Adjamé': 25, 'Abobo': 30, 'Koumassi': 45, 'Marcory': 45, 'Treichville': 40, 'Port-Bouët': 55, 'default': 35 },
+  'Cocody':      { 'Cocody': 10, 'Yopougon': 40, 'Plateau': 20, 'Adjamé': 25, 'Abobo': 35, 'Koumassi': 30, 'Marcory': 25, 'Treichville': 20, 'Port-Bouët': 35, 'default': 25 },
+  'Plateau':     { 'Plateau': 8, 'Cocody': 20, 'Yopougon': 35, 'Adjamé': 15, 'Abobo': 30, 'Koumassi': 20, 'Marcory': 15, 'Treichville': 12, 'Port-Bouët': 30, 'default': 20 },
+  'Adjamé':      { 'Adjamé': 8, 'Plateau': 15, 'Cocody': 25, 'Yopougon': 25, 'Abobo': 20, 'Koumassi': 30, 'Marcory': 25, 'default': 20 },
+  'Abobo':       { 'Abobo': 10, 'Adjamé': 20, 'Yopougon': 30, 'Plateau': 30, 'Cocody': 35, 'default': 30 },
+  'Koumassi':    { 'Koumassi': 10, 'Marcory': 12, 'Plateau': 20, 'Treichville': 15, 'Cocody': 30, 'Port-Bouët': 20, 'default': 20 },
+  'Marcory':     { 'Marcory': 8, 'Koumassi': 12, 'Plateau': 15, 'Treichville': 10, 'Cocody': 25, 'Port-Bouët': 25, 'default': 18 },
+  'Treichville': { 'Treichville': 8, 'Plateau': 12, 'Marcory': 10, 'Koumassi': 15, 'Cocody': 20, 'default': 15 },
+  'Port-Bouët':  { 'Port-Bouët': 10, 'Koumassi': 20, 'Marcory': 25, 'Treichville': 30, 'default': 30 },
+};
+
+function getETA(from: string, to: string): string {
+  const fromKey = Object.keys(ETA_MATRIX).find(k => from?.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes((from || '').toLowerCase()));
+  const matrix  = fromKey ? ETA_MATRIX[fromKey] : null;
+  const toKey   = matrix ? Object.keys(matrix).find(k => to?.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes((to || '').toLowerCase())) : null;
+  const minutes = matrix ? (toKey ? matrix[toKey] : matrix['default'] || 25) : 25;
+  if (minutes <= 15) return '10-15 min';
+  if (minutes <= 25) return '20-25 min';
+  if (minutes <= 35) return '30-35 min';
+  return '40-45 min';
+}
+
+// ── Bouton "Je suis en route" ────────────────────────────────────
+function EnRouteButton({ order, delivererName }: { order: Order; delivererName: string }) {
+  const ord = order as any;
+  const [sent, setSent]         = React.useState(ord.delivererEnRoute === true);
+  const [loading, setLoading]   = React.useState(false);
+  const [gpsLink, setGpsLink]   = React.useState<string | null>(null);
+  const OG = '#E05A00';
+
+  const eta = getETA(ord.sellerNeighborhood || '', ord.buyerNeighborhood || '');
+
+  const handleEnRoute = async () => {
+    setLoading(true);
+    try {
+      // Obtenir position GPS si disponible
+      let gps: string | null = null;
+      try {
+        const pos = await new Promise<GeolocationPosition>((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+        );
+        gps = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        setGpsLink(gps);
+      } catch { /* GPS non dispo — continuer sans */ }
+
+      const { updateDoc: ud, doc: fd, serverTimestamp: st } = await import('firebase/firestore');
+      const { db: fdb } = await import('@/config/firebase');
+      await ud(fd(fdb, 'orders', order.id), {
+        delivererEnRoute: true,
+        delivererEnRouteAt: st(),
+        delivererGpsLink: gps || null,
+      });
+
+      const { createNotification } = await import('@/services/notificationService');
+      const gpsMsg = gps ? ` 📍 Position en direct : ${gps}` : '';
+      await createNotification(
+        order.buyerId, 'system',
+        '🛵 Ton livreur est en route !',
+        `${delivererName} arrive depuis ${ord.sellerNeighborhood || 'chez le vendeur'}. Arrivée estimée : ${eta}.${gpsMsg}`,
+        { orderId: order.id }
+      );
+      setSent(true);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  if (sent) return (
+    <div className="rounded-2xl p-4 mb-3 border border-green-200 bg-green-50">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">🛵</span>
+        <p className="font-black text-green-800 text-[12px]">En route — acheteur notifié !</p>
+      </div>
+      <p className="text-[10px] text-green-700">ETA envoyé : {eta}</p>
+      {gpsLink && (
+        <a href={gpsLink} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1.5 mt-2 text-[10px] font-black text-blue-600 active:scale-95">
+          📍 Partager ma position en direct
+        </a>
+      )}
+    </div>
+  );
+
+  return (
+    <button onClick={handleEnRoute} disabled={loading}
+      className="w-full py-3.5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white mb-3 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+      style={{ background: `linear-gradient(135deg,${OG},#FF7A1A)` }}>
+      {loading
+        ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Localisation...</>
+        : <><span>🛵</span> Je suis en route — notifier l'acheteur</>
+      }
+    </button>
   );
 }
 
@@ -931,21 +1195,47 @@ function MissionDetailModal({ order, onClose, onAccept, onReject, onChatBuyer, o
                 <div className="w-0.5 flex-1 bg-slate-200 min-h-[28px]"/>
                 <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"/>
               </div>
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-4">
+                {/* Vendeur */}
                 <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase">Collecte chez le vendeur</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Collecte chez le vendeur</p>
                   <p className="font-black text-slate-900 text-[13px]">{ord.sellerNeighborhood || '—'}</p>
-                  <p className="text-[10px] text-slate-500">{order.sellerName}</p>
-                  {ord.sellerPhone && (
-                    <a href={`tel:${ord.sellerPhone}`} className="text-[10px] font-bold text-green-700">{ord.sellerPhone}</a>
+                  <p className="text-[11px] text-slate-600 font-bold">{order.sellerName}</p>
+                  {ord.sellerPhone ? (
+                    <div className="flex gap-2 mt-1.5">
+                      <a href={`tel:${ord.sellerPhone.replace(/\s/g,'')}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-50 border border-green-200 font-black text-[10px] text-green-700 active:scale-95">
+                        📞 {ord.sellerPhone}
+                      </a>
+                      <a href={`https://wa.me/${ord.sellerPhone.replace(/\D/g,'')}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-green-500 font-black text-[10px] text-white active:scale-95">
+                        WA
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 mt-1">📵 Numéro non disponible</p>
                   )}
                 </div>
+                {/* Acheteur */}
                 <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase">Livraison chez l'acheteur</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase mb-0.5">Livraison chez l'acheteur</p>
                   <p className="font-black text-slate-900 text-[13px]">{ord.buyerNeighborhood || '—'}</p>
-                  <p className="text-[10px] text-slate-500">{order.buyerName}</p>
-                  {ord.buyerPhone && (
-                    <a href={`tel:${ord.buyerPhone}`} className="text-[10px] font-bold text-blue-700">{ord.buyerPhone}</a>
+                  <p className="text-[11px] text-slate-600 font-bold">{order.buyerName}</p>
+                  {ord.buyerPhone ? (
+                    <div className="flex gap-2 mt-1.5">
+                      <a href={`tel:${ord.buyerPhone.replace(/\s/g,'')}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 font-black text-[10px] text-blue-700 active:scale-95">
+                        📞 {ord.buyerPhone}
+                      </a>
+                      <a href={`https://wa.me/${ord.buyerPhone.replace(/\D/g,'')}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-500 font-black text-[10px] text-white active:scale-95">
+                        WA
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 mt-1">📵 Numéro non disponible</p>
                   )}
                 </div>
               </div>
@@ -1088,7 +1378,7 @@ function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Ord
             createNotification(ord.buyerId,'system','🎉 Livraison confirmée !',`Le livreur confirme t'avoir remis "${ord.productTitle}".`,{orderId}),
             createNotification(ord.sellerId,'system','✅ Livraison terminée',`"${ord.productTitle}" a été livré.`,{orderId}),
           ]);
-          // Incrémenter stats livreur
+          // Incrémenter stats livreur + vérifier bonus parrainage
           if (ord.delivererId) {
             try {
               const { getDoc: gd, doc: fd2 } = await import('firebase/firestore');
@@ -1096,10 +1386,14 @@ function MobileDeliveryButtons({ orderId, order }: { orderId: string; order: Ord
               const dSnap = await gd(fd2(db2, 'users', ord.delivererId));
               if (dSnap.exists()) {
                 const d = dSnap.data();
+                const newTotal = (d.totalDeliveries || 0) + 1;
                 await updateDoc(fd2(db2, 'users', ord.delivererId), {
-                  totalDeliveries: (d.totalDeliveries || 0) + 1,
+                  totalDeliveries: newTotal,
                   totalEarnings: (d.totalEarnings || 0) + (ord.deliveryFee || 0),
                 });
+                // Vérifier bonus parrainage (seuils 5, 10, 20, 50 livraisons)
+                const { checkDelivererReferralBonus } = await import('@/services/delivererLeaderboardService');
+                await checkDelivererReferralBonus(ord.delivererId);
               }
             } catch (e) { console.error('[stats livreur]', e); }
           }
@@ -1181,6 +1475,10 @@ function ActiveDeliveryCard({ order, onChatBuyer, onChatSeller, currentDeliverer
         </div>
       ) : (
         <div className="bg-amber-50 rounded-xl p-3 mb-3 border border-amber-100"><p className="text-[11px] text-amber-700 font-bold">⏳ Code en cours de génération...</p></div>
+      )}
+      {/* Bouton En route — disponible dès que la mission est assignée et active */}
+      {['ready','confirmed','cod_confirmed','picked'].includes(order.status) && (
+        <EnRouteButton order={order} delivererName={currentDelivererName || 'Le livreur'}/>
       )}
       {!ord.isCOD && ['ready','confirmed'].includes(order.status) && <MobileDeliveryButtons orderId={order.id} order={order}/>}
       {ord.isCOD && ['cod_confirmed','ready','confirmed'].includes(order.status) && <CashPickupButton orderId={order.id} order={order}/>}
