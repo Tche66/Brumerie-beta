@@ -54,6 +54,7 @@ import { NetworkBanner } from '@/components/NetworkBanner';
 import { OfferModal } from '@/components/OfferModal';
 import { GoogleNeighborhoodModal } from '@/components/GoogleNeighborhoodModal';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
+import { updatePresence } from '@/services/shopFeaturesService';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
 
@@ -350,6 +351,15 @@ useEffect(() => {
     });
     return () => unsub?.();
   }, [currentUser?.uid, userProfile?.role]);
+
+  // ── useEffect #3c_presence — mettre à jour lastActiveAt ──────────
+  useEffect(() => {
+    if (!currentUser) return;
+    // Mettre à jour la présence immédiatement + toutes les 5 minutes
+    updatePresence(currentUser.uid).catch(() => {});
+    const t = setInterval(() => updatePresence(currentUser.uid).catch(() => {}), 5 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [currentUser?.uid]);
 
   // ── useEffect #3d — redirection auto livreur ──────────────────
   // Quand role='livreur' devient actif (après BecomeDelivererPage ou refresh),

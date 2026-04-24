@@ -150,6 +150,23 @@ export function DettesPage({ onBack, onOpenChat }: DettesPageProps) {
 
   const openDetail = (d: Dette) => { setSelected(d); setView('detail'); };
 
+  // ── Garde Premium ──────────────────────────────────────────
+  if (!userProfile?.isPremium) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="text-5xl mb-4">📒</div>
+        <h2 className="font-black text-[20px] text-slate-900 text-center mb-2">Journal de Dettes</h2>
+        <p className="text-[12px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
+          Le suivi des ventes à crédit et les rappels WhatsApp sont réservés aux vendeurs <strong>⭐ Premium</strong>.
+        </p>
+        <button onClick={onBack}
+          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
+          ← Retour
+        </button>
+      </div>
+    );
+  }
+
   // ── Rendu ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 pb-24 font-sans">

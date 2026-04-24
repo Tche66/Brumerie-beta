@@ -96,27 +96,27 @@ export async function getSellerShopStats(sellerId: string): Promise<ShopStats> {
       image: p.images?.[0] || '',
     }));
 
-  // Heures de pointe — agréger viewsByHour de tous les produits
-  const hourMap: Record<string, number> = {};
-  for (const p of products) {
-    if (p.viewsByHour) {
-      for (const [h, v] of Object.entries(p.viewsByHour)) {
-        hourMap[h] = (hourMap[h] || 0) + (v as number);
-      }
+  // Heures de pointe — calculées depuis les timestamps des commandes du vendeur
+  const hourMap: Record<number, number> = {};
+  for (const o of doneOrders) {
+    const ts = o.createdAt?.toDate?.() ?? (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : null);
+    if (ts) {
+      const h = ts.getHours();
+      hourMap[h] = (hourMap[h] || 0) + 1;
     }
   }
-  const peakHours = Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
-    views: hourMap[String(i).padStart(2, '0')] || 0,
-  })).filter(h => h.views > 0);
+  const peakHours = Object.entries(hourMap)
+    .map(([h, v]) => ({ hour: parseInt(h), views: v }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5);
 
-  // Vues par semaine
+  // Vues par semaine — calculées depuis les commandes (approximation)
   const weekMap: Record<string, number> = {};
-  for (const p of products) {
-    if (p.viewsByWeek) {
-      for (const [w, v] of Object.entries(p.viewsByWeek)) {
-        weekMap[w] = (weekMap[w] || 0) + (v as number);
-      }
+  for (const o of doneOrders) {
+    const ts = o.createdAt?.toDate?.() ?? (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : null);
+    if (ts) {
+      const w = `${ts.getFullYear()}-S${Math.ceil(ts.getDate()/7)}`;
+      weekMap[w] = (weekMap[w] || 0) + 1;
     }
   }
   const weeklyViews = Object.entries(weekMap)
@@ -134,17 +134,14 @@ export async function getSellerShopStats(sellerId: string): Promise<ShopStats> {
   return { totalViews, totalContacts, totalOrders, totalRevenue, conversionRate, topProducts, peakHours, weeklyViews, recurringBuyers, avgOrderValue };
 }
 
-/** Tracker une vue sur un produit (appeler depuis ProductDetailPage) */
+/** Tracker une vue sur un produit (appeler depuis ProductDetailPage)
+ * Note : seul viewCount est incrémenté côté client (règle Firestore).
+ * viewsByHour et viewsByWeek sont calculés côté admin depuis getSellerShopStats.
+ */
 export async function trackProductView(productId: string): Promise<void> {
   try {
-    const hour = new Date().getHours().toString().padStart(2, '0');
-    const now  = new Date();
-    const weekNum = Math.ceil(now.getDate() / 7);
-    const weekKey = `${now.getFullYear()}-M${now.getMonth()+1}-W${weekNum}`;
     await updateDoc(doc(db, 'products', productId), {
       viewCount: increment(1),
-      [`viewsByHour.${hour}`]: increment(1),
-      [`viewsByWeek.${weekKey}`]: increment(1),
     });
   } catch {}
 }

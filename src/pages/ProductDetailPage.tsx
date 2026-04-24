@@ -352,16 +352,34 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="flex items-baseline gap-3 flex-wrap">
-              <p className="price-brumerie text-[38px] text-slate-900 leading-none" style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, letterSpacing:'-0.04em' }}>
-                {product.price.toLocaleString('fr-FR')} <span className="text-[20px] text-slate-400 font-bold" style={{ fontFamily:"'DM Sans',sans-serif" }}>FCFA</span>
-              </p>
-              {product.originalPrice && product.originalPrice > product.price && (() => {
-                const pct = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+              {/* Prix affiché — promo active ou prix normal */}
+              {(() => {
+                const p = product as any;
+                const now = new Date().toISOString();
+                const promoActive = p.promoPrice && p.promoPrice < product.price
+                  && (!p.promoActiveFrom || p.promoActiveFrom <= now)
+                  && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+                const displayPrice = promoActive ? p.promoPrice : product.price;
+                const crossed = promoActive ? product.price : product.originalPrice;
+                const pct = crossed ? Math.round(((crossed - displayPrice) / crossed) * 100) : 0;
                 return (
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-400 line-through text-[15px] font-bold">{product.originalPrice.toLocaleString('fr-FR')}</span>
-                    <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-1 rounded-xl">-{pct}%</span>
-                  </div>
+                  <>
+                    {p.flashSaleLabel && promoActive && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full mb-1">
+                        🔥 {p.flashSaleLabel}
+                        {p.promoActiveUntil && <span className="text-orange-400">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
+                      </span>
+                    )}
+                    <p className="price-brumerie text-[38px] text-slate-900 leading-none" style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, letterSpacing:'-0.04em' }}>
+                      {displayPrice.toLocaleString('fr-FR')} <span className="text-[20px] text-slate-400 font-bold" style={{ fontFamily:"'DM Sans',sans-serif" }}>FCFA</span>
+                    </p>
+                    {crossed && crossed > displayPrice && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 line-through text-[15px] font-bold">{crossed.toLocaleString('fr-FR')}</span>
+                        <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-1 rounded-xl">-{pct}%</span>
+                      </div>
+                    )}
+                  </>
                 );
               })()}
             </div>

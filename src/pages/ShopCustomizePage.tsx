@@ -42,6 +42,35 @@ function slugify(s: string) {
 export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
 
+  // ── Garde Premium ─────────────────────────────────────────
+  if (!userProfile?.isPremium) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mb-5 text-4xl"
+          style={{ background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)' }}>
+          ⭐
+        </div>
+        <h2 className="font-black text-[22px] text-slate-900 text-center mb-2">Fonctionnalité Premium</h2>
+        <p className="text-[13px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
+          La personnalisation de boutique (bannière, couleur, slogan, vente flash) est réservée aux vendeurs <strong>Premium</strong>.
+        </p>
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 w-full max-w-xs mb-6">
+          <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">⭐ Inclus dans Premium</p>
+          {['🎨 Bannière et couleur de boutique','✨ Slogan personnalisé','🔥 Vente flash','📍 Adresse boutique physique','📒 Journal de dettes'].map(f => (
+            <div key={f} className="flex items-center gap-2 py-1.5">
+              <span className="text-green-500 font-black text-[10px]">✓</span>
+              <p className="text-[11px] text-slate-700">{f}</p>
+            </div>
+          ))}
+        </div>
+        <button onClick={onBack}
+          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
+          ← Retour
+        </button>
+      </div>
+    );
+  }
+
   const [tab, setTab] = useState<Tab>('identite');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

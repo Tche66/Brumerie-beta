@@ -137,21 +137,46 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
         {/* Prix */}
         <div className="flex items-baseline gap-1.5 flex-wrap">
           <p className="price-brumerie text-[18px] text-gray-900">
-            {product.price.toLocaleString('fr-FR')}
+            {(() => {
+              const p = product as any;
+              const now = new Date().toISOString();
+              const promoActive = p.promoPrice && p.promoPrice < product.price
+                && (!p.promoActiveFrom || p.promoActiveFrom <= now)
+                && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+              return promoActive ? p.promoPrice.toLocaleString('fr-FR') : product.price.toLocaleString('fr-FR');
+            })()}
           </p>
           <span className="text-[10px] font-bold text-slate-400 ml-0.5">FCFA</span>
-          {product.originalPrice && product.originalPrice > product.price && (() => {
-            const pct = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-            return (
-              <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-lg">-{pct}%</span>
-            );
+          {(() => {
+            const p = product as any;
+            const now = new Date().toISOString();
+            const promoActive = p.promoPrice && p.promoPrice < product.price
+              && (!p.promoActiveFrom || p.promoActiveFrom <= now)
+              && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+            const originalForPct = promoActive ? product.price : (product.originalPrice || 0);
+            const displayedPrice = promoActive ? p.promoPrice : product.price;
+            if (promoActive || (product.originalPrice && product.originalPrice > product.price)) {
+              const base = promoActive ? product.price : product.originalPrice!;
+              const pct = Math.round(((base - displayedPrice) / base) * 100);
+              return <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-lg">-{pct}%</span>;
+            }
+            return null;
           })()}
         </div>
-        {product.originalPrice && product.originalPrice > product.price && (
-          <p className="text-[9px] text-slate-400 line-through font-bold">
-            {product.originalPrice.toLocaleString('fr-FR')} FCFA
-          </p>
-        )}
+        {(() => {
+          const p = product as any;
+          const now = new Date().toISOString();
+          const promoActive = p.promoPrice && p.promoPrice < product.price
+            && (!p.promoActiveFrom || p.promoActiveFrom <= now)
+            && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+          const crossed = promoActive ? product.price : product.originalPrice;
+          if (crossed && crossed > (promoActive ? p.promoPrice : product.price)) {
+            return <p className="text-[9px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} FCFA</p>;
+          }
+          return null;
+        })()}
+        {/* Label vente flash */}
+        {(() => { const p = product as any; return p.flashSaleLabel ? <p className="text-[8px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-lg mt-0.5">🔥 {p.flashSaleLabel}</p> : null; })()}
 
         {/* Titre */}
         <h3 className="text-[11px] font-bold text-gray-500 mt-1 line-clamp-1 uppercase tracking-tight">

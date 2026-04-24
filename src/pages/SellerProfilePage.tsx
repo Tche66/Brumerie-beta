@@ -5,6 +5,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { SocialIcon, SocialBar, SocialNetwork } from '@/components/SocialIcon';
 import { getUserById, updateUserProfile } from '@/services/userService';
+import { formatLastSeen, getActivityColor, isShopClosed, formatShopClosedUntil, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
@@ -81,6 +82,8 @@ export function SellerProfilePage({
   const [tab, setTab]                   = useState<Tab>('actifs');
   const [showQR, setShowQR]             = useState(false);
   const [showAllHours, setShowAllHours] = useState(false);
+  const [isFollowing, setIsFollowing]   = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
@@ -108,6 +111,11 @@ export function SellerProfilePage({
   useEffect(() => {
     setBookmarkIds(new Set(userProfile?.bookmarkedProductIds || []));
   }, [userProfile?.bookmarkedProductIds]);
+
+  // Sync état suivi depuis profil acheteur
+  useEffect(() => {
+    setIsFollowing(!!(userProfile?.followingSellers?.includes(sellerId)));
+  }, [userProfile?.followingSellers, sellerId]);
 
   const activeProducts = products.filter(p => p.status === 'active');
   const soldProducts   = products.filter(p => p.status === 'sold');
@@ -252,8 +260,32 @@ export function SellerProfilePage({
                 </div>
               </div>
 
+              {/* Boutique fermée — bandeau visible */}
+              {isShopClosed(seller?.shopClosedUntil) && (
+                <div className="w-full mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                  <p className="font-black text-amber-800 text-[12px]">🔒 Boutique temporairement fermée</p>
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    Réouvre le {formatShopClosedUntil(seller?.shopClosedUntil)}
+                  </p>
+                  {seller?.shopClosedMessage && (
+                    <p className="text-[10px] text-amber-600 italic mt-1">"{seller.shopClosedMessage}"</p>
+                  )}
+                </div>
+              )}
+
               {/* Nom + note */}
               <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">{seller.name}</h2>
+
+              {/* Dernier vu */}
+              {seller?.lastActiveAt && (() => {
+                const color = getActivityColor(seller.lastActiveAt);
+                return (
+                  <div className="flex items-center justify-center gap-1.5 mb-2">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color === 'green' ? 'bg-green-500 animate-pulse' : color === 'amber' ? 'bg-amber-400' : 'bg-slate-300'}`}/>
+                    <span className="text-[10px] font-bold text-slate-500">{formatLastSeen(seller.lastActiveAt)}</span>
+                  </div>
+                );
+              })()}
               {avgRating > 0 && (
                 <div className="flex items-center gap-1.5 mb-2">
                   <Stars rating={avgRating} size={13}/>
@@ -320,6 +352,32 @@ export function SellerProfilePage({
               </div>
 
               {/* CTA principal — visiteur */}
+              {!isSelf && !isGuest && currentUser && (
+                <button
+                  disabled={followLoading}
+                  onClick={async () => {
+                    if (!currentUser) return;
+                    setFollowLoading(true);
+                    try {
+                      if (isFollowing) {
+                        await unfollowSeller(currentUser.uid, sellerId);
+                        setIsFollowing(false);
+                      } else {
+                        await followSeller(currentUser.uid, sellerId, seller.name);
+                        setIsFollowing(true);
+                      }
+                    } catch {}
+                    setFollowLoading(false);
+                  }}
+                  className="px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 border-2 flex-shrink-0"
+                  style={{
+                    borderColor: s?.shopThemeColor || '#16A34A',
+                    color: isFollowing ? 'white' : (s?.shopThemeColor || '#16A34A'),
+                    background: isFollowing ? (s?.shopThemeColor || '#16A34A') : 'transparent',
+                  }}>
+                  {followLoading ? '...' : isFollowing ? '✓ Suivi' : '+ Suivre'}
+                </button>
+              )}
               {!isSelf && !isGuest && onStartChat && (
                 <button onClick={() => onStartChat(sellerId, seller.name)}
                   className="w-full max-w-xs py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 shadow-lg shadow-green-200 active:scale-95 transition-all mb-2"

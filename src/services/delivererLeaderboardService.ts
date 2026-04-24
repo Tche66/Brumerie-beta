@@ -134,13 +134,7 @@ export async function checkDelivererReferralBonus(delivererId: string): Promise<
     const parainSnap = await getDoc(doc(db, 'users', parainId));
     if (!parainSnap.exists()) return;
 
-    // Incrémenter le compteur de filleuls livreurs actifs du parrain
-    await updateDoc(doc(db, 'users', parainId), {
-      delivererReferralCount: increment(1),
-      delivererReferralBonusAt: Timestamp.now(),
-    });
-
-    // Notification pour le parrain
+    // ✓ Notification → autorisée par Firestore (createNotification écrit dans /notifications/{uid}/items)
     const { createNotification } = await import('@/services/notificationService');
     await createNotification(
       parainId, 'system',
@@ -148,6 +142,15 @@ export async function checkDelivererReferralBonus(delivererId: string): Promise<
       `${dData.deliveryPartnerName || dData.name || 'Ton filleul'} vient de compléter ${totalDeliveries} livraisons grâce à ton parrainage !`,
       { delivererId }
     );
+    // ✓ Écrire dans /referrals (collection ouverte en écriture pour users auth)
+    await addDoc(collection(db, 'referrals'), {
+      type: 'deliverer_milestone',
+      referrerId: parainId,
+      referreeId: delivererId,
+      milestone: totalDeliveries,
+      ownerId: parainId,
+      createdAt: Timestamp.now(),
+    }).catch(() => {});
   } catch (e) {
     console.error('[delivererReferral]', e);
   }

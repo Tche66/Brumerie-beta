@@ -213,11 +213,12 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
         productPayload.flashSaleScheduled = !!promoActiveFrom;
         productPayload.flashSaleLabel   = flashLabel || '';
       }
-      const newProduct = await createProduct(productPayload as any, images);
-      // Notifier les followers du vendeur
-      if (userProfile.followingSellers === undefined) { /* acheteurs followers */ }
+      const newProductId = await createProduct(productPayload as any, images);
+      // Notifier les followers du vendeur que ce vendeur a publié un nouveau produit
       try {
-        await notifyFollowersNewProduct(userProfile.id, userProfile.name || '', title.trim(), (newProduct as any)?.id || '');
+        if (typeof newProductId === 'string' && newProductId) {
+          await notifyFollowersNewProduct(userProfile.id, userProfile.name || '', title.trim(), newProductId);
+        }
       } catch {}
       setSuccess(true);
       playSuccessSound();
