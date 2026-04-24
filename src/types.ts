@@ -236,6 +236,21 @@ export interface User {
   riskLevel?: 'safe' | 'watch' | 'risk' | 'banned';
   riskReportCount?: number;  // Nb signalements validés reçus
   isBanned?: boolean;        // Compte banni (accès bloqué)
+  // ─── Activité & Présence ─────────────────────────────────
+  lastActiveAt?: any;         // Timestamp dernière activité
+  avgResponseTime?: number;   // Temps moyen de réponse en minutes
+  // ─── Vendeurs suivis (acheteur) ──────────────────────────
+  followingSellers?: string[];  // UIDs des vendeurs suivis
+  // ─── Wishlist ────────────────────────────────────────────
+  wishlistIds?: string[];      // IDs produits dans la wishlist
+  wishlistPublic?: boolean;    // Wishlist publique ou privée
+  wishlistSlug?: string;       // Slug unique pour lien partage
+  // ─── Cashback fidélité ───────────────────────────────────
+  loyaltyPoints?: number;      // Points accumulés (100 FCFA = 1 pt)
+  loyaltyPointsUsed?: number;  // Points déjà utilisés
+  // ─── Boutique fermée ─────────────────────────────────────
+  shopClosedUntil?: any;       // Timestamp fermeture (null = ouvert)
+  shopClosedMessage?: string;  // Message personnalisé
 }
 
 // ─── PRODUCT ──────────────────────────────────────────────
@@ -265,6 +280,14 @@ export interface Product {
   bookmarkCount?: number;
   hideStats?: boolean;   // Vendeur peut masquer les compteurs vues/contacts (MVP launch)
   priceHistory?: { price: number; date: string }[];
+  promoPrice?: number;            // Prix promotionnel permanent
+  promoActiveFrom?: string;       // ISO — début promotion programmée
+  promoActiveUntil?: string;      // ISO — fin promotion (ou vente flash)
+  flashSaleScheduled?: boolean;   // Vente flash programmée (pas encore active)
+  flashSaleActive?: boolean;      // Vente flash en cours (champ User déplacé ici)
+  flashSaleLabel?: string;        // ex: "-30% jusqu'à dimanche"
+  viewsByHour?: Record<string, number>; // {"08": 12, "14": 45} — heures de pointe
+  viewsByWeek?: Record<string, number>; // {"2025-W12": 88} — vues par semaine
   createdAt?: any;
   paymentMethods?: PaymentInfo[];
 }

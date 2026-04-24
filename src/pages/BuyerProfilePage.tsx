@@ -1,14 +1,23 @@
-// src/pages/BuyerProfilePage.tsx — v19 : Favoris + Articles achetés
+// src/pages/BuyerProfilePage.tsx — v20 : Favoris + Achats + Wishlist + Suivre vendeurs + Cashback
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductCard } from '@/components/ProductCard';
 import { removeBookmark } from '@/services/bookmarkService';
-import { getProducts } from '@/services/productService';
+import { getProducts, subscribeSellerProducts } from '@/services/productService';
 import { subscribeOrdersAsBuyer } from '@/services/orderService';
 import { Product, Order } from '@/types';
 import { AWAddress } from '@/services/awService';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
 import { updateUserProfile } from '@/services/userService';
+import {
+  addToWishlist, removeFromWishlist, toggleWishlistPublic, buildWishlistLink,
+  followSeller, unfollowSeller,
+  getRedeemablePoints,
+  CASHBACK_RATE, CASHBACK_REDEEM, CASHBACK_VALUE,
+  formatLastSeen,
+} from '@/services/shopFeaturesService';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 
 interface BuyerProfilePageProps {
   onProductClick: (product: Product) => void;
@@ -16,7 +25,7 @@ interface BuyerProfilePageProps {
   onOpenOrder?: (orderId: string) => void;
 }
 
-type Tab = 'favorites' | 'purchases';
+type Tab = 'favorites' | 'purchases' | 'wishlist' | 'cashback' | 'following';
 
 // Icône statut commande
 function OrderStatusBadge({ status }: { status: string }) {
@@ -63,6 +72,20 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
+  // — Wishlist —
+  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
+  const [wishlistPublic, setWishlistPublic]     = useState<boolean>(userProfile?.wishlistPublic || false);
+  const [wishlistLink, setWishlistLink]         = useState('');
+  const [wishlistCopied, setWishlistCopied]     = useState(false);
+
+  // — Vendeurs suivis —
+  const [followingSellers, setFollowingSellers] = useState<string[]>(userProfile?.followingSellers || []);
+  const [followedSellersData, setFollowedSellersData] = useState<any[]>([]);
+
+  // — Cashback —
+  const pts = userProfile?.loyaltyPoints || 0;
+  const { redeemable, discount: cashbackDiscount } = getRedeemablePoints(pts);
+
   useEffect(() => { loadBookmarks(); }, [userProfile?.bookmarkedProductIds]);
 
   useEffect(() => {
@@ -73,6 +96,29 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
     });
     return unsub;
   }, [currentUser]);
+
+  // — useEffect wishlist —
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    const ids: string[] = userProfile.wishlistIds || [];
+    setWishlistPublic(userProfile.wishlistPublic || false);
+    if (userProfile.wishlistSlug) setWishlistLink(buildWishlistLink(userProfile.wishlistSlug));
+    if (!ids.length) { setWishlistProducts([]); return; }
+    Promise.all(ids.map(id => getDoc(doc(db, 'products', id)).then(d => d.exists() ? { id: d.id, ...d.data() } as Product : null)))
+      .then(list => setWishlistProducts(list.filter(Boolean) as Product[]))
+      .catch(() => {});
+  }, [currentUser?.uid, JSON.stringify(userProfile?.wishlistIds)]);
+
+  // — useEffect vendeurs suivis —
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    const ids: string[] = userProfile.followingSellers || [];
+    setFollowingSellers(ids);
+    if (!ids.length) { setFollowedSellersData([]); return; }
+    Promise.all(ids.map(id => getDoc(doc(db, 'users', id)).then(d => d.exists() ? { id: d.id, ...d.data() } : null)))
+      .then(list => setFollowedSellersData(list.filter(Boolean) as any[]))
+      .catch(() => {});
+  }, [currentUser?.uid, JSON.stringify(userProfile?.followingSellers)]);
 
   async function loadBookmarks() {
     setLoadingFavs(true);
@@ -166,22 +212,24 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
       </div>
 
       {/* Onglets */}
-      <div className="flex border-b border-slate-100 bg-white sticky top-0 z-30">
+      <div className="flex border-b border-slate-100 bg-white sticky top-0 z-30 overflow-x-auto">
         {([
-          { id: 'favorites' as Tab, label: '❤️ Favoris',         count: bookmarkIds.size },
-          { id: 'purchases' as Tab, label: '🛍️ Mes achats',      count: orders.length },
-        ] as { id: Tab; label: string; count: number }[]).map(t => (
+          { id: 'favorites'  as Tab, icon: '❤️',  label: 'Favoris',   count: bookmarkIds.size },
+          { id: 'purchases'  as Tab, icon: '🛍️', label: 'Achats',    count: orders.length },
+          { id: 'wishlist'   as Tab, icon: '✨',  label: 'Wishlist',  count: wishlistProducts.length },
+          { id: 'following'  as Tab, icon: '👤',  label: 'Je suis',   count: followingSellers.length },
+          { id: 'cashback'   as Tab, icon: '🎁',  label: 'Points',    count: pts },
+        ] as { id: Tab; icon: string; label: string; count: number }[]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[10px] font-black uppercase tracking-widest transition-all ${
-              tab === t.id
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-slate-400 border-b-2 border-transparent'
+            className={`flex-shrink-0 flex flex-col items-center gap-0.5 px-4 py-3 text-[8px] font-black uppercase tracking-widest transition-all ${
+              tab === t.id ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 border-b-2 border-transparent'
             }`}>
-            {t.label}
+            <span className="text-[16px] leading-none">{t.icon}</span>
+            <span>{t.label}</span>
             {t.count > 0 && (
-              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
+              <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full ${
                 tab === t.id ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
-              }`}>{t.count}</span>
+              }`}>{t.count > 99 ? '99+' : t.count}</span>
             )}
           </button>
         ))}
@@ -278,6 +326,176 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
           className="btn-secondary-custom w-full py-4 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em]">
           Modifier mon profil
         </button>
+        {/* ══ WISHLIST ══ */}
+        {tab === 'wishlist' && (
+          <div className="space-y-3">
+            {/* Header partage */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-black text-slate-900 text-[14px]">✨ Ma Wishlist</p>
+                  <p className="text-[10px] text-slate-400">{wishlistProducts.length} article{wishlistProducts.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-[9px] text-slate-400 font-bold">Publique</p>
+                  <button onClick={async () => {
+                    if (!currentUser) return;
+                    const next = !wishlistPublic;
+                    setWishlistPublic(next);
+                    await toggleWishlistPublic(currentUser.uid, next).catch(() => {});
+                    await refreshUserProfile();
+                    if (next && userProfile?.wishlistSlug) setWishlistLink(buildWishlistLink(userProfile.wishlistSlug));
+                  }}
+                    className={`w-10 h-6 rounded-full transition-all relative ${wishlistPublic ? 'bg-blue-500' : 'bg-slate-200'}`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-sm absolute top-0.5 transition-all ${wishlistPublic ? 'left-4.5' : 'left-0.5'}`}/>
+                  </button>
+                </div>
+              </div>
+              {wishlistPublic && wishlistLink && (
+                <div className="bg-blue-50 rounded-2xl p-3 flex items-center gap-2">
+                  <p className="flex-1 text-[9px] text-blue-700 font-bold truncate">{wishlistLink}</p>
+                  <button onClick={async () => {
+                    try {
+                      if (navigator.share) await navigator.share({ title: 'Ma Wishlist Brumerie', url: wishlistLink });
+                      else { await navigator.clipboard.writeText(wishlistLink); setWishlistCopied(true); setTimeout(() => setWishlistCopied(false), 2000); }
+                    } catch {}
+                  }}
+                    className="px-3 py-1.5 rounded-xl font-black text-[9px] uppercase text-white bg-blue-500 active:scale-95 flex-shrink-0">
+                    {wishlistCopied ? '✓ Copié' : '📤 Partager'}
+                  </button>
+                </div>
+              )}
+            </div>
+            {wishlistProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-4xl mb-3">✨</p>
+                <p className="font-black text-slate-400 text-[13px]">Ta wishlist est vide</p>
+                <p className="text-[11px] text-slate-400 mt-1">Ajoute des articles depuis les fiches produit</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {wishlistProducts.map(p => (
+                  <div key={p.id} className="relative">
+                    <ProductCard key={p.id} product={p} onClick={() => onProductClick(p)} isFavorited bookmarkedIds={new Set(userProfile?.wishlistIds || [])}/>
+                    <button onClick={async () => {
+                      if (currentUser) {
+                        await removeFromWishlist(currentUser.uid, p.id);
+                        setWishlistProducts(prev => prev.filter(x => x.id !== p.id));
+                        await refreshUserProfile();
+                      }
+                    }}
+                      className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center text-red-500 font-black text-sm active:scale-90 z-10">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ VENDEURS SUIVIS ══ */}
+        {tab === 'following' && (
+          <div className="space-y-3">
+            {followedSellersData.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-4xl mb-3">👤</p>
+                <p className="font-black text-slate-400 text-[13px]">Tu ne suis encore aucun vendeur</p>
+                <p className="text-[11px] text-slate-400 mt-1">Depuis une boutique, clique "Suivre" pour être notifié des nouveaux articles</p>
+              </div>
+            ) : (
+              followedSellersData.map((seller: any) => {
+                const lastSeen = formatLastSeen(seller.lastActiveAt);
+                return (
+                  <div key={seller.id} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                      {(seller.deliveryPhotoURL || seller.photoURL)
+                        ? <img src={seller.deliveryPhotoURL || seller.photoURL} alt="" className="w-full h-full object-cover"/>
+                        : <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-xl">{(seller.name || '?').charAt(0).toUpperCase()}</div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-900 text-[13px] truncate">{seller.name}</p>
+                      {seller.shopSlogan && <p className="text-[10px] text-slate-500 truncate italic">"{seller.shopSlogan}"</p>}
+                      <p className="text-[9px] text-slate-400 mt-0.5">{lastSeen}</p>
+                    </div>
+                    <button onClick={async () => {
+                      if (!currentUser) return;
+                      await unfollowSeller(currentUser.uid, seller.id);
+                      setFollowingSellers(prev => prev.filter(id => id !== seller.id));
+                      setFollowedSellersData(prev => prev.filter((s: any) => s.id !== seller.id));
+                      await refreshUserProfile();
+                    }}
+                      className="text-[9px] font-black text-red-500 bg-red-50 px-3 py-1.5 rounded-xl active:scale-95 flex-shrink-0">
+                      Ne plus suivre
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* ══ CASHBACK POINTS ══ */}
+        {tab === 'cashback' && (
+          <div className="space-y-3">
+            {/* Solde points */}
+            <div className="rounded-3xl p-6 text-white" style={{ background: 'linear-gradient(135deg,#0F172A,#1E293B)' }}>
+              <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">🎁 Fidélité Brumerie</p>
+              <p className="font-black leading-none mb-1" style={{ fontSize: '2.5rem' }}>{pts.toLocaleString('fr-FR')}</p>
+              <p className="text-white/60 font-bold text-[11px]">points accumulés</p>
+              {redeemable > 0 && (
+                <div className="mt-4 bg-white/10 rounded-2xl p-3">
+                  <p className="font-black text-[13px]">🎉 Tu peux utiliser {redeemable} pts</p>
+                  <p className="text-white/70 text-[10px] mt-0.5">= {cashbackDiscount.toLocaleString('fr-FR')} FCFA de réduction sur ton prochain achat</p>
+                </div>
+              )}
+            </div>
+
+            {/* Comment ça marche */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Comment ça marche</p>
+              {[
+                { icon: '🛍️', title: 'Achète sur Brumerie', sub: `Chaque ${CASHBACK_RATE} FCFA d'achat = 1 point` },
+                { icon: '📈', title: 'Accumule tes points', sub: `${CASHBACK_REDEEM} points = ${CASHBACK_VALUE.toLocaleString('fr-FR')} FCFA de réduction` },
+                { icon: '💰', title: 'Utilise ta réduction', sub: 'Applique ton bon de réduction lors du prochain paiement' },
+              ].map(step => (
+                <div key={step.title} className="flex items-center gap-3">
+                  <span className="text-2xl flex-shrink-0">{step.icon}</span>
+                  <div>
+                    <p className="font-black text-slate-800 text-[12px]">{step.title}</p>
+                    <p className="text-[10px] text-slate-400">{step.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Historique points — les 5 dernières commandes livrées */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Derniers points gagnés</p>
+              {orders.filter(o => ['delivered','cod_delivered'].includes(o.status)).slice(0,5).length === 0 ? (
+                <p className="text-[11px] text-slate-400 text-center py-4">Aucun achat encore — tes points s'accumulent ici</p>
+              ) : (
+                orders.filter(o => ['delivered','cod_delivered'].includes(o.status)).slice(0,5).map(o => {
+                  const pts_earned = Math.floor((o.totalAmount || 0) / CASHBACK_RATE);
+                  return (
+                    <div key={o.id} className="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                        {o.productImage ? <img src={o.productImage} alt="" className="w-full h-full object-cover"/> : <span className="text-sm flex items-center justify-center h-full">📦</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-700 text-[11px] truncate">{o.productTitle}</p>
+                        <p className="text-[9px] text-slate-400">{(o.totalAmount || 0).toLocaleString('fr-FR')} FCFA</p>
+                      </div>
+                      <span className="font-black text-green-600 text-[12px]">+{pts_earned} pts</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Adresse Address-Web acheteur — inline ── */}
         <div className="bg-white rounded-[2rem] p-5 border border-slate-100 shadow-sm">
           <AWAddressPicker

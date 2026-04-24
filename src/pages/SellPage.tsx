@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { playSuccessSound } from '@/services/soundService';
 import { createProduct, canUserPublish } from '@/services/productService';
+import { setProductPromo, notifyFollowersNewProduct } from '@/services/shopFeaturesService';
 import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
 import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS } from '@/types';
@@ -34,6 +35,14 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
+  // Promotion intégrée
+  const [promoPrice, setPromoPrice]           = useState('');
+  const [promoActiveFrom, setPromoActiveFrom] = useState('');
+  const [promoActiveUntil, setPromoActiveUntil] = useState('');
+  const [flashLabel, setFlashLabel]           = useState('');
+  const [showPromoPanel, setShowPromoPanel]   = useState(false);
+  const [promoFrom, setPromoFrom]             = useState('');
+  const [promoUntil, setPromoUntil]           = useState('');
   const [condition, setCondition] = useState<Condition | ''>('');
   const [quantity, setQuantity] = useState('1');
   const [category, setCategory] = useState('');
@@ -195,7 +204,21 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
       if (userProfile.photoURL) {
         productPayload.sellerPhoto = userProfile.photoURL;
       }
-      await createProduct(productPayload as any, images);
+      // Champs promo si définis
+      if (promoPrice.trim() && parseFloat(promoPrice) > 0 && parseFloat(promoPrice) < parseFloat(price)) {
+        productPayload.promoPrice      = parseFloat(promoPrice);
+        productPayload.promoActiveFrom  = promoActiveFrom  || null;
+        productPayload.promoActiveUntil = promoActiveUntil || null;
+        productPayload.flashSaleActive  = !promoActiveFrom; // actif immédiatement si pas de start
+        productPayload.flashSaleScheduled = !!promoActiveFrom;
+        productPayload.flashSaleLabel   = flashLabel || '';
+      }
+      const newProduct = await createProduct(productPayload as any, images);
+      // Notifier les followers du vendeur
+      if (userProfile.followingSellers === undefined) { /* acheteurs followers */ }
+      try {
+        await notifyFollowersNewProduct(userProfile.id, userProfile.name || '', title.trim(), (newProduct as any)?.id || '');
+      } catch {}
       setSuccess(true);
       playSuccessSound();
       setTimeout(() => onSuccess(), 2000);
@@ -404,6 +427,63 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Ancien prix — optionnel <span className="text-amber-500">🏷️ Affiche une réduction</span></label>
               <input type="number" placeholder="Ex: 25000 (si tu fais une promo)" value={originalPrice} onChange={e => setOriginalPrice(e.target.value)}
                 className="w-full px-5 py-5 bg-slate-50 rounded-2xl text-sm border-2 border-transparent focus:border-amber-400 focus:bg-white outline-none transition-all font-bold text-slate-500" />
+            </div>
+
+            {/* ── Prix promo + Vente flash programmée ── */}
+            <div className="rounded-3xl overflow-hidden border-2 border-orange-200" style={{ background: 'rgba(255,237,213,0.3)' }}>
+              <button type="button" onClick={() => setShowPromoPanel(v => !v)}
+                className="w-full flex items-center justify-between px-5 py-4 active:opacity-70">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔥</span>
+                  <div className="text-left">
+                    <p className="font-black text-slate-800 text-[12px]">Prix promo & Vente flash</p>
+                    {promoPrice && <p className="text-[10px] text-orange-600 font-bold">{parseFloat(promoPrice).toLocaleString('fr-FR')} FCFA{promoActiveFrom ? ' · Programmée' : ' · Active'}</p>}
+                  </div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points={showPromoPanel ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}/>
+                </svg>
+              </button>
+              {showPromoPanel && (
+                <div className="px-5 pb-5 space-y-3">
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1.5">Prix promotionnel (FCFA) *</label>
+                    <input type="number" placeholder="Ex: 8000 (doit être inférieur au prix principal)"
+                      value={promoPrice} onChange={e => setPromoPrice(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-white border-2 border-orange-200 rounded-2xl text-sm font-bold outline-none focus:border-orange-400 text-orange-700"/>
+                    {promoPrice && price && parseFloat(promoPrice) > 0 && (
+                      <p className="text-[10px] font-black text-orange-600 mt-1">
+                        ✓ -{Math.round((1 - parseFloat(promoPrice)/parseFloat(price))*100)}% de réduction
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1.5">Début de la promo (optionnel — vide = immédiat)</label>
+                    <input type="datetime-local" value={promoActiveFrom} onChange={e => setPromoActiveFrom(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-white border-2 border-orange-200 rounded-2xl text-sm font-bold outline-none focus:border-orange-400"/>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1.5">Fin de la promo (optionnel — vide = permanent)</label>
+                    <input type="datetime-local" value={promoActiveUntil} onChange={e => setPromoActiveUntil(e.target.value)}
+                      min={promoActiveFrom || new Date().toISOString().slice(0,16)}
+                      className="w-full px-4 py-3.5 bg-white border-2 border-orange-200 rounded-2xl text-sm font-bold outline-none focus:border-orange-400"/>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1.5">Label affiché (ex: "SOLDES -30%")</label>
+                    <input type="text" placeholder="Ex: SOLDES · Vente flash · Promo rentrée"
+                      value={flashLabel} onChange={e => setFlashLabel(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-white border-2 border-orange-200 rounded-2xl text-sm font-bold outline-none focus:border-orange-400"/>
+                  </div>
+                  <div className="bg-orange-50 rounded-2xl p-3 border border-orange-100">
+                    <p className="text-[10px] text-orange-700 font-bold leading-relaxed">
+                      {!promoActiveFrom && !promoActiveUntil && '⚡ Promo active immédiatement, sans date de fin.'}
+                      {promoActiveFrom && !promoActiveUntil && `📅 Promo démarrera le ${new Date(promoActiveFrom).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.`}
+                      {!promoActiveFrom && promoActiveUntil && `⏰ Promo active jusqu'au ${new Date(promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.`}
+                      {promoActiveFrom && promoActiveUntil && `📅 Vente flash du ${new Date(promoActiveFrom).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${new Date(promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}.`}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Description</label>

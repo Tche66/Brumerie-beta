@@ -19,6 +19,7 @@ import { db } from '@/config/firebase';
 import { DelivererPicker } from '@/components/DelivererPicker';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { getDelivererById, confirmDeliveryByBuyer } from '@/services/deliveryService';
+import { creditLoyaltyPoints } from '@/services/shopFeaturesService';
 import { QRScanner } from '@/components/QRScanner';
 import { BuyerPaymentBlock } from '@/components/BuyerPaymentBlock';
 import { QRDisplay } from '@/components/QRDisplay';
@@ -1074,6 +1075,10 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   const result = await confirmDeliveryByBuyer(orderId, order);
                   if (result.success) {
                     try { updateDoc(doc(db, 'products', order.productId), { status: 'sold' }); } catch {}
+                    // Créditer les points fidélité acheteur
+                    if (currentUser && order.totalAmount) {
+                      creditLoyaltyPoints(currentUser.uid, order.totalAmount).catch(() => {});
+                    }
                     setShowRatingModal(true);
                   }
                 }}

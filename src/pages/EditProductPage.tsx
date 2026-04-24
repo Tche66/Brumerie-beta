@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
 import { updateProduct } from '@/services/productService';
+import { setProductPromo, cancelProductPromo } from '@/services/shopFeaturesService';
 import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 
 interface EditProductPageProps {
@@ -14,6 +15,11 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
   const [description, setDescription]   = useState(product.description || '');
   const [price, setPrice]               = useState(String(product.price));
   const [originalPrice, setOriginalPrice] = useState(product.originalPrice ? String(product.originalPrice) : '');
+  const [promoPrice, setPromoPrice]         = useState(product.promoPrice ? String(product.promoPrice) : '');
+  const [promoActiveFrom, setPromoActiveFrom] = useState(product.promoActiveFrom || '');
+  const [promoActiveUntil, setPromoActiveUntil] = useState(product.promoActiveUntil || '');
+  const [flashLabel, setFlashLabel]         = useState(product.flashSaleLabel || '');
+  const [showPromoPanel, setShowPromoPanel] = useState(!!(product.promoPrice));
   const [category, setCategory]         = useState(product.category);
   const [neighborhood, setNeighborhood] = useState(product.neighborhood);
   const [condition, setCondition]       = useState<Condition | ''>((product.condition as Condition) || '');
@@ -55,6 +61,17 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
       else                         updatePayload.quantity  = null;
       updatePayload.hideStats = hideStats;
       await updateProduct(product.id, updatePayload as any);
+      // Promo
+      if (promoPrice && parseFloat(promoPrice) > 0) {
+        await setProductPromo(product.id, {
+          promoPrice: parseFloat(promoPrice),
+          promoActiveFrom:  promoActiveFrom  || undefined,
+          promoActiveUntil: promoActiveUntil || undefined,
+          flashSaleLabel:   flashLabel || '',
+        }).catch(() => {});
+      } else {
+        await cancelProductPromo(product.id).catch(() => {});
+      }
       onSaved();
     } catch {
       setError('Erreur lors de la mise à jour. Réessaie.');
@@ -109,6 +126,45 @@ export function EditProductPage({ product, onBack, onSaved }: EditProductPagePro
           <input value={originalPrice} onChange={(e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => setOriginalPrice(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric"
             className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-4 font-bold text-slate-600 text-sm focus:outline-none focus:border-amber-400 transition-colors"
             placeholder="Ex: 25 000" />
+          {/* Bloc Promo + Vente Flash programmée */}
+          <div className="mt-3 rounded-2xl overflow-hidden border-2 border-orange-200 bg-orange-50">
+            <button type="button" onClick={() => setShowPromoPanel(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 active:opacity-70">
+              <div className="flex items-center gap-2">
+                <span>🔥</span>
+                <p className="font-bold text-slate-700 text-[12px]">Prix promo & Vente flash</p>
+                {promoPrice && <span className="text-[9px] font-black text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{parseFloat(promoPrice).toLocaleString('fr-FR')} FCFA</span>}
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5"><polyline points={showPromoPanel ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}/></svg>
+            </button>
+            {showPromoPanel && (
+              <div className="px-4 pb-4 space-y-2">
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1">Prix promo (FCFA)</label>
+                  <input type="number" placeholder="Inférieur au prix principal" value={promoPrice} onChange={e => setPromoPrice(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-orange-200 rounded-xl text-[12px] font-bold outline-none focus:border-orange-400 text-orange-700"/>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1">Début (vide = immédiat)</label>
+                  <input type="datetime-local" value={promoActiveFrom} onChange={e => setPromoActiveFrom(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-orange-200 rounded-xl text-[11px] font-bold outline-none focus:border-orange-400"/>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1">Fin (vide = permanent)</label>
+                  <input type="datetime-local" value={promoActiveUntil} onChange={e => setPromoActiveUntil(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-orange-200 rounded-xl text-[11px] font-bold outline-none focus:border-orange-400"/>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-orange-700 tracking-widest block mb-1">Label (ex: SOLDES -30%)</label>
+                  <input type="text" placeholder="Ex: Vente flash ⚡" value={flashLabel} onChange={e => setFlashLabel(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-orange-200 rounded-xl text-[12px] font-bold outline-none focus:border-orange-400"/>
+                </div>
+                {promoPrice && <button type="button" onClick={() => { setPromoPrice(''); setPromoActiveFrom(''); setPromoActiveUntil(''); setFlashLabel(''); setShowPromoPanel(false); }}
+                  className="text-[9px] font-black text-red-500 active:scale-95">✕ Supprimer la promo</button>}
+              </div>
+            )}
+          </div>
+
           {discountPercent !== null && (
             <div className="mt-2 flex items-center gap-2">
               <span className="bg-red-100 text-red-600 text-[10px] font-black px-3 py-1.5 rounded-xl">-{discountPercent}%</span>
