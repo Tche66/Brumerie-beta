@@ -38,7 +38,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     images: productRaw.images?.length ? productRaw.images : ((productRaw as any).imageUrl ? [(productRaw as any).imageUrl] : []),
   };
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
-  const isSelf = currentUser?.uid === product.sellerId;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
