@@ -9,8 +9,6 @@ import { Product, Order, PLAN_LIMITS, OrderStatus } from '@/types';
 import { BoostModal } from '@/components/BoostModal';
 import { CountdownBadge } from '@/components/CountdownBadge';
 import { subscribeBoostedProductIds, getSellerBoosts } from '@/services/boostService';
-import { getSellerShopStats, isShopClosed, formatShopClosedUntil, closeShopUntil, reopenShop, formatLastSeen, getActivityColor } from '@/services/shopFeaturesService';
-import type { ShopStats } from '@/services/shopFeaturesService';
 
 // ── SVG Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -80,11 +78,6 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [respondingOffer, setRespondingOffer] = useState<string | null>(null);
   const [boostProduct, setBoostProduct] = useState<Product | null>(null);
   const [actionProduct, setActionProduct] = useState<Product | null>(null);
-  const [shopStats, setShopStats]       = useState<ShopStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [showShopClose, setShowShopClose] = useState(false);
-  const [shopCloseDate, setShopCloseDate] = useState('');
-  const [shopCloseMsg, setShopCloseMsg]   = useState('');
   const [confirmDeleteProduct, setConfirmDeleteProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState(false);
   const [relistingProduct, setRelistingProduct] = useState(false);
@@ -395,155 +388,6 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 </div>
               </div>
             )}
-
-            {/* ── STATS ENRICHIES (Vérifié/Premium) ─────────── */}
-            {!isSimple && (
-              <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">📊 Analyse boutique</p>
-                  {!shopStats && !loadingStats && (
-                    <button onClick={async () => {
-                      if (!currentUser) return;
-                      setLoadingStats(true);
-                      const s = await getSellerShopStats(currentUser.uid).catch(() => null);
-                      if (s) setShopStats(s);
-                      setLoadingStats(false);
-                    }}
-                      className="text-[9px] font-black text-green-600 px-3 py-1.5 rounded-xl bg-green-50 active:scale-95">
-                      Charger l'analyse →
-                    </button>
-                  )}
-                  {loadingStats && <span className="text-[9px] text-slate-400">Chargement...</span>}
-                </div>
-
-                {shopStats ? (
-                  <div className="space-y-3">
-                    {/* Taux de conversion */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-slate-50 rounded-2xl p-3 text-center">
-                        <p className="font-black text-[17px] text-blue-600">{shopStats.conversionRate}%</p>
-                        <p className="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Conversion</p>
-                        <p className="text-[8px] text-slate-300">vues → cmd</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-2xl p-3 text-center">
-                        <p className="font-black text-[17px] text-purple-600">{shopStats.recurringBuyers}</p>
-                        <p className="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Fidèles</p>
-                        <p className="text-[8px] text-slate-300">acheteurs 2+</p>
-                      </div>
-                      <div className="bg-slate-50 rounded-2xl p-3 text-center">
-                        <p className="font-black text-[14px] text-amber-600 truncate">{shopStats.avgOrderValue > 0 ? shopStats.avgOrderValue.toLocaleString('fr-FR') : '—'}</p>
-                        <p className="text-[8px] text-slate-400 uppercase font-bold mt-0.5">Panier moy.</p>
-                        <p className="text-[8px] text-slate-300">FCFA</p>
-                      </div>
-                    </div>
-
-                    {/* Top articles de la semaine */}
-                    {shopStats.topProducts.length > 0 && (
-                      <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">🔥 Top articles (vues)</p>
-                        <div className="space-y-2">
-                          {shopStats.topProducts.slice(0, 3).map((p, i) => (
-                            <div key={p.id} className="flex items-center gap-2.5">
-                              <span className="text-[11px] font-black text-slate-300 w-4">#{i+1}</span>
-                              <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                                {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">📦</div>}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-black text-slate-700 text-[11px] truncate">{p.title}</p>
-                                <p className="text-[9px] text-slate-400">{p.views} vues · {p.orders} cmd</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Heures de pointe */}
-                    {shopStats.peakHours.length > 0 && (() => {
-                      const top3 = [...shopStats.peakHours].sort((a,b) => b.views - a.views).slice(0, 3);
-                      const maxV = top3[0]?.views || 1;
-                      return (
-                        <div>
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">⏰ Heures de pointe</p>
-                          {top3.map(h => (
-                            <div key={h.hour} className="flex items-center gap-2 mb-1.5">
-                              <span className="text-[10px] font-black text-slate-500 w-10">{String(h.hour).padStart(2,'0')}h</span>
-                              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full bg-green-500" style={{ width: `${(h.views/maxV)*100}%` }}/>
-                              </div>
-                              <span className="text-[9px] text-slate-400 w-8 text-right">{h.views}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  !loadingStats && (
-                    <div className="text-center py-4">
-                      <p className="text-[11px] text-slate-400">Clique sur "Charger l'analyse" pour voir tes statistiques détaillées.</p>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-
-            {/* ── BOUTIQUE FERMÉE ──────────────────────────────── */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">🔒 Disponibilité boutique</p>
-                {isShopClosed(userProfile?.shopClosedUntil) ? (
-                  <button onClick={async () => { if (currentUser) { await reopenShop(currentUser.uid); } }}
-                    className="text-[9px] font-black text-green-600 px-3 py-1.5 rounded-xl bg-green-50 active:scale-95">
-                    Rouvrir maintenant
-                  </button>
-                ) : (
-                  <button onClick={() => setShowShopClose(v => !v)}
-                    className="text-[9px] font-black text-amber-700 px-3 py-1.5 rounded-xl bg-amber-50 active:scale-95">
-                    Fermer temporairement
-                  </button>
-                )}
-              </div>
-
-              {isShopClosed(userProfile?.shopClosedUntil) ? (
-                <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200">
-                  <p className="font-black text-amber-800 text-[12px]">🔒 Boutique fermée</p>
-                  <p className="text-[10px] text-amber-700 mt-0.5">Réouvre le {formatShopClosedUntil(userProfile?.shopClosedUntil)}</p>
-                  {userProfile?.shopClosedMessage && (
-                    <p className="text-[10px] text-amber-600 mt-1 italic">"{userProfile.shopClosedMessage}"</p>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-green-50 rounded-2xl p-3 border border-green-200">
-                  <p className="font-black text-green-800 text-[12px]">🟢 Boutique ouverte</p>
-                  <p className="text-[10px] text-green-600 mt-0.5">Tes clients peuvent commander normalement</p>
-                </div>
-              )}
-
-              {showShopClose && !isShopClosed(userProfile?.shopClosedUntil) && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase">Fermer jusqu'au :</p>
-                  <input type="datetime-local" value={shopCloseDate}
-                    onChange={e => setShopCloseDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-[11px] font-bold outline-none focus:border-amber-400"
-                    min={new Date(Date.now() + 3600000).toISOString().slice(0,16)}
-                  />
-                  <input type="text" value={shopCloseMsg} onChange={e => setShopCloseMsg(e.target.value)}
-                    placeholder="Message pour tes clients (optionnel)"
-                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-2xl text-[11px] font-bold outline-none focus:border-amber-400"
-                  />
-                  <button disabled={!shopCloseDate}
-                    onClick={async () => {
-                      if (!currentUser || !shopCloseDate) return;
-                      await closeShopUntil(currentUser.uid, new Date(shopCloseDate), shopCloseMsg);
-                      setShowShopClose(false); setShopCloseDate(''); setShopCloseMsg('');
-                    }}
-                    className="w-full py-3 rounded-2xl font-black text-[11px] uppercase text-white bg-amber-500 active:scale-95 disabled:opacity-40">
-                    🔒 Fermer ma boutique
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* Commandes en cours */}
             {activeOrders.length > 0 && (
