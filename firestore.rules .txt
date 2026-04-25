@@ -3,24 +3,38 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── HELPER : est-ce l'admin ? ─────────────────────────────────
-    // L'UID admin est stocké dans le document system/config (champ adminUid)
-    // Firestore ne peut pas lire les env vars — on utilise un document dédié
     function isAdmin() {
       return request.auth != null &&
         exists(/databases/$(database)/documents/system/config) &&
         get(/databases/$(database)/documents/system/config).data.adminUid == request.auth.uid;
     }
 
+    // ── HELPER : champs écrits par l'admin pour les badges ─────────
+    function isBadgeUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly([
+          'isVerified', 'verifiedUntil', 'verifiedByAdmin', 'verifiedAt',
+          'verificationPending',
+          'isPremium', 'premiumUntil', 'premiumByAdmin', 'premiumAt',
+          'tier',
+          'isBanned', 'banReason', 'banAt', 'banByAdmin',
+          'riskLevel', 'riskReportCount',
+          'advancePaymentAllowed'
+        ]);
+    }
+
     // ── PRODUITS ─────────────────────────────────────────────────
     match /products/{productId} {
       allow read: if true;
       allow create: if request.auth != null;
-      // Compteurs de vues et clicks — tout utilisateur connecté peut incrémenter
       allow update: if request.auth != null && (
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['viewCount', 'whatsappClickCount'])
+          .hasAny(['viewCount', 'whatsappClickCount'])
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['viewCount', 'whatsappClickCount',
+            'viewsByHour', 'viewsByWeek', 'bookmarkCount',
+            'flashSaleActive', 'delivererAccepted', 'delivererEnRoute', 'delivererGpsLink'])
       );
-      // Modification complète — propriétaire OU admin
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.sellerId || isAdmin()
       );
@@ -29,28 +43,92 @@ service cloud.firestore {
       );
     }
 
+    match /dettes/{id} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == resource.data.userId ||
+         request.auth.uid == request.resource.data.userId);
+    }
+
+    match /compta/{entryId} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == resource.data.userId ||
+         request.auth.uid == request.resource.data.userId);
+    }
+
+    match /clients_carnet/{id} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == resource.data.userId ||
+         request.auth.uid == request.resource.data.userId);
+    }
+
     // ── UTILISATEURS ─────────────────────────────────────────────
     match /users/{userId} {
-      // Lecture réservée aux utilisateurs connectés (protège email et téléphone)
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if request.auth != null && (
-        // Son propre profil
+        // Propriétaire modifie son propre profil
         request.auth.uid == userId
         ||
         // Admin peut tout modifier
         isAdmin()
         ||
-        // Parrainage cross-user (champs limités)
+        // Mise à jour parrainage par le service
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['referralCount', 'referralBonusPublications',
                     'referralBonusChats', 'referralFreeVerifiedUntil', 'isVerified'])
+        ||
+        // Trust system — mise à jour riskLevel
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['riskLevel', 'riskReportCount', 'isBanned'])
+        ||
+        // Stats livreur (incrément par livreur sur son propre profil ou par le système)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['totalDeliveries', 'totalEarnings', 'delivererReferralCount',
+                    'delivererReferralBonusAt', 'delivererAccepted'])
+        ||
+        // Présence & activité (chaque user sur son propre profil)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastActiveAt', 'avgResponseTime'])
+        ||
+        // Cashback fidélité (acheteur sur son propre profil)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['loyaltyPoints', 'loyaltyPointsUsed'])
+        ||
+        // Suivre/ne plus suivre un vendeur (acheteur sur son propre profil)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['followingSellers'])
+        ||
+        // Wishlist (acheteur sur son propre profil)
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['wishlistIds', 'wishlistPublic', 'wishlistSlug'])
+        ||
+        // Admin badge updates (Vérifié + Premium + ban)
+        isBadgeUpdate()
       );
+    }
+
+    // ── TRUST REPORTS ─────────────────────────────────────────────
+    match /trust_reports/{reportId} {
+      allow create: if request.auth != null
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.details.size() >= 20
+        && request.resource.data.status == 'pending';
+      allow read: if request.auth != null
+        && (isAdmin() || resource.data.reporterId == request.auth.uid);
+      allow list: if request.auth != null;
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if false;
+    }
+
+    // ── TRUST SCORES ──────────────────────────────────────────────
+    match /trust_scores/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
     }
 
     // ── CONVERSATIONS / MESSAGES ──────────────────────────────────
     match /conversations/{convId} {
-      // Participants OU admin (pour messages admin)
       allow read: if request.auth != null && (
         request.auth.uid in resource.data.participants || isAdmin()
       );
@@ -58,7 +136,6 @@ service cloud.firestore {
       allow update: if request.auth != null && (
         request.auth.uid in resource.data.participants || isAdmin()
       );
-
       match /messages/{msgId} {
         allow read, write: if request.auth != null;
       }
@@ -73,8 +150,7 @@ service cloud.firestore {
       );
     }
 
-    // ── NOTIFICATIONS (subcollection correcte) ───────────────────
-    // Path réel : /notifications/{userId}/items/{notifId}
+    // ── NOTIFICATIONS ─────────────────────────────────────────────
     match /notifications/{userId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId || isAdmin()
@@ -83,10 +159,17 @@ service cloud.firestore {
         allow read, write: if request.auth != null && (
           request.auth.uid == userId || isAdmin()
         );
-        // Permet à n'importe quel user connecté de créer une notif pour autrui
-        // (nécessaire pour broadcast admin et notifications système)
         allow create: if request.auth != null;
       }
+    }
+
+    // ── REFERRALS (parrainage livreur) ─────────────────────────────
+    match /referrals/{doc} {
+      allow read: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
     }
 
     // ── COMMANDES / ORDERS ────────────────────────────────────────
@@ -107,10 +190,16 @@ service cloud.firestore {
     }
 
     // ── STORIES ──────────────────────────────────────────────────
+    // Lecture : tout le monde (accueil public)
+    // Création : vendeur Vérifié OU Premium (isVerified OR isPremium sur le user)
     match /stories/{storyId} {
       allow read: if true;
       allow create: if request.auth != null
-        && request.resource.data.sellerId == request.auth.uid;
+        && request.resource.data.sellerId == request.auth.uid
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isVerified == true
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isPremium == true
+        );
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.sellerId
         || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
@@ -138,14 +227,12 @@ service cloud.firestore {
     match /admin_logs/{logId} {
       allow read: if isAdmin();
       allow create: if isAdmin();
-      allow update, delete: if false; // logs immuables
+      allow update, delete: if false;
     }
 
-    // ── SYSTEM (bannières, settings, config) ─────────────────────
+    // ── SYSTEM ───────────────────────────────────────────────────
     match /system/{docId} {
-      // Lecture publique pour bannières et maintenance
       allow read: if true;
-      // Écriture admin uniquement
       allow write: if isAdmin();
     }
 
@@ -162,29 +249,28 @@ service cloud.firestore {
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.ownerId || isAdmin()
       );
+      allow delete: if request.auth != null && (
+        request.auth.uid == resource.data.ownerId || isAdmin()
+      );
     }
 
-
-    // ── SIGNALEMENTS (disputes commandes) ────────────────────────
+    // ── SIGNALEMENTS ─────────────────────────────────────────────
     match /reports/{reportId} {
-      // Créer : acheteur connecté (lors d'un litige)
       allow create: if request.auth != null;
-      // Lire : admin uniquement (données sensibles)
       allow read: if isAdmin();
-      // Modifier/résoudre : admin uniquement
       allow update: if isAdmin();
-      allow delete: if false; // immuable
+      allow delete: if false;
     }
 
     // ── ALERTES DE RECHERCHE ─────────────────────────────────────
     match /search_alerts/{alertId} {
-      // Chaque user gère ses propres alertes
-      allow read:   if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow update: if false; // pas de mise à jour partielle
-      // Admin peut lire toutes les alertes (stats)
-      allow read: if isAdmin();
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null &&
+        request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+      allow update: if false;
     }
 
     // ── BOOKMARKS ────────────────────────────────────────────────
@@ -198,15 +284,16 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    // ── APP CONFIG (lu par appConfigService, écrit par admin) ──────
+    // ── APP CONFIG ───────────────────────────────────────────────
     match /appConfig/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // ── AUTH TOKENS (Google SSO) ─────────────────────────────────
+    // ── AUTH TOKENS ──────────────────────────────────────────────
     match /authTokens/{tokenId} {
-      allow read, write: if true; // token temporaire 3min, pas de données sensibles
+      allow read: if true;
+      allow write: if false;
     }
 
     // ── PUSH SUBSCRIPTIONS ───────────────────────────────────────
@@ -214,8 +301,7 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // ── TOUTES LES AUTRES COLLECTIONS ────────────────────────────
-    // ── CATCH-ALL : bloque toute collection non déclarée ─────────
+    // ── CATCH-ALL ─────────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

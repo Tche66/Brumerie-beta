@@ -5,6 +5,7 @@ import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
+import { addToWishlist, removeFromWishlist, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { BoostModal } from '@/components/BoostModal';
 import { ImageLightbox } from '@/components/ImageLightbox';
@@ -37,9 +38,13 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     images: productRaw.images?.length ? productRaw.images : ((productRaw as any).imageUrl ? [(productRaw as any).imageUrl] : []),
   };
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
+  const isSelf = currentUser?.uid === product.sellerId;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isFollowingSeller, setIsFollowingSeller] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerInput, setOfferInput] = useState('');
   const [sendingOffer, setSendingOffer] = useState(false);
@@ -95,11 +100,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     };
   }, [product.id, currentUser?.uid]);
 
-  // Bookmark sync
+  // Bookmark + Wishlist + Following sync
   useEffect(() => {
-    const ids = userProfile?.bookmarkedProductIds || [];
+    const ids      = userProfile?.bookmarkedProductIds || [];
+    const wishIds  = (userProfile as any)?.wishlistIds || [];
+    const followIds = (userProfile as any)?.followingSellers || [];
     setIsBookmarked(ids.includes(product.id));
-  }, [userProfile, product.id]);
+    setIsInWishlist(wishIds.includes(product.id));
+    setIsFollowingSeller(followIds.includes(product.sellerId));
+  }, [userProfile, product.id, product.sellerId]);
 
   // Reviews du vendeur
   useEffect(() => {
@@ -302,6 +311,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#0F172A" strokeWidth="3"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
           <div className="flex gap-2">
+            {/* Bookmark favori */}
             <div className="flex flex-col items-center gap-0.5">
               <button onClick={handleBookmark} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
                 <svg width="20" height="20" viewBox="0 0 24 24"
@@ -316,12 +326,69 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 </span>
               )}
             </div>
-            <button onClick={handleShare} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
+            {/* Wishlist ✨ */}
+            {!isGuest && currentUser && (
+              <div className="flex flex-col items-center gap-0.5">
+                <button
+                  onClick={async () => {
+                    if (!currentUser) return;
+                    try {
+                      if (isInWishlist) {
+                        await removeFromWishlist(currentUser.uid, product.id);
+                        setIsInWishlist(false);
+                      } else {
+                        await addToWishlist(currentUser.uid, product.id);
+                        setIsInWishlist(true);
+                      }
+                      await refreshUserProfile();
+                    } catch {}
+                  }}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
+                  <span className="text-[18px]">{isInWishlist ? '✨' : '☆'}</span>
+                </button>
+                <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm text-slate-500">
+                  {isInWishlist ? 'Wishlist' : 'Wishlist'}
+                </span>
+              </div>
+            )}
+            {/* Suivre le vendeur */}
+            {!isGuest && currentUser && !isSelf && (
+              <div className="flex flex-col items-center gap-0.5">
+                <button
+                  disabled={followingLoading}
+                  onClick={async () => {
+                    if (!currentUser) return;
+                    setFollowingLoading(true);
+                    try {
+                      if (isFollowingSeller) {
+                        await unfollowSeller(currentUser.uid, product.sellerId);
+                        setIsFollowingSeller(false);
+                      } else {
+                        await followSeller(currentUser.uid, product.sellerId, product.sellerName || '');
+                        setIsFollowingSeller(true);
+                      }
+                      await refreshUserProfile();
+                    } catch {}
+                    setFollowingLoading(false);
+                  }}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-50">
+                  <span className="text-[18px]">{followingLoading ? '⏳' : isFollowingSeller ? '🔔' : '🔕'}</span>
+                </button>
+                <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
+                  style={{ color: isFollowingSeller ? '#16A34A' : '#64748B' }}>
+                  {isFollowingSeller ? 'Suivi' : 'Suivre'}
+                </span>
+              </div>
+            )}
+            {/* Partager */}
+            <div className="flex flex-col items-center gap-0.5">
+              <button onClick={handleShare} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
               {copySuccess
                 ? <span className="text-[10px] font-black text-green-600">OK</span>
                 : <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0F172A" strokeWidth="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" strokeLinecap="round" strokeLinejoin="round"/></svg>
               }
             </button>
+            </div>
           </div>
         </div>
 

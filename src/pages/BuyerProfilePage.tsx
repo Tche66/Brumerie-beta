@@ -23,6 +23,7 @@ interface BuyerProfilePageProps {
   onProductClick: (product: Product) => void;
   onNavigate?: (page: string) => void;
   onOpenOrder?: (orderId: string) => void;
+  onSellerClick?: (sellerId: string) => void;
 }
 
 type Tab = 'favorites' | 'purchases' | 'wishlist' | 'cashback' | 'following';
@@ -59,7 +60,7 @@ function fmtDate(ts: any): string {
   } catch { return ''; }
 }
 
-export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: BuyerProfilePageProps) {
+export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSellerClick }: BuyerProfilePageProps) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('favorites');
 
@@ -407,7 +408,8 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder }: Bu
               followedSellersData.map((seller: any) => {
                 const lastSeen = formatLastSeen(seller.lastActiveAt);
                 return (
-                  <div key={seller.id} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+                  <div key={seller.id} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex items-center gap-3 active:bg-slate-50 transition-all cursor-pointer"
+                    onClick={() => onSellerClick?.(seller.id)}>
                     <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
                       {(seller.deliveryPhotoURL || seller.photoURL)
                         ? <img src={seller.deliveryPhotoURL || seller.photoURL} alt="" className="w-full h-full object-cover"/>

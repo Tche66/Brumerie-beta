@@ -84,6 +84,7 @@ export function SellerProfilePage({
   const [showAllHours, setShowAllHours] = useState(false);
   const [isFollowing, setIsFollowing]   = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
   const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
@@ -116,6 +117,18 @@ export function SellerProfilePage({
   useEffect(() => {
     setIsFollowing(!!(userProfile?.followingSellers?.includes(sellerId)));
   }, [userProfile?.followingSellers, sellerId]);
+
+  // Charger le nombre de followers du vendeur
+  useEffect(() => {
+    if (!sellerId) return;
+    import('firebase/firestore').then(({ getDocs, query, collection, where }) =>
+      import('@/config/firebase').then(({ db }) => {
+        getDocs(query(collection(db, 'users'), where('followingSellers', 'array-contains', sellerId)))
+          .then(snap => setFollowersCount(snap.size))
+          .catch(() => {});
+      })
+    );
+  }, [sellerId]);
 
   const activeProducts = products.filter(p => p.status === 'active');
   const soldProducts   = products.filter(p => p.status === 'sold');
@@ -362,10 +375,13 @@ export function SellerProfilePage({
                       if (isFollowing) {
                         await unfollowSeller(currentUser.uid, sellerId);
                         setIsFollowing(false);
+                        setFollowersCount(c => Math.max(0, c - 1));
                       } else {
                         await followSeller(currentUser.uid, sellerId, seller.name);
                         setIsFollowing(true);
+                        setFollowersCount(c => c + 1);
                       }
+                      await refreshUserProfile();
                     } catch {}
                     setFollowLoading(false);
                   }}
@@ -428,8 +444,8 @@ export function SellerProfilePage({
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">En ligne</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-amber-500 text-lg leading-none">{draftProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Brouillons</p>
+                    <p className="font-black text-purple-600 text-lg leading-none">{followersCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnés</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
                     <p className="font-black text-amber-500 text-lg leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
@@ -443,8 +459,8 @@ export function SellerProfilePage({
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Articles</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-blue-600 text-lg leading-none">{soldProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vendus</p>
+                    <p className="font-black text-purple-600 text-lg leading-none">{followersCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnés</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
                     <p className="font-black text-amber-500 text-lg leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>

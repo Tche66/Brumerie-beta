@@ -649,7 +649,12 @@ useEffect(() => {
           />
         )}
         {activePage === 'profile' && isBuyer && (
-          <BuyerProfilePage onProductClick={handleProductClick} onNavigate={handleNavigate} onOpenOrder={(id) => { setSelectedOrderId(id); navigate('order-status'); }} />
+          <BuyerProfilePage
+            onProductClick={handleProductClick}
+            onNavigate={handleNavigate}
+            onOpenOrder={(id) => { setSelectedOrderId(id); navigate('order-status'); }}
+            onSellerClick={handleSellerClick}
+          />
         )}
         {activePage === 'discover' && isBuyer && (
           <DiscoverPage
