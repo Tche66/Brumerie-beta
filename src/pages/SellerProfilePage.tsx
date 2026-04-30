@@ -11,6 +11,7 @@ import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
 import { useAuth } from '@/contexts/AuthContext';
+import { BruIcons } from '@/components/BruIcons';
 
 // ── QR Code ────────────────────────────────────────────────────
 function ShopQRImage({ url }: { url: string }) {
@@ -163,7 +164,7 @@ export function SellerProfilePage({
 
   const handleShare = async () => {
     if (navigator.share) {
-      try { await navigator.share({ title: `${seller?.name} — Boutique Brumerie`, text: `Découvre la boutique de ${seller?.name} sur Brumerie 🛍`, url: profileUrl }); } catch {}
+      try { await navigator.share({ title: `${seller?.name} — Boutique Brumerie`, text: `Découvre la boutique de ${seller?.name} sur Brumerie <BruIcons.ShoppingBag size={14}/>`, url: profileUrl }); } catch {}
     } else {
       await navigator.clipboard.writeText(profileUrl).catch(() => {});
     }
@@ -191,7 +192,7 @@ export function SellerProfilePage({
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
         <h1 className="font-black text-[13px] uppercase tracking-widest text-slate-900 flex-1 truncate">
-          {isSelf ? '🏪 Ma Boutique' : 'Profil Vendeur'}
+          {isSelf ? '<BruIcons.Store size={14}/> Ma Boutique' : 'Profil Vendeur'}
         </h1>
         {seller && (
           <div className="flex items-center gap-2">
@@ -238,7 +239,7 @@ export function SellerProfilePage({
               <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5))' }}/>
               {hasFlash && (
                 <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse shadow-lg">
-                  ⚡ {s.flashSaleLabel}
+                  <BruIcons.Zap size={14}/> {s.flashSaleLabel}
                 </div>
               )}
             </div>
@@ -250,7 +251,7 @@ export function SellerProfilePage({
             }}>
               {hasFlash && (
                 <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse shadow-lg">
-                  ⚡ {s.flashSaleLabel}
+                  <BruIcons.Zap size={14}/> {s.flashSaleLabel}
                 </div>
               )}
             </div>
@@ -276,7 +277,7 @@ export function SellerProfilePage({
               {/* Boutique fermée — bandeau visible */}
               {isShopClosed(seller?.shopClosedUntil) && (
                 <div className="w-full mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
-                  <p className="font-black text-amber-800 text-[12px]">🔒 Boutique temporairement fermée</p>
+                  <p className="font-black text-amber-800 text-[12px]"><BruIcons.Lock size={14}/> Boutique temporairement fermée</p>
                   <p className="text-[10px] text-amber-700 mt-0.5">
                     Réouvre le {formatShopClosedUntil(seller?.shopClosedUntil)}
                   </p>
@@ -337,7 +338,7 @@ export function SellerProfilePage({
               <div className="flex items-center gap-2 flex-wrap justify-center mb-4">
                 {seller.neighborhood && (
                   <span className="flex items-center gap-1 text-[10px] text-slate-500 font-bold bg-slate-50 px-2.5 py-1 rounded-full">
-                    📍 {seller.neighborhood}
+                    <BruIcons.MapPin size={10}/> {seller.neighborhood}
                   </span>
                 )}
                 {memberSince && (
@@ -347,7 +348,7 @@ export function SellerProfilePage({
                 )}
                 {seller.managesDelivery && (
                   <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
-                    🛵 Livraison dispo
+                    <BruIcons.Moto size={14}/> Livraison dispo
                   </span>
                 )}
                 {seller.hasPhysicalShop && (
@@ -408,7 +409,7 @@ export function SellerProfilePage({
                 <div className="flex gap-2 w-full max-w-xs mt-1">
                   <button onClick={() => onNavigate?.('edit-profile')}
                     className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all bg-white">
-                    ✏️ Profil
+                    <BruIcons.Edit size={14}/> Profil
                   </button>
                   <button onClick={() => onNavigate?.('sell')}
                     className="flex-[2] py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 transition-all"
@@ -496,9 +497,9 @@ export function SellerProfilePage({
               {/* Boutique physique — avec accordéon horaires */}
               {seller.hasPhysicalShop && s?.shopAddress && (
                 <div className="px-5 py-4 border-b border-slate-50">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">🏪 Boutique physique</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5"><BruIcons.Store size={14}/> Boutique physique</p>
                   <p className="text-[12px] font-bold text-slate-800 flex items-start gap-1.5 mb-2">
-                    <span className="flex-shrink-0">📍</span>{s.shopAddress}
+                    <span className="flex-shrink-0"><BruIcons.MapPin size={10}/></span>{s.shopAddress}
                   </p>
                   {s?.shopHours && (() => {
                     const allHours = Object.entries(s.shopHours).filter(([,v]) => v);
@@ -592,7 +593,7 @@ export function SellerProfilePage({
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-slate-900 text-[11px] truncate">{review.fromUserName}</p>
                         <p className="text-[9px] text-slate-400 truncate">
-                          {review.fromUserNeighborhood ? `📍 ${review.fromUserNeighborhood}` : review.productTitle ? `🛍 ${review.productTitle}` : ''}
+                          {review.fromUserNeighborhood ? `<BruIcons.MapPin size={10}/> ${review.fromUserNeighborhood}` : review.productTitle ? `<BruIcons.ShoppingBag size={14}/> ${review.productTitle}` : ''}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
@@ -640,7 +641,7 @@ export function SellerProfilePage({
             {(tab === 'actifs' || tab === 'vendus') && (
               (tab === 'actifs' ? activeProducts : soldProducts).length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-                  <p className="text-3xl mb-3">{tab === 'actifs' ? '🛍' : '📦'}</p>
+                  <p className="text-3xl mb-3">{tab === 'actifs' ? '<BruIcons.ShoppingBag size={14}/>' : '<BruIcons.Package size={14}/>'}</p>
                   <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">
                     {tab === 'actifs' ? (isSelf ? 'Aucun article en ligne' : 'Boutique vide') : 'Aucune vente pour l\'instant'}
                   </p>
@@ -667,7 +668,7 @@ export function SellerProfilePage({
             {tab === 'brouillons' && isSelf && (
               draftProducts.length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-                  <p className="text-3xl mb-3">📝</p>
+                  <p className="text-3xl mb-3"><BruIcons.FileText size={14}/></p>
                   <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">Aucun brouillon</p>
                 </div>
               ) : (
@@ -676,13 +677,13 @@ export function SellerProfilePage({
                     <div key={product.id} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
                       <div className="flex gap-3 p-3">
                         <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                          {product.images?.[0] ? <img src={product.images[0]} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
+                          {product.images?.[0] ? <img src={product.images[0]} alt="" className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-2xl"><BruIcons.Package size={14}/></div>}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-black text-slate-900 text-[13px] truncate">{product.title}</p>
                           <p className="text-[12px] font-bold text-green-600">{product.price?.toLocaleString('fr-CI')} FCFA</p>
                           <span className={`inline-block mt-1 text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${product.status === 'draft' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                            {product.status === 'draft' ? '📝 Brouillon' : '⏸ Suspendu'}
+                            {product.status === 'draft' ? '<BruIcons.FileText size={14}/> Brouillon' : '⏸ Suspendu'}
                           </span>
                         </div>
                       </div>

@@ -13,6 +13,7 @@ import { AWAddressPicker } from '@/components/AWAddressPicker';
 import { PaymentLogo } from '@/components/PaymentLogo';
 import { getTrustScore, TrustScore } from '@/services/trustService';
 import { RiskAlertBanner } from '@/components/RiskBadge';
+import { BruIcons } from '@/components/BruIcons';
 
 interface OrderFlowPageProps {
   product: Product;
@@ -128,7 +129,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        // ✅ Firestore refuse undefined — on omet les champs vides
+        // <BruIcons.CheckCircle size={14}/> Firestore refuse undefined — on omet les champs vides
         ...(awCode        ? { buyerAWCode:      awCode }               : {}),
         ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
         ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
@@ -172,7 +173,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        // ✅ Firestore refuse undefined — on omet les champs vides
+        // <BruIcons.CheckCircle size={14}/> Firestore refuse undefined — on omet les champs vides
         ...(awCode        ? { buyerAWCode:      awCode }               : {}),
         ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
         ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
@@ -284,8 +285,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de remise</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { id: 'in_person', label: 'Main propre', icon: '🤝', sub: 'Confirmation immédiate' },
-              { id: 'delivery',  label: 'Livraison',   icon: '📦', sub: 'Livreur Brumerie ou vendeur' },
+              { id: 'in_person', label: 'Main propre', icon: '<BruIcons.Check size={14}/>', sub: 'Confirmation immédiate' },
+              { id: 'delivery',  label: 'Livraison',   icon: '<BruIcons.Package size={14}/>', sub: 'Livreur Brumerie ou vendeur' },
             ].map(opt => (
               <button key={opt.id}
                 onClick={() => setDeliveryType(opt.id as any)}
@@ -302,7 +303,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             <div className="mt-3">
               <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
                 <p className="text-[11px] font-bold text-slate-500 text-center">
-                  🛵 Un livreur vous sera proposé par le vendeur une fois la commande validée.
+                  <BruIcons.Moto size={14}/> Un livreur vous sera proposé par le vendeur une fois la commande validée.
                 </p>
               </div>
             </div>
@@ -337,10 +338,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
               }`}>
               {!advancePaymentOk && (
                 <span className="absolute top-2 right-2 text-[8px] font-black uppercase tracking-widest bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
-                  🔒 Indisponible
+                  <BruIcons.Lock size={14}/> Indisponible
                 </span>
               )}
-              <div className="text-2xl flex-shrink-0">💳</div>
+              <div className="text-2xl flex-shrink-0"><BruIcons.Credit size={14}/></div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer à l'avance</p>
                 <p className="text-[10px] text-slate-400 font-medium">Wave · Orange Money · MTN · Moov</p>
@@ -357,9 +358,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
               className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'cash_on_delivery' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
               {/* Badge Recommandé */}
               <div className="absolute -top-2 -right-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                🛡️ Recommandé
+                <BruIcons.Shield size={14}/> Recommandé
               </div>
-              <div className="text-2xl flex-shrink-0">🤝</div>
+              <div className="text-2xl flex-shrink-0"><BruIcons.Check size={14}/></div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Payer à la livraison</p>
                 <p className="text-[10px] text-slate-400 font-medium">Tu paies uniquement quand tu reçois l'article</p>
@@ -436,7 +437,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 Commande en cours...
               </div>
-            ) : '🤝 Commander — Payer à la livraison'}
+            ) : '<BruIcons.Check size={14}/> Commander — Payer à la livraison'}
           </button>
         )}
       </div>
@@ -468,7 +469,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         {/* Avertissement sécurité */}
         <div className="bg-orange-50 rounded-2xl p-4 border-2 border-orange-200">
-          <p className="text-[11px] font-black text-orange-900 mb-2">⚠️ Avant de payer — lisez attentivement</p>
+          <p className="text-[11px] font-black text-orange-900 mb-2"><BruIcons.AlertTriangle size={14}/> Avant de payer — lisez attentivement</p>
           <ul className="space-y-1.5">
             {[
               "Confirmez que le vendeur est disponible pour livrer.",
@@ -485,7 +486,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         {/* Attente confirmation vendeur — ici on passe directement, le vendeur confirmera après */}
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-          <p className="text-[11px] font-black text-blue-900 mb-1">📋 Comment ça marche</p>
+          <p className="text-[11px] font-black text-blue-900 mb-1"><BruIcons.FileText size={14}/> Comment ça marche</p>
           <p className="text-[10px] text-blue-800 font-bold leading-relaxed">
             1. Tu passes ta commande<br/>
             2. Le vendeur <strong>confirme la disponibilité</strong> dans les 24h<br/>
@@ -679,7 +680,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
           {loading
             ? <div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Envoi...</div>
-            : '📤 Envoyer la preuve →'}
+            : '<BruIcons.Share size={14}/> Envoyer la preuve →'}
         </button>
         <button onClick={() => setStep('payment_details')}
           className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
@@ -694,7 +695,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
     <div className="fixed inset-0 bg-white z-[90] flex flex-col font-sans" style={{ height: '100dvh' }}>
       <div className="flex items-center gap-4 px-5 py-5 border-b border-slate-100">
         <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center">
-          <span className="text-xl">🤝</span>
+          <span className="text-xl"><BruIcons.Check size={14}/></span>
         </div>
         <div>
           <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Commande confirmée</h1>
@@ -717,7 +718,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         {/* Message info */}
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-          <p className="text-[12px] font-black text-blue-900 mb-2">📦 Ta commande est enregistrée !</p>
+          <p className="text-[12px] font-black text-blue-900 mb-2"><BruIcons.Package size={14}/> Ta commande est enregistrée !</p>
           <p className="text-[11px] text-blue-800 font-medium leading-relaxed">
             Le vendeur a été notifié. Tu paieras <strong>{effectivePrice.toLocaleString('fr-FR')} FCFA</strong> directement
             {deliveryType === 'delivery' ? ' à la livraison.' : ' lors du retrait en main propre.'}
@@ -726,7 +727,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
           <p className="text-[11px] text-amber-800 font-bold leading-relaxed">
-            ⚠️ Contacte le vendeur via la messagerie pour convenir des détails de la remise (lieu, heure).
+            <BruIcons.AlertTriangle size={14}/> Contacte le vendeur via la messagerie pour convenir des détails de la remise (lieu, heure).
           </p>
         </div>
 
@@ -735,9 +736,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ce qui se passe ensuite</p>
           <div className="space-y-4">
             {[
-              { ico: '📞', t: 'Le vendeur te contacte', d: 'Via la messagerie Brumerie pour confirmer la remise' },
-              { ico: deliveryType === 'delivery' ? '🚚' : '📍', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: "Conviens du lieu et de l'heure avec le vendeur" },
-              { ico: '💵', t: 'Tu paies à la réception', d: `${effectivePrice.toLocaleString('fr-FR')} FCFA en cash au moment de la remise` },
+              { ico: '<BruIcons.PhoneCall size={14}/>', t: 'Le vendeur te contacte', d: 'Via la messagerie Brumerie pour confirmer la remise' },
+              { ico: deliveryType === 'delivery' ? '🚚' : '<BruIcons.MapPin size={10}/>', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: "Conviens du lieu et de l'heure avec le vendeur" },
+              { ico: '<BruIcons.Money size={14}/>', t: 'Tu paies à la réception', d: `${effectivePrice.toLocaleString('fr-FR')} FCFA en cash au moment de la remise` },
               { ico: '⭐', t: 'Tu notes le vendeur', d: 'Reviens confirmer la réception et laisser un avis' },
             ].map((s, i) => (
               <div key={i} className="flex items-start gap-3">

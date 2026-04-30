@@ -18,6 +18,7 @@ import { shareProduct } from '@/utils/shareProduct';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { getTrustScore, TrustScore } from '@/services/trustService';
 import { RiskAlertBanner } from '@/components/RiskBadge';
+import { BruIcons } from '@/components/BruIcons';
 
 
 interface ProductDetailPageProps {
@@ -163,7 +164,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         { id: product.id, title: product.title, price: product.price, image: product.images?.[0] || '', neighborhood: product.neighborhood },
         userProfile.name, product.sellerName, userProfile.photoURL, product.sellerPhoto,
       );
-      // ✅ Comptabiliser le contact via le messenger (pas WhatsApp)
+      // <BruIcons.CheckCircle size={14}/> Comptabiliser le contact via le messenger (pas WhatsApp)
       await incrementContactCount(product.id, product.sellerId);
       onStartChat?.(convId);
     } catch (e) { console.error('[Chat]', e); }
@@ -321,7 +322,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               </button>
               {((product as any).bookmarkCount || 0) > 0 && (
                 <span className="text-[8px] font-black text-blue-600 bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
-                  ❤️ {(product as any).bookmarkCount}
+                  <BruIcons.HeartFilled size={14}/> {(product as any).bookmarkCount}
                 </span>
               )}
             </div>
@@ -371,7 +372,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     setFollowingLoading(false);
                   }}
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-50">
-                  <span className="text-[18px]">{followingLoading ? '⏳' : isFollowingSeller ? '🔔' : '🔕'}</span>
+                  <span className="text-[18px]">{followingLoading ? '<BruIcons.Clock size={14}/>' : isFollowingSeller ? '<BruIcons.Bell size={14}/>' : '<BruIcons.BellOff size={14}/>'}</span>
                 </button>
                 <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
                   style={{ color: isFollowingSeller ? '#16A34A' : '#64748B' }}>
@@ -432,7 +433,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   <>
                     {p.flashSaleLabel && promoActive && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full mb-1">
-                        🔥 {p.flashSaleLabel}
+                        <BruIcons.Flame size={14}/> {p.flashSaleLabel}
                         {p.promoActiveUntil && <span className="text-orange-400">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
                       </span>
                     )}
@@ -511,7 +512,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           )}
           {product.hideStats && (
             <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
-              <span className="text-green-600 text-base">✅</span>
+              <span className="text-green-600 text-base"><BruIcons.CheckCircle size={14}/></span>
               <span className="text-[11px] font-bold text-green-700">Article disponible · Publié sur Brumerie</span>
             </div>
           )}
@@ -569,7 +570,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
           {/* Garantie Brumerie */}
           <div className="bg-slate-900 rounded-2xl px-5 py-4 flex items-start gap-3">
-            <span className="text-xl flex-shrink-0">🛡️</span>
+            <span className="text-xl flex-shrink-0"><BruIcons.Shield size={14}/></span>
             <div>
               <p className="text-[11px] font-black text-white mb-1">Protection acheteur Brumerie</p>
               <p className="text-[10px] text-slate-400 leading-snug">
@@ -694,7 +695,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── FOOTER FIXE ── */}
       {chatLimitError && (
         <div className="fixed bottom-24 left-4 right-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 z-40 shadow-lg">
-          <p className="text-[11px] font-bold text-amber-700">⚠️ {chatLimitError}</p>
+          <p className="text-[11px] font-bold text-amber-700"><BruIcons.AlertTriangle size={14}/> {chatLimitError}</p>
           <button onClick={() => setChatLimitError('')} className="absolute top-2 right-3 text-amber-400 font-black text-sm">×</button>
         </div>
       )}
@@ -705,7 +706,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         ) : isSelf ? (
           <button onClick={() => setShowBoost(true)}
             className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-100">
-            ⚡ Booster cet article
+            <BruIcons.Zap size={14}/> Booster cet article
           </button>
         ) : (
           <>
@@ -721,7 +722,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             {!isGuest && currentUser?.uid !== product.sellerId && product.status !== 'sold' && (
               <button onClick={() => setShowOfferModal(true)}
                 className="flex-1 py-5 rounded-[2rem] font-black text-[12px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                💰 Offre
+                <BruIcons.Money size={14}/> Offre
               </button>
             )}
             <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
@@ -797,10 +798,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   : 'bg-amber-50 text-amber-700'
               }`}>
                 {parseInt(offerInput) < product.price * 0.5
-                  ? '⚠️ Offre très basse — peu de chances d\'être acceptée'
+                  ? '<BruIcons.AlertTriangle size={14}/> Offre très basse — peu de chances d\'être acceptée'
                   : parseInt(offerInput) >= product.price
-                  ? '✅ Offre au prix ou supérieure — sera acceptée !'
-                  : `💡 Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
+                  ? '<BruIcons.CheckCircle size={14}/> Offre au prix ou supérieure — sera acceptée !'
+                  : `<BruIcons.Info size={14}/> Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
                 }
               </div>
             )}
@@ -812,7 +813,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 disabled={!offerInput || parseInt(offerInput) <= 0 || sendingOffer}
                 className="flex-[2] py-4 rounded-2xl text-white font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '💰 Envoyer l\'offre'}
+                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '<BruIcons.Money size={14}/> Envoyer l\'offre'}
               </button>
             </div>
           </div>
