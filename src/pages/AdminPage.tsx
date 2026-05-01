@@ -169,68 +169,68 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
   const handleActivateBoost = async (id: string) => {
     setBusy(id);
-    try { await activateBoost(id, currentUser!.uid); await logAction('BOOST_ACTIVATED', id); showToast('<BruIcons.CheckCircle size={14}/> Boost activé !'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await activateBoost(id, currentUser!.uid); await logAction('BOOST_ACTIVATED', id); showToast('Boost activé !'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleRejectBoost = async (id: string) => {
     setBusy(id);
     try { await rejectBoost(id, currentUser!.uid, rejectReason || 'Paiement non confirmé'); await logAction('BOOST_REJECTED', id, rejectReason); setRejectBoostId(''); setRejectReason(''); showToast('Boost refusé.'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleBan = async (userId: string) => {
-    if (!banReason.trim()) { showToast('<BruIcons.AlertTriangle size={14}/> Motif requis'); return; }
+    if (!banReason.trim()) { showToast('Motif requis'); return; }
     setBusy(userId);
-    try { await banUser(userId, banReason); await logAction('USER_BANNED', userId, banReason); setBanUserId(''); setBanReason(''); showToast('<BruIcons.XCircle size={14}/> Banni'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await banUser(userId, banReason); await logAction('USER_BANNED', userId, banReason); setBanUserId(''); setBanReason(''); showToast('Banni'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleUnban = async (userId: string) => {
     setBusy(userId);
-    try { await unbanUser(userId); await logAction('USER_UNBANNED', userId); showToast('<BruIcons.CheckCircle size={14}/> Débanni'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await unbanUser(userId); await logAction('USER_UNBANNED', userId); showToast('Débanni'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleForceVerify = async (userId: string) => {
     setBusy(userId);
-    try { await forceVerifyUser(userId, currentUser!.uid); await logAction('USER_VERIFIED', userId); showToast('<BruIcons.Award size={14}/> Badge accordé'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await forceVerifyUser(userId, currentUser!.uid); await logAction('USER_VERIFIED', userId); showToast('Badge accordé'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleRevokeVerif = async (userId: string) => {
     setBusy(userId);
     try { await revokeVerification(userId); await logAction('USER_UNVERIFIED', userId); showToast('Badge retiré'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleSetRole = async (userId: string, role: 'buyer' | 'seller' | 'livreur') => {
     setBusy(userId);
     try { await setUserRole(userId, role); await logAction('USER_ROLE', userId, role); showToast(`Rôle → ${role}`); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleDeleteProduct = async (productId: string) => {
     if (!confirm('Supprimer ce produit ?')) return;
     setBusy(productId);
-    try { await adminDeleteProduct(productId); await logAction('PRODUCT_DELETED', productId); showToast('<BruIcons.Trash size={14}/> Supprimé'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await adminDeleteProduct(productId); await logAction('PRODUCT_DELETED', productId); showToast('Supprimé'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleToggleHide = async (productId: string, hidden: boolean) => {
     setBusy(productId);
     try { await adminHideProduct(productId, !hidden); await logAction(hidden ? 'PRODUCT_SHOWN' : 'PRODUCT_HIDDEN', productId); showToast(hidden ? 'Produit visible' : 'Masqué'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleResolveOrder = async (orderId: string, resolution: 'completed' | 'refunded' | 'cancelled') => {
-    if (!orderNote.trim()) { showToast('<BruIcons.AlertTriangle size={14}/> Note requise'); return; }
+    if (!orderNote.trim()) { showToast('Note requise'); return; }
     setBusy(orderId);
-    try { await forceResolveOrder(orderId, resolution, orderNote, currentUser!.uid); await logAction('ORDER_RESOLVED', orderId, `${resolution}—${orderNote}`); setOrderNote(''); setOrderTarget(''); showToast(`<BruIcons.CheckCircle size={14}/> Commande → ${resolution}`); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await forceResolveOrder(orderId, resolution, orderNote, currentUser!.uid); await logAction('ORDER_RESOLVED', orderId, `${resolution}—${orderNote}`); setOrderNote(''); setOrderTarget(''); showToast(`Commande → ${resolution}`); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
 
   // ── Message direct admin ──
   const handleSendDirectMsg = async () => {
-    if (!msgTarget || !msgText.trim()) { showToast('<BruIcons.AlertTriangle size={14}/> Message vide'); return; }
+    if (!msgTarget || !msgText.trim()) { showToast('Message vide'); return; }
     setBusy('msg_' + msgTarget.id);
     try {
       await sendAdminDirectMessage(msgTarget.id, msgTarget.name, msgText, currentUser!.uid);
       await logAction('ADMIN_MSG_SENT', msgTarget.id, msgText);
       setMsgTarget(null); setMsgText('');
-      showToast('<BruIcons.CheckCircle size={14}/> Message envoyé + notification');
-    } catch { showToast('<BruIcons.XCircle size={14}/> Erreur envoi'); } finally { setBusy(null); }
+      showToast('Message envoyé + notification');
+    } catch { showToast('Erreur envoi'); } finally { setBusy(null); }
   };
 
   // ── Toggle badge ──
@@ -238,13 +238,13 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
     setBusy('badge_' + userId);
     try {
       await toggleUserVerification(userId, !currentState, currentUser!.uid, parseInt(badgeDays) || 30);
-      showToast(!currentState ? `<BruIcons.Award size={14}/> Badge activé (${badgeDays} jours)` : 'Badge désactivé');
-    } catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+      showToast(!currentState ? `Badge activé (${badgeDays} jours)` : 'Badge désactivé');
+    } catch { showToast('Erreur'); } finally { setBusy(null); }
   };
 
   // ── Admin change email user ──
   const handleAdminChangeEmail = async (userId: string) => {
-    if (!newEmailInput.includes('@')) { showToast('<BruIcons.AlertTriangle size={14}/> Email invalide'); return; }
+    if (!newEmailInput.includes('@')) { showToast('Email invalide'); return; }
     setBusy('email_' + userId);
     try {
       const idToken = await getAuth().currentUser?.getIdToken() || '';
@@ -252,24 +252,24 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
       if (res.success) {
         await logAction('EMAIL_CHANGED', userId, newEmailInput);
         setEmailTarget(null); setNewEmailInput('');
-        showToast('<BruIcons.CheckCircle size={14}/> Email mis à jour');
+        showToast('Email mis à jour');
       } else {
-        showToast('<BruIcons.XCircle size={14}/> ' + (res.error || 'Erreur'));
+        showToast('' + (res.error || 'Erreur'));
       }
-    } catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    } catch { showToast('Erreur'); } finally { setBusy(null); }
   };
 
   // ── Broadcast notification ──
   const handleBroadcast = async () => {
-    if (!broadcastTitle.trim() || !broadcastBody.trim()) { showToast('<BruIcons.AlertTriangle size={14}/> Titre et message requis'); return; }
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) { showToast('Titre et message requis'); return; }
     if (!confirm(`Envoyer cette notification à TOUS les utilisateurs (${users.length}) ?`)) return;
     setBusy('broadcast');
     try {
       const result = await broadcastNotificationToAll(broadcastTitle, broadcastBody, currentUser!.uid);
       setBroadcastResult(result);
       setBroadcastTitle(''); setBroadcastBody('');
-      showToast(`<BruIcons.Bell size={14}/> Envoyé à ${result.sent} users (${result.errors} erreurs)`);
-    } catch { showToast('<BruIcons.XCircle size={14}/> Erreur broadcast'); } finally { setBusy(null); }
+      showToast(`Envoyé à ${result.sent} users (${result.errors} erreurs)`);
+    } catch { showToast('Erreur broadcast'); } finally { setBusy(null); }
   };
   const saveHeroConfig = async () => {
     setHeroSaving(true);
@@ -285,23 +285,23 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         updateData.heroBannerExpiry = Timestamp.fromDate(expiry);
       }
       await setDoc(doc(db, 'system', 'homeConfig'), updateData, { merge: true });
-      showToast('<BruIcons.CheckCircle size={14}/> Hero mis à jour !');
+      showToast('Hero mis à jour !');
       setHeroBannerFile(null);
       setHeroBannerPreview('');
-    } catch (e) { showToast('<BruIcons.XCircle size={14}/> Erreur sauvegarde'); }
+    } catch (e) { showToast('Erreur sauvegarde'); }
     finally { setHeroSaving(false); }
   };
 
   const handlePublishBanner = async () => {
-    if (!bannerMsg.trim()) { showToast('<BruIcons.AlertTriangle size={14}/> Message requis'); return; }
+    if (!bannerMsg.trim()) { showToast('Message requis'); return; }
     setBusy('banner');
-    try { await publishSystemBanner({ message: bannerMsg, type: bannerType, expiresInHours: parseInt(bannerHours) || 24, ctaLabel: bannerCta || undefined }); await logAction('BANNER_PUBLISHED', 'system', bannerMsg); setBannerMsg(''); setBannerCta(''); showToast('<BruIcons.Broadcast size={14}/> Annonce publiée !'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await publishSystemBanner({ message: bannerMsg, type: bannerType, expiresInHours: parseInt(bannerHours) || 24, ctaLabel: bannerCta || undefined }); await logAction('BANNER_PUBLISHED', 'system', bannerMsg); setBannerMsg(''); setBannerCta(''); showToast('Annonce publiée !'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
   const handleSaveSettings = async () => {
     setBusy('settings');
-    try { await saveGlobalSettings(settingsDraft); await logAction('SETTINGS_UPDATED', 'system'); setGlobalSettings(settingsDraft); showToast('<BruIcons.CheckCircle size={14}/> Paramètres sauvegardés'); }
-    catch { showToast('<BruIcons.XCircle size={14}/> Erreur'); } finally { setBusy(null); }
+    try { await saveGlobalSettings(settingsDraft); await logAction('SETTINGS_UPDATED', 'system'); setGlobalSettings(settingsDraft); showToast('Paramètres sauvegardés'); }
+    catch { showToast('Erreur'); } finally { setBusy(null); }
   };
 
   const pendingBoosts = allBoosts.filter(b => b.status === 'pending');
@@ -313,16 +313,16 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
   const filteredBoosts = allBoosts.filter(b => boostFilter === 'all' || b.status === boostFilter);
 
   const TABS: { id: Tab; icon: string; label: string; badge?: number }[] = [
-    { id: 'stats',     icon: '<BruIcons.BarChart size={14}/>', label: 'Stats' },
-    { id: 'boosts',    icon: '<BruIcons.Zap size={14}/>', label: 'Boosts',    badge: pendingBoosts.length },
-    { id: 'users',     icon: '<BruIcons.Users size={14}/>', label: 'Users' },
-    { id: 'livreurs',  icon: '<BruIcons.Moto size={14}/>', label: 'Livreurs' },
-    { id: 'products',  icon: '<BruIcons.Package size={14}/>', label: 'Articles' },
-    { id: 'orders',    icon: '<BruIcons.Money size={14}/>', label: 'Commandes', badge: disputeCount },
-    { id: 'broadcast', icon: '<BruIcons.Broadcast size={14}/>', label: 'Broadcast' },
-    { id: 'settings',  icon: '<BruIcons.Settings size={14}/>', label: 'Config' },
-    { id: 'logs',      icon: '<BruIcons.Catalog size={14}/>', label: 'Logs' },
-    { id: 'trust',     icon: '<BruIcons.Shield size={14}/>', label: 'Anti-arnaque' },
+    { id: 'stats',     icon: '', label: 'Stats' },
+    { id: 'boosts',    icon: '', label: 'Boosts',    badge: pendingBoosts.length },
+    { id: 'users',     icon: '', label: 'Users' },
+    { id: 'livreurs',  icon: '', label: 'Livreurs' },
+    { id: 'products',  icon: '', label: 'Articles' },
+    { id: 'orders',    icon: '', label: 'Commandes', badge: disputeCount },
+    { id: 'broadcast', icon: '', label: 'Broadcast' },
+    { id: 'settings',  icon: '', label: 'Config' },
+    { id: 'logs',      icon: '', label: 'Logs' },
+    { id: 'trust',     icon: '', label: 'Anti-arnaque' },
   ];
 
   if (!isAdmin) {
@@ -394,10 +394,10 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
             {/* ─── KPIs CROISSANCE ─── */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3"><BruIcons.TrendUp size={14}/> Croissance</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Croissance</p>
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <StatCard label="Utilisateurs" value={fmt(stats.totalUsers)}
-                  sub={stats.newUsersToday > 0 ? `+${stats.newUsersToday} auj.` : `+${stats.newUsersThisWeek ?? 0} /semaine`}
+                  sub={stats.newUsersToday > 0 ?`+${stats.newUsersToday} auj.` : `+${stats.newUsersThisWeek ?? 0} /semaine`}
                   color="text-blue-400"/>
                 <StatCard label="Vendeurs" value={fmt(stats.totalSellers)}
                   sub={`${stats.verifiedSellers ?? 0} badge actif`}
@@ -443,7 +443,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
             {/* ─── KPIs COMMANDES ─── */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3"><BruIcons.Cart size={14}/> Commandes</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Commandes</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <StatCard label="Total" value={fmt(stats.totalOrders)} sub={`${stats.completedOrders ?? 0} livrées`} color="text-green-400"/>
                 <StatCard label="En cours" value={fmt(stats.pendingOrders ?? 0)} sub={`${disputeCount} litiges`} color="text-amber-400"/>
@@ -455,7 +455,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     <span className="font-black text-green-400">{Math.round(((stats.completedOrders ?? 0) / stats.totalOrders) * 100)}%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round(((stats.completedOrders ?? 0) / stats.totalOrders) * 100)}%` }}/>
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round(((stats.completedOrders ?? 0) / stats.totalOrders) * 100)}%`}}/>
                   </div>
                 </div>
               )}
@@ -469,12 +469,12 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
             {/* ─── REVENUS ─── */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3"><BruIcons.Money size={14}/> Revenus Brumerie</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Revenus Brumerie</p>
               {[
                 { label: '⭐ Badges Premium', value: stats.totalPremiumRevenue ?? 0, color: '#F59E0B' },
                 { label: '🔵 Badges Vérifiés', value: stats.totalVerifRevenue ?? 0, color: '#1D9BF0' },
-                { label: '<BruIcons.Zap size={14}/> Boosts', value: stats.totalBoostRevenue, color: '#22C55E' },
-                { label: '<BruIcons.Cart size={14}/> Commissions ventes', value: stats.totalRevenue ?? 0, color: '#8B5CF6' },
+                { label: 'Boosts', value: stats.totalBoostRevenue, color: '#22C55E' },
+                { label: 'Commissions ventes', value: stats.totalRevenue ?? 0, color: '#8B5CF6' },
               ].map(r => (
                 <div key={r.label} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                   <p className="text-[11px] text-slate-400">{r.label}</p>
@@ -514,9 +514,9 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               <div className="grid grid-cols-2 gap-2">
                 {([
                   {
-                    label: '<BruIcons.Users size={14}/> Utilisateurs',
+                    label: 'Utilisateurs',
                     key: 'users-csv',
-                    sub: `${fmt(stats.totalUsers)} lignes`,
+                    sub:`${fmt(stats.totalUsers)} lignes`,
                     headers: ['ID','Nom','Email','Rôle','Vérifié','Premium','Quartier','Date inscription'],
                     rows: () => users.map((u: any) => [
                       u.id || '',
@@ -530,7 +530,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     ]),
                   },
                   {
-                    label: '<BruIcons.Package size={14}/> Articles en ligne',
+                    label: 'Articles en ligne',
                     key: 'articles-csv',
                     sub: `${fmt(stats.activeProducts)} actifs`,
                     headers: ['ID','Titre','Prix FCFA','Statut','Catégorie','Vendeur','Quartier','Vues','Contacts','Date'],
@@ -548,7 +548,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     ]),
                   },
                   {
-                    label: '<BruIcons.Moto size={14}/> Livreurs',
+                    label: 'Livreurs',
                     key: 'livreurs-csv',
                     sub: `${users.filter((u: any) => u.role === 'livreur' || u.deliveryCGUAccepted === true).length} livreurs`,
                     headers: ['ID','Nom','Téléphone','Quartiers','Dispo','Livraisons','Gains FCFA','Véhicule'],
@@ -564,7 +564,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     ]),
                   },
                   {
-                    label: '<BruIcons.Cart size={14}/> Commandes',
+                    label: 'Commandes',
                     key: 'orders-csv',
                     sub: `${fmt(stats.totalOrders)} total`,
                     headers: ['ID','Produit','Acheteur','Vendeur','Montant FCFA','Statut','Quartier','Date'],
@@ -597,7 +597,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                       } finally { setDownloading(null); }
                     }}
                     className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 active:scale-95 transition-all disabled:opacity-50">
-                    <span className="text-base">{downloading === exp.key ? '<BruIcons.Clock size={14}/>' : '📄'}</span>
+                    <span className="text-base">{downloading === exp.key ? '' : '📄'}</span>
                     <div className="text-left">
                       <p className="text-[10px] font-black text-slate-300">{exp.label}</p>
                       <p className="text-[9px] text-slate-500 font-bold">CSV · {exp.sub}</p>
@@ -628,9 +628,9 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     } finally { setDownloading(null); }
                   }}
                   className="flex items-center gap-2 px-3 py-3 rounded-xl bg-white/5 active:scale-95 transition-all disabled:opacity-50 col-span-2">
-                  <span className="text-base">{downloading === 'revenue' ? '<BruIcons.Clock size={14}/>' : '<BruIcons.BarChart size={14}/>'}</span>
+                  <span className="text-base">{downloading === 'revenue' ? '' : ''}</span>
                   <div className="text-left">
-                    <p className="text-[10px] font-black text-slate-300"><BruIcons.Money size={14}/> Rapport revenus</p>
+                    <p className="text-[10px] font-black text-slate-300">Rapport revenus</p>
                     <p className="text-[9px] text-slate-500 font-bold">CSV · Tous les revenus Brumerie</p>
                   </div>
                 </button>
@@ -643,7 +643,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         {tab === 'boosts' && (
           <>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {([['pending', `<BruIcons.Clock size={14}/> Attente (${pendingBoosts.length})`], ['active', '<BruIcons.CheckCircle size={14}/> Actifs'], ['rejected', '<BruIcons.XCircle size={14}/> Refusés'], ['all', '<BruIcons.FileText size={14}/> Tous']] as [string, string][]).map(([f, l]) => (
+              {([['pending',`Attente (${pendingBoosts.length})`], ['active', 'Actifs'], ['rejected', 'Refusés'], ['all', 'Tous']] as [string, string][]).map(([f, l]) => (
                 <button key={f} onClick={() => setBoostFilter(f)}
                   className={`flex-shrink-0 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase ${boostFilter === f ? 'bg-green-500 text-white' : 'bg-white/10 text-slate-400'}`}>{l}</button>
               ))}
@@ -656,7 +656,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     <p className="font-black text-slate-900 text-[13px] truncate">{b.productTitle || b.productId}</p>
                     <p className="text-slate-400 text-[11px]">{b.sellerName || b.sellerId}</p>
                   </div>
-                  <Badge label={b.status === 'pending' ? '<BruIcons.Clock size={14}/> Attente' : b.status === 'active' ? '<BruIcons.CheckCircle size={14}/> Actif' : '<BruIcons.XCircle size={14}/> Refusé'} color={STATUS_COLORS[b.status] || ''}/>
+                  <Badge label={b.status === 'pending' ? 'Attente' : b.status === 'active' ? 'Actif' : 'Refusé'} color={STATUS_COLORS[b.status] || ''}/>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 px-4 pb-2">
                   {/* Durée */}
@@ -699,9 +699,9 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <button onClick={() => setRejectBoostId(b.id!)} className="flex-1 py-3 rounded-xl bg-red-50 text-red-600 font-black text-[11px] uppercase"><BruIcons.XCircle size={14}/> Refuser</button>
+                        <button onClick={() => setRejectBoostId(b.id!)} className="flex-1 py-3 rounded-xl bg-red-50 text-red-600 font-black text-[11px] uppercase">Refuser</button>
                         <button onClick={() => handleActivateBoost(b.id!)} disabled={busy === b.id} className="flex-[2] py-3 rounded-xl text-white font-black text-[11px] uppercase disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                          {busy === b.id ? <span className="flex items-center justify-center gap-1"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>...</span> : '<BruIcons.CheckCircle size={14}/> Activer'}
+                          {busy === b.id ? <span className="flex items-center justify-center gap-1"><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>...</span> : 'Activer'}
                         </button>
                       </div>
                     )}
@@ -715,7 +715,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         {/* ── USERS ── */}
         {tab === 'users' && (
           <>
-            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="<BruIcons.Search size={14}/> Nom, email, téléphone..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
+            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Nom, email, téléphone..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
             <p className="text-slate-500 text-[10px] font-bold">{filteredUsers.length} résultat(s)</p>
             {filteredUsers.map(u => (
               <div key={u.id} className={`bg-white rounded-2xl overflow-hidden ${u.isBanned ? 'border-2 border-red-200' : ''}`}>
@@ -725,7 +725,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-black text-slate-900 text-[13px]">{u.name||'—'}</p>
                       {u.isVerified && <Badge label="✓" color="bg-green-100 text-green-700"/>}
-                      {u.isBanned && <Badge label="<BruIcons.XCircle size={14}/>" color="bg-red-100 text-red-700"/>}
+                      {u.isBanned && <Badge label="" color="bg-red-100 text-red-700"/>}
                       <Badge label={u.role||'buyer'} color={u.role==='seller'?'bg-blue-100 text-blue-700':'bg-slate-100 text-slate-500'}/>
                     </div>
                     <p className="text-slate-400 text-[10px] truncate">{u.email}</p>
@@ -772,7 +772,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                         <button onClick={handleSendDirectMsg} disabled={!msgText.trim() || busy==='msg_'+u.id}
                           className="flex-[2] py-2 rounded-xl text-white font-black text-[10px] disabled:opacity-40"
                           style={{ background: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' }}>
-                          {busy==='msg_'+u.id ? '<BruIcons.Clock size={14}/> Envoi...' : '📩 Envoyer + notifier'}
+                          {busy==='msg_'+u.id ? 'Envoi...' : '📩 Envoyer + notifier'}
                         </button>
                       </div>
                     </div>
@@ -784,7 +784,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Motif du bannissement..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-[12px] outline-none focus:border-red-400"/>
                     <div className="flex gap-2">
                       <button onClick={() => setBanUserId('')} className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-500 font-bold text-[11px]">Annuler</button>
-                      <button onClick={() => handleBan(u.id)} disabled={busy===u.id} className="flex-[2] py-2.5 rounded-xl bg-red-500 text-white font-black text-[11px] disabled:opacity-50">{busy===u.id?'...':'<BruIcons.XCircle size={14}/> Bannir'}</button>
+                      <button onClick={() => handleBan(u.id)} disabled={busy===u.id} className="flex-[2] py-2.5 rounded-xl bg-red-500 text-white font-black text-[11px] disabled:opacity-50">{busy===u.id?'...':'Bannir'}</button>
                     </div>
                   </div>
                 ) : (
@@ -793,7 +793,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     <div className="flex gap-2">
                       {u.isBanned
                         ? <button onClick={() => handleUnban(u.id)} disabled={busy===u.id} className="flex-1 py-2 rounded-xl bg-green-50 text-green-700 font-black text-[10px] uppercase disabled:opacity-50"><BruIcons.CheckCircle size={14}/> Débannir</button>
-                        : <button onClick={() => { setBanUserId(u.id); setBanReason(''); }} className="flex-1 py-2 rounded-xl bg-red-50 text-red-600 font-black text-[10px] uppercase"><BruIcons.XCircle size={14}/> Bannir</button>
+                        : <button onClick={() => { setBanUserId(u.id); setBanReason(''); }} className="flex-1 py-2 rounded-xl bg-red-50 text-red-600 font-black text-[10px] uppercase">Bannir</button>
                       }
                       {/* Badges 3 niveaux */}
                       <div className="flex gap-1 flex-1">
@@ -831,7 +831,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                               await updateDoc(doc(db,'users',u.id), {
                                 advancePaymentAllowed: !(u as any).advancePaymentAllowed
                               });
-                              showToast((u as any).advancePaymentAllowed ? '<BruIcons.Lock size={14}/> Paiement avance retiré' : '<BruIcons.Credit size={14}/> Paiement avance accordé');
+                              showToast((u as any).advancePaymentAllowed ? 'Paiement avance retiré' : 'Paiement avance accordé');
                             } catch { showToast('Erreur'); }
                             finally { setBusy(''); }
                           }}
@@ -842,7 +842,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                               : 'bg-slate-100 text-slate-500 border-slate-200'
                           }`}
                           title={(u as any).advancePaymentAllowed ? 'Retirer paiement avance' : 'Autoriser paiement avance'}>
-                          {(u as any).advancePaymentAllowed ? '<BruIcons.Credit size={14}/>✓' : '<BruIcons.Credit size={14}/>'}
+                          {(u as any).advancePaymentAllowed ? '✓' : ''}
                         </button>
                       )}
                     </div>
@@ -968,7 +968,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                               {/* Nom service de livraison */}
                               {u.deliveryPartnerName && (
                                 <p className="font-black text-slate-900 text-[14px] leading-tight truncate">
-                                  <BruIcons.Moto size={14}/> {u.deliveryPartnerName}
+                                  {u.deliveryPartnerName}
                                 </p>
                               )}
                               {/* Nom personnel */}
@@ -995,12 +995,12 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                                       setBusy('sync_'+u.id);
                                       try {
                                         await setUserRole(u.id, 'livreur');
-                                        showToast('<BruIcons.CheckCircle size={14}/> Rôle synchronisé → livreur');
-                                      } catch { showToast('<BruIcons.XCircle size={14}/> Erreur sync'); }
+                                        showToast('Rôle synchronisé → livreur');
+                                      } catch { showToast('Erreur sync'); }
                                       finally { setBusy(null); }
                                     }}
                                     className="text-[8px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase active:scale-95 transition-all border border-amber-200 disabled:opacity-50">
-                                    {busy === 'sync_'+u.id ? '<BruIcons.Clock size={14}/>...' : '<BruIcons.AlertTriangle size={14}/> Sync role →'}
+                                    {busy === 'sync_'+u.id ? '...' : 'Sync role →'}
                                   </button>
                                 )}
                               </div>
@@ -1012,7 +1012,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                           {u.deliveryZones?.length > 0 && (
                             <div className="flex gap-1.5 flex-wrap mb-2">
                               {u.deliveryZones.map((z: string) => (
-                                <span key={z} className="text-[9px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full"><BruIcons.MapPin size={10}/> {z}</span>
+                                <span key={z} className="text-[9px] font-bold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{z}</span>
                               ))}
                             </div>
                           )}
@@ -1058,8 +1058,8 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                           {/* Type de livreur */}
                           {(u.deliveryStatus || u.deliveryVehicle) && (
                             <p className="text-[10px] text-slate-400 mb-2">
-                              {u.deliveryStatus === 'service' ? '🏢 Service de livraison' : u.deliveryStatus === 'chauffeur' ? '🚗 Chauffeur/Zem' : '<BruIcons.Moto size={14}/> Livreur indépendant'}
-                              {u.deliveryVehicle && ` · ${u.deliveryVehicle}`}
+                              {u.deliveryStatus === 'service' ? '🏢 Service de livraison' : u.deliveryStatus === 'chauffeur' ? '🚗 Chauffeur/Zem' : 'Livreur indépendant'}
+                              {u.deliveryVehicle &&` · ${u.deliveryVehicle}`}
                               {u.deliveryHasLicense ? ' · Permis ✓' : ''}
                             </p>
                           )}
@@ -1075,7 +1075,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                           {!u.isBanned ? (
                             <button onClick={async () => {
                               setBusy('ban_'+u.id);
-                              try { await banUser(u.id, 'Banni par admin', currentUser!.uid); showToast('<BruIcons.XCircle size={14}/> Banni'); }
+                              try { await banUser(u.id, 'Banni par admin', currentUser!.uid); showToast('Banni'); }
                               catch { showToast('Erreur'); } finally { setBusy(''); }
                             }} disabled={busy === 'ban_'+u.id}
                               className="flex-1 py-2.5 text-[10px] font-black text-red-500 uppercase tracking-wide flex items-center justify-center active:bg-red-50 transition-all disabled:opacity-50">
@@ -1084,11 +1084,11 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                           ) : (
                             <button onClick={async () => {
                               setBusy('unban_'+u.id);
-                              try { await unbanUser(u.id); showToast('<BruIcons.CheckCircle size={14}/> Débanni'); }
+                              try { await unbanUser(u.id); showToast('Débanni'); }
                               catch { showToast('Erreur'); } finally { setBusy(''); }
                             }} disabled={busy === 'unban_'+u.id}
                               className="flex-1 py-2.5 text-[10px] font-black text-green-600 uppercase tracking-wide flex items-center justify-center active:bg-green-50 transition-all disabled:opacity-50">
-                              <BruIcons.CheckCircle size={14}/> Débannir
+                              Débannir
                             </button>
                           )}
                         </div>
@@ -1103,7 +1103,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
         {tab === 'products' && (
           <>
-            <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="<BruIcons.Search size={14}/> Rechercher..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
+            <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Rechercher..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
             <p className="text-slate-500 text-[10px] font-bold">{filteredProducts.length} article(s)</p>
             {filteredProducts.map(p => (
               <div key={p.id} className={`bg-white rounded-2xl overflow-hidden ${p.hidden?'border-2 border-amber-200 opacity-70':''}`}>
@@ -1123,7 +1123,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 </div>
                 <div className="flex gap-2 px-3 pb-3">
                   <button onClick={() => handleToggleHide(p.id,p.hidden)} disabled={busy===p.id} className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase disabled:opacity-50 ${p.hidden?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}`}>{p.hidden?'👁 Afficher':'🙈 Masquer'}</button>
-                  <button onClick={() => handleDeleteProduct(p.id)} disabled={busy===p.id} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 font-black text-[10px] uppercase disabled:opacity-50"><BruIcons.Trash size={14}/> Supprimer</button>
+                  <button onClick={() => handleDeleteProduct(p.id)} disabled={busy===p.id} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-600 font-black text-[10px] uppercase disabled:opacity-50">Supprimer</button>
                 </div>
               </div>
             ))}
@@ -1137,7 +1137,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               {(['all','pending_payment','proof_submitted','dispute','completed','refunded'] as const).map(f => (
                 <button key={f} onClick={() => setOrderFilter(f)}
                   className={`flex-shrink-0 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase ${orderFilter===f?'bg-green-500 text-white':'bg-white/10 text-slate-400'}`}>
-                  {f==='all'?'Tout':f==='dispute'?`<BruIcons.AlertTriangle size={14}/> Litiges (${disputeCount})`:f.replace('_',' ')}
+                  {f==='all'?'Tout':f==='dispute'?`Litiges (${disputeCount})`:f.replace('_',' ')}
                 </button>
               ))}
             </div>
@@ -1170,7 +1170,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                         </div>
                       </>
                     ) : (
-                      <button onClick={() => setOrderTarget(o.id)} className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-[10px] uppercase active:scale-95"><BruIcons.Zap size={14}/> Intervenir</button>
+                      <button onClick={() => setOrderTarget(o.id)} className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-[10px] uppercase active:scale-95">Intervenir</button>
                     )}
                   </div>
                 )}
@@ -1245,7 +1245,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 <button onClick={saveHeroConfig} disabled={heroSaving}
                   className="flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-[0.98] transition-all disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                  {heroSaving ? '<BruIcons.Clock size={14}/> Sauvegarde...' : '💾 Sauvegarder Hero'}
+                  {heroSaving ? 'Sauvegarde...' : '💾 Sauvegarder Hero'}
                 </button>
                 <button
                   onClick={async () => {
@@ -1257,12 +1257,12 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                         { heroBannerUrl: '', heroBannerExpiry: null }, { merge: true });
                       setHeroBannerFile(null);
                       setHeroBannerPreview('');
-                      showToast('<BruIcons.Trash size={14}/>️ Bannière supprimée');
+                      showToast('️ Bannière supprimée');
                     } catch { showToast('Erreur suppression'); }
                   }}
                   className="px-4 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest bg-red-900/40 text-red-400 active:scale-95 transition-all"
                   title="Supprimer la bannière active">
-                  <BruIcons.Trash size={14}/>️
+                  ️
                 </button>
               </div>
             </div>
@@ -1272,7 +1272,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               <div className="flex gap-2">
                 {(['promo','info','warning'] as const).map(t => (
                   <button key={t} onClick={() => setBannerType(t)} className={`flex-1 py-2 rounded-xl font-bold text-[11px] ${bannerType===t?'bg-green-500 text-white':'bg-white/10 text-slate-400'}`}>
-                    {t==='promo'?'<BruIcons.CheckCircle size={14}/> Promo':t==='info'?'ℹ️ Info':'<BruIcons.AlertTriangle size={14}/> Alerte'}
+                    {t==='promo'?'Promo':t==='info'?'ℹ️ Info':'Alerte'}
                   </button>
                 ))}
               </div>
@@ -1288,7 +1288,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 ))}
               </div>
               <button onClick={handlePublishBanner} disabled={!bannerMsg.trim()||busy==='banner'} className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-40 active:scale-95" style={{ background:'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                {busy==='banner'?'<BruIcons.Clock size={14}/> Publication...':'<BruIcons.Broadcast size={14}/> Publier bannière'}
+                {busy==='banner'?'Publication...':'Publier bannière'}
               </button>
             </div>
 
@@ -1302,7 +1302,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 </div>
               </div>
               <input value={broadcastTitle} onChange={e => setBroadcastTitle(e.target.value)}
-                placeholder="Titre (ex: <BruIcons.CheckCircle size={14}/> Nouveauté Brumerie !)"
+                placeholder="Titre (ex: Nouveauté Brumerie !)"
                 className="w-full bg-white/10 border border-white/10 rounded-xl px-3 py-2.5 text-white text-[12px] outline-none focus:border-amber-400 placeholder-slate-600"/>
               <textarea value={broadcastBody} onChange={e => setBroadcastBody(e.target.value.slice(0,200))} placeholder="Contenu de la notification..." rows={3}
                 className="w-full bg-white/10 border border-white/10 rounded-xl px-3 py-2.5 text-white text-[12px] outline-none focus:border-amber-400 resize-none placeholder-slate-600"/>
@@ -1310,7 +1310,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
               {broadcastResult && (
                 <div className="bg-green-900/30 border border-green-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
-                  <span className="text-xl"><BruIcons.CheckCircle size={14}/></span>
+                  <span className="text-xl"></span>
                   <div>
                     <p className="text-green-400 font-black text-[12px]">{broadcastResult.sent} notifications envoyées</p>
                     {broadcastResult.errors > 0 && <p className="text-red-400 text-[10px]">{broadcastResult.errors} erreurs</p>}
@@ -1323,7 +1323,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 style={{ background:'linear-gradient(135deg,#D97706,#92400E)' }}>
                 {busy==='broadcast'
                   ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Envoi en cours...</span>
-                  : `<BruIcons.Bell size={14}/> Envoyer à ${users.length} utilisateurs`}
+                  :`<BruIcons.Bell size={14}/> Envoyer à ${users.length} utilisateurs`}
               </button>
               <p className="text-slate-600 text-[10px] text-center">Chaque user recevra une notification dans son centre de notifications.</p>
             </div>
@@ -1338,7 +1338,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               <div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest"><BruIcons.Credit size={14}/> Paiement à l'avance (Mobile Money)</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Paiement à l'avance (Mobile Money)</p>
                     <p className="text-[9px] text-slate-500 mt-0.5">Active/désactive le paiement mobile money pour tous les acheteurs</p>
                   </div>
                   <button
@@ -1423,8 +1423,8 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 </div>
 
                 {([
-                  { key: '24h', label: '<BruIcons.Zap size={14}/> 24h', emoji: '<BruIcons.Zap size={14}/>', placeholder: 'wave://send?phone=+2250586867693&amount=500&note=Boost24h' },
-                  { key: '48h', label: '<BruIcons.Zap size={14}/> 48h', emoji: '<BruIcons.Zap size={14}/><BruIcons.Zap size={14}/>', placeholder: 'wave://send?phone=+2250586867693&amount=900&note=Boost48h' },
+                  { key: '24h', label: '24h', emoji: '', placeholder: 'wave://send?phone=+2250586867693&amount=500&note=Boost24h' },
+                  { key: '48h', label: '48h', emoji: '<BruIcons.Zap size={14}/>', placeholder: 'wave://send?phone=+2250586867693&amount=900&note=Boost48h' },
                   { key: '7j',  label: '🚀 7j',  emoji: '🚀', placeholder: 'wave://send?phone=+2250586867693&amount=2500&note=Boost7j' },
                 ] as const).map(({ key, label, placeholder }) => (
                   <div key={key} className="mb-3">
@@ -1533,7 +1533,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider mb-1"><BruIcons.Users size={14}/> Groupe Facebook</p>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-wider mb-1">Groupe Facebook</p>
                     <input
                       value={settingsDraft.facebookGroup ?? globalSettings.facebookGroup ?? ''}
                       onChange={e => setSettingsDraft((s: any) => ({ ...s, facebookGroup: e.target.value }))}
@@ -1571,7 +1571,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               )}
             </div>
             <button onClick={handleSaveSettings} disabled={busy==='settings'} className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white disabled:opacity-40 active:scale-95" style={{ background:'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-              {busy==='settings'?'<BruIcons.Clock size={14}/> Sauvegarde...':'💾 Sauvegarder'}
+              {busy==='settings'?'Sauvegarde...':'💾 Sauvegarder'}
             </button>
           </>
         )}

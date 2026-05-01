@@ -100,7 +100,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
   const isVerified = !!(userProfile?.isVerified);
   const isPremium  = !!(userProfile?.isPremium);
   const isAtLeastVerified = isVerified || isPremium;
-  const tierLabel = isPremium ? '⭐ Premium' : isVerified ? '🔵 Vérifié' : '<BruIcons.Unlock size={14}/> Simple';
+  const tierLabel = isPremium ? '⭐ Premium' : isVerified ? '🔵 Vérifié' : 'Simple';
 
   // Paiement mobile
   const [paymentMethods, setPaymentMethods] = useState<PaymentInfo[]>(userProfile?.defaultPaymentMethods || []);
@@ -166,7 +166,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             <p className="text-[10px] text-slate-400 font-medium truncate mt-0.5">{userProfile?.email}</p>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-white ${isBuyer ? 'bg-blue-500' : 'bg-green-600'}`}>
-                {isBuyer ? '<BruIcons.Cart size={14}/> Acheteur' : '<BruIcons.Store size={14}/> Vendeur'}
+                {isBuyer ? 'Acheteur' : 'Vendeur'}
               </span>
               {userProfile?.isVerified && !userProfile?.isPremium && (
                 <span className="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest text-white"
@@ -181,7 +181,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                 </span>
               )}
               {userProfile?.neighborhood && (
-                <span className="text-[8px] text-slate-400 font-bold"><BruIcons.MapPin size={10}/> {userProfile.neighborhood}</span>
+                <span className="text-[8px] text-slate-400 font-bold">{userProfile.neighborhood}</span>
               )}
             </div>
           </div>
@@ -191,7 +191,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </button>
 
         {/* ══ SECTION 1 : Mon profil ═══════════════════════ */}
-        <SettingSection title="Mon profil" emoji="<BruIcons.User size={14}/>">
+        <SettingSection title="Mon profil" emoji="">
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
             label="Modifier mon profil"
@@ -207,14 +207,14 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </SettingSection>
 
         {/* ══ SECTION 2 : Ma boutique ═══════════════════════ */}
-        <SettingSection title="Ma boutique" emoji="<BruIcons.Store size={14}/>">
+        <SettingSection title="Ma boutique" emoji="">
 
           {/* ── Badge actuel + accès upgrade ── */}
           <div className="px-6 py-4">
             <div className="flex items-center justify-between p-3 rounded-2xl mb-2"
               style={{ background: isPremium ? 'linear-gradient(135deg,#1a1a1a,#2d2d2a)' : isVerified ? '#EFF6FF' : '#F8FAFC' }}>
               <div className="flex items-center gap-2">
-                <span className="text-base">{isPremium ? '⭐' : isVerified ? '🔵' : '<BruIcons.Unlock size={14}/>'}</span>
+                <span className="text-base">{isPremium ? '⭐' : isVerified ? '🔵' : ''}</span>
                 <div>
                   <p className="font-black text-[12px]" style={{ color: isPremium ? '#F59E0B' : isVerified ? '#1D4ED8' : '#64748B' }}>
                     {tierLabel}
@@ -240,13 +240,13 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           {isPremium ? (
             <SettingItem
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>}
-              label="<BruIcons.Palette size={14}/> Personnaliser ma boutique"
+              label="Personnaliser ma boutique"
               sublabel="Bannière · Couleur · Slogan · Vente flash"
               onClick={() => onNavigate('shop-customize')}
               badge="Premium"
             />
           ) : (
-            <LockedFeature label="<BruIcons.Palette size={14}/> Personnaliser ma boutique" sublabel="Bannière, couleur, slogan, vente flash" requiredBadge="premium" onNavigate={onNavigate}/>
+            <LockedFeature label="Personnaliser ma boutique" sublabel="Bannière, couleur, slogan, vente flash" requiredBadge="premium" onNavigate={onNavigate}/>
           )}
 
           {/* ── Moyens de paiement Mobile Money ── */}
@@ -320,7 +320,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             <>
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
-                label="<BruIcons.Money size={14}/> Ma Comptabilité"
+                label="Ma Comptabilité"
                 sublabel="Recettes · Dépenses · Bénéfice net"
                 onClick={() => onNavigate('compta')}
               />
@@ -332,25 +332,25 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               />
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
-                label="<BruIcons.Image size={14}/> Catalogue WhatsApp"
+                label="Catalogue WhatsApp"
                 sublabel="Partage tous tes articles en 1 tap"
                 onClick={() => onNavigate('catalogue')}
               />
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
-                label="<BruIcons.BarChart size={14}/> Calculateur de Marge"
+                label="Calculateur de Marge"
                 sublabel="Est-ce que je gagne vraiment ?"
                 onClick={() => onNavigate('marge')}
               />
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>}
-                label="<BruIcons.Report size={14}/> Rapport Hebdomadaire"
+                label="Rapport Hebdomadaire"
                 sublabel="Tes stats de la semaine en un coup d'œil"
                 onClick={() => onNavigate('rapport')}
               />
               <SettingItem
                 icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>}
-                label="<BruIcons.Debt size={14}/> Journal de Dettes"
+                label="Journal de Dettes"
                 sublabel="Suivi des ventes à crédit · Rappel WhatsApp"
                 onClick={() => onNavigate('dettes')}
               />
@@ -374,13 +374,13 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </SettingSection>
 
         {/* ══ SECTION 3 : Livraison & Adresse ══════════════ */}
-        <SettingSection title="Livraison & Adresse" emoji="<BruIcons.MapPin size={10}/>">
+        <SettingSection title="Livraison & Adresse" emoji="">
           {/* Adresse AddressWeb */}
           <div className="px-6 py-4">
             {userProfile?.awAddressCode ? (
               <div className="flex items-center justify-between p-4 bg-sky-50 rounded-2xl border border-sky-100">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl"><BruIcons.MapPin size={10}/></span>
+                  <span className="text-xl"></span>
                   <div>
                     <p className="font-black text-sky-800 text-[13px] font-mono">{userProfile.awAddressCode}</p>
                     <p className="text-sky-600 text-[10px] font-bold mt-0.5">Mon adresse numérique</p>
@@ -400,7 +400,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
                 </p>
                 <button onClick={() => onNavigate('edit-profile')}
                   className="w-full py-3 text-center rounded-xl font-black text-[11px] uppercase tracking-widest text-white bg-sky-600 active:scale-95 transition-all">
-                  <BruIcons.MapPin size={10}/> Créer mon adresse
+                  Créer mon adresse
                 </button>
               </div>
             )}
@@ -424,7 +424,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </SettingSection>
 
         {/* ══ SECTION 4 : Communauté ════════════════════════ */}
-        <SettingSection title="Communauté" emoji="<BruIcons.Check size={14}/>">
+        <SettingSection title="Communauté" emoji="">
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
             label="Parrainage"
@@ -433,7 +433,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           />
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>}
-            label="<BruIcons.Shield size={14}/> Anti-Arnaque · Communauté de confiance"
+            label="Anti-Arnaque · Communauté de confiance"
             sublabel="Signale un arnaqueur · Consulte la liste noire"
             onClick={() => onNavigate('trust')}
             danger
@@ -456,7 +456,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           />
           <SettingItem
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>}
-            label="<BruIcons.MapPin size={10}/> Suggérer un quartier ou catégorie"
+            label="Suggérer un quartier ou catégorie"
             sublabel="Ajoute ce qui manque sur Brumerie"
             onClick={() => onNavigate('suggestions')}
           />

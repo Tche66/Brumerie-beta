@@ -56,8 +56,7 @@ function AppelButton({ order, orderId }: { order: Order; orderId: string }) {
     `J'ai commandé "${order.productTitle}" sur Brumerie ` +
     `(Commande #${orderId.slice(-6).toUpperCase()}).\n` +
     `Montant : ${order.productPrice.toLocaleString('fr-FR')} FCFA\n` +
-    `Puis-je avoir plus d'informations ?`
-  );
+    `Puis-je avoir plus d'informations ?`);
 
   if (!sellerPhone) return (
     <div className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-400 bg-slate-100">
@@ -109,7 +108,7 @@ function DeliveryCodeInput({ orderId, order, onValidated }: {
       />
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-red-600 text-[12px] font-bold text-center">
-          <BruIcons.AlertTriangle size={14}/> {error}
+          {error}
         </div>
       )}
       <button onClick={handleValidate} disabled={loading || code.length !== 6}
@@ -117,7 +116,7 @@ function DeliveryCodeInput({ orderId, order, onValidated }: {
         style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
         {loading
           ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
-          : '<BruIcons.CheckCircle size={14}/> Valider — Confirmer la réception'}
+          : 'Valider — Confirmer la réception'}
       </button>
       <p className="text-[10px] text-slate-400 text-center font-bold">
         En validant ce code, tu confirmes avoir reçu l'article en bon état.
@@ -132,14 +131,14 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     initiated:     { label: 'Initié',               bg: '#FEF3C7', color: '#92400E' },
     proof_sent:    { label: 'Preuve envoyée',        bg: '#DBEAFE', color: '#1D4ED8' },
     confirmed:     { label: 'Paiement confirmé',     bg: '#D1FAE5', color: '#065F46' },
-    ready:         { label: '<BruIcons.Package size={14}/> Prêt à livrer',      bg: '#FEF9C3', color: '#854D0E' },
-    picked:        { label: '<BruIcons.Moto size={14}/> En route',            bg: '#FEF3C7', color: '#92400E' },
+    ready:         { label: 'Prêt à livrer',      bg: '#FEF9C3', color: '#854D0E' },
+    picked:        { label: 'En route',            bg: '#FEF3C7', color: '#92400E' },
     delivered:     { label: 'Livré ✓',               bg: '#DCFCE7', color: '#166534' },
-    disputed:      { label: '<BruIcons.AlertTriangle size={14}/> Litige',              bg: '#FFEDD5', color: '#9A3412' },
+    disputed:      { label: 'Litige',              bg: '#FFEDD5', color: '#9A3412' },
     cancelled:     { label: 'Annulé',                bg: '#F3F4F6', color: '#374151' },
-    cod_pending:   { label: '<BruIcons.Check size={14}/> Payer à livraison',  bg: '#EFF6FF', color: '#1D4ED8' },
+    cod_pending:   { label: 'Payer à livraison',  bg: '#EFF6FF', color: '#1D4ED8' },
     cod_confirmed: { label: '🚚 En livraison',        bg: '#F0FDF4', color: '#166534' },
-    cod_delivered:  { label: '<BruIcons.Clock size={14}/> Att. confirmation',    bg: '#FEF9C3', color: '#854D0E' },
+    cod_delivered:  { label: 'Att. confirmation',    bg: '#FEF9C3', color: '#854D0E' },
   };
   const s = map[status] || map.initiated;
   return (
@@ -189,7 +188,7 @@ function OrderCard({ order, viewAs, onClick }: {
       <div className="flex-1 min-w-0">
         <p className="font-black text-slate-900 text-[12px] truncate">{order.productTitle}</p>
         <p className="text-slate-400 text-[10px] font-bold truncate">
-          {viewAs === 'buyer' ? `Vendeur: ${otherName}` : `Acheteur: ${otherName}`}
+          {viewAs === 'buyer' ?`Vendeur: ${otherName}` : `Acheteur: ${otherName}`}
         </p>
         <p className="text-green-600 font-bold text-[11px]">{totalDisplay.toLocaleString('fr-FR')} FCFA</p>
         <div className="mt-1"><StatusBadge status={order.status}/></div>
@@ -231,7 +230,7 @@ function ProofUploadInline({ orderId, order }: { orderId: string; order: Order }
 
   if (done) return (
     <div className="bg-green-50 rounded-2xl p-4 border border-green-100 text-center">
-      <p className="font-black text-green-800 text-[12px]"><BruIcons.CheckCircle size={14}/> Preuve envoyée ! Le vendeur va confirmer sous 24h.</p>
+      <p className="font-black text-green-800 text-[12px]">Preuve envoyée ! Le vendeur va confirmer sous 24h.</p>
     </div>
   );
 
@@ -305,7 +304,7 @@ function SellerPaymentMethods({ order }: { order: Order }) {
   if (paid) return (
     <div className="bg-green-50 rounded-xl p-3 border border-green-200">
       <p className="text-[11px] font-black text-green-700">
-        <BruIcons.CheckCircle size={14}/> Tu as déclaré avoir envoyé {paidAmount.toLocaleString('fr-FR')} FCFA au vendeur via {selectedMethod}.
+        Tu as déclaré avoir envoyé {paidAmount.toLocaleString('fr-FR')} FCFA au vendeur via {selectedMethod}.
       </p>
       <p className="text-[9px] text-green-600 mt-1">Le vendeur validera la réception de ton paiement.</p>
     </div>
@@ -342,7 +341,7 @@ function SellerPaymentMethods({ order }: { order: Order }) {
               ? 'border-amber-400 bg-amber-50 shadow-sm'
               : 'border-amber-100 bg-white'
           }`}>
-          <span className="text-lg"><BruIcons.Money size={14}/></span>
+          <span className="text-lg"></span>
           <span className="text-[10px] font-black text-slate-700">Espèces</span>
         </button>
       </div>
@@ -386,8 +385,8 @@ function SellerPaymentMethods({ order }: { order: Order }) {
               onClick={() => confirmPaymentChosen(m.id, m.name, m.phone)}
               disabled={savingPayment}
               className="w-full py-3 rounded-xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
-              style={{ background: `linear-gradient(135deg,${m.color},${m.color}CC)` }}>
-              {savingPayment ? '<BruIcons.Clock size={14}/> Enregistrement...' : `<BruIcons.CheckCircle size={14}/> Paiement envoyé — ${paidAmount.toLocaleString('fr-FR')} FCFA via ${m.name}`}
+              style={{ background:`linear-gradient(135deg,${m.color},${m.color}CC)` }}>
+              {savingPayment ? 'Enregistrement...' : `Paiement envoyé — ${paidAmount.toLocaleString('fr-FR')} FCFA via ${m.name}`}
             </button>
           </div>
         );
@@ -403,7 +402,7 @@ function SellerPaymentMethods({ order }: { order: Order }) {
             disabled={savingPayment}
             className="w-full py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#D97706,#F59E0B)' }}>
-            {savingPayment ? '<BruIcons.Clock size={14}/>...' : '<BruIcons.CheckCircle size={14}/> Confirmer — paiement en espèces'}
+            {savingPayment ? '...' : 'Confirmer — paiement en espèces'}
           </button>
         </div>
       )}
@@ -610,7 +609,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 <button
                   onClick={() => setShowDelivererPicker(true)}
                   className="w-full py-4 rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50 font-black text-[11px] text-orange-600 uppercase tracking-widest active:scale-95 transition-all">
-                  <BruIcons.Moto size={14}/> Choisir un livreur Brumerie
+                  Choisir un livreur Brumerie
                 </button>
               )}
 
@@ -643,21 +642,21 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
 
         {/* Compte à rebours vendeur */}
         {order.status === 'proof_sent' && isSeller && (
-          <Countdown deadline={(order as any).autoDisputeAt} label="<BruIcons.Clock size={14}/> Il vous reste"/>
+          <Countdown deadline={(order as any).autoDisputeAt} label="Il vous reste"/>
         )}
 
         {/* Stepper — 2 étapes COD, 4 étapes paiement mobile */}
         <div className="space-y-3">
           {(order.isCOD ? [
-            { label: '<BruIcons.Check size={14}/> Commande confirmée',        done: true },
+            { label: 'Commande confirmée',        done: true },
             { label: '🚚 En cours de livraison',     done: ['cod_confirmed','picked','delivered'].includes(order.status) },
-            { label: '<BruIcons.CheckCircle size={14}/> Reçu & payé',               done: order.status === 'delivered' },
+            { label: 'Reçu & payé',               done: order.status === 'delivered' },
           ] : [
-            { label: '<BruIcons.ShoppingBag size={14}/> Commande initiée',              done: true },
-            { label: '<BruIcons.Camera size={14}/> Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
-            { label: '<BruIcons.CheckCircle size={14}/> Paiement confirmé', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
-            { label: '<BruIcons.Moto size={14}/> En route',          done: ['ready','picked','delivered'].includes(order.status) },
-            { label: '<BruIcons.Package size={14}/> Livré',             done: order.status === 'delivered' },
+            { label: 'Commande initiée',              done: true },
+            { label: 'Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
+            { label: 'Paiement confirmé', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
+            { label: 'En route',          done: ['ready','picked','delivered'].includes(order.status) },
+            { label: 'Livré',             done: order.status === 'delivered' },
           ]).map((s, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-green-500' : 'bg-slate-100'}`}>
@@ -714,7 +713,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
               {loading
                 ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/>
-                : '<BruIcons.Package size={14}/> Prêt — Générer le QR de livraison'}
+                : 'Prêt — Générer le QR de livraison'}
             </button>
             <button onClick={() => setShowDisputeForm(true)}
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-orange-600 bg-orange-50 border border-orange-100 active:scale-95 transition-all">
@@ -733,7 +732,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 code={order.deliveryCode}
                 qrPayload={(order as any).qrPickupPayload || buildQRPayload('pickup', orderId, order.deliveryCode)}
                 color="#115E2E"
-                emoji="<BruIcons.Package size={14}/>"
+                emoji=""
                 instruction="Le livreur scanne ce QR quand il vient récupérer le colis — confirme la prise en charge."
                 onClose={() => setShowSellerQR(false)}
               />
@@ -779,7 +778,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               )}
               {(order as any).sellerPaymentConfirmed && (
                 <div className="border-t border-green-200 pt-3 flex items-center gap-2">
-                  <span className="text-green-600 text-lg"><BruIcons.CheckCircle size={14}/></span>
+                  <span className="text-green-600 text-lg"></span>
                   <p className="text-[11px] font-black text-green-700">Paiement confirmé — acheteur peut scanner le livreur</p>
                 </div>
               )}
@@ -795,12 +794,11 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             {!(order as any).sellerReceivedCash && (
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-3">
                 <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
-                  {(order as any).buyerPaidSellerDirectly ? '<BruIcons.Credit size={14}/> Paiement direct confirmé par le livreur' : '<BruIcons.Money size={14}/> As-tu reçu ton argent du livreur ?'}
+                  {(order as any).buyerPaidSellerDirectly ? 'Paiement direct confirmé par le livreur' : 'As-tu reçu ton argent du livreur ?'}
                 </p>
                 <p className="text-[11px] text-amber-700">
                   {(order as any).buyerPaidSellerDirectly
-                    ? `L'acheteur t'a payé directement. Confirme la réception de ${(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA.`
-                    : <>La livraison est confirmée. Le livreur doit te remettre <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span>.</>
+                    ?`L'acheteur t'a payé directement. Confirme la réception de ${(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA.`: <>La livraison est confirmée. Le livreur doit te remettre <span className="font-black">{(order as any).productPrice?.toLocaleString('fr-FR') || '—'} FCFA</span>.</>
                   }
                 </p>
                 <button
@@ -926,7 +924,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 {(order as any).sellerPaymentConfirmed
                   ? 'Le vendeur a confirmé ton paiement. Scanne le QR du livreur à la réception.'
                   : (order as any).delivererCashCollected
-                  ? '<BruIcons.Money size={14}/> Le livreur a collecté ton paiement cash. Scanne son QR pour confirmer la réception.'
+                  ? 'Le livreur a collecté ton paiement cash. Scanne son QR pour confirmer la réception.'
                   : (order as any).isCOD
                   ? 'Le livreur collectera ton paiement cash à la réception, puis tu scanneras son QR.'
                   : 'Une fois le paiement vendeur effectué, le vendeur le validera et tu pourras confirmer la réception.'}
@@ -937,7 +935,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               <button onClick={() => setShowBuyerScanner(true)}
                 className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
                 style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)' }}>
-                <BruIcons.Camera size={14}/> Scanner le QR du livreur
+                Scanner le QR du livreur
               </button>
             )}
             {/* Option 2 : Saisir code de secours + confirmer manuellement */}
@@ -981,7 +979,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
               <p className="text-[10px] font-black text-amber-800 uppercase mb-1">En attente de votre preuve</p>
               <p className="text-[11px] text-amber-800 font-bold">
-                Effectuez le virement {order.paymentInfo?.method && `${order.paymentInfo.method.toUpperCase()}`} au {order.paymentInfo?.phone}, puis uploadez votre preuve ici.
+                Effectuez le virement {order.paymentInfo?.method &&`${order.paymentInfo.method.toUpperCase()}`} au {order.paymentInfo?.phone}, puis uploadez votre preuve ici.
               </p>
             </div>
             {/* Upload preuve inline — évite de perdre la commande si on quitte */}
@@ -1024,7 +1022,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             })} disabled={loading}
               className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-yellow-200 active:scale-95 transition-all"
               style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
-              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/> : '<BruIcons.Package size={14}/> Prêt à livrer — Générer le code'}
+              {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"/> : 'Prêt à livrer — Générer le code'}
             </button>
           </div>
         )}
@@ -1039,7 +1037,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 code={order.deliveryCode}
                 qrPayload={(order as any).qrPickupPayload || buildQRPayload('pickup', orderId, order.deliveryCode)}
                 color="#115E2E"
-                emoji="<BruIcons.Package size={14}/>"
+                emoji=""
                 instruction="Le livreur va scanner ce QR quand il vient récupérer le colis. Valide la prise en charge."
                 onClose={() => setShowSellerQR(false)}
               />
@@ -1094,7 +1092,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
 
             <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
               <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">
-                {order.status === 'picked' ? '<BruIcons.Moto size={14}/> Livraison en route !' : '<BruIcons.Clock size={14}/> En attente du livreur'}
+                {order.status === 'picked' ? 'Livraison en route !' : 'En attente du livreur'}
               </p>
               <p className="text-[11px] text-blue-700 mb-3">
                 {order.status === 'picked'
@@ -1143,7 +1141,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               {(order as any).isCOD && !(order as any).sellerReceivedCash ? (
                 <p className="text-2xl mb-1"><BruIcons.Clock size={14}/></p>
               ) : (
-                <p className="text-3xl mb-2"><BruIcons.CheckCircle size={14}/></p>
+                <p className="text-3xl mb-2"></p>
               )}
               <p className="font-black text-green-900 text-[13px] uppercase tracking-tight">
                 {(order as any).isCOD && !(order as any).sellerReceivedCash
@@ -1172,15 +1170,15 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                     <p className="text-[11px] text-slate-600 font-bold">Mode livraison</p>
                     <p className="text-[11px] font-black text-slate-900">
                       {ord.chosenPaymentMethod
-                        ? <>{ord.chosenPaymentMethod.method === 'especes' ? '<BruIcons.Money size={14}/>' : '<BruIcons.Phone size={14}/>'} {ord.chosenPaymentMethod.methodName}{ord.chosenPaymentMethod.phone ? ` · ${ord.chosenPaymentMethod.phone}` : ''}</>
-                        : isRealCOD ? '<BruIcons.Money size={14}/> Espèces à la livraison' : '<BruIcons.Phone size={14}/> ' + methodLabel
+                        ? <>{ord.chosenPaymentMethod.method === 'especes' ? '' : ''} {ord.chosenPaymentMethod.methodName}{ord.chosenPaymentMethod.phone ?` · ${ord.chosenPaymentMethod.phone}` : ''}</>
+                        : isRealCOD ? 'Espèces à la livraison' : '' + methodLabel
                       }
                     </p>
                   </div>
                   {phone && !isRealCOD && (
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] text-slate-600 font-bold">Numéro vendeur</p>
-                      <p className="text-[11px] font-black text-slate-900">{phone}{holderName ? ` · ${holderName}` : ''}</p>
+                      <p className="text-[11px] font-black text-slate-900">{phone}{holderName ? ` · ${holderName}`: ''}</p>
                     </div>
                   )}
                   {/* Montants */}
@@ -1211,16 +1209,16 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px]">{ord.delivererCashCollected ? '<BruIcons.CheckCircle size={14}/>' : '<BruIcons.Clock size={14}/>'}</span>
+                          <span className="text-[10px]">{ord.delivererCashCollected ? '' : ''}</span>
                           <p className="text-[10px] text-slate-600">Paiement encaissé à la livraison</p>
                         </div>
                       )}
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">{ord.sellerCashReturned ? '<BruIcons.CheckCircle size={14}/>' : '<BruIcons.Clock size={14}/>'}</span>
+                        <span className="text-[10px]">{ord.sellerCashReturned ? '' : ''}</span>
                         <p className="text-[10px] text-slate-600">Part vendeur remise au vendeur</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px]">{ord.sellerReceivedCash ? '<BruIcons.CheckCircle size={14}/>' : '<BruIcons.Clock size={14}/>'}</span>
+                        <span className="text-[10px]">{ord.sellerReceivedCash ? '' : ''}</span>
                         <p className="text-[10px] text-slate-600">Vendeur a confirmé réception</p>
                       </div>
                     </div>
@@ -1330,12 +1328,12 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-5" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto"/>
             <div className="text-center">
-              <p className="text-3xl mb-2">{(order as any).status === 'picked' ? '<BruIcons.AlertTriangle size={14}/>' : '<BruIcons.Refresh size={14}/>'}</p>
+              <p className="text-3xl mb-2">{(order as any).status === 'picked' ? '' : ''}</p>
               <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">Annuler le livreur</h3>
               {(order as any).status === 'picked' && (
                 <div className="mt-3 bg-red-50 rounded-2xl p-4 border border-red-100">
                   <p className="text-[11px] text-red-700 font-bold">
-                    <BruIcons.AlertTriangle size={14}/> Attention : le livreur a déjà récupéré le colis. L&apos;annulation va ouvrir un litige automatiquement.
+                    Attention : le livreur a déjà récupéré le colis. L&apos;annulation va ouvrir un litige automatiquement.
                   </p>
                 </div>
               )}
@@ -1354,7 +1352,7 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                   .then(() => { setShowCancelDelivery(false); setCancelReason(''); setDelivererInfo(null); })}
                 disabled={!cancelReason.trim() || loading}
                 className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-red-500 shadow-lg active:scale-95 disabled:opacity-50 transition-all">
-                {(order as any).status === 'picked' ? '<BruIcons.AlertTriangle size={14}/> Annuler et ouvrir un litige' : '<BruIcons.Refresh size={14}/> Annuler le livreur'}
+                {(order as any).status === 'picked' ? 'Annuler et ouvrir un litige' : 'Annuler le livreur'}
               </button>
               <button onClick={() => { setShowCancelDelivery(false); setCancelReason(''); }}
                 className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
@@ -1451,7 +1449,7 @@ export function OrderStatusPage({ orderId, onBack, onOpenChatWithSeller }: Order
         <button onClick={() => setTab('purchases')}
           className={`flex-1 relative py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 ${tab === 'purchases' ? 'text-white shadow-xl shadow-blue-200' : 'text-slate-500 bg-slate-50'}`}
           style={tab === 'purchases' ? { background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' } : {}}>
-          <BruIcons.Cart size={14}/> Mes achats
+          Mes achats
           {pendingPurchases > 0 && (
             <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center border-2 border-white">
               <span className="text-[8px] font-black text-white">{pendingPurchases}</span>

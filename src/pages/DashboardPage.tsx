@@ -341,7 +341,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                     </div>
                     <p className="text-[10px] text-slate-400 font-bold">{reviewCount} avis · {
                       avgRating >= 4.5 ? '⭐ Excellent vendeur' :
-                      avgRating >= 3.5 ? '<BruIcons.Thumbsup size={14}/> Bon vendeur' : '<BruIcons.TrendUp size={14}/> En progression'
+                      avgRating >= 3.5 ? 'Bon vendeur' : 'En progression'
                     }</p>
                     {/* Barre de progression vers le prochain seuil */}
                     <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -437,13 +437,13 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { icon: '<BruIcons.Money size={14}/>', label: 'Comptabilité',   page: 'compta' },
+                    { icon: '', label: 'Comptabilité',   page: 'compta' },
                     { icon: '📇', label: 'Carnet clients', page: 'carnet-clients' },
-                    { icon: '<BruIcons.Image size={14}/>', label: 'Catalogue',      page: 'catalogue' },
-                    { icon: '<BruIcons.BarChart size={14}/>', label: 'Marge',          page: 'marge' },
-                    { icon: '<BruIcons.Report size={14}/>', label: 'Rapport',        page: 'rapport' },
-                    { icon: '<BruIcons.Debt size={14}/>', label: 'Journal dettes', page: 'dettes' },
-                    { icon: '<BruIcons.Palette size={14}/>', label: 'Ma boutique',    page: 'shop-customize' },
+                    { icon: '', label: 'Catalogue',      page: 'catalogue' },
+                    { icon: '', label: 'Marge',          page: 'marge' },
+                    { icon: '', label: 'Rapport',        page: 'rapport' },
+                    { icon: '', label: 'Journal dettes', page: 'dettes' },
+                    { icon: '', label: 'Ma boutique',    page: 'shop-customize' },
                   ].map(tool => (
                     tier === 'premium' ? (
                       // Premium → accès libre
@@ -514,7 +514,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 {articlesFilter === 'brouillons' ? (
                   draftProducts.length === 0 ? (
                     <div className="p-10 text-center">
-                      <p className="text-3xl mb-2"><BruIcons.FileText size={14}/></p>
+                      <p className="text-3xl mb-2"></p>
                       <p className="font-black text-slate-400 text-[10px] uppercase">Aucun brouillon</p>
                       <p className="text-[9px] text-slate-300 mt-1">Enregistre un article en brouillon lors de la publication</p>
                     </div>
@@ -529,7 +529,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                             <p className="font-black text-slate-900 text-[11px] truncate">{p.title}</p>
                             <p className="text-[9px] text-slate-500 font-bold">{p.price.toLocaleString('fr-FR')} FCFA</p>
                             <span className={`text-[8px] font-black px-2 py-0.5 rounded-full mt-0.5 inline-block ${p.status === 'draft' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                              {p.status === 'draft' ? '<BruIcons.FileText size={14}/> Brouillon' : '⏸ Suspendu'}
+                              {p.status === 'draft' ? 'Brouillon' : '⏸ Suspendu'}
                             </span>
                           </div>
                           <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -663,7 +663,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
         {activeTab === 'offres' && (
           pendingOffers.length === 0 ? (
             <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm">
-              <div className="w-16 h-16 bg-amber-50 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-3"><BruIcons.Money size={14}/></div>
+              <div className="w-16 h-16 bg-amber-50 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-3"></div>
               <p className="font-black text-slate-400 text-[10px] uppercase">Aucune offre en attente</p>
               <p className="text-slate-300 text-[9px] font-bold mt-1">Les offres de tes acheteurs apparaîtront ici</p>
             </div>
@@ -726,7 +726,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                       disabled={respondingOffer === offer.msgId}
                       className="flex-[2] py-3 rounded-2xl text-white font-black text-[10px] uppercase active:scale-95 transition-all disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                      {respondingOffer === offer.msgId ? '...' : '<BruIcons.CheckCircle size={14}/> Accepter'}
+                      {respondingOffer === offer.msgId ? '...' : 'Accepter'}
                     </button>
                   </div>
                 </div>
@@ -897,7 +897,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                   style={{ background: 'linear-gradient(135deg,#991B1B,#DC2626)' }}>
                   {deletingProduct
                     ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Suppression...</>
-                    : '<BruIcons.Trash size={14}/>️ Supprimer définitivement'}
+                    : '️ Supprimer définitivement'}
                 </button>
               </div>
             </div>

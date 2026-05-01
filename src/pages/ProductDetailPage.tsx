@@ -322,7 +322,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               </button>
               {((product as any).bookmarkCount || 0) > 0 && (
                 <span className="text-[8px] font-black text-blue-600 bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
-                  <BruIcons.HeartFilled size={14}/> {(product as any).bookmarkCount}
+                  {(product as any).bookmarkCount}
                 </span>
               )}
             </div>
@@ -372,7 +372,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     setFollowingLoading(false);
                   }}
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-50">
-                  <span className="text-[18px]">{followingLoading ? '<BruIcons.Clock size={14}/>' : isFollowingSeller ? '<BruIcons.Bell size={14}/>' : '<BruIcons.BellOff size={14}/>'}</span>
+                  <span className="text-[18px]">{followingLoading ? '' : isFollowingSeller ? '' : ''}</span>
                 </button>
                 <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
                   style={{ color: isFollowingSeller ? '#16A34A' : '#64748B' }}>
@@ -433,7 +433,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   <>
                     {p.flashSaleLabel && promoActive && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full mb-1">
-                        <BruIcons.Flame size={14}/> {p.flashSaleLabel}
+                        {p.flashSaleLabel}
                         {p.promoActiveUntil && <span className="text-orange-400">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
                       </span>
                     )}
@@ -722,7 +722,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             {!isGuest && currentUser?.uid !== product.sellerId && product.status !== 'sold' && (
               <button onClick={() => setShowOfferModal(true)}
                 className="flex-1 py-5 rounded-[2rem] font-black text-[12px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                <BruIcons.Money size={14}/> Offre
+                Offre
               </button>
             )}
             <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
@@ -798,10 +798,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   : 'bg-amber-50 text-amber-700'
               }`}>
                 {parseInt(offerInput) < product.price * 0.5
-                  ? '<BruIcons.AlertTriangle size={14}/> Offre très basse — peu de chances d\'être acceptée'
+                  ? 'Offre très basse — peu de chances d\'être acceptée'
                   : parseInt(offerInput) >= product.price
-                  ? '<BruIcons.CheckCircle size={14}/> Offre au prix ou supérieure — sera acceptée !'
-                  : `<BruIcons.Info size={14}/> Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
+                  ? 'Offre au prix ou supérieure — sera acceptée !'
+                  : `Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
                 }
               </div>
             )}
@@ -813,7 +813,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 disabled={!offerInput || parseInt(offerInput) <= 0 || sendingOffer}
                 className="flex-[2] py-4 rounded-2xl text-white font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '<BruIcons.Money size={14}/> Envoyer l\'offre'}
+                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Envoyer l\'offre'}
               </button>
             </div>
           </div>

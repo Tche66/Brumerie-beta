@@ -47,8 +47,8 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     const config = getAppConfig();
     const waNum  = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
     const msg    = 'Bonjour Brumerie ! Je viens de payer le Badge Vérifié ('
-      + effectiveVerifiedPrice.toLocaleString('fr-FR') + ' FCFA).\n\nVoici ma preuve de paiement en photo.\n\n<BruIcons.User size={14}/> Nom : '
-      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\n<BruIcons.Phone size={14}/> App : ' + userProfile.uid;
+      + effectiveVerifiedPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement en photo.\n\nNom :'
+      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\nApp :' + userProfile.uid;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
 
@@ -65,42 +65,42 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     const config = getAppConfig();
     const waNum  = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
     const msg    = 'Bonjour Brumerie ! Je viens de payer le Badge Premium ('
-      + effectivePremiumPrice.toLocaleString('fr-FR') + ' FCFA).\n\nVoici ma preuve de paiement.\n\n<BruIcons.User size={14}/> Nom : '
-      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\n<BruIcons.Phone size={14}/> App : ' + userProfile.uid;
+      + effectivePremiumPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement.\n\nNom :'
+      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\nApp :' + userProfile.uid;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
 
   // Fonctionnalités par badge
   const FEATURES_SIMPLE = [
-    { icon: '<BruIcons.XCircle size={14}/>', text: <>Aucun badge d'identité vérifiée</> },
-    { icon: '<BruIcons.Camera size={14}/>', text: <>Caméra uniquement (pas de galerie)</> },
-    { icon: '<BruIcons.MapPin size={10}/>', text: <>Visibilité normale</> },
-    { icon: '<BruIcons.MessageCircle size={14}/>', text: <>Max <strong>5 chats / jour</strong></> },
-    { icon: '<BruIcons.Package size={14}/>', text: <>Max <strong>5 produits</strong></> },
-    { icon: '<BruIcons.BarChart size={14}/>', text: <span className="text-slate-300">Aucune statistique</span> },
+    { icon: '', text: <>Aucun badge d'identité vérifiée</> },
+    { icon: '', text: <>Caméra uniquement (pas de galerie)</> },
+    { icon: '', text: <>Visibilité normale</> },
+    { icon: '', text: <>Max <strong>5 chats / jour</strong></> },
+    { icon: '', text: <>Max <strong>5 produits</strong></> },
+    { icon: '', text: <span className="text-slate-300">Aucune statistique</span> },
   ];
 
   const FEATURES_VERIFIED = [
     { icon: '🔵', text: <><strong style={{ color: '#1D9BF0' }}>Badge Bleu</strong> "Vérifié"</> },
-    { icon: '<BruIcons.Image size={14}/>', text: <>Galerie photos complète</> },
+    { icon: '', text: <>Galerie photos complète</> },
     { icon: '🚀', text: <>Visibilité <strong>boostée (+20%)</strong></> },
-    { icon: '<BruIcons.MessageCircle size={14}/>', text: <>Messagerie <strong>illimitée</strong></> },
-    { icon: '<BruIcons.Globe size={14}/>', text: <>Bio + Liens réseaux sociaux</> },
-    { icon: '<BruIcons.BarChart size={14}/>', text: <>Stats de vues de base</> },
-    { icon: '<BruIcons.Camera size={14}/>', text: <>Stories <strong>24h</strong></> },
-    { icon: '<BruIcons.Package size={14}/>', text: <>Max <strong>20 produits</strong></> },
+    { icon: '', text: <>Messagerie <strong>illimitée</strong></> },
+    { icon: '', text: <>Bio + Liens réseaux sociaux</> },
+    { icon: '', text: <>Stats de vues de base</> },
+    { icon: '', text: <>Stories <strong>24h</strong></> },
+    { icon: '', text: <>Max <strong>20 produits</strong></> },
   ];
 
   const FEATURES_PREMIUM = [
     { icon: '⭐', text: <><strong style={{ color: '#F59E0B' }}>Badge Or</strong> "Premium"</> },
     { icon: '🎬', text: <>Photos Studio + <strong style={{ color: '#F59E0B' }}>Vidéos</strong> (bientôt)</> },
-    { icon: '<BruIcons.Medal size={14}/>', text: <><strong style={{ color: '#F59E0B' }}>Priorité Max</strong> (Top Page)</> },
+    { icon: '', text: <><strong style={{ color: '#F59E0B' }}>Priorité Max</strong> (Top Page)</> },
     { icon: '🤖', text: <>Messagerie illimitée + Auto-réponse</> },
-    { icon: '<BruIcons.Palette size={14}/>', text: <>Boutique <strong style={{ color: '#F59E0B' }}>100% personnalisée</strong> + Vente flash</> },
-    { icon: '<BruIcons.Money size={14}/>', text: <>Comptabilité · Carnet clients · Catalogue</> },
-    { icon: '<BruIcons.BarChart size={14}/>', text: <>Marge · Rapport hebdomadaire · Dettes</> },
-    { icon: '<BruIcons.TrendUp size={14}/>', text: <>Analyse <strong style={{ color: '#F59E0B' }}>détaillée</strong> des ventes</> },
-    { icon: '<BruIcons.Package size={14}/>', text: <><strong style={{ color: '#F59E0B' }}>Produits illimités</strong></> },
+    { icon: '', text: <>Boutique <strong style={{ color: '#F59E0B' }}>100% personnalisée</strong> + Vente flash</> },
+    { icon: '', text: <>Comptabilité · Carnet clients · Catalogue</> },
+    { icon: '', text: <>Marge · Rapport hebdomadaire · Dettes</> },
+    { icon: '', text: <>Analyse <strong style={{ color: '#F59E0B' }}>détaillée</strong> des ventes</> },
+    { icon: '', text: <><strong style={{ color: '#F59E0B' }}>Produits illimités</strong></> },
   ];
 
   return (

@@ -173,7 +173,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        // <BruIcons.CheckCircle size={14}/> Firestore refuse undefined — on omet les champs vides
+        // Firestore refuse undefined — on omet les champs vides
         ...(awCode        ? { buyerAWCode:      awCode }               : {}),
         ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
         ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
@@ -285,8 +285,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de remise</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { id: 'in_person', label: 'Main propre', icon: '<BruIcons.Check size={14}/>', sub: 'Confirmation immédiate' },
-              { id: 'delivery',  label: 'Livraison',   icon: '<BruIcons.Package size={14}/>', sub: 'Livreur Brumerie ou vendeur' },
+              { id: 'in_person', label: 'Main propre', icon: '', sub: 'Confirmation immédiate' },
+              { id: 'delivery',  label: 'Livraison',   icon: '', sub: 'Livreur Brumerie ou vendeur' },
             ].map(opt => (
               <button key={opt.id}
                 onClick={() => setDeliveryType(opt.id as any)}
@@ -303,7 +303,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             <div className="mt-3">
               <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
                 <p className="text-[11px] font-bold text-slate-500 text-center">
-                  <BruIcons.Moto size={14}/> Un livreur vous sera proposé par le vendeur une fois la commande validée.
+                  Un livreur vous sera proposé par le vendeur une fois la commande validée.
                 </p>
               </div>
             </div>
@@ -341,7 +341,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                   <BruIcons.Lock size={14}/> Indisponible
                 </span>
               )}
-              <div className="text-2xl flex-shrink-0"><BruIcons.Credit size={14}/></div>
+              <div className="text-2xl flex-shrink-0"></div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer à l'avance</p>
                 <p className="text-[10px] text-slate-400 font-medium">Wave · Orange Money · MTN · Moov</p>
@@ -360,7 +360,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
               <div className="absolute -top-2 -right-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
                 <BruIcons.Shield size={14}/> Recommandé
               </div>
-              <div className="text-2xl flex-shrink-0"><BruIcons.Check size={14}/></div>
+              <div className="text-2xl flex-shrink-0"></div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Payer à la livraison</p>
                 <p className="text-[10px] text-slate-400 font-medium">Tu paies uniquement quand tu reçois l'article</p>
@@ -437,7 +437,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                 Commande en cours...
               </div>
-            ) : '<BruIcons.Check size={14}/> Commander — Payer à la livraison'}
+            ) : 'Commander — Payer à la livraison'}
           </button>
         )}
       </div>
@@ -486,7 +486,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         {/* Attente confirmation vendeur — ici on passe directement, le vendeur confirmera après */}
         <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-          <p className="text-[11px] font-black text-blue-900 mb-1"><BruIcons.FileText size={14}/> Comment ça marche</p>
+          <p className="text-[11px] font-black text-blue-900 mb-1">Comment ça marche</p>
           <p className="text-[10px] text-blue-800 font-bold leading-relaxed">
             1. Tu passes ta commande<br/>
             2. Le vendeur <strong>confirme la disponibilité</strong> dans les 24h<br/>
@@ -530,7 +530,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
         {/* Montant à envoyer */}
         <div className="text-center py-6 px-4 rounded-3xl"
-          style={{ background: `linear-gradient(135deg, ${method?.color}15, ${method?.color}30)` }}>
+          style={{ background:`linear-gradient(135deg, ${method?.color}15, ${method?.color}30)` }}>
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Montant à envoyer</p>
           <p className="text-4xl font-black text-slate-900">
             {effectivePrice.toLocaleString('fr-FR')}
@@ -680,7 +680,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
           {loading
             ? <div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Envoi...</div>
-            : '<BruIcons.Share size={14}/> Envoyer la preuve →'}
+            : 'Envoyer la preuve →'}
         </button>
         <button onClick={() => setStep('payment_details')}
           className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
@@ -727,7 +727,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
           <p className="text-[11px] text-amber-800 font-bold leading-relaxed">
-            <BruIcons.AlertTriangle size={14}/> Contacte le vendeur via la messagerie pour convenir des détails de la remise (lieu, heure).
+            Contacte le vendeur via la messagerie pour convenir des détails de la remise (lieu, heure).
           </p>
         </div>
 
@@ -736,9 +736,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ce qui se passe ensuite</p>
           <div className="space-y-4">
             {[
-              { ico: '<BruIcons.PhoneCall size={14}/>', t: 'Le vendeur te contacte', d: 'Via la messagerie Brumerie pour confirmer la remise' },
-              { ico: deliveryType === 'delivery' ? '🚚' : '<BruIcons.MapPin size={10}/>', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: "Conviens du lieu et de l'heure avec le vendeur" },
-              { ico: '<BruIcons.Money size={14}/>', t: 'Tu paies à la réception', d: `${effectivePrice.toLocaleString('fr-FR')} FCFA en cash au moment de la remise` },
+              { ico: '', t: 'Le vendeur te contacte', d: 'Via la messagerie Brumerie pour confirmer la remise' },
+              { ico: deliveryType === 'delivery' ? '🚚' : '', t: deliveryType === 'delivery' ? 'Livraison chez toi' : 'Retrait en main propre', d: "Conviens du lieu et de l'heure avec le vendeur" },
+              { ico: '', t: 'Tu paies à la réception', d:`${effectivePrice.toLocaleString('fr-FR')} FCFA en cash au moment de la remise` },
               { ico: '⭐', t: 'Tu notes le vendeur', d: 'Reviens confirmer la réception et laisser un avis' },
             ].map((s, i) => (
               <div key={i} className="flex items-start gap-3">
