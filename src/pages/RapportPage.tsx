@@ -21,22 +21,6 @@ function fmt(n: number) { return n.toLocaleString('fr-CI') + ' FCFA'; }
 export function RapportPage({ onBack }: RapportPageProps) {
   const { currentUser, userProfile } = useAuth();
 
-  // ── Garde Vérifié / Premium ───────────────────────────────
-  if (!userProfile?.isVerified && !userProfile?.isPremium) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
-        <div className="text-5xl mb-4">🔵</div>
-        <h2 className="font-black text-[20px] text-slate-900 text-center mb-2">📬 Rapport Hebdomadaire</h2>
-        <p className="text-[12px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
-          Le rapport de ventes est réservé aux vendeurs <strong>🔵 Vérifiés</strong> et <strong>⭐ Premium</strong>.
-        </p>
-        <button onClick={{onBack}}
-          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
-          ← Retour
-        </button>
-      </div>
-    );
-  }
   const [orders, setOrders]     = useState<any[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -87,6 +71,23 @@ export function RapportPage({ onBack }: RapportPageProps) {
       navigator.clipboard.writeText(text);
     }
   };
+
+  // ── Garde Vérifié / Premium ───────────────────────────────
+  if (!userProfile?.isVerified && !userProfile?.isPremium) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="text-5xl mb-4">🔵</div>
+        <h2 className="font-black text-[20px] text-slate-900 text-center mb-2">📬 Rapport Hebdomadaire</h2>
+        <p className="text-[12px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
+          Le rapport de ventes est réservé aux vendeurs <strong>🔵 Vérifiés</strong> et <strong>⭐ Premium</strong>.
+        </p>
+        <button onClick={{onBack}}
+          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
+          ← Retour
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 font-sans">
