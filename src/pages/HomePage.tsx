@@ -251,7 +251,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
       {/* ── ONGLETS FEED SOCIAL ── */}
       {!isGuest && userProfile && (
-        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none">
+        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none bg-white sticky top-0 z-30">
           {([
             { id: 'all',      label: 'Tout Abidjan', icon: '🏪' },
             { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
@@ -279,7 +279,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       )}
 
       {/* Barre de filtres rapides */}
-      <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none">
+      <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none bg-white sticky top-[41px] z-20 border-b border-slate-50">
         <button onClick={() => setShowFilters(true)}
           className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border-2 font-bold text-[11px] transition-all active:scale-95"
           style={{
@@ -525,62 +525,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         </div>
       )}
 
-      {/* ── ARTICLES LES PLUS CONSULTÉS — Social proof dynamique ── */}
-      {!searchTerm && products.filter(p => (p.viewCount || 0) > 0 || (p.whatsappClickCount || 0) > 0).length >= 3 && (
-        <div className="mt-8">
-          <div className="px-5 flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-base">🔥</span>
-              <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tight">Tendances maintenant</h3>
-            </div>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-full">
-              Les + vus
-            </span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-5 pb-2 scrollbar-hide">
-            {[...products]
-              .sort((a, b) => ((b.viewCount || 0) + (b.whatsappClickCount || 0) * 3) - ((a.viewCount || 0) + (a.whatsappClickCount || 0) * 3))
-              .slice(0, 8)
-              .map(product => {
-                const imgSrc = product.images?.[0] || (product as any).imageUrl;
-                const heat = (product.viewCount || 0) + (product.whatsappClickCount || 0) * 3;
-                return (
-                  <button key={product.id} onClick={() => onProductClick(product)}
-                    className="flex-shrink-0 w-36 bg-white rounded-[1.5rem] overflow-hidden border border-slate-100 shadow-sm active:scale-95 transition-all text-left">
-                    <div className="relative aspect-square bg-slate-50 overflow-hidden">
-                      <img src={imgSrc} alt={product.title} className="w-full h-full object-cover" />
-                      {heat > 5 && (
-                        <span className="absolute top-2 left-2 bg-red-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg">
-                          🔥 {heat > 20 ? 'Très demandé' : 'Populaire'}
-                        </span>
-                      )}
-                      {(product.sellerVerified || product.sellerPremium) && (
-                        <span className="absolute bottom-2 right-2 rounded-lg w-5 h-5 flex items-center justify-center"
-                          style={product.sellerPremium
-                            ? { background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)', border: '1px solid rgba(245,158,11,0.5)' }
-                            : { background: '#16A34A' }}>
-                          {product.sellerPremium
-                            ? <svg width="9" height="9" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                            : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
-                          }
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-2.5">
-                      <p className="text-[11px] font-black text-slate-900">{product.price.toLocaleString('fr-FR')} <span className="text-[9px] font-bold text-slate-400">FCFA</span></p>
-                      <p className="text-[9px] font-bold text-slate-500 truncate mt-0.5">{product.title}</p>
-                      {product.whatsappClickCount && product.whatsappClickCount > 0 && !product.hideStats ? (
-                        <p className="text-[8px] font-black text-green-600 mt-1">💬 {product.whatsappClickCount} contact{product.whatsappClickCount > 1 ? 's' : ''}</p>
-                      ) : null}
-                    </div>
-                  </button>
-                );
-              })}
-          </div>
-        </div>
-      )}
 
-      {/* ── GRILLE PRODUITS — conditionnelle par onglet ── */}
+            {/* ── GRILLE PRODUITS — conditionnelle par onglet ── */}
       <div className="px-5 mt-8">
 
         {/* ── ONGLET : POUR TOI ── */}

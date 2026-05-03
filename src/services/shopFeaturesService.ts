@@ -4,7 +4,7 @@
 import {
   doc, getDoc, getDocs, updateDoc, arrayUnion, arrayRemove,
   collection, query, where, orderBy, limit, Timestamp,
-  increment, serverTimestamp, setDoc, onSnapshot
+  increment, serverTimestamp, setDoc, onSnapshot, addDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { createNotification } from '@/services/notificationService';
@@ -385,9 +385,7 @@ export async function repostProduct(
   product: { id: string; title: string; images: string[]; price: number; sellerId: string; sellerName: string },
   comment: string
 ): Promise<string> {
-  const { addDoc, collection: col, serverTimestamp: sts } = await import('firebase/firestore');
-  const { db: database } = await import('@/config/firebase');
-  const docRef = await addDoc(col(database, 'reposts'), {
+  const docRef = await addDoc(collection(db, 'reposts'), {
     originalProductId:    product.id,
     originalProductTitle: product.title,
     originalProductImage: product.images?.[0] || '',
@@ -398,23 +396,24 @@ export async function repostProduct(
     reposterName,
     reposterPhoto: reposterPhoto || null,
     comment: comment.trim(),
-    createdAt: sts(),
+    createdAt: serverTimestamp(),
   });
-  // Notifier le vendeur original
   await createNotification(
     product.sellerId,
     'system',
-    `🔄 ${reposterName} a partagé ton article`,
-    `"${product.title}" — avec le commentaire : "${comment.trim().slice(0, 60)}${comment.length > 60 ? '...' : ''}"`,
+    reposterName + ' a partage ton article',
+    '"' + product.title + '" — avec le commentaire : "' + comment.trim().slice(0, 60) + (comment.length > 60 ? '...' : '') + '"',
     { productId: product.id }
   );
   return docRef.id;
 }
 
-/** Récupérer les reposts d'un produit */
 export async function getRepostsForProduct(productId: string): Promise<Repost[]> {
-  const { getDocs: gd, collection: col, query: q2, where: wh, orderBy: ob, limit: lim } = await import('firebase/firestore');
-  const { db: database } = await import('@/config/firebase');
-  const snap = await gd(q2(col(database, 'reposts'), wh('originalProductId', '==', productId), ob('createdAt', 'desc'), lim(20)));
+  const snap = await getDocs(query(
+    collection(db, 'reposts'),
+    where('originalProductId', '==', productId),
+    orderBy('createdAt', 'desc'),
+    limit(20)
+  ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
 }

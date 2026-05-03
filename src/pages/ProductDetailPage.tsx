@@ -101,6 +101,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       const data = snap.data();
       setLiveViewCount(data.viewCount ?? 0);
       setLiveContactCount(data.whatsappClickCount ?? 0);
+      // ✅ likeCount temps réel — sync immédiate entre tous les utilisateurs
+      setLikeCount(data.likeCount ?? 0);
 
       // Incrémenter UNE SEULE FOIS après le premier snapshot — jamais pour le vendeur
       if (!viewIncrementedRef.current && !isSeller && currentUser) {
@@ -164,9 +166,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     checkIsLiked(product.id, currentUser.uid).then(liked => setIsLiked(liked)).catch(() => {});
   }, [product.id, currentUser?.uid]);
 
-  useEffect(() => {
-    setLikeCount((product as any).likeCount ?? 0);
-  }, [(product as any).likeCount]);
+  // likeCount initialisé via onSnapshot ci-dessus (temps réel)
 
   useEffect(() => {
     if (!product.id) return;
