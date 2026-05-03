@@ -154,6 +154,12 @@ export async function followSeller(buyerId: string, sellerId: string, sellerName
   await updateDoc(doc(db, 'users', buyerId), {
     followingSellers: arrayUnion(sellerId),
   });
+  // Dénormaliser le compteur sur le vendeur
+  try {
+    await updateDoc(doc(db, 'users', sellerId), {
+      followerCount: increment(1),
+    });
+  } catch {}
   await createNotification(sellerId, 'system',
     '👤 Nouvel abonné !',
     `Quelqu'un suit maintenant ta boutique. Publie régulièrement pour rester visible !`,
@@ -165,6 +171,12 @@ export async function unfollowSeller(buyerId: string, sellerId: string): Promise
   await updateDoc(doc(db, 'users', buyerId), {
     followingSellers: arrayRemove(sellerId),
   });
+  // Décrémenter le compteur sur le vendeur
+  try {
+    await updateDoc(doc(db, 'users', sellerId), {
+      followerCount: increment(-1),
+    });
+  } catch {}
 }
 
 export function isFollowingSeller(buyerId: string, sellerId: string, followingList: string[]): boolean {
@@ -359,4 +371,50 @@ export function getEffectivePrice(product: { price: number; promoPrice?: number;
     return { price: product.promoPrice, isPromo: true, discountPct: pct };
   }
   return { price: product.price, isPromo: false, discountPct: 0 };
+}
+
+// ════════════════════════════════════════════════════════════
+// REPOST — Partage d'un article avec commentaire
+// ════════════════════════════════════════════════════════════
+import type { Repost } from '@/types';
+
+export async function repostProduct(
+  reposterId: string,
+  reposterName: string,
+  reposterPhoto: string | undefined,
+  product: { id: string; title: string; images: string[]; price: number; sellerId: string; sellerName: string },
+  comment: string
+): Promise<string> {
+  const { addDoc, collection: col, serverTimestamp: sts } = await import('firebase/firestore');
+  const { db: database } = await import('@/config/firebase');
+  const docRef = await addDoc(col(database, 'reposts'), {
+    originalProductId:    product.id,
+    originalProductTitle: product.title,
+    originalProductImage: product.images?.[0] || '',
+    originalProductPrice: product.price,
+    originalSellerId:     product.sellerId,
+    originalSellerName:   product.sellerName,
+    reposterId,
+    reposterName,
+    reposterPhoto: reposterPhoto || null,
+    comment: comment.trim(),
+    createdAt: sts(),
+  });
+  // Notifier le vendeur original
+  await createNotification(
+    product.sellerId,
+    'system',
+    `🔄 ${reposterName} a partagé ton article`,
+    `"${product.title}" — avec le commentaire : "${comment.trim().slice(0, 60)}${comment.length > 60 ? '...' : ''}"`,
+    { productId: product.id }
+  );
+  return docRef.id;
+}
+
+/** Récupérer les reposts d'un produit */
+export async function getRepostsForProduct(productId: string): Promise<Repost[]> {
+  const { getDocs: gd, collection: col, query: q2, where: wh, orderBy: ob, limit: lim } = await import('firebase/firestore');
+  const { db: database } = await import('@/config/firebase');
+  const snap = await gd(q2(col(database, 'reposts'), wh('originalProductId', '==', productId), ob('createdAt', 'desc'), lim(20)));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
 }

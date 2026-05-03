@@ -18,9 +18,6 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   DocumentData,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -403,110 +400,80 @@ export async function syncSellerDataToProducts(
   }
 }
 
-
-// ─────────────────────────────────────────────────────────────
-// SOCIAL COMMERCE — Likes & Commentaires
-// ─────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+// GRAPHE SOCIAL — Feed personnalisé + Tendances
+// ════════════════════════════════════════════════════════════
 
 /**
- * Toggle Like — sous-collection products/{id}/likes/{userId}
- * Retourne le nouveau état (liked: boolean) et le nouveau compteur
+ * Feed "Pour toi" — articles des vendeurs suivis, les plus récents en premier
+ * Si followingIds est vide, retourne un feed mixte (populaire + récent)
  */
-export async function toggleLike(
-  productId: string,
-  userId: string
-): Promise<{ liked: boolean; count: number }> {
-  const likeRef = doc(db, 'products', productId, 'likes', userId);
-  const productRef = doc(db, 'products', productId);
+export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
+  if (!followingIds || followingIds.length === 0) return [];
 
-  const snap = await getDoc(likeRef);
-  const alreadyLiked = snap.exists();
-
-  if (alreadyLiked) {
-    await deleteDoc(likeRef);
-    await updateDoc(productRef, { likeCount: increment(-1) });
-    const prodSnap = await getDoc(productRef);
-    const count = Math.max(0, prodSnap.data()?.likeCount ?? 0);
-    return { liked: false, count };
-  } else {
-    await setDoc(likeRef, { userId, createdAt: serverTimestamp() });
-    await updateDoc(productRef, { likeCount: increment(1) });
-    const prodSnap = await getDoc(productRef);
-    const count = prodSnap.data()?.likeCount ?? 1;
-    return { liked: true, count };
+  // Firestore limite "in" à 30 valeurs — on pagine si nécessaire
+  const chunks: string[][] = [];
+  for (let i = 0; i < followingIds.length; i += 30) {
+    chunks.push(followingIds.slice(i, i + 30));
   }
+
+  const results: Product[] = [];
+  for (const chunk of chunks) {
+    try {
+      const q = query(
+        collection(db, 'products'),
+        where('sellerId', 'in', chunk),
+        where('status', '==', 'active'),
+        orderBy('createdAt', 'desc'),
+        limit(40)
+      );
+      const snap = await getDocs(q);
+      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Product));
+    } catch (e) { console.error('[getFollowingFeed]', e); }
+  }
+
+  // Trier par date décroissante et dédupliquer
+  return results
+    .sort((a, b) => {
+      const ta = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds * 1000 ?? 0;
+      const tb = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds * 1000 ?? 0;
+      return tb - ta;
+    })
+    .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
+    .slice(0, 60);
 }
 
 /**
- * Vérifier si l'utilisateur a déjà liké un produit
+ * "Tendances Abidjan" — algo : score = likeCount*3 + viewCount + commentCount*2
+ * Articles des 30 derniers jours, top 20
  */
-export async function checkIsLiked(productId: string, userId: string): Promise<boolean> {
-  const likeRef = doc(db, 'products', productId, 'likes', userId);
-  const snap = await getDoc(likeRef);
-  return snap.exists();
-}
+export async function getTrendingProducts(): Promise<Product[]> {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-/**
- * Ajouter un commentaire — sous-collection products/{id}/comments
- * Retourne l'ID du commentaire créé
- */
-export async function addComment(
-  productId: string,
-  userId: string,
-  userName: string,
-  text: string,
-  userPhoto?: string,
-  userVerified?: boolean,
-  parentId?: string,
-): Promise<string> {
-  const commentsRef = collection(db, 'products', productId, 'comments');
-  const docRef = await addDoc(commentsRef, {
-    productId,
-    userId,
-    userName,
-    text: text.trim(),
-    userPhoto: userPhoto || null,
-    userVerified: userVerified || false,
-    parentId: parentId || null,
-    createdAt: serverTimestamp(),
-  });
-  // Dénormaliser le compteur sur le produit
-  await updateDoc(doc(db, 'products', productId), {
-    commentCount: increment(1),
-  });
-  return docRef.id;
-}
+    const q = query(
+      collection(db, 'products'),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+    const snap = await getDocs(q);
+    const products = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Product[];
 
-/**
- * Supprimer un commentaire (auteur ou admin seulement — côté app)
- */
-export async function deleteComment(productId: string, commentId: string): Promise<void> {
-  await deleteDoc(doc(db, 'products', productId, 'comments', commentId));
-  await updateDoc(doc(db, 'products', productId), {
-    commentCount: increment(-1),
-  });
-}
-
-/**
- * Écouter les commentaires d'un produit en temps réel
- */
-import type { ProductComment } from '@/types';
-
-export function subscribeComments(
-  productId: string,
-  callback: (comments: ProductComment[]) => void
-): () => void {
-  const q = query(
-    collection(db, 'products', productId, 'comments'),
-    orderBy('createdAt', 'asc'),
-    limit(100)
-  );
-  return onSnapshot(q, (snap) => {
-    const comments: ProductComment[] = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data(),
-      createdAt: d.data().createdAt,
-    })) as ProductComment[];
-    callback(comments);
-  });
+    // Score de tendance
+    return products
+      .map(p => ({
+        ...p,
+        _score: (p.likeCount || 0) * 3
+               + (p.viewCount || 0)
+               + (p.commentCount || 0) * 2
+               + (p.whatsappClickCount || 0) * 4,
+      }))
+      .sort((a, b) => (b as any)._score - (a as any)._score)
+      .slice(0, 20);
+  } catch (e) {
+    console.error('[getTrendingProducts]', e);
+    return [];
+  }
 }

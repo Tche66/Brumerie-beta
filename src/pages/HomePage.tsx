@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductSkeleton } from '@/components/ProductSkeleton';
-import { getProducts, getProductsPage, PRODUCTS_PER_PAGE } from '@/services/productService';
+import { getProducts, getProductsPage, PRODUCTS_PER_PAGE, getFollowingFeed, getTrendingProducts } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterDrawer';
 import { SearchAlertButton } from '@/components/SearchAlertButton';
@@ -80,6 +80,14 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [neighborhoodSellerCount, setNeighborhoodSellerCount] = useState<number>(0);
+
+  // ── Feed social — onglets ──────────────────────────────
+  type FeedTab = 'forYou' | 'trending' | 'all';
+  const [feedTab, setFeedTab] = useState<FeedTab>('all');
+  const [followingFeed, setFollowingFeed] = useState<Product[]>([]);
+  const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const [loadingTrending, setLoadingTrending] = useState(false);
 
   // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
   const ALL_CATEGORIES = [
@@ -176,6 +184,28 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     return () => clearTimeout(t);
   }, [loadProducts]);
 
+  // ── Charger le feed "Pour toi" quand l'onglet est activé ──
+  useEffect(() => {
+    if (feedTab !== 'forYou' || !userProfile) return;
+    const ids = userProfile.followingSellers || [];
+    if (ids.length === 0) return;
+    setLoadingFollowing(true);
+    getFollowingFeed(ids)
+      .then(setFollowingFeed)
+      .catch(() => {})
+      .finally(() => setLoadingFollowing(false));
+  }, [feedTab, userProfile?.followingSellers?.join(',')]);
+
+  // ── Charger les tendances ──
+  useEffect(() => {
+    if (feedTab !== 'trending') return;
+    setLoadingTrending(true);
+    getTrendingProducts()
+      .then(setTrendingProducts)
+      .catch(() => {})
+      .finally(() => setLoadingTrending(false));
+  }, [feedTab]);
+
   // Compter les vendeurs dans le même quartier que l'utilisateur
   useEffect(() => {
     if (!userProfile?.neighborhood || products.length === 0) return;
@@ -218,6 +248,35 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
       {/* Stories — barre horizontale comme Instagram */}
       <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} onOrderFromStory={onOrderFromStory} onOfferFromStory={onOfferFromStory} />
+
+      {/* ── ONGLETS FEED SOCIAL ── */}
+      {!isGuest && userProfile && (
+        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none">
+          {([
+            { id: 'all',      label: 'Tout Abidjan', icon: '🏪' },
+            { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
+            { id: 'trending', label: 'Tendances',    icon: '🔥' },
+          ] as { id: FeedTab; label: string; icon: string }[]).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFeedTab(tab.id)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-all border-b-2 -mb-px ${
+                feedTab === tab.id
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-slate-400'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+              {tab.id === 'forYou' && (userProfile?.followingSellers?.length ?? 0) > 0 && (
+                <span className="bg-green-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  {userProfile.followingSellers!.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Barre de filtres rapides */}
       <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none">
@@ -521,12 +580,120 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         </div>
       )}
 
-      {/* Grille produits */}
+      {/* ── GRILLE PRODUITS — conditionnelle par onglet ── */}
       <div className="px-5 mt-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">Derniers arrivages</h3>
-          <div className="h-[2px] flex-1 mx-4 bg-slate-50 rounded-full" />
-        </div>
+
+        {/* ── ONGLET : POUR TOI ── */}
+        {feedTab === 'forYou' && !isGuest && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Pour toi ✨</h3>
+              <div className="h-[2px] flex-1 mx-4 bg-slate-50 rounded-full" />
+            </div>
+            {loadingFollowing ? (
+              <div className="grid grid-cols-2 gap-4">{[1,2,3,4].map(i => <ProductSkeleton key={i} />)}</div>
+            ) : (userProfile?.followingSellers?.length ?? 0) === 0 ? (
+              <div className="text-center py-16 px-8 bg-green-50 rounded-[3rem] border-2 border-dashed border-green-200">
+                <div className="text-4xl mb-3">👤</div>
+                <p className="text-[12px] font-black text-slate-900 mb-2">Suis des vendeurs pour voir leur feed ici</p>
+                <p className="text-[10px] font-bold text-slate-400 mb-5">Va sur le profil d'un vendeur et appuie sur <strong>+ Suivre</strong></p>
+                <button
+                  onClick={() => setFeedTab('all')}
+                  className="bg-green-600 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl active:scale-95 transition-all"
+                >
+                  Découvrir des vendeurs →
+                </button>
+              </div>
+            ) : followingFeed.length === 0 ? (
+              <div className="text-center py-16 px-8 bg-slate-50 rounded-[3rem]">
+                <div className="text-3xl mb-3">🛍️</div>
+                <p className="text-[11px] font-black text-slate-500">Les vendeurs que tu suis n'ont pas encore publié</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 animate-fade-up">
+                {followingFeed.map(product => (
+                  <ProductCard key={product.id} product={product}
+                    onClick={() => onProductClick(product)}
+                    onBookmark={handleBookmark}
+                    isBookmarked={bookmarkIds.has(product.id)}
+                    isBoosted={boostedIds.has(product.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── ONGLET : TENDANCES ABIDJAN ── */}
+        {feedTab === 'trending' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Tendances 🔥</h3>
+              <div className="h-[2px] flex-1 mx-4 bg-slate-50 rounded-full" />
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2.5 py-1 rounded-full flex-shrink-0">30 jours</span>
+            </div>
+            {loadingTrending ? (
+              <div className="grid grid-cols-2 gap-4">{[1,2,3,4].map(i => <ProductSkeleton key={i} />)}</div>
+            ) : trendingProducts.length === 0 ? (
+              <div className="text-center py-16 px-8 bg-slate-50 rounded-[3rem]">
+                <div className="text-3xl mb-3">📊</div>
+                <p className="text-[11px] font-black text-slate-500">Pas encore assez de données de tendance</p>
+              </div>
+            ) : (
+              <>
+                {/* Top 3 podium */}
+                <div className="flex gap-3 mb-6 overflow-x-auto pb-2 scrollbar-none">
+                  {trendingProducts.slice(0, 3).map((product, idx) => {
+                    const medals = ['🥇','🥈','🥉'];
+                    const imgSrc = product.images?.[0] || (product as any).imageUrl;
+                    return (
+                      <button key={product.id} onClick={() => onProductClick(product)}
+                        className="flex-shrink-0 w-40 bg-white rounded-[1.8rem] overflow-hidden border border-slate-100 shadow-md active:scale-95 transition-all text-left relative"
+                      >
+                        <div className="absolute top-2 left-2 z-10 text-xl">{medals[idx]}</div>
+                        <div className="aspect-square bg-slate-50 overflow-hidden">
+                          <img src={imgSrc} alt={product.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="p-3">
+                          <p className="text-[11px] font-black text-slate-900 truncate">{product.title}</p>
+                          <p className="text-[11px] font-black text-green-700 mt-0.5">{product.price.toLocaleString('fr-FR')} <span className="text-[9px] font-bold text-slate-400">FCFA</span></p>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            {(product.likeCount ?? 0) > 0 && (
+                              <span className="text-[9px] font-black text-red-500">❤️ {product.likeCount}</span>
+                            )}
+                            {(product.viewCount ?? 0) > 0 && (
+                              <span className="text-[9px] font-bold text-slate-400">👁 {product.viewCount}</span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Reste de la liste */}
+                <div className="grid grid-cols-2 gap-4 animate-fade-up">
+                  {trendingProducts.slice(3).map(product => (
+                    <ProductCard key={product.id} product={product}
+                      onClick={() => onProductClick(product)}
+                      onBookmark={handleBookmark}
+                      isBookmarked={bookmarkIds.has(product.id)}
+                      isBoosted={boostedIds.has(product.id)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── ONGLET : TOUT ABIDJAN (défaut) ── */}
+        {(feedTab === 'all' || isGuest) && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">Derniers arrivages</h3>
+              <div className="h-[2px] flex-1 mx-4 bg-slate-50 rounded-full" />
+            </div>
         {loading ? (
           <div className="grid grid-cols-2 gap-4">{[1,2,3,4,5,6].map(i => <ProductSkeleton key={i} />)}</div>
         ) : loadError ? (
@@ -584,6 +751,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                 — {products.length} articles affichés —
               </p>
             )}
+          </>
+        )}
           </>
         )}
       </div>

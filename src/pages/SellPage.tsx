@@ -44,6 +44,8 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const [promoFrom, setPromoFrom]             = useState('');
   const [promoUntil, setPromoUntil]           = useState('');
   const [condition, setCondition] = useState<Condition | ''>('');
+  const [tagInput, setTagInput] = useState('');
+  const [taggedSellers, setTaggedSellers] = useState<string[]>([]); // noms des vendeurs tagués
   const [quantity, setQuantity] = useState('1');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -180,6 +182,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
       // Construire le payload sans aucun champ undefined (Firestore refuse)
       const productPayload: Record<string, any> = {
         title:        title.trim(),
+        taggedSellerNames: taggedSellers.length > 0 ? taggedSellers : undefined,
         price:        parseFloat(price),
         description:  description.trim(),
         category,
@@ -490,6 +493,61 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Description</label>
               <textarea rows={4} placeholder="Accessoires inclus, troc possible ?..." value={description} onChange={e => setDescription(e.target.value)}
                 className="w-full px-5 py-5 bg-slate-50 rounded-2xl text-sm border-2 border-transparent focus:border-green-600 focus:bg-white outline-none transition-all resize-none" />
+            </div>
+
+            {/* ── TAGS VENDEURS ── */}
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 block mb-2">
+                Tagger des vendeurs <span className="text-slate-300 font-bold normal-case tracking-normal">(optionnel)</span>
+              </label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Nom du vendeur à tagger..."
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => {
+                    if ((e.key === 'Enter' || e.key === ',') && tagInput.trim()) {
+                      e.preventDefault();
+                      const name = tagInput.trim().replace(/^@/, '');
+                      if (name && !taggedSellers.includes(name) && taggedSellers.length < 5) {
+                        setTaggedSellers(prev => [...prev, name]);
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                  className="flex-1 px-4 py-3 rounded-2xl border-2 border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-700 outline-none focus:border-green-400 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = tagInput.trim().replace(/^@/, '');
+                    if (name && !taggedSellers.includes(name) && taggedSellers.length < 5) {
+                      setTaggedSellers(prev => [...prev, name]);
+                      setTagInput('');
+                    }
+                  }}
+                  className="px-4 py-3 rounded-2xl bg-green-600 text-white text-[11px] font-black active:scale-95 transition-all"
+                >
+                  + Tag
+                </button>
+              </div>
+              {taggedSellers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {taggedSellers.map(name => (
+                    <span key={name} className="flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl text-[11px] font-black text-green-700">
+                      @{name}
+                      <button
+                        type="button"
+                        onClick={() => setTaggedSellers(prev => prev.filter(n => n !== name))}
+                        className="w-4 h-4 rounded-full bg-green-200 text-green-700 flex items-center justify-center text-[9px] font-black hover:bg-red-200 hover:text-red-600 transition-colors"
+                      >
+                        x
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* État du produit */}

@@ -241,6 +241,7 @@ export interface User {
   avgResponseTime?: number;   // Temps moyen de réponse en minutes
   // ─── Vendeurs suivis (acheteur) ──────────────────────────
   followingSellers?: string[];  // UIDs des vendeurs suivis
+  followerCount?: number;       // Nb d'abonnés (dénormalisé)
   // ─── Wishlist ────────────────────────────────────────────
   wishlistIds?: string[];      // IDs produits dans la wishlist
   wishlistPublic?: boolean;    // Wishlist publique ou privée
@@ -291,8 +292,27 @@ export interface Product {
   createdAt?: any;
   paymentMethods?: PaymentInfo[];
   // ─── Social Commerce ──────────────────────────────────
-  likeCount?: number;       // Dénormalisé sur le produit pour l'affichage rapide
-  commentCount?: number;    // Dénormalisé sur le produit
+  likeCount?: number;
+  commentCount?: number;
+  taggedSellerIds?: string[];   // UIDs de vendeurs tagués dans l'article
+  taggedSellerNames?: string[]; // Noms affichés (dénormalisé pour affichage rapide)
+}
+
+
+// ─── REPOST ───────────────────────────────────────────────
+export interface Repost {
+  id: string;
+  originalProductId: string;
+  originalProductTitle: string;
+  originalProductImage: string;
+  originalProductPrice: number;
+  originalSellerId: string;
+  originalSellerName: string;
+  reposterId: string;
+  reposterName: string;
+  reposterPhoto?: string;
+  comment: string;           // Commentaire du reposteur
+  createdAt: any;
 }
 
 // ─── SOCIAL COMMERCE ──────────────────────────────────────
@@ -304,7 +324,7 @@ export interface ProductComment {
   userPhoto?: string;
   userVerified?: boolean;
   text: string;
-  parentId?: string | null;  // null = commentaire racine, string = réponse
+  parentId?: string | null;
   createdAt: any;
 }
 
