@@ -368,16 +368,27 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       await repostProduct(
         currentUser.uid,
         userProfile.name,
-        userProfile.photoURL,
-        { id: product.id, title: product.title, images: product.images, price: product.price, sellerId: product.sellerId, sellerName: product.sellerName },
+        userProfile.photoURL || undefined,
+        {
+          id: product.id,
+          title: product.title,
+          images: product.images || [],
+          price: product.price,
+          sellerId: product.sellerId,
+          sellerName: product.sellerName || '',
+        },
         repostComment.trim() || "Regarde cet article sur Brumerie !"
       );
       setRepostDone(true);
       setShowRepost(false);
       setRepostComment('');
       setTimeout(() => setRepostDone(false), 3000);
-    } catch (e) { console.error('[Repost]', e); }
-    finally { setSendingRepost(false); }
+    } catch (e) {
+      console.error('[Repost] Erreur:', e);
+      // Ne pas laisser le spinner bloqué même en cas d'erreur règle Firestore
+    } finally {
+      setSendingRepost(false);
+    }
   };
 
   const createdAtDate = product.createdAt?.toDate ? product.createdAt.toDate() : new Date(product.createdAt);

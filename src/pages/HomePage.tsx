@@ -189,12 +189,16 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     if (feedTab !== 'forYou' || !userProfile) return;
     const ids = userProfile.followingSellers || [];
     if (ids.length === 0) return;
+    // Inclure ses propres articles si on est vendeur
+    const allIds = currentUser
+      ? [...new Set([...ids, currentUser.uid])]
+      : ids;
     setLoadingFollowing(true);
-    getFollowingFeed(ids)
+    getFollowingFeed(allIds)
       .then(setFollowingFeed)
       .catch(() => {})
       .finally(() => setLoadingFollowing(false));
-  }, [feedTab, userProfile?.followingSellers?.join(',')]);
+  }, [feedTab, userProfile?.followingSellers?.join(','), currentUser?.uid]);
 
   // ── Charger les tendances ──
   useEffect(() => {
@@ -251,7 +255,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
       {/* ── ONGLETS FEED SOCIAL ── */}
       {!isGuest && userProfile && (
-        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none bg-white sticky top-0 z-30">
+        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none bg-white sticky top-[56px] z-30">
           {([
             { id: 'all',      label: 'Tout Abidjan', icon: '🏪' },
             { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
@@ -279,7 +283,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       )}
 
       {/* Barre de filtres rapides */}
-      <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none bg-white sticky top-[41px] z-20 border-b border-slate-50">
+      <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none bg-white sticky top-[97px] z-20 border-b border-slate-50 shadow-sm">
         <button onClick={() => setShowFilters(true)}
           className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border-2 font-bold text-[11px] transition-all active:scale-95"
           style={{
@@ -582,8 +586,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
               <div className="grid grid-cols-2 gap-4">{[1,2,3,4].map(i => <ProductSkeleton key={i} />)}</div>
             ) : trendingProducts.length === 0 ? (
               <div className="text-center py-16 px-8 bg-slate-50 rounded-[3rem]">
-                <div className="text-3xl mb-3">📊</div>
-                <p className="text-[11px] font-black text-slate-500">Pas encore assez de données de tendance</p>
+                <div className="text-3xl mb-3">🔥</div>
+                <p className="text-[11px] font-black text-slate-500">Aucun article actif pour le moment</p>
               </div>
             ) : (
               <>

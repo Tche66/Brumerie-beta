@@ -542,17 +542,18 @@ export async function getTrendingProducts(): Promise<Product[]> {
     const snap = await getDocs(q);
     const products = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Product[];
 
-    // Score de tendance
-    return products
-      .map(p => ({
-        ...p,
-        _score: (p.likeCount || 0) * 3
-               + (p.viewCount || 0)
-               + (p.commentCount || 0) * 2
-               + (p.whatsappClickCount || 0) * 4,
-      }))
-      .sort((a, b) => (b as any)._score - (a as any)._score)
-      .slice(0, 20);
+    // Score de tendance — fonctionne même avec 0 likes (fallback sur viewCount)
+    const scored = products.map(p => ({
+      ...p,
+      _score: (p.likeCount || 0) * 3
+             + (p.viewCount || 0)
+             + (p.commentCount || 0) * 2
+             + (p.whatsappClickCount || 0) * 4,
+    })).sort((a, b) => (b as any)._score - (a as any)._score);
+
+    // Fallback: si aucun score > 0, retourner tous les articles triés par date
+    const hasScores = scored.some(p => (p as any)._score > 0);
+    return (hasScores ? scored : products).slice(0, 20);
   } catch (e) {
     console.error('[getTrendingProducts]', e);
     return [];
