@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments } from '@/services/productService';
-import { repostProduct } from '@/services/shopFeaturesService';
+import { repostProduct, getRepostsForProduct } from '@/services/shopFeaturesService';
 import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { addToWishlist, removeFromWishlist, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
@@ -88,6 +88,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [repostComment, setRepostComment] = useState('');
   const [sendingRepost, setSendingRepost] = useState(false);
   const [repostDone, setRepostDone] = useState(false);
+  const [reposts, setReposts] = useState<any[]>([]);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -160,6 +161,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     }).catch(() => {});
   }, [product.sellerId]);
 
+  // ── Charger les reposts de cet article ──
+  useEffect(() => {
+    if (!product.id) return;
+    getRepostsForProduct(product.id).then(setReposts).catch(() => {});
+  }, [product.id]);
+
   // ── Init like status + subscribe comments ──
   useEffect(() => {
     if (!currentUser || !product.id) return;
@@ -171,6 +178,17 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   useEffect(() => {
     if (!product.id) return;
     const unsub = subscribeComments(product.id, (c) => setComments(c));
+    return unsub;
+  }, [product.id]);
+
+  // ── Compteur likes temps réel depuis la sous-collection ──
+  // Contourne la règle Firestore sur le document produit
+  useEffect(() => {
+    if (!product.id) return;
+    const unsub = onSnapshot(
+      collection(db, 'products', product.id, 'likes'),
+      (snap) => setLikeCount(snap.size)
+    );
     return unsub;
   }, [product.id]);
 
@@ -1129,6 +1147,39 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             </div>
           )}
         </div>
+
+        {/* ── REPOSTS ── */}
+        {reposts.length > 0 && (
+          <div className="mb-8">
+            <p className="font-black text-slate-900 text-sm uppercase tracking-tight mb-4">
+              🔄 Partagé par <span className="text-slate-400 font-bold">({reposts.length})</span>
+            </p>
+            <div className="space-y-3">
+              {reposts.map(r => (
+                <div key={r.id} className="flex gap-3 bg-slate-50 rounded-2xl p-3">
+                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                    {r.reposterPhoto
+                      ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
+                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{r.reposterName?.charAt(0).toUpperCase()}</div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-black text-slate-900 text-[11px]">{r.reposterName}</span>
+                      <span className="text-[9px] text-slate-400 font-bold bg-slate-200 px-1.5 py-0.5 rounded-full">🔄 a partagé</span>
+                    </div>
+                    {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
+                      <p className="text-[12px] text-slate-600 italic">"{r.comment}"</p>
+                    )}
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── PRODUITS SIMILAIRES ── */}
         {similarProducts.length > 0 && (

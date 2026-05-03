@@ -415,20 +415,27 @@ export async function toggleLike(
   userId: string
 ): Promise<{ liked: boolean; count: number }> {
   const likeRef = doc(db, 'products', productId, 'likes', userId);
-  const productRef = doc(db, 'products', productId);
   const snap = await getDoc(likeRef);
   const alreadyLiked = snap.exists();
+
   if (alreadyLiked) {
     await deleteDoc(likeRef);
-    await updateDoc(productRef, { likeCount: increment(-1) });
-    const prodSnap = await getDoc(productRef);
-    return { liked: false, count: Math.max(0, prodSnap.data()?.likeCount ?? 0) };
   } else {
     await setDoc(likeRef, { userId, createdAt: serverTimestamp() });
-    await updateDoc(productRef, { likeCount: increment(1) });
-    const prodSnap = await getDoc(productRef);
-    return { liked: true, count: prodSnap.data()?.likeCount ?? 1 };
   }
+
+  // Compter depuis la sous-collection directement — pas de updateDoc sur le produit
+  const likesSnap = await getDocs(collection(db, 'products', productId, 'likes'));
+  const count = likesSnap.size;
+
+  // Mettre à jour likeCount en best-effort (vendeur ou règle système)
+  try {
+    await updateDoc(doc(db, 'products', productId), { likeCount: count });
+  } catch {
+    // Règle Firestore peut refuser — le compteur est recalculé depuis la sous-collection
+  }
+
+  return { liked: !alreadyLiked, count };
 }
 
 export async function checkIsLiked(productId: string, userId: string): Promise<boolean> {
