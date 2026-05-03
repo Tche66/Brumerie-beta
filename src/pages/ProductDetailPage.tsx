@@ -80,6 +80,9 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; userName: string } | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -330,6 +333,26 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     try {
       await deleteComment(product.id, commentId);
     } catch (e) { console.error('[DeleteComment]', e); }
+  };
+
+  const handleAddReply = async (parentId: string) => {
+    if (isGuest) { onGuestAction?.('comment'); return; }
+    if (!currentUser || !userProfile || !replyText.trim() || sendingReply) return;
+    setSendingReply(true);
+    try {
+      await addComment(
+        product.id,
+        currentUser.uid,
+        userProfile.name,
+        replyText.trim(),
+        userProfile.photoURL,
+        userProfile.verified || userProfile.sellerVerified,
+        parentId,
+      );
+      setReplyText('');
+      setReplyTo(null);
+    } catch (e) { console.error('[Reply]', e); }
+    finally { setSendingReply(false); }
   };
 
   const createdAtDate = product.createdAt?.toDate ? product.createdAt.toDate() : new Date(product.createdAt);
@@ -860,45 +883,142 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               <p className="text-[12px] font-bold text-slate-400">Sois le premier à commenter</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {(showAllComments ? comments : comments.slice(-3)).map(c => (
-                <div key={c.id} className="flex gap-3 group">
-                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5">
-                    {c.userPhoto
-                      ? <img src={c.userPhoto} alt="" className="w-full h-full object-cover"/>
-                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{c.userName?.charAt(0).toUpperCase()}</div>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-black text-slate-900 text-[11px]">{c.userName}</span>
-                        {c.userVerified && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            <polyline points="9,12 11,14 15,10"/>
-                          </svg>
+            <div className="space-y-4">
+              {(() => {
+                // Séparer commentaires racines et réponses
+                const roots = (showAllComments ? comments : comments.slice(-3))
+                  .filter(c => !(c as any).parentId);
+                const replies = comments.filter(c => !!(c as any).parentId);
+                const getReplies = (parentId: string) =>
+                  replies.filter(r => (r as any).parentId === parentId);
+
+                const formatDate = (createdAt: any) => {
+                  if (!createdAt?.toDate) return '';
+                  const d = createdAt.toDate();
+                  const date = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                  const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                  return `${date} · ${time}`;
+                };
+
+                const CommentBubble = ({ c, isReply = false }: { c: any; isReply?: boolean }) => (
+                  <div className={`flex gap-2.5 ${isReply ? 'ml-10' : ''}`}>
+                    <div className={`${isReply ? 'w-7 h-7' : 'w-8 h-8'} rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5`}>
+                      {c.userPhoto
+                        ? <img src={c.userPhoto} alt="" className="w-full h-full object-cover"/>
+                        : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[10px]">{c.userName?.charAt(0).toUpperCase()}</div>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`${isReply ? 'bg-green-50 border border-green-100' : 'bg-slate-50'} rounded-2xl rounded-tl-sm px-3 py-2.5`}>
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="font-black text-slate-900 text-[11px]">{c.userName}</span>
+                          {c.userVerified && (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                              <polyline points="9,12 11,14 15,10"/>
+                            </svg>
+                          )}
+                          {isReply && <span className="text-[9px] text-green-600 font-bold bg-green-100 px-1.5 py-0.5 rounded-full">réponse</span>}
+                        </div>
+                        <p className="text-[13px] text-slate-700 leading-snug">{c.text}</p>
+                      </div>
+                      {/* Actions sous le commentaire */}
+                      <div className="flex items-center gap-3 mt-1 px-2 flex-wrap">
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {formatDate(c.createdAt)}
+                        </span>
+                        {/* Répondre — visible pour tout utilisateur connecté */}
+                        {!isGuest && currentUser && !isReply && (
+                          <button
+                            onClick={() => {
+                              if (replyTo?.id === c.id) {
+                                setReplyTo(null);
+                                setReplyText('');
+                              } else {
+                                setReplyTo({ id: c.id, userName: c.userName });
+                                setReplyText('');
+                              }
+                            }}
+                            className="text-[10px] font-black text-slate-400 hover:text-green-600 transition-colors"
+                          >
+                            Répondre
+                          </button>
+                        )}
+                        {/* Supprimer — auteur du commentaire OU vendeur du produit */}
+                        {currentUser && (c.userId === currentUser.uid || currentUser.uid === product.sellerId) && (
+                          <button
+                            onClick={() => handleDeleteComment(c.id)}
+                            className="text-[10px] font-bold text-slate-300 hover:text-red-400 transition-colors"
+                          >
+                            Supprimer
+                          </button>
                         )}
                       </div>
-                      <p className="text-[13px] text-slate-700 leading-snug">{c.text}</p>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 px-2">
-                      <span className="text-[10px] text-slate-400 font-bold">
-                        {c.createdAt?.toDate ? new Date(c.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
-                      </span>
-                      {/* Supprimer — visible seulement pour l'auteur ou le vendeur */}
-                      {currentUser && (c.userId === currentUser.uid || currentUser.uid === product.sellerId) && (
-                        <button
-                          onClick={() => handleDeleteComment(c.id)}
-                          className="text-[10px] text-slate-300 font-bold hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          Supprimer
-                        </button>
+
+                      {/* Input réponse inline */}
+                      {replyTo?.id === c.id && !isGuest && currentUser && (
+                        <div className="mt-2 ml-1 flex items-end gap-2">
+                          <div className="w-6 h-6 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
+                            {userProfile?.photoURL
+                              ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
+                              : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[8px]">{userProfile?.name?.charAt(0)}</div>
+                            }
+                          </div>
+                          <div className="flex-1 bg-white border-2 border-green-300 rounded-2xl overflow-hidden">
+                            <textarea
+                              autoFocus
+                              value={replyText}
+                              onChange={e => setReplyText(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddReply(c.id); }
+                                if (e.key === 'Escape') { setReplyTo(null); setReplyText(''); }
+                              }}
+                              placeholder={`Répondre à ${c.userName}…`}
+                              rows={1}
+                              className="w-full px-3 pt-2 pb-1 bg-transparent text-[12px] font-medium text-slate-700 placeholder:text-slate-400 outline-none resize-none"
+                            />
+                            {replyText.trim() && (
+                              <div className="flex justify-between items-center px-3 pb-2">
+                                <button
+                                  onClick={() => { setReplyTo(null); setReplyText(''); }}
+                                  className="text-[10px] font-bold text-slate-400"
+                                >
+                                  Annuler
+                                </button>
+                                <button
+                                  onClick={() => handleAddReply(c.id)}
+                                  disabled={sendingReply || !replyText.trim()}
+                                  className="px-3 py-1 rounded-xl text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-50 active:scale-95 transition-all"
+                                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                                >
+                                  {sendingReply
+                                    ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                                    : "Répondre"
+                                  }
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+
+                return roots.map(c => (
+                  <div key={c.id}>
+                    <CommentBubble c={c} />
+                    {/* Réponses imbriquées */}
+                    {getReplies(c.id).length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {getReplies(c.id).map(r => (
+                          <CommentBubble key={r.id} c={r} isReply />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ));
+              })()}
             </div>
           )}
         </div>

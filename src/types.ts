@@ -304,6 +304,7 @@ export interface ProductComment {
   userPhoto?: string;
   userVerified?: boolean;
   text: string;
+  parentId?: string | null;  // null = commentaire racine, string = réponse
   createdAt: any;
 }
 

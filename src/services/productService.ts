@@ -456,7 +456,8 @@ export async function addComment(
   userName: string,
   text: string,
   userPhoto?: string,
-  userVerified?: boolean
+  userVerified?: boolean,
+  parentId?: string,
 ): Promise<string> {
   const commentsRef = collection(db, 'products', productId, 'comments');
   const docRef = await addDoc(commentsRef, {
@@ -466,6 +467,7 @@ export async function addComment(
     text: text.trim(),
     userPhoto: userPhoto || null,
     userVerified: userVerified || false,
+    parentId: parentId || null,
     createdAt: serverTimestamp(),
   });
   // Dénormaliser le compteur sur le produit
