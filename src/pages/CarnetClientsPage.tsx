@@ -45,7 +45,6 @@ const EMPTY_FORM = { nom: '', phone: '', quartier: '', note: '', brumarieUid: ''
 export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps) {
   const { currentUser, userProfile } = useAuth();
 
-  const [clients
   const [clients, setClients]       = useState<Client[]>([]);
   const [loading, setLoading]       = useState(true);
   const [view, setView]             = useState<'liste' | 'ajouter' | 'detail'>('liste');
@@ -70,6 +69,23 @@ export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps
       setLoading(false);
     }, () => setLoading(false));
   }, [currentUser?.uid]);
+
+  // ── Garde Vérifié / Premium — après tous les hooks ─────────
+  if (!userProfile?.isVerified && !userProfile?.isPremium) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="text-5xl mb-4">🔵</div>
+        <h2 className="font-black text-[20px] text-slate-900 text-center mb-2">📇 Carnet Clients</h2>
+        <p className="text-[12px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
+          Le mini-CRM et suivi client est réservé aux vendeurs <strong>🔵 Vérifiés</strong> et <strong>⭐ Premium</strong>.
+        </p>
+        <button onClick={onBack}
+          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
+          ← Retour
+        </button>
+      </div>
+    );
+  }
 
   // Tri + recherche
   const displayed = clients
@@ -156,25 +172,6 @@ export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps
       : `https://wa.me/?text=${encodeURIComponent(msgs[type])}`;
     return url;
   };
-
-  // ── Garde Vérifié / Premium — APRÈS les hooks ───────────
-  if (userProfile && !userProfile.isVerified && !(userProfile as any).isPremium) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
-        <div className="w-16 h-16 rounded-3xl bg-green-100 flex items-center justify-center mx-auto mb-4">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <h2 className="font-black text-[20px] text-slate-900 text-center mb-2">Carnet Clients</h2>
-        <p className="text-[12px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
-          Le mini-CRM est réservé aux vendeurs <strong>Vérifiés</strong> et <strong>Premium</strong>.
-        </p>
-        <button onClick={onBack}
-          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
-          ← Retour
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 font-sans">
