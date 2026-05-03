@@ -499,7 +499,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             </svg>
           </div>
           <span className={`text-[13px] font-black ${isLiked ? 'text-red-500' : 'text-slate-500'}`}>
-            {likeCount > 0 ? likeCount.toLocaleString('fr-FR') : 'J'aimer'}
+            {likeCount > 0 ? likeCount.toLocaleString('fr-FR') : "J'aimer"}
           </span>
         </button>
 
