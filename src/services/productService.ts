@@ -18,6 +18,9 @@ import {
   startAfter,
   QueryDocumentSnapshot,
   DocumentData,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
@@ -398,6 +401,84 @@ export async function syncSellerDataToProducts(
     docs.slice(i, i + BATCH_SIZE).forEach(d => batch.update(d.ref, updatePayload));
     await batch.commit();
   }
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// SOCIAL COMMERCE — Likes & Commentaires
+// ─────────────────────────────────────────────────────────────
+
+import type { ProductComment } from '@/types';
+
+export async function toggleLike(
+  productId: string,
+  userId: string
+): Promise<{ liked: boolean; count: number }> {
+  const likeRef = doc(db, 'products', productId, 'likes', userId);
+  const productRef = doc(db, 'products', productId);
+  const snap = await getDoc(likeRef);
+  const alreadyLiked = snap.exists();
+  if (alreadyLiked) {
+    await deleteDoc(likeRef);
+    await updateDoc(productRef, { likeCount: increment(-1) });
+    const prodSnap = await getDoc(productRef);
+    return { liked: false, count: Math.max(0, prodSnap.data()?.likeCount ?? 0) };
+  } else {
+    await setDoc(likeRef, { userId, createdAt: serverTimestamp() });
+    await updateDoc(productRef, { likeCount: increment(1) });
+    const prodSnap = await getDoc(productRef);
+    return { liked: true, count: prodSnap.data()?.likeCount ?? 1 };
+  }
+}
+
+export async function checkIsLiked(productId: string, userId: string): Promise<boolean> {
+  const likeRef = doc(db, 'products', productId, 'likes', userId);
+  const snap = await getDoc(likeRef);
+  return snap.exists();
+}
+
+export async function addComment(
+  productId: string,
+  userId: string,
+  userName: string,
+  text: string,
+  userPhoto?: string,
+  userVerified?: boolean,
+  parentId?: string,
+): Promise<string> {
+  const commentsRef = collection(db, 'products', productId, 'comments');
+  const docRef = await addDoc(commentsRef, {
+    productId, userId, userName,
+    text: text.trim(),
+    userPhoto: userPhoto || null,
+    userVerified: userVerified || false,
+    parentId: parentId || null,
+    createdAt: serverTimestamp(),
+  });
+  await updateDoc(doc(db, 'products', productId), { commentCount: increment(1) });
+  return docRef.id;
+}
+
+export async function deleteComment(productId: string, commentId: string): Promise<void> {
+  await deleteDoc(doc(db, 'products', productId, 'comments', commentId));
+  await updateDoc(doc(db, 'products', productId), { commentCount: increment(-1) });
+}
+
+export function subscribeComments(
+  productId: string,
+  callback: (comments: ProductComment[]) => void
+): () => void {
+  const q = query(
+    collection(db, 'products', productId, 'comments'),
+    orderBy('createdAt', 'asc'),
+    limit(100)
+  );
+  return onSnapshot(q, (snap) => {
+    const comments: ProductComment[] = snap.docs.map(d => ({
+      id: d.id, ...d.data(), createdAt: d.data().createdAt,
+    })) as ProductComment[];
+    callback(comments);
+  });
 }
 
 // ════════════════════════════════════════════════════════════
