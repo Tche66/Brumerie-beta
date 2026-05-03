@@ -290,6 +290,21 @@ export interface Product {
   viewsByWeek?: Record<string, number>; // {"2025-W12": 88} — vues par semaine
   createdAt?: any;
   paymentMethods?: PaymentInfo[];
+  // ─── Social Commerce ──────────────────────────────────
+  likeCount?: number;       // Dénormalisé sur le produit pour l'affichage rapide
+  commentCount?: number;    // Dénormalisé sur le produit
+}
+
+// ─── SOCIAL COMMERCE ──────────────────────────────────────
+export interface ProductComment {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  userVerified?: boolean;
+  text: string;
+  createdAt: any;
 }
 
 // ─── MESSAGING ────────────────────────────────────────────

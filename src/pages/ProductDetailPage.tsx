@@ -3,7 +3,8 @@ import { ConditionBadge } from '@/components/ConditionBadge';
 import React, { useState, useRef, useEffect } from 'react';
 import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
-import { getProducts, incrementViewCount, incrementContactCount } from '@/services/productService';
+import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments } from '@/services/productService';
+import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { addToWishlist, removeFromWishlist, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,6 @@ import { shareProduct } from '@/utils/shareProduct';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { getTrustScore, TrustScore } from '@/services/trustService';
 import { RiskAlertBanner } from '@/components/RiskBadge';
-import { BruIcons } from '@/components/BruIcons';
 
 
 interface ProductDetailPageProps {
@@ -71,6 +71,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [liveContactCount, setLiveContactCount] = useState<number>(-1);
   const viewIncrementedRef = useRef(false); // évite double incrément en StrictMode
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Social Commerce — Likes & Commentaires ──
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [comments, setComments] = useState<ProductComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -141,6 +150,22 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     }).catch(() => {});
   }, [product.sellerId]);
 
+  // ── Init like status + subscribe comments ──
+  useEffect(() => {
+    if (!currentUser || !product.id) return;
+    checkIsLiked(product.id, currentUser.uid).then(liked => setIsLiked(liked)).catch(() => {});
+  }, [product.id, currentUser?.uid]);
+
+  useEffect(() => {
+    setLikeCount((product as any).likeCount ?? 0);
+  }, [(product as any).likeCount]);
+
+  useEffect(() => {
+    if (!product.id) return;
+    const unsub = subscribeComments(product.id, (c) => setComments(c));
+    return unsub;
+  }, [product.id]);
+
   // Produits similaires (même catégorie, pas le même)
   useEffect(() => {
     getProducts({ category: product.category }).then(all => {
@@ -164,7 +189,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         { id: product.id, title: product.title, price: product.price, image: product.images?.[0] || '', neighborhood: product.neighborhood },
         userProfile.name, product.sellerName, userProfile.photoURL, product.sellerPhoto,
       );
-      // <BruIcons.CheckCircle size={14}/> Comptabiliser le contact via le messenger (pas WhatsApp)
+      // ✅ Comptabiliser le contact via le messenger (pas WhatsApp)
       await incrementContactCount(product.id, product.sellerId);
       onStartChat?.(convId);
     } catch (e) { console.error('[Chat]', e); }
@@ -262,6 +287,51 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     setTimeout(() => setShowReportModal(false), 2000);
   };
 
+  const handleLike = async () => {
+    if (isGuest) { onGuestAction?.('like'); return; }
+    if (!currentUser || likeLoading) return;
+    setLikeLoading(true);
+    const prevLiked = isLiked;
+    const prevCount = likeCount;
+    // Optimistic update
+    setIsLiked(!prevLiked);
+    setLikeCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
+    try {
+      const result = await toggleLike(product.id, currentUser.uid);
+      setIsLiked(result.liked);
+      setLikeCount(result.count);
+    } catch {
+      setIsLiked(prevLiked);
+      setLikeCount(prevCount);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (isGuest) { onGuestAction?.('comment'); return; }
+    if (!currentUser || !userProfile || !commentText.trim() || sendingComment) return;
+    setSendingComment(true);
+    try {
+      await addComment(
+        product.id,
+        currentUser.uid,
+        userProfile.name,
+        commentText.trim(),
+        userProfile.photoURL,
+        userProfile.verified || userProfile.sellerVerified,
+      );
+      setCommentText('');
+    } catch (e) { console.error('[Comment]', e); }
+    finally { setSendingComment(false); }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteComment(product.id, commentId);
+    } catch (e) { console.error('[DeleteComment]', e); }
+  };
+
   const createdAtDate = product.createdAt?.toDate ? product.createdAt.toDate() : new Date(product.createdAt);
   const isNew = new Date().getTime() - createdAtDate.getTime() < 48 * 60 * 60 * 1000;
   const isSelf = currentUser?.uid === product.sellerId;
@@ -322,7 +392,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               </button>
               {((product as any).bookmarkCount || 0) > 0 && (
                 <span className="text-[8px] font-black text-blue-600 bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
-                  {(product as any).bookmarkCount}
+                  ❤️ {(product as any).bookmarkCount}
                 </span>
               )}
             </div>
@@ -372,7 +442,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     setFollowingLoading(false);
                   }}
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-50">
-                  <span className="text-[18px]">{followingLoading ? '' : isFollowingSeller ? '' : ''}</span>
+                  <span className="text-[18px]">{followingLoading ? '⏳' : isFollowingSeller ? '🔔' : '🔕'}</span>
                 </button>
                 <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
                   style={{ color: isFollowingSeller ? '#16A34A' : '#64748B' }}>
@@ -412,6 +482,60 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         </div>
       </div>
 
+      {/* ── BARRE SOCIAL — Likes ── */}
+      <div className="px-6 py-3 flex items-center gap-4 border-b border-slate-100 bg-white">
+        {/* Like button */}
+        <button
+          onClick={handleLike}
+          disabled={likeLoading}
+          className="flex items-center gap-2 active:scale-90 transition-transform disabled:opacity-60"
+        >
+          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all ${isLiked ? 'bg-red-50' : 'bg-slate-100'}`}>
+            <svg width="18" height="18" viewBox="0 0 24 24"
+              fill={isLiked ? '#EF4444' : 'none'}
+              stroke={isLiked ? '#EF4444' : '#64748B'}
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            </svg>
+          </div>
+          <span className={`text-[13px] font-black ${isLiked ? 'text-red-500' : 'text-slate-500'}`}>
+            {likeCount > 0 ? likeCount.toLocaleString('fr-FR') : 'J'aimer'}
+          </span>
+        </button>
+
+        {/* Commentaires — scroll vers section */}
+        <button
+          onClick={() => {
+            const el = document.getElementById('comments-section');
+            el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          className="flex items-center gap-2 active:scale-90 transition-transform"
+        >
+          <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <span className="text-[13px] font-black text-slate-500">
+            {comments.length > 0 ? comments.length : 'Commenter'}
+          </span>
+        </button>
+
+        {/* Partager */}
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 active:scale-90 transition-transform ml-auto"
+        >
+          <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
+            {copySuccess
+              ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+              : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            }
+          </div>
+          <span className="text-[13px] font-black text-slate-500">Partager</span>
+        </button>
+      </div>
+
       {/* ── INFOS PRODUIT ── */}
       <div className="px-6 py-8">
 
@@ -433,7 +557,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   <>
                     {p.flashSaleLabel && promoActive && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full mb-1">
-                        {p.flashSaleLabel}
+                        🔥 {p.flashSaleLabel}
                         {p.promoActiveUntil && <span className="text-orange-400">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
                       </span>
                     )}
@@ -512,7 +636,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           )}
           {product.hideStats && (
             <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
-              <span className="text-green-600 text-base"><BruIcons.CheckCircle size={14}/></span>
+              <span className="text-green-600 text-base">✅</span>
               <span className="text-[11px] font-bold text-green-700">Article disponible · Publié sur Brumerie</span>
             </div>
           )}
@@ -570,7 +694,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
           {/* Garantie Brumerie */}
           <div className="bg-slate-900 rounded-2xl px-5 py-4 flex items-start gap-3">
-            <span className="text-xl flex-shrink-0"><BruIcons.Shield size={14}/></span>
+            <span className="text-xl flex-shrink-0">🛡️</span>
             <div>
               <p className="text-[11px] font-black text-white mb-1">Protection acheteur Brumerie</p>
               <p className="text-[10px] text-slate-400 leading-snug">
@@ -663,6 +787,122 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </div>
         )}
 
+        {/* ── COMMENTAIRES ── */}
+        <div id="comments-section" className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-black text-slate-900 text-sm uppercase tracking-tight">
+              Commentaires {comments.length > 0 && <span className="text-slate-400 font-bold">({comments.length})</span>}
+            </p>
+            {comments.length > 3 && (
+              <button
+                onClick={() => setShowAllComments(v => !v)}
+                className="text-[10px] font-black text-green-600 uppercase tracking-wider"
+              >
+                {showAllComments ? 'Réduire' : `Voir tous (${comments.length})`}
+              </button>
+            )}
+          </div>
+
+          {/* Input nouveau commentaire */}
+          {!isGuest && currentUser && (
+            <div className="flex items-end gap-3 mb-5">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                {userProfile?.photoURL
+                  ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
+                  : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{userProfile?.name?.charAt(0)}</div>
+                }
+              </div>
+              <div className="flex-1 bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-green-400 transition-all overflow-hidden">
+                <textarea
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
+                  placeholder="Ajouter un commentaire..."
+                  rows={commentText.length > 60 ? 3 : 1}
+                  className="w-full px-4 pt-3 pb-1 bg-transparent text-[13px] font-medium text-slate-700 placeholder:text-slate-400 outline-none resize-none"
+                />
+                {commentText.trim() && (
+                  <div className="flex justify-end px-3 pb-2">
+                    <button
+                      onClick={handleAddComment}
+                      disabled={sendingComment || !commentText.trim()}
+                      className="px-4 py-1.5 rounded-xl text-white text-[11px] font-black uppercase tracking-wider disabled:opacity-50 active:scale-95 transition-all flex items-center gap-1.5"
+                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                    >
+                      {sendingComment
+                        ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                        : <>Publier</>
+                      }
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isGuest && (
+            <button
+              onClick={() => onGuestAction?.('comment')}
+              className="w-full py-4 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 text-[12px] font-bold mb-4 active:scale-95 transition-all"
+            >
+              Connecte-toi pour commenter
+            </button>
+          )}
+
+          {/* Liste des commentaires */}
+          {comments.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+              </div>
+              <p className="text-[12px] font-bold text-slate-400">Sois le premier à commenter</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(showAllComments ? comments : comments.slice(-3)).map(c => (
+                <div key={c.id} className="flex gap-3 group">
+                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5">
+                    {c.userPhoto
+                      ? <img src={c.userPhoto} alt="" className="w-full h-full object-cover"/>
+                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{c.userName?.charAt(0).toUpperCase()}</div>
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="bg-slate-50 rounded-2xl rounded-tl-sm px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-black text-slate-900 text-[11px]">{c.userName}</span>
+                        {c.userVerified && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <polyline points="9,12 11,14 15,10"/>
+                          </svg>
+                        )}
+                      </div>
+                      <p className="text-[13px] text-slate-700 leading-snug">{c.text}</p>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 px-2">
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        {c.createdAt?.toDate ? new Date(c.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                      </span>
+                      {/* Supprimer — visible seulement pour l'auteur ou le vendeur */}
+                      {currentUser && (c.userId === currentUser.uid || currentUser.uid === product.sellerId) && (
+                        <button
+                          onClick={() => handleDeleteComment(c.id)}
+                          className="text-[10px] text-slate-300 font-bold hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* ── PRODUITS SIMILAIRES ── */}
         {similarProducts.length > 0 && (
           <div className="mb-8">
@@ -695,7 +935,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── FOOTER FIXE ── */}
       {chatLimitError && (
         <div className="fixed bottom-24 left-4 right-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 z-40 shadow-lg">
-          <p className="text-[11px] font-bold text-amber-700"><BruIcons.AlertTriangle size={14}/> {chatLimitError}</p>
+          <p className="text-[11px] font-bold text-amber-700">⚠️ {chatLimitError}</p>
           <button onClick={() => setChatLimitError('')} className="absolute top-2 right-3 text-amber-400 font-black text-sm">×</button>
         </div>
       )}
@@ -706,7 +946,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         ) : isSelf ? (
           <button onClick={() => setShowBoost(true)}
             className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-100">
-            <BruIcons.Zap size={14}/> Booster cet article
+            ⚡ Booster cet article
           </button>
         ) : (
           <>
@@ -722,7 +962,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             {!isGuest && currentUser?.uid !== product.sellerId && product.status !== 'sold' && (
               <button onClick={() => setShowOfferModal(true)}
                 className="flex-1 py-5 rounded-[2rem] font-black text-[12px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                Offre
+                💰 Offre
               </button>
             )}
             <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
@@ -798,10 +1038,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   : 'bg-amber-50 text-amber-700'
               }`}>
                 {parseInt(offerInput) < product.price * 0.5
-                  ? 'Offre très basse — peu de chances d\'être acceptée'
+                  ? '⚠️ Offre très basse — peu de chances d\'être acceptée'
                   : parseInt(offerInput) >= product.price
-                  ? 'Offre au prix ou supérieure — sera acceptée !'
-                  : `Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
+                  ? '✅ Offre au prix ou supérieure — sera acceptée !'
+                  : `💡 Réduction de ${Math.round((1 - parseInt(offerInput) / product.price) * 100)}% — bonne proposition`
                 }
               </div>
             )}
@@ -813,7 +1053,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 disabled={!offerInput || parseInt(offerInput) <= 0 || sendingOffer}
                 className="flex-[2] py-4 rounded-2xl text-white font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : 'Envoyer l\'offre'}
+                {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '💰 Envoyer l\'offre'}
               </button>
             </div>
           </div>
