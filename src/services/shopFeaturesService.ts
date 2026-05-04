@@ -417,3 +417,37 @@ export async function getRepostsForProduct(productId: string): Promise<Repost[]>
   ));
   return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
 }
+
+/**
+ * Récupérer les reposts des vendeurs suivis — pour le feed "Pour toi"
+ * followingIds = UIDs des personnes suivies
+ */
+export async function getRepostsFeed(followingIds: string[]): Promise<Repost[]> {
+  if (!followingIds || followingIds.length === 0) return [];
+
+  const results: Repost[] = [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < followingIds.length; i += 30) {
+    chunks.push(followingIds.slice(i, i + 30));
+  }
+
+  for (const chunk of chunks) {
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'reposts'),
+        where('reposterId', 'in', chunk),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      ));
+      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Repost));
+    } catch (e) { console.error('[getRepostsFeed]', e); }
+  }
+
+  return results
+    .sort((a, b) => {
+      const ta = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds * 1000 ?? 0;
+      const tb = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds * 1000 ?? 0;
+      return tb - ta;
+    })
+    .slice(0, 30);
+}

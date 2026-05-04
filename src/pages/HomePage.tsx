@@ -14,6 +14,8 @@ import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
+import { getRepostsFeed } from '@/services/shopFeaturesService';
+import type { Repost } from '@/types';
 
 interface HomePageProps {
   onProductClick: (product: Product) => void;
@@ -88,6 +90,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
+  const [repostsFeed, setRepostsFeed] = useState<any[]>([]);
 
   // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
   const ALL_CATEGORIES = [
@@ -194,8 +197,14 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       ? [...new Set([...ids, currentUser.uid])]
       : ids;
     setLoadingFollowing(true);
-    getFollowingFeed(allIds)
-      .then(setFollowingFeed)
+    Promise.all([
+      getFollowingFeed(allIds),
+      getRepostsFeed(allIds),
+    ])
+      .then(([feed, reposts]) => {
+        setFollowingFeed(feed);
+        setRepostsFeed(reposts);
+      })
       .catch(() => {})
       .finally(() => setLoadingFollowing(false));
   }, [feedTab, userProfile?.followingSellers?.join(','), currentUser?.uid]);
@@ -560,15 +569,115 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                 <p className="text-[11px] font-black text-slate-500">Les vendeurs que tu suis n'ont pas encore publié</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 animate-fade-up">
-                {followingFeed.map(product => (
-                  <ProductCard key={product.id} product={product}
-                    onClick={() => onProductClick(product)}
-                    onBookmark={handleBookmark}
-                    isBookmarked={bookmarkIds.has(product.id)}
-                    isBoosted={boostedIds.has(product.id)}
-                  />
-                ))}
+              <div className="space-y-3 animate-fade-up">
+                {(() => {
+                  // Fusionner articles + reposts triés par date
+                  type FeedItem =
+                    | { type: 'product'; data: Product; ts: number }
+                    | { type: 'repost';  data: Repost;  ts: number };
+
+                  const items: FeedItem[] = [
+                    ...followingFeed.map(p => ({
+                      type: 'product' as const,
+                      data: p,
+                      ts: (p as any).createdAt?.toMillis?.()
+                        ?? ((p as any).createdAt?.seconds ?? 0) * 1000,
+                    })),
+                    ...repostsFeed.map(r => ({
+                      type: 'repost' as const,
+                      data: r,
+                      ts: r.createdAt?.toMillis?.()
+                        ?? (r.createdAt?.seconds ?? 0) * 1000,
+                    })),
+                  ].sort((a, b) => b.ts - a.ts);
+
+                  // Grouper les produits consécutifs 2 par 2 pour la grille
+                  const rendered: React.ReactNode[] = [];
+                  let i = 0;
+                  while (i < items.length) {
+                    const item = items[i];
+
+                    if (item.type === 'repost') {
+                      // Carte repost pleine largeur
+                      const r = item.data;
+                      rendered.push(
+                        <button
+                          key={'repost-' + r.id}
+                          onClick={() => {
+                            const fakeProduct = {
+                              id: r.originalProductId,
+                              title: r.originalProductTitle,
+                              images: [r.originalProductImage],
+                              price: r.originalProductPrice,
+                              sellerId: r.originalSellerId,
+                              sellerName: r.originalSellerName,
+                            } as any;
+                            onProductClick(fakeProduct);
+                          }}
+                          className="w-full bg-white rounded-[1.8rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
+                        >
+                          {/* Header reposteur */}
+                          <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                              {r.reposterPhoto
+                                ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
+                                : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{r.reposterName?.charAt(0).toUpperCase()}</div>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-black text-slate-900 truncate">{r.reposterName}</p>
+                              <p className="text-[9px] text-slate-400 font-bold">🔄 a partagé un article</p>
+                            </div>
+                            <span className="text-[9px] text-slate-300 font-bold flex-shrink-0">
+                              {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                            </span>
+                          </div>
+                          {/* Commentaire */}
+                          {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
+                            <p className="px-4 pb-2 text-[12px] text-slate-600 italic">"{r.comment}"</p>
+                          )}
+                          {/* Article original */}
+                          <div className="flex gap-3 px-4 pb-3">
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                              {r.originalProductImage
+                                ? <img src={r.originalProductImage} alt="" className="w-full h-full object-cover"/>
+                                : <div className="w-full h-full bg-slate-200"/>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center">
+                              <p className="text-[12px] font-black text-slate-900 truncate">{r.originalProductTitle}</p>
+                              <p className="text-[13px] font-black text-green-700 mt-0.5">
+                                {r.originalProductPrice?.toLocaleString('fr-FR')} <span className="text-[10px] font-bold text-slate-400">FCFA</span>
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">par {r.originalSellerName}</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                      i++;
+                    } else {
+                      // Collecter les produits consécutifs pour grille 2 colonnes
+                      const pair: Product[] = [];
+                      while (i < items.length && items[i].type === 'product' && pair.length < 2) {
+                        pair.push((items[i] as any).data);
+                        i++;
+                      }
+                      rendered.push(
+                        <div key={'products-' + pair[0].id} className={`grid gap-3 ${pair.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                          {pair.map(product => (
+                            <ProductCard key={product.id} product={product}
+                              onClick={() => onProductClick(product)}
+                              onBookmark={handleBookmark}
+                              isBookmarked={bookmarkIds.has(product.id)}
+                              isBoosted={boostedIds.has(product.id)}
+                            />
+                          ))}
+                        </div>
+                      );
+                    }
+                  }
+                  return rendered;
+                })()}
               </div>
             )}
           </>
