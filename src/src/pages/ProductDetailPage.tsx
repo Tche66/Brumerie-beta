@@ -14,7 +14,7 @@ import { ImageLightbox } from '@/components/ImageLightbox';
 import { getOrCreateConversation, checkChatLimit, sendOfferCard } from '@/services/messagingService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { ProductCard } from '@/components/ProductCard';
-import { onSnapshot, doc, getDoc, collection } from 'firebase/firestore';
+import { onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { shareProduct } from '@/utils/shareProduct';
 import { ReportUserModal } from '@/components/ReportUserModal';

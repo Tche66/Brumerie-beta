@@ -1,0 +1,236 @@
+/* index.css - Brumerie MVP V2 — Design System Officiel */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --green-brumerie: #16A34A;
+  --green-dark: #115E2E;
+  --green-light: #22C55E;
+  --slate-900: #0F172A;
+  --slate-600: #475569;
+  --slate-400: #94A3B8;
+  --slate-100: #F1F5F9;
+  --surface: #FFFFFF;
+  --blue-verify: #1D9BF0;
+
+  --font-price: 'Syne', sans-serif;
+  --font-title: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+input, textarea { user-select: text; }
+
+body {
+  font-family: var(--font-body);
+  background-color: #F8FAFC;
+  color: var(--slate-900);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, h4, .font-title {
+  font-family: var(--font-title);
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+
+/* PRIX BRUMERIE — Syne, chiffres expressifs */
+.price-brumerie {
+  font-family: var(--font-price) !important;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+#root {
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fff;
+  position: relative;
+  box-shadow: 0 0 80px rgba(15, 23, 42, 0.04);
+}
+
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Badge Vérifié bleu réseau social */
+.badge-verified {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--blue-verify);
+  flex-shrink: 0;
+}
+
+.badge-verified-sm {
+  width: 13px;
+  height: 13px;
+}
+
+/* Bouton settings premium */
+.btn-secondary-custom {
+  background-color: #FFFFFF !important;
+  border: 2px solid var(--slate-100) !important;
+  color: var(--slate-600) !important;
+  font-family: var(--font-body) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary-custom:active {
+  background-color: var(--slate-100) !important;
+  transform: scale(0.97);
+}
+
+.page-container {
+  padding-bottom: 120px;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(22,163,74,0); }
+}
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in { animation: fadeIn 0.4s ease both; }
+.animate-fade-up { animation: fadeUp 0.4s ease both; }
+.animate-shake { animation: shake 0.3s ease; }
+.animate-slide-up { animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* PWA Install Banner */
+.pwa-banner {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: calc(100% - 32px);
+  max-width: 448px;
+  background: var(--slate-900);
+  border-radius: 24px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  animation: slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* Hero trust badges */
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.05em;
+}
+
+/* Report button */
+.report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94A3B8;
+  background: #F8FAFC;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-btn:hover {
+  background: #FEF2F2;
+  color: #EF4444;
+}
+
+/* Bookmark button */
+.bookmark-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.bookmark-btn.saved {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.bookmark-btn:active { transform: scale(0.88); }
+
+/* Settings gear in profile */
+.settings-gear-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
+}
+
+.settings-gear-btn:active { transform: scale(0.93); background: #F1F5F9; }
+
+/* ── Mode sombre Sprint 8 ── */
+/* Dark mode supprimé */

@@ -1,0 +1,39 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+@import 'leaflet/dist/leaflet.css';
+
+/* Ensure Leaflet map container has proper dimensions */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Fix for marker icons */
+.leaflet-marker-icon {
+  margin-left: -12px !important;
+  margin-top: -41px !important;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transitions for map */
+.leaflet-container * {
+  transition: none !important;
+}
+/* Safe area pour iPhone avec encoche */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Sur desktop : masquer la BottomNav (géré par md:hidden dans Tailwind) */
+@media (min-width: 768px) {
+  .bottom-nav-spacer { display: none; }
+}
+

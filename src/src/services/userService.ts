@@ -1,0 +1,116 @@
+// src/services/userService.ts
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/config/firebase';
+import { User } from '@/types';
+
+/**
+ * Récupérer un utilisateur par ID
+ */
+export async function getUserById(userId: string): Promise<User | null> {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (!userDoc.exists()) return null;
+
+    return { ...userDoc.data(), id: userDoc.id, uid: userDoc.id } as User;
+  } catch (error) {
+    console.error('Error getting user:', error);
+    return null;
+  }
+}
+
+/**
+ * Mettre à jour le profil utilisateur
+ */
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<User>
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'users', userId), updates);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Upload photo de profil
+ */
+export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
+  try {
+    const photoRef = ref(storage, `avatars/${userId}`);
+    await uploadBytes(photoRef, file);
+    const url = await getDownloadURL(photoRef);
+
+    // Mettre à jour l'URL dans Firestore
+    await updateDoc(doc(db, 'users', userId), {
+      photoURL: url,
+    });
+
+    return url;
+  } catch (error) {
+    console.error('Error uploading profile photo:', error);
+    throw error;
+  }
+}
+
+/**
+ * Incrémenter le compteur de ventes (manuel admin)
+ */
+export async function incrementSalesCount(userId: string): Promise<void> {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      const currentCount = userDoc.data().salesCount || 0;
+      await updateDoc(doc(db, 'users', userId), {
+        salesCount: currentCount + 1,
+      });
+    }
+  } catch (error) {
+    console.error('Error incrementing sales count:', error);
+    throw error;
+  }
+}
+
+/**
+ * Activer/Désactiver badge vérifié (admin)
+ */
+export async function toggleVerifiedBadge(userId: string, isVerified: boolean): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'users', userId), {
+      isVerified,
+    });
+  } catch (error) {
+    console.error('Error toggling verified badge:', error);
+    throw error;
+  }
+}
+
+// ── Récupérer tous les vendeurs actifs (pour sélecteur livreur) ──
+export async function getAllActiveSellers(): Promise<User[]> {
+  const { collection, getDocs, query, where } = await import('firebase/firestore');
+  const { db } = await import('@/config/firebase');
+  const snap = await getDocs(query(
+    collection(db, 'users'),
+    where('role', 'in', ['seller', 'both']),
+  ));
+  return snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id } as User));
+}
+
+// Chercher un utilisateur par numéro de téléphone
+export async function getUserByPhone(phone: string): Promise<User | null> {
+  try {
+    const clean = phone.replace(/\D/g, '');
+    const variants = [clean, '0' + clean.slice(-8), '+225' + clean.slice(-8), '225' + clean.slice(-8)];
+    for (const v of variants) {
+      const q = query(collection(db, 'users'), where('phone', '==', v), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        return { id: d.id, uid: d.id, ...d.data() } as User;
+      }
+    }
+    return null;
+  } catch { return null; }
+}

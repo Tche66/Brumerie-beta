@@ -1,0 +1,188 @@
+// src/components/OnboardingScreen.tsx — 3 écrans au 1er lancement seulement
+import React, { useState } from 'react';
+
+const SLIDES = [
+  {
+    emoji: '🛍️',
+    title: 'Bienvenue sur\nBrumerie',
+    sub: "Le marché local d'Abidjan.\nAchète et vends près de chez toi.",
+    color: '#16A34A',
+  },
+  {
+    emoji: '🔔',
+    title: 'Ne rate\naucune pépite',
+    sub: 'Active une alerte sur ce que tu cherches.\nOn te prévient dès que ça arrive près de toi.',
+    color: '#8B5CF6',
+    hasAlert: true,
+  },
+  {
+    emoji: '📍',
+    title: "Ton adresse\nnumérique gratuite",
+    sub: "En Afrique, les rues n'ont pas toujours de nom.\nAddress-Web te donne un code unique comme\nAW-ABJ-84321 pour recevoir tes livraisons.",
+    color: '#0EA5E9',
+    isAddressWeb: true,
+  },
+  {
+    emoji: '🔍',
+    title: 'Achète en\ntoute confiance',
+    sub: 'Vendeurs vérifiés, paiement Mobile Money\nou à la livraison. Zéro arnaque.',
+    color: '#3B82F6',
+  },
+  {
+    emoji: '🚀',
+    title: 'Vends en\n2 minutes',
+    sub: 'Publie avec une photo, fixe ton prix\net reçois tes paiements directement.',
+    color: '#F59E0B',
+  },
+];
+
+interface OnboardingScreenProps {
+  onDone: () => void;
+}
+
+export function OnboardingScreen({ onDone }: OnboardingScreenProps) {
+  const [idx, setIdx] = useState(0);
+  const [alertKeyword, setAlertKeyword] = useState('');
+  const slide = SLIDES[idx] as typeof SLIDES[0] & { hasAlert?: boolean };
+  const isLast = idx === SLIDES.length - 1;
+
+  const saveAlert = async (kw: string) => {
+    if (!kw.trim()) return;
+    try {
+      const { subscribeToKeyword } = await import('@/services/searchAlertService');
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) await subscribeToKeyword(user.uid, kw.trim().toLowerCase());
+    } catch {}
+  };
+
+  const next = () => {
+    // Si on quitte la slide alerte, sauvegarder si rempli
+    if ((slide as any).hasAlert && alertKeyword.trim()) {
+      saveAlert(alertKeyword);
+    }
+    if (isLast) { onDone(); return; }
+    setIdx(i => i + 1);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[600] flex flex-col items-center justify-between pb-16 pt-20 px-8" style={{ height: '100dvh', background: '#0F172A' }}>
+
+      {/* Skip */}
+      {!isLast && (
+        <button onClick={onDone}
+          className="absolute top-12 right-6 text-[11px] font-bold uppercase tracking-widest"
+          style={{ color: 'rgba(255,255,255,0.3)' }}>
+          Passer
+        </button>
+      )}
+
+      {/* Contenu */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center"
+        key={idx} style={{ animation: 'fadeSlide 0.35s ease-out' }}>
+
+        {/* Emoji dans un cercle coloré */}
+        <div className="w-28 h-28 rounded-[2.5rem] flex items-center justify-center mb-10 shadow-2xl"
+          style={{ background: slide.color + '22', border: `2px solid ${slide.color}44` }}>
+          <span className="text-6xl">{slide.emoji}</span>
+        </div>
+
+        <h2 className="font-black text-white text-[26px] leading-tight mb-4 whitespace-pre-line"
+          style={{ letterSpacing: '-0.5px' }}>
+          {slide.title}
+        </h2>
+        <p className="text-[14px] leading-relaxed whitespace-pre-line"
+          style={{ color: 'rgba(255,255,255,0.5)' }}>
+          {slide.sub}
+        </p>
+
+        {/* CTA Address-Web */}
+        {(slide as any).isAddressWeb && (
+          <div className="mt-8 w-full max-w-xs flex flex-col items-center gap-3">
+            <a
+              href="https://addressweb.brumerie.com/creer"
+              target="_blank" rel="noopener noreferrer"
+              className="w-full py-4 rounded-2xl font-black text-[12px] uppercase tracking-widest text-sky-700 bg-white active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2">
+              📍 Créer mon adresse gratuite →
+            </a>
+            <p className="text-[9px] font-bold text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Fonctionne pour Abidjan, Dakar, Lagos, Accra et + encore
+            </p>
+          </div>
+        )}
+
+        {/* Champ alerte mots-clés */}
+        {(slide as any).hasAlert && (
+          <div className="mt-8 w-full max-w-xs">
+            <input
+              type="text"
+              value={alertKeyword}
+              onChange={e => setAlertKeyword(e.target.value)}
+              placeholder="Ex: iPhone 14, Robe africaine..."
+              className="w-full px-5 py-4 rounded-2xl font-bold text-[13px] text-slate-900 outline-none placeholder:text-slate-400"
+              style={{ background: 'rgba(255,255,255,0.95)' }}
+            />
+            {alertKeyword.trim().length >= 2 && (
+              <p className="text-[11px] font-bold mt-2 text-center" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                🔔 Tu seras alerté dès qu'un vendeur publie "{alertKeyword}"
+              </p>
+            )}
+            <button
+              onClick={next}
+              className="w-full mt-3 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest"
+              style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Passer cette étape →
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Dots */}
+      <div className="flex gap-2 mb-10">
+        {SLIDES.map((_, i) => (
+          <div key={i}
+            className="rounded-full transition-all duration-300"
+            style={{
+              width: i === idx ? 24 : 8,
+              height: 8,
+              background: i === idx ? slide.color : 'rgba(255,255,255,0.2)',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Bouton principal — masqué sur la slide alerte (elle a son propre flow) */}
+      {!(slide as any).hasAlert && (
+        <button onClick={next}
+          className="w-full max-w-xs py-5 rounded-2xl font-black text-[13px] uppercase tracking-widest text-white active:scale-95 transition-all shadow-2xl"
+          style={{ background: `linear-gradient(135deg, ${slide.color}, ${slide.color}cc)` }}>
+          {isLast ? "C'est parti ! 🎉" : 'Suivant →'}
+        </button>
+      )}
+
+      <style>{`
+        @keyframes fadeSlide {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Hook pour gérer l'état d'onboarding (localStorage)
+export function useOnboarding() {
+  const KEY = 'brumerie_onboarded_v1';
+  const [show, setShow] = useState(() => {
+    try { return !localStorage.getItem(KEY); }
+    catch { return false; }
+  });
+
+  const done = () => {
+    try { localStorage.setItem(KEY, '1'); } catch {}
+    setShow(false);
+  };
+
+  return { showOnboarding: show, doneOnboarding: done };
+}
