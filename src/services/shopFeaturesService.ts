@@ -451,3 +451,20 @@ export async function getRepostsFeed(followingIds: string[]): Promise<Repost[]> 
     })
     .slice(0, 30);
 }
+
+/**
+ * Reposts récents globaux — pour le feed "Tout Abidjan"
+ */
+export async function getRecentReposts(limitCount: number = 20): Promise<Repost[]> {
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'reposts'),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    ));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
+  } catch (e) {
+    console.error('[getRecentReposts]', e);
+    return [];
+  }
+}
