@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductCardFeed } from '@/components/ProductCardFeed';
 import { ProductSkeleton } from '@/components/ProductSkeleton';
 import { getProducts, getProductsPage, PRODUCTS_PER_PAGE, getFollowingFeed, getTrendingProducts } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
@@ -67,6 +68,14 @@ const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGue
     </div>
   </div>
 );
+
+// Helper sécurisé pour timestamp Firestore ou Date
+function safeTs(val: any): number {
+  if (!val) return 0;
+  if (typeof val.toMillis === 'function') return val.toMillis();
+  if (val.seconds) return val.seconds * 1000;
+  try { return new Date(val).getTime() || 0; } catch { return 0; }
+}
 
 export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
@@ -586,14 +595,12 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                     ...followingFeed.map(p => ({
                       type: 'product' as const,
                       data: p,
-                      ts: (p as any).createdAt?.toMillis?.()
-                        ?? ((p as any).createdAt?.seconds ?? 0) * 1000,
+                      ts: safeTs((p as any).createdAt),
                     })),
                     ...repostsFeed.map(r => ({
                       type: 'repost' as const,
                       data: r,
-                      ts: r.createdAt?.toMillis?.()
-                        ?? (r.createdAt?.seconds ?? 0) * 1000,
+                      ts: safeTs(r.createdAt),
                     })),
                   ].sort((a, b) => b.ts - a.ts);
 
@@ -668,18 +675,17 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                         pair.push((items[i] as any).data);
                         i++;
                       }
-                      rendered.push(
-                        <div key={'products-' + pair[0].id} className={`grid gap-3 ${pair.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                          {pair.map(product => (
-                            <ProductCard key={product.id} product={product}
-                              onClick={() => onProductClick(product)}
-                              onBookmark={handleBookmark}
-                              isBookmarked={bookmarkIds.has(product.id)}
-                              isBoosted={boostedIds.has(product.id)}
-                            />
-                          ))}
-                        </div>
-                      );
+                      pair.forEach(product => {
+                        rendered.push(
+                          <ProductCardFeed key={product.id} product={product}
+                            onClick={() => onProductClick(product)}
+                            onBookmark={handleBookmark}
+                            isBookmarked={bookmarkIds.has(product.id)}
+                            isBoosted={boostedIds.has(product.id)}
+                            onGuestAction={() => onGuestAction?.('like')}
+                          />
+                        );
+                      });
                     }
                   }
                   return rendered;
@@ -782,7 +788,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
           </div>
         ) : (
           <>
-            {/* Feed mixte articles + reposts globaux */}
+            {/* ── Feed vertical mixte — style Instagram/Depop ── */}
             {(() => {
               type FeedItem =
                 | { type: 'product'; data: Product; ts: number }
@@ -794,82 +800,86 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
               const items: FeedItem[] = [
                 ...sorted.map(p => ({
                   type: 'product' as const, data: p,
-                  ts: (p as any).createdAt?.toMillis?.() ?? ((p as any).createdAt?.seconds ?? 0) * 1000,
+                  ts: safeTs((p as any).createdAt),
                 })),
                 ...allReposts.map(r => ({
                   type: 'repost' as const, data: r,
-                  ts: r.createdAt?.toMillis?.() ?? (r.createdAt?.seconds ?? 0) * 1000,
+                  ts: safeTs(r.createdAt),
                 })),
               ].sort((a, b) => b.ts - a.ts);
 
-              const rendered: React.ReactNode[] = [];
-              let i = 0;
-              while (i < items.length) {
-                const item = items[i];
-                if (item.type === 'repost') {
-                  const r = item.data;
-                  rendered.push(
-                    <button key={'r-' + r.id}
-                      onClick={() => onProductClick({ id: r.originalProductId, title: r.originalProductTitle, images: [r.originalProductImage], price: r.originalProductPrice, sellerId: r.originalSellerId, sellerName: r.originalSellerName } as any)}
-                      className="w-full bg-white rounded-[1.8rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
-                    >
-                      <div className="flex items-center gap-3 px-4 pt-3 pb-2">
-                        <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
-                          {r.reposterPhoto
-                            ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
-                            : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{r.reposterName?.charAt(0)?.toUpperCase()}</div>
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-black text-slate-900 truncate">{r.reposterName}</p>
-                          <p className="text-[9px] text-slate-400 font-bold">🔄 a partagé un article</p>
-                        </div>
-                        <span className="text-[9px] text-slate-300 font-bold flex-shrink-0">
-                          {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
-                        </span>
-                      </div>
-                      {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
-                        <p className="px-4 pb-2 text-[12px] text-slate-600 italic">"{r.comment}"</p>
-                      )}
-                      <div className="flex gap-3 px-4 pb-3">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
-                          {r.originalProductImage
-                            ? <img src={r.originalProductImage} alt="" className="w-full h-full object-cover"/>
-                            : <div className="w-full h-full bg-slate-200"/>
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                          <p className="text-[12px] font-black text-slate-900 truncate">{r.originalProductTitle}</p>
-                          <p className="text-[13px] font-black text-green-700 mt-0.5">
-                            {r.originalProductPrice?.toLocaleString('fr-FR')} <span className="text-[10px] font-bold text-slate-400">FCFA</span>
-                          </p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">par {r.originalSellerName}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                  i++;
-                } else {
-                  const pair: Product[] = [];
-                  while (i < items.length && items[i].type === 'product' && pair.length < 2) {
-                    pair.push((items[i] as any).data);
-                    i++;
-                  }
-                  rendered.push(
-                    <div key={'p-' + pair[0].id} className={`grid gap-4 ${pair.length === 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
-                      {pair.map(product => (
-                        <ProductCard key={product.id} product={product}
-                          onClick={() => onProductClick(product)}
-                          onBookmark={handleBookmark}
-                          isBookmarked={bookmarkIds.has(product.id)}
-                          isBoosted={boostedIds.has(product.id)}
-                        />
-                      ))}
-                    </div>
-                  );
-                }
-              }
-              return <div className="space-y-4 animate-fade-up">{rendered}</div>;
+              return (
+                <div className="space-y-4 animate-fade-up">
+                  {items.map(item => {
+                    if (item.type === 'repost') {
+                      const r = item.data;
+                      return (
+                        <button key={'r-' + r.id}
+                          onClick={() => onProductClick({
+                            id: r.originalProductId,
+                            title: r.originalProductTitle,
+                            images: r.originalProductImage ? [r.originalProductImage] : [],
+                            price: r.originalProductPrice || 0,
+                            sellerId: r.originalSellerId,
+                            sellerName: r.originalSellerName,
+                          } as any)}
+                          className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
+                        >
+                          {/* Header reposteur */}
+                          <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+                            <div className="w-10 h-10 rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0">
+                              {r.reposterPhoto
+                                ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
+                                : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{r.reposterName?.charAt(0)?.toUpperCase()}</div>
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-black text-slate-900 truncate">{r.reposterName}</p>
+                              <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                                a partagé un article
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-slate-300 font-bold flex-shrink-0">
+                              {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                            </span>
+                          </div>
+                          {/* Commentaire */}
+                          {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
+                            <p className="px-4 pb-3 text-[13px] text-slate-700 italic leading-snug">"{r.comment}"</p>
+                          )}
+                          {/* Article original — image grande */}
+                          {r.originalProductImage && (
+                            <div className="aspect-square bg-slate-100 overflow-hidden">
+                              <img src={r.originalProductImage} alt={r.originalProductTitle} className="w-full h-full object-cover"/>
+                            </div>
+                          )}
+                          {/* Infos article */}
+                          <div className="px-4 py-3">
+                            <p className="text-[15px] font-black text-slate-900">{r.originalProductTitle}</p>
+                            <p className="text-[16px] font-black text-green-700 mt-0.5">
+                              {r.originalProductPrice?.toLocaleString('fr-FR')} <span className="text-[11px] font-bold text-slate-400">FCFA</span>
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">par {r.originalSellerName}</p>
+                          </div>
+                        </button>
+                      );
+                    }
+                    // Article normal — carte verticale pleine largeur
+                    return (
+                      <ProductCardFeed
+                        key={'p-' + item.data.id}
+                        product={item.data}
+                        onClick={() => onProductClick(item.data)}
+                        onBookmark={handleBookmark}
+                        isBookmarked={bookmarkIds.has(item.data.id)}
+                        isBoosted={boostedIds.has(item.data.id)}
+                        onGuestAction={() => onGuestAction?.('like')}
+                      />
+                    );
+                  })}
+                </div>
+              );
             })()}
 
             {/* Bouton Voir plus */}
