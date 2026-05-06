@@ -409,7 +409,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     }
   };
 
-  const createdAtDate = product.createdAt?.toDate ? product.createdAt.toDate() : new Date(product.createdAt);
+  const createdAtDate = (() => {
+    try {
+      if (!product.createdAt) return new Date(0);
+      if (typeof product.createdAt.toDate === 'function') return product.createdAt.toDate();
+      if (product.createdAt.seconds) return new Date(product.createdAt.seconds * 1000);
+      const d = new Date(product.createdAt);
+      return isNaN(d.getTime()) ? new Date(0) : d;
+    } catch { return new Date(0); }
+  })();
   const isNew = new Date().getTime() - createdAtDate.getTime() < 48 * 60 * 60 * 1000;
   const isSelf = currentUser?.uid === product.sellerId;
   const [showBoost, setShowBoost] = useState(false);
