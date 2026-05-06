@@ -467,7 +467,7 @@ export async function toggleLike(
       const productTitle = prodSnap2.data()?.title || 'ton article';
       if (sellerId && sellerId !== userId) {
         await createNotification(sellerId, 'like',
-          '❤️ Nouveau j'aime',
+          "❤️ Nouveau j'aime",
           `Quelqu'un a aimé "${productTitle.slice(0, 40)}${productTitle.length > 40 ? '...' : ''}"`,
           { productId }
         );
