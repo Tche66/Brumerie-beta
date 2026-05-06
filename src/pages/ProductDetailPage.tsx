@@ -89,6 +89,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [sendingRepost, setSendingRepost] = useState(false);
   const [repostDone, setRepostDone] = useState(false);
   const [reposts, setReposts] = useState<any[]>([]);
+  const [expandedDesc, setExpandedDesc] = useState(false);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -621,19 +622,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </span>
         </button>
 
-        {/* Partager */}
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 active:scale-90 transition-transform ml-auto"
-        >
-          <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
-            {copySuccess
-              ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
-              : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
-            }
-          </div>
-          <span className="text-[13px] font-black text-slate-500">Partager</span>
-        </button>
+
       </div>
 
       {/* ── MODAL REPOST ── */}
@@ -742,10 +731,26 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         )}
 
         {/* Description */}
-        <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Description</p>
-          <p className="text-slate-700 text-sm leading-relaxed font-medium" style={{ whiteSpace: 'pre-line' }}>{product.description || 'Aucune description fournie.'}</p>
-        </div>
+        {(() => {
+          const desc = product.description || 'Aucune description fournie.';
+          const isLong = desc.length > 200;
+          return (
+            <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Description</p>
+              <p className="text-slate-700 text-sm leading-relaxed font-medium" style={{ whiteSpace: 'pre-line' }}>
+                {isLong && !expandedDesc ? desc.slice(0, 200) + '...' : desc}
+              </p>
+              {isLong && (
+                <button
+                  onClick={() => setExpandedDesc(v => !v)}
+                  className="mt-3 text-[11px] font-black text-green-600 uppercase tracking-widest active:scale-95 transition-all"
+                >
+                  {expandedDesc ? '▲ Réduire' : '▼ Voir plus'}
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── TAGS VENDEURS ── */}
         {product.taggedSellerNames && product.taggedSellerNames.length > 0 && (
@@ -893,55 +898,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </div>
         </button>
 
-        {/* ── AVIS DU VENDEUR ── */}
-        {reviews.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <p className="font-black text-slate-900 text-sm uppercase tracking-tight">Avis sur ce vendeur</p>
-              <div className="flex items-center gap-1.5">
-                <div className="flex gap-0.5">
-                  {[1,2,3,4,5].map(s => (
-                    <svg key={s} width="12" height="12" viewBox="0 0 24 24" fill={avgRating >= s ? '#FBBF24' : '#E2E8F0'} stroke="none">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  ))}
-                </div>
-                <span className="text-[10px] font-black text-slate-500">{avgRating.toFixed(1)}</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {reviews.slice(0, 3).map(r => (
-                <div key={r.id} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
-                      {r.fromUserPhoto
-                        ? <img src={r.fromUserPhoto} alt="" className="w-full h-full object-cover"/>
-                        : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{r.fromUserName?.charAt(0)}</div>
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-slate-900 text-[11px] truncate">{r.fromUserName}</p>
-                      <div className="flex gap-0.5 mt-0.5">
-                        {[1,2,3,4,5].map(s => (
-                          <svg key={s} width="9" height="9" viewBox="0 0 24 24" fill={r.rating >= s ? '#FBBF24' : '#E2E8F0'} stroke="none">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </svg>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {r.comment && <p className="text-[11px] text-slate-600 italic">"{r.comment}"</p>}
-                </div>
-              ))}
-              {reviews.length > 3 && (
-                <button onClick={() => onSellerClick(product.sellerId)}
-                  className="w-full py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 rounded-2xl">
-                  Voir tous les {reviewCount} avis →
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* ── COMMENTAIRES ── */}
         <div id="comments-section" className="mb-8">
