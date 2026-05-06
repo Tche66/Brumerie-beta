@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductCardFeed } from '@/components/ProductCardFeed';
 import { ProductSkeleton } from '@/components/ProductSkeleton';
-import { getProducts, getProductsPage, PRODUCTS_PER_PAGE, getFollowingFeed, getTrendingProducts } from '@/services/productService';
+import { getProducts, getProductsPage, PRODUCTS_PER_PAGE, getFollowingFeed, getTrendingProducts, getProductById } from '@/services/productService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterDrawer';
 import { SearchAlertButton } from '@/components/SearchAlertButton';
@@ -616,16 +616,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                       rendered.push(
                         <button
                           key={'repost-' + r.id}
-                          onClick={() => {
-                            const fakeProduct = {
-                              id: r.originalProductId,
-                              title: r.originalProductTitle,
-                              images: [r.originalProductImage],
-                              price: r.originalProductPrice,
-                              sellerId: r.originalSellerId,
-                              sellerName: r.originalSellerName,
-                            } as any;
-                            onProductClick(fakeProduct);
+                          onClick={async () => {
+                            const real = await getProductById(r.originalProductId);
+                            if (real) onProductClick(real);
                           }}
                           className="w-full bg-white rounded-[1.8rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
                         >
@@ -815,14 +808,10 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                       const r = item.data;
                       return (
                         <button key={'r-' + r.id}
-                          onClick={() => onProductClick({
-                            id: r.originalProductId,
-                            title: r.originalProductTitle,
-                            images: r.originalProductImage ? [r.originalProductImage] : [],
-                            price: r.originalProductPrice || 0,
-                            sellerId: r.originalSellerId,
-                            sellerName: r.originalSellerName,
-                          } as any)}
+                          onClick={async () => {
+                            const real = await getProductById(r.originalProductId);
+                            if (real) onProductClick(real);
+                          }}
                           className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
                         >
                           {/* Header reposteur */}

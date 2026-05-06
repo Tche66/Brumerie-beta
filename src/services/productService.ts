@@ -22,6 +22,17 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
+
+// Helper interne — timestamp sécurisé pour les tris
+function safeGetTime(val: any): number {
+  if (!val) return 0;
+  if (typeof val.getTime === 'function') return val.getTime() || 0;
+  if (typeof val.toMillis === 'function') return val.toMillis();
+  if (val.seconds) return val.seconds * 1000;
+  try { const d = new Date(val); return isNaN(d.getTime()) ? 0 : d.getTime(); } catch { return 0; }
+}
+
+
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
 import { uploadToCloudinary } from '@/utils/uploadImage';
@@ -130,7 +141,7 @@ export async function getProducts(filters?: {
       const aScore = (a.sellerVerified ? 1 : 0);
       const bScore = (b.sellerVerified ? 1 : 0);
       if (bScore !== aScore) return bScore - aScore; // vérifié d'abord
-      return b.createdAt.getTime() - a.createdAt.getTime();
+      return safeGetTime(b.createdAt) - safeGetTime(a.createdAt);
     });
 
     if (filters?.searchTerm) {
@@ -232,7 +243,7 @@ export async function getSellerProducts(sellerId: string): Promise<Product[]> {
       };
     }).filter((p: any) => p.status !== 'deleted') as Product[];
     
-    return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return products.sort((a, b) => safeGetTime(b.createdAt) - safeGetTime(a.createdAt));
   } catch (error) {
     console.error('Erreur getSellerProducts:', error);
     return [];
@@ -409,6 +420,20 @@ export async function syncSellerDataToProducts(
 // ─────────────────────────────────────────────────────────────
 
 import type { ProductComment } from '@/types';
+
+
+export async function getProductById(productId: string): Promise<Product | null> {
+  try {
+    const snap = await getDoc(doc(db, 'products', productId));
+    if (!snap.exists()) return null;
+    const d = snap.data();
+    return {
+      id: snap.id,
+      ...d,
+      createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
+    } as Product;
+  } catch { return null; }
+}
 
 export async function toggleLike(
   productId: string,
