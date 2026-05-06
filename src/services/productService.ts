@@ -22,6 +22,7 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
+import { createNotification } from '@/services/notificationService';
 
 // Helper interne — timestamp sécurisé pour les tris
 function safeGetTime(val: any): number {
@@ -453,11 +454,25 @@ export async function toggleLike(
   const likesSnap = await getDocs(collection(db, 'products', productId, 'likes'));
   const count = likesSnap.size;
 
-  // Mettre à jour likeCount en best-effort (vendeur ou règle système)
+  // Mettre à jour likeCount en best-effort
   try {
     await updateDoc(doc(db, 'products', productId), { likeCount: count });
-  } catch {
-    // Règle Firestore peut refuser — le compteur est recalculé depuis la sous-collection
+  } catch {}
+
+  // Notifier le vendeur quand quelqu'un like (pas si c'est lui-même)
+  if (!alreadyLiked) {
+    try {
+      const prodSnap2 = await getDoc(doc(db, 'products', productId));
+      const sellerId = prodSnap2.data()?.sellerId;
+      const productTitle = prodSnap2.data()?.title || 'ton article';
+      if (sellerId && sellerId !== userId) {
+        await createNotification(sellerId, 'like',
+          '❤️ Nouveau j'aime',
+          `Quelqu'un a aimé "${productTitle.slice(0, 40)}${productTitle.length > 40 ? '...' : ''}"`,
+          { productId }
+        );
+      }
+    } catch {}
   }
 
   return { liked: !alreadyLiked, count };
@@ -490,6 +505,33 @@ export async function addComment(
     createdAt: serverTimestamp(),
   });
   await updateDoc(doc(db, 'products', productId), { commentCount: increment(1) });
+
+  // Notifier le vendeur d'un nouveau commentaire (pas si c'est lui-même)
+  try {
+    const prodSnap = await getDoc(doc(db, 'products', productId));
+    const sellerId = prodSnap.data()?.sellerId;
+    const productTitle = prodSnap.data()?.title || 'ton article';
+    if (sellerId && sellerId !== userId) {
+      await createNotification(sellerId, 'comment',
+        '💬 Nouveau commentaire',
+        `${userName} a commenté "${productTitle.slice(0, 30)}${productTitle.length > 30 ? '...' : ''}" : "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"`,
+        { productId }
+      );
+    }
+    // Si c'est une réponse, notifier aussi l'auteur du commentaire parent
+    if (parentId) {
+      const parentSnap = await getDoc(doc(db, 'products', productId, 'comments', parentId));
+      const parentAuthorId = parentSnap.data()?.userId;
+      if (parentAuthorId && parentAuthorId !== userId) {
+        await createNotification(parentAuthorId, 'comment_reply',
+          '↩️ Réponse à ton commentaire',
+          `${userName} a répondu : "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
+          { productId }
+        );
+      }
+    }
+  } catch {}
+
   return docRef.id;
 }
 

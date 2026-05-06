@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 
-export type NotifType = 'message' | 'reply' | 'favorite' | 'system';
+export type NotifType = 'message' | 'reply' | 'favorite' | 'system' | 'like' | 'comment' | 'comment_reply' | 'repost' | 'follow' | 'new_product';
 
 export interface AppNotification {
   id: string;

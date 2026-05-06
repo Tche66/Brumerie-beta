@@ -160,10 +160,10 @@ export async function followSeller(buyerId: string, sellerId: string, sellerName
       followerCount: increment(1),
     });
   } catch {}
-  await createNotification(sellerId, 'system',
+  await createNotification(sellerId, 'follow',
     '👤 Nouvel abonné !',
-    `Quelqu'un suit maintenant ta boutique. Publie régulièrement pour rester visible !`,
-    {}
+    `${buyerId} suit maintenant ta boutique. Continue à publier pour rester visible !`,
+    { senderId: buyerId }
   );
 }
 
@@ -400,9 +400,9 @@ export async function repostProduct(
   });
   await createNotification(
     product.sellerId,
-    'system',
-    reposterName + ' a partage ton article',
-    '"' + product.title + '" — avec le commentaire : "' + comment.trim().slice(0, 60) + (comment.length > 60 ? '...' : '') + '"',
+    'repost',
+    '🔄 ' + reposterName + ' a partagé ton article',
+    '"' + product.title.slice(0, 40) + (product.title.length > 40 ? '...' : '') + '"' + (comment.trim() ? ' — "' + comment.trim().slice(0, 50) + '"' : ''),
     { productId: product.id }
   );
   return docRef.id;
