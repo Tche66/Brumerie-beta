@@ -477,6 +477,7 @@ export async function addComment(
   userPhoto?: string,
   userVerified?: boolean,
   parentId?: string,
+  photoUrl?: string,
 ): Promise<string> {
   const commentsRef = collection(db, 'products', productId, 'comments');
   const docRef = await addDoc(commentsRef, {
@@ -485,6 +486,7 @@ export async function addComment(
     userPhoto: userPhoto || null,
     userVerified: userVerified || false,
     parentId: parentId || null,
+    photoUrl: photoUrl || null,
     createdAt: serverTimestamp(),
   });
   await updateDoc(doc(db, 'products', productId), { commentCount: increment(1) });

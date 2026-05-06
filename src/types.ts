@@ -325,6 +325,7 @@ export interface ProductComment {
   userVerified?: boolean;
   text: string;
   parentId?: string | null;
+  photoUrl?: string | null;
   createdAt: any;
 }
 

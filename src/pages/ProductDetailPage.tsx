@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments } from '@/services/productService';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 import { repostProduct, getRepostsForProduct } from '@/services/shopFeaturesService';
 import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
@@ -80,6 +81,9 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [comments, setComments] = useState<ProductComment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+  const [commentPhoto, setCommentPhoto] = useState<File | null>(null);
+  const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
+  const [uploadingCommentPhoto, setUploadingCommentPhoto] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; userName: string } | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -337,18 +341,33 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
   const handleAddComment = async () => {
     if (isGuest) { onGuestAction?.('comment'); return; }
-    if (!currentUser || !userProfile || !commentText.trim() || sendingComment) return;
+    if (!currentUser || !userProfile || (!commentText.trim() && !commentPhoto) || sendingComment) return;
     setSendingComment(true);
     try {
+      let photoUrl: string | undefined;
+      if (commentPhoto) {
+        setUploadingCommentPhoto(true);
+        try {
+          photoUrl = await uploadToCloudinary(commentPhoto);
+        } catch (e) {
+          console.error('[Comment photo upload]', e);
+        } finally {
+          setUploadingCommentPhoto(false);
+        }
+      }
       await addComment(
         product.id,
         currentUser.uid,
         userProfile.name,
-        commentText.trim(),
+        commentText.trim() || '📷',
         userProfile.photoURL,
         userProfile.verified || userProfile.sellerVerified,
+        undefined,
+        photoUrl,
       );
       setCommentText('');
+      setCommentPhoto(null);
+      setCommentPhotoPreview(null);
     } catch (e) { console.error('[Comment]', e); }
     finally { setSendingComment(false); }
   };
@@ -925,27 +944,86 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 }
               </div>
               <div className="flex-1 bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-green-400 transition-all overflow-hidden">
+                {/* Preview photo sélectionnée */}
+                {commentPhotoPreview && (
+                  <div className="relative mx-3 mt-3">
+                    <img src={commentPhotoPreview} alt="" className="w-24 h-24 object-cover rounded-2xl border border-slate-200"/>
+                    <button
+                      onClick={() => { setCommentPhoto(null); setCommentPhotoPreview(null); }}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-md active:scale-90 transition-all"
+                    >✕</button>
+                  </div>
+                )}
                 <textarea
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
-                  placeholder="Ajouter un commentaire..."
+                  placeholder={commentPhoto ? "Ajouter un texte... (optionnel)" : "Ajouter un commentaire..."}
                   rows={commentText.length > 60 ? 3 : 1}
                   className="w-full px-4 pt-3 pb-1 bg-transparent text-[13px] font-medium text-slate-700 placeholder:text-slate-400 outline-none resize-none"
                 />
-                {commentText.trim() && (
-                  <div className="flex justify-end px-3 pb-2">
+                {(commentText.trim() || commentPhoto) && (
+                  <div className="flex items-center justify-between px-3 pb-2">
+                    {/* Bouton ajouter photo */}
+                    <label className="cursor-pointer active:scale-90 transition-all">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setCommentPhoto(file);
+                          const reader = new FileReader();
+                          reader.onload = () => setCommentPhotoPreview(reader.result as string);
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <div className="w-7 h-7 rounded-xl bg-slate-200 flex items-center justify-center">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                        </svg>
+                      </div>
+                    </label>
                     <button
                       onClick={handleAddComment}
-                      disabled={sendingComment || !commentText.trim()}
+                      disabled={sendingComment || uploadingCommentPhoto || (!commentText.trim() && !commentPhoto)}
                       className="px-4 py-1.5 rounded-xl text-white text-[11px] font-black uppercase tracking-wider disabled:opacity-50 active:scale-95 transition-all flex items-center gap-1.5"
                       style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
                     >
-                      {sendingComment
+                      {sendingComment || uploadingCommentPhoto
                         ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                         : <>Publier</>
                       }
                     </button>
+                  </div>
+                )}
+                {/* Bouton photo visible même si pas encore de texte */}
+                {!commentText.trim() && !commentPhoto && (
+                  <div className="flex items-center px-3 pb-2 pt-1">
+                    <label className="cursor-pointer active:scale-90 transition-all">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setCommentPhoto(file);
+                          const reader = new FileReader();
+                          reader.onload = () => setCommentPhotoPreview(reader.result as string);
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/>
+                        </svg>
+                        Photo
+                      </div>
+                    </label>
                   </div>
                 )}
               </div>
@@ -1009,7 +1087,19 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                           )}
                           {isReply && <span className="text-[9px] text-green-600 font-bold bg-green-100 px-1.5 py-0.5 rounded-full">réponse</span>}
                         </div>
-                        <p className="text-[13px] text-slate-700 leading-snug">{c.text}</p>
+                        {c.text && c.text !== '📷' && (
+                          <p className="text-[13px] text-slate-700 leading-snug">{c.text}</p>
+                        )}
+                        {c.photoUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={c.photoUrl}
+                              alt="photo commentaire"
+                              className="max-w-[220px] rounded-2xl border border-slate-200 cursor-pointer active:opacity-80 transition-opacity"
+                              onClick={() => window.open(c.photoUrl, '_blank')}
+                            />
+                          </div>
+                        )}
                       </div>
                       {/* Actions sous le commentaire */}
                       <div className="flex items-center gap-3 mt-1 px-2 flex-wrap">
