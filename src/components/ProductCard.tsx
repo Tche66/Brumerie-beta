@@ -22,7 +22,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
   React.useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
 
   const isNew = product.createdAt
-    ? new Date().getTime() - new Date(product.createdAt).getTime() < 48 * 60 * 60 * 1000
+    ? (() => { try { if (!product.createdAt) return false; const ts = product.createdAt?.toMillis?.() ?? (product.createdAt?.seconds ? product.createdAt.seconds * 1000 : new Date(product.createdAt).getTime()); return !isNaN(ts) && new Date().getTime() - ts < 48 * 60 * 60 * 1000; } catch { return false; } })()
     : false;
 
   const handleBookmark = async (e: React.MouseEvent) => {
@@ -73,6 +73,11 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           )}
           {product.condition && product.status !== 'sold' && (
             <ConditionBadge condition={product.condition} size="sm" />
+          )}
+          {(product as any).hasAcceptedOffer && product.status !== 'sold' && (
+            <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
+              🤝 Offre
+            </span>
           )}
         </div>
 

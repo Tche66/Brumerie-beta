@@ -1,5 +1,6 @@
 // src/services/userService.ts
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit   arrayUnion, arrayRemove,
+} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/config/firebase';
 import { User } from '@/types';
@@ -113,4 +114,25 @@ export async function getUserByPhone(phone: string): Promise<User | null> {
     }
     return null;
   } catch { return null; }
+}
+
+// ── Historique "Vu récemment" ──────────────────────────────
+export async function addRecentlyViewed(userId: string, productId: string): Promise<void> {
+  if (!userId || !productId) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    const snap = await getDoc(userRef);
+    const current: string[] = snap.data()?.recentlyViewedIds || [];
+    // Retirer si déjà présent + ajouter en tête + limiter à 20
+    const updated = [productId, ...current.filter(id => id !== productId)].slice(0, 20);
+    await updateDoc(userRef, { recentlyViewedIds: updated });
+  } catch {}
+}
+
+export async function getRecentlyViewedProducts(userId: string): Promise<string[]> {
+  if (!userId) return [];
+  try {
+    const snap = await getDoc(doc(db, 'users', userId));
+    return snap.data()?.recentlyViewedIds || [];
+  } catch { return []; }
 }

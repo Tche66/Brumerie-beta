@@ -64,7 +64,7 @@ interface SellerProfilePageProps {
   onGuestAction?: (reason: string) => void;
 }
 
-type Tab = 'actifs' | 'vendus' | 'brouillons';
+type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections';
 
 export function SellerProfilePage({
   sellerId, onBack, onProductClick, onStartChat,
@@ -621,6 +621,7 @@ export function SellerProfilePage({
                 { id: 'actifs',    label: 'En ligne',  count: activeProducts.length },
                 { id: 'vendus',    label: 'Vendus',    count: soldProducts.length },
                 ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length }] : []),
+                ...((s?.shopCategories?.length ?? 0) > 0 ? [{ id: 'collections', label: 'Collections', count: s?.shopCategories?.length ?? 0 }] : []),
               ] as { id: Tab; label: string; count: number }[]).map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${
@@ -661,6 +662,67 @@ export function SellerProfilePage({
                   ))}
                 </div>
               )
+            )}
+
+            {/* Collections publiques */}
+            {tab === 'collections' && (
+              <div className="space-y-4">
+                {(s?.shopCategories || []).map((cat: string) => {
+                  const catProducts = activeProducts.filter(p =>
+                    (p as any).collections?.includes(cat) ||
+                    p.category === cat ||
+                    p.title?.toLowerCase().includes(cat.toLowerCase())
+                  );
+                  return (
+                    <div key={cat} className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                      {/* Header collection */}
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+                        <div>
+                          <p className="font-black text-slate-900 text-[14px]">{cat}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                            {catProducts.length > 0 ? `${catProducts.length} article${catProducts.length > 1 ? 's' : ''}` : 'Aucun article'}
+                          </p>
+                        </div>
+                        <div className="w-8 h-8 rounded-2xl bg-green-50 flex items-center justify-center">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                          </svg>
+                        </div>
+                      </div>
+                      {/* Articles de la collection */}
+                      {catProducts.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-px bg-slate-100">
+                          {catProducts.slice(0, 4).map(product => (
+                            <button key={product.id} onClick={() => onProductClick(product)}
+                              className="aspect-square bg-white overflow-hidden active:opacity-80 transition-opacity relative">
+                              <img
+                                src={product.images?.[0]}
+                                alt={product.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                <p className="text-white text-[9px] font-black truncate">{product.title}</p>
+                                <p className="text-white/80 text-[9px] font-bold">{product.price.toLocaleString('fr-FR')} FCFA</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center">
+                          <p className="text-[11px] font-bold text-slate-300">Aucun article dans cette collection</p>
+                        </div>
+                      )}
+                      {/* Voir plus si > 4 articles */}
+                      {catProducts.length > 4 && (
+                        <button onClick={() => setTab('actifs')}
+                          className="w-full py-3 text-[10px] font-black text-green-600 uppercase tracking-widest border-t border-slate-50 active:bg-slate-50 transition-all">
+                          Voir les {catProducts.length} articles →
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {/* Brouillons — propriétaire seulement */}

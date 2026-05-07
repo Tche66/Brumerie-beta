@@ -243,7 +243,8 @@ export interface User {
   followingSellers?: string[];  // UIDs des vendeurs suivis
   followerCount?: number;       // Nb d'abonnés (dénormalisé)
   // ─── Wishlist ────────────────────────────────────────────
-  wishlistIds?: string[];      // IDs produits dans la wishlist
+  wishlistIds?: string[];
+  recentlyViewedIds?: string[];  // IDs des 20 derniers articles consultés      // IDs produits dans la wishlist
   wishlistPublic?: boolean;    // Wishlist publique ou privée
   wishlistSlug?: string;       // Slug unique pour lien partage
   // ─── Cashback fidélité ───────────────────────────────────
@@ -293,6 +294,7 @@ export interface Product {
   paymentMethods?: PaymentInfo[];
   // ─── Social Commerce ──────────────────────────────────
   likeCount?: number;
+  hasAcceptedOffer?: boolean;   // Badge "Offre acceptée" visible sur la fiche
   commentCount?: number;
   taggedSellerIds?: string[];   // UIDs de vendeurs tagués dans l'article
   taggedSellerNames?: string[]; // Noms affichés (dénormalisé pour affichage rapide)

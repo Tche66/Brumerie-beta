@@ -8,7 +8,7 @@ import {
   sendImageMessage,
 } from '@/services/messagingService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Conversation, Message, Product } from '@/types';
 import { formatPrice } from '@/utils/helpers';
@@ -178,7 +178,17 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
   const handleRespondOffer = async (msgId: string, decision: 'accepted' | 'refused') => {
     if (!currentUser || !userProfile) return;
     setRespondingOffer(msgId);
-    try { await respondToOffer(conversation.id, msgId, currentUser.uid, userProfile.name, decision, userProfile.photoURL); }
+    try {
+      await respondToOffer(conversation.id, msgId, currentUser.uid, userProfile.name, decision, userProfile.photoURL);
+      // Si offre acceptée — marquer le produit avec badge "Offre acceptée"
+      if (decision === 'accepted' && conversation.productId) {
+        try {
+          await updateDoc(doc(db, 'products', conversation.productId), {
+            hasAcceptedOffer: true,
+          });
+        } catch {}
+      }
+    }
     catch (e) { console.error(e); }
     finally { setRespondingOffer(null); }
   };

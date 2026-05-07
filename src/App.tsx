@@ -500,6 +500,10 @@ useEffect(() => {
     }
     setSelectedProduct(product);
     navigate('product-detail');
+    // Enregistrer dans "Vu récemment"
+    if (currentUser?.uid) {
+      addRecentlyViewed(currentUser.uid, product.id).catch(() => {});
+    }
   };
 
   const handleSellerClick = (sellerId: string) => {

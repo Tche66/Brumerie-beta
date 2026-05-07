@@ -24,7 +24,7 @@ interface BuyerProfilePageProps {
   onSellerClick?: (sellerId: string) => void;
 }
 
-type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback';
+type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback' | 'recent';
 
 // ── Palette Brumerie — ZERO bleu ─────────────────────────────────
 const G1  = '#1a3d17';   // vert très foncé
@@ -190,11 +190,29 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const [wishlistLink, setWishlistLink]         = useState('');
   const [wishlistCopied, setWishlistCopied]     = useState(false);
   const [followedSellers, setFollowedSellers]   = useState<any[]>([]);
+  const [recentlyViewed, setRecentlyViewed]     = useState<Product[]>([]);
+  const [loadingRecent, setLoadingRecent]       = useState(false);
 
   const pts = (userProfile as any)?.loyaltyPoints || 0;
   const { redeemable, discount: cashbackDiscount } = getRedeemablePoints(pts);
 
   useEffect(() => { loadBookmarks(); }, [userProfile?.bookmarkedProductIds]);
+
+  // Charger "Vu récemment" quand l'onglet est sélectionné
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    const ids: string[] = (userProfile as any).recentlyViewedIds || [];
+    if (!ids.length) { setRecentlyViewed([]); return; }
+    setLoadingRecent(true);
+    Promise.all(
+      ids.slice(0, 20).map(id =>
+        getProductById(id).catch(() => null)
+      )
+    )
+      .then(list => setRecentlyViewed(list.filter(Boolean) as Product[]))
+      .catch(() => {})
+      .finally(() => setLoadingRecent(false));
+  }, [JSON.stringify((userProfile as any)?.recentlyViewedIds)]);
   useEffect(() => {
     if (!currentUser) return;
     return subscribeOrdersAsBuyer(currentUser.uid, (ords) => { setOrders(ords); setLoadingOrders(false); });
@@ -246,6 +264,11 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
     { id: 'wishlist',  icon: Icons.star(),   label: 'Wishlist', count: wishlistProducts.length },
     { id: 'following', icon: Icons.bell(),   label: 'Je suis',  count: ((userProfile as any).followingSellers || []).length },
     { id: 'cashback',  icon: Icons.gift(),   label: 'Points',   count: pts },
+    { id: 'recent',    icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
+        </svg>
+      ), label: 'Vu récemment', count: recentlyViewed.length },
   ];
 
   return (
@@ -677,6 +700,41 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
               })}
             </div>
           </>
+        )}
+
+        {/* ── VU RÉCEMMENT ── */}
+        {tab === 'recent' && (
+          <div className="px-4 pb-8">
+            {loadingRecent ? (
+              <div className="grid grid-cols-2 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="aspect-square bg-slate-100 rounded-2xl animate-pulse"/>
+                ))}
+              </div>
+            ) : recentlyViewed.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+                <div className="text-4xl mb-3">👁️</div>
+                <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">
+                  Aucun article consulté récemment
+                </p>
+                <p className="text-[10px] text-slate-300 mt-1">
+                  Les articles que tu consultes apparaissent ici
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {recentlyViewed.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={() => onProductClick?.(product)}
+                    onBookmark={() => {}}
+                    isBookmarked={bookmarkIds.has(product.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* ══ ADRESSE ADDRESSWEB — toujours visible ══════════════════ */}
