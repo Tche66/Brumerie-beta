@@ -1,6 +1,5 @@
 // src/services/userService.ts
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit   arrayUnion, arrayRemove,
-} from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, limit, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/config/firebase';
 import { User } from '@/types';
