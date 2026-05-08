@@ -135,3 +135,24 @@ export async function getRecentlyViewedProducts(userId: string): Promise<string[
     return snap.data()?.recentlyViewedIds || [];
   } catch { return []; }
 }
+
+// ── Recherche de vendeurs par nom ──────────────────────────
+export async function searchSellers(nameQuery: string, limitCount: number = 10): Promise<User[]> {
+  if (!nameQuery.trim()) return [];
+  const q = nameQuery.trim().toLowerCase();
+  try {
+    // Firestore ne supporte pas les recherches LIKE — on charge et filtre côté client
+    const snap = await getDocs(
+      query(collection(db, 'users'),
+        where('isSeller', '==', true),
+        limit(200)
+      )
+    );
+    return snap.docs
+      .map(d => ({ id: d.id, uid: d.id, ...d.data() }) as User)
+      .filter(u => u.name?.toLowerCase().includes(q))
+      .slice(0, limitCount);
+  } catch {
+    return [];
+  }
+}

@@ -7,6 +7,8 @@ import { SocialIcon, SocialBar, SocialNetwork } from '@/components/SocialIcon';
 import { getUserById, updateUserProfile } from '@/services/userService';
 import { formatLastSeen, getActivityColor, isShopClosed, formatShopClosedUntil, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
+import { getRecentReposts } from '@/services/shopFeaturesService';
+import { ProductCardFeed } from '@/components/ProductCardFeed';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
@@ -64,7 +66,7 @@ interface SellerProfilePageProps {
   onGuestAction?: (reason: string) => void;
 }
 
-type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections';
+type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections' | 'reposts' | 'avis';
 
 export function SellerProfilePage({
   sellerId, onBack, onProductClick, onStartChat,
@@ -87,6 +89,9 @@ export function SellerProfilePage({
   const [followLoading, setFollowLoading] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [reposts, setReposts]             = useState<any[]>([]);
+  const [totalLikes, setTotalLikes]       = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
 
@@ -100,6 +105,14 @@ export function SellerProfilePage({
       setSeller(sellerData);
       setProducts(sellerProducts);
       setLoading(false);
+      // Charger reposts reçus
+      getRecentReposts(50).then(all => {
+        setReposts(all.filter(r => r.originalSellerId === sellerId));
+      }).catch(() => {});
+      // Compter les vendeurs que ce vendeur suit (following)
+      if (sellerData?.followingSellers) {
+        setFollowingCount((sellerData.followingSellers as string[]).length);
+      }
     })();
   }, [sellerId]);
 
@@ -137,6 +150,7 @@ export function SellerProfilePage({
 
   const totalViews    = products.reduce((s, p) => s + (p.viewCount || 0), 0);
   const totalContacts = products.reduce((s, p) => s + (p.whatsappClickCount || 0), 0);
+  const calcTotalLikes = products.reduce((s, p) => s + ((p as any).likeCount || 0), 0);
 
   const s = seller as any; // shorthand pour les champs étendus
 
@@ -455,16 +469,28 @@ export function SellerProfilePage({
               ) : (
                 <>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-green-600 text-lg leading-none">{activeProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Articles</p>
+                    <p className="font-black text-green-600 text-xl leading-none">{activeProducts.length}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Publications</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-purple-600 text-lg leading-none">{followersCount}</p>
+                    <p className="font-black text-purple-600 text-xl leading-none">{followersCount}</p>
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnés</p>
                   </div>
                   <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-amber-500 text-lg leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Note</p>
+                    <p className="font-black text-sky-500 text-xl leading-none">{followingCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnements</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                    <p className="font-black text-red-500 text-xl leading-none">{calcTotalLikes}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">J'aimes reçus</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                    <p className="font-black text-green-500 text-xl leading-none">{reposts.length}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Reposts</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
+                    <p className="font-black text-amber-500 text-xl leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Note ⭐</p>
                   </div>
                 </>
               )}
@@ -547,71 +573,9 @@ export function SellerProfilePage({
             </div>
           )}
 
-          {/* ══════════════════════════════════════════
-              SECTION 4 — AVIS CLIENTS
-          ══════════════════════════════════════════ */}
-          {reviews.length > 0 && (
-            <div className="mx-4 mt-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">⭐ Avis clients</p>
 
-              {/* Résumé compact */}
-              <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm mb-3 flex items-center gap-4">
-                <div className="text-center flex-shrink-0">
-                  <p className="text-3xl font-black text-slate-900">{avgRating.toFixed(1)}</p>
-                  <Stars rating={avgRating} size={11}/>
-                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">{reviewCount} avis</p>
-                </div>
-                <div className="flex-1">
-                  {[5,4,3,2,1].map(star => {
-                    const count = reviews.filter(r => r.rating === star).length;
-                    const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-                    return (
-                      <div key={star} className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[9px] text-slate-400 w-2 font-bold">{star}</span>
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }}/>
-                        </div>
-                        <span className="text-[9px] text-slate-400 w-3 font-bold text-right">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* Liste avis */}
-              <div className="space-y-2">
-                {reviews.slice(0, isSelf ? 5 : 3).map(review => (
-                  <div key={review.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-                        {review.fromUserPhoto
-                          ? <img src={review.fromUserPhoto} alt="" className="w-full h-full object-cover"/>
-                          : <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-sm">{review.fromUserName?.charAt(0)?.toUpperCase()}</div>
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-900 text-[11px] truncate">{review.fromUserName}</p>
-                        <p className="text-[9px] text-slate-400 truncate">
-                          {review.fromUserNeighborhood ? `${review.fromUserNeighborhood}` : review.productTitle ? `${review.productTitle}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-0.5">
-                        <Stars rating={review.rating} size={10}/>
-                        {review.createdAt && (
-                          <span className="text-[8px] text-slate-300">
-                            {new Date((review.createdAt as any)?.toDate?.() || review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {review.comment && <p className="text-[11px] text-slate-600 italic leading-snug">"{review.comment}"</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ══════════════════════════════════════════
+                    {/* ══════════════════════════════════════════
               SECTION 5 — CATALOGUE
           ══════════════════════════════════════════ */}
           <div className="px-4 mt-4">
@@ -622,6 +586,8 @@ export function SellerProfilePage({
                 { id: 'vendus',    label: 'Vendus',    count: soldProducts.length },
                 ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length }] : []),
                 ...((s?.shopCategories?.length ?? 0) > 0 ? [{ id: 'collections', label: 'Collections', count: s?.shopCategories?.length ?? 0 }] : []),
+                ...(reposts.length > 0 ? [{ id: 'reposts', label: 'Reposts', count: reposts.length }] : []),
+                ...(reviews.length > 0 ? [{ id: 'avis', label: 'Avis', count: reviewCount }] : []),
               ] as { id: Tab; label: string; count: number }[]).map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
                   className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${
@@ -653,14 +619,31 @@ export function SellerProfilePage({
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {(tab === 'actifs' ? activeProducts : soldProducts).map(product => (
-                    <div key={product.id} className="active:scale-95 transition-transform">
-                      <ProductCard product={product} onClick={() => onProductClick(product)}
-                        onBookmark={handleBookmark} isBookmarked={bookmarkIds.has(product.id)}/>
+                <>
+                  {tab === 'actifs' ? (
+                    <div className="space-y-4">
+                      {activeProducts.map(product => (
+                        <ProductCardFeed
+                          key={product.id}
+                          product={product}
+                          onClick={() => onProductClick(product)}
+                          onBookmark={handleBookmark}
+                          isBookmarked={bookmarkIds.has(product.id)}
+                          isBoosted={false}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {soldProducts.map(product => (
+                        <div key={product.id} className="active:scale-95 transition-transform">
+                          <ProductCard product={product} onClick={() => onProductClick(product)}
+                            onBookmark={handleBookmark} isBookmarked={bookmarkIds.has(product.id)}/>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
               )
             )}
 
@@ -722,6 +705,110 @@ export function SellerProfilePage({
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* ── REPOSTS REÇUS ── */}
+            {tab === 'reposts' && (
+              <div className="space-y-4">
+                {reposts.map(r => (
+                  <button key={r.id}
+                    onClick={async () => {
+                      const { getProductById } = await import('@/services/productService');
+                      const real = await getProductById(r.originalProductId);
+                      if (real) onProductClick(real);
+                    }}
+                    className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+                      <div className="w-10 h-10 rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0">
+                        {r.reposterPhoto
+                          ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
+                          : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{r.reposterName?.charAt(0)?.toUpperCase()}</div>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-black text-slate-900 truncate">{r.reposterName}</p>
+                        <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                          a partagé ton article
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-300 font-bold flex-shrink-0">
+                        {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
+                      </span>
+                    </div>
+                    {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
+                      <p className="px-4 pb-3 text-[13px] text-slate-700 italic leading-snug">"{r.comment}"</p>
+                    )}
+                    {r.originalProductImage && (
+                      <div className="aspect-square bg-slate-100 overflow-hidden">
+                        <img src={r.originalProductImage} alt={r.originalProductTitle} className="w-full h-full object-cover"/>
+                      </div>
+                    )}
+                    <div className="px-4 py-3">
+                      <p className="text-[15px] font-black text-slate-900">{r.originalProductTitle}</p>
+                      <p className="text-[16px] font-black text-green-700 mt-0.5">
+                        {r.originalProductPrice?.toLocaleString('fr-FR')} <span className="text-[11px] font-bold text-slate-400">FCFA</span>
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── AVIS CLIENTS ── */}
+            {tab === 'avis' && (
+              <div className="space-y-3">
+                {/* Résumé */}
+                <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex items-center gap-4">
+                  <div className="text-center flex-shrink-0">
+                    <p className="text-3xl font-black text-slate-900">{avgRating.toFixed(1)}</p>
+                    <Stars rating={avgRating} size={11}/>
+                    <p className="text-[9px] text-slate-400 font-bold mt-0.5">{reviewCount} avis</p>
+                  </div>
+                  <div className="flex-1">
+                    {[5,4,3,2,1].map(star => {
+                      const count = reviews.filter(r => r.rating === star).length;
+                      const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                      return (
+                        <div key={star} className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[9px] text-slate-400 w-2 font-bold">{star}</span>
+                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${pct}%` }}/>
+                          </div>
+                          <span className="text-[9px] text-slate-400 w-3 font-bold text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Liste */}
+                {reviews.map(review => (
+                  <div key={review.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                        {review.fromUserPhoto
+                          ? <img src={review.fromUserPhoto} alt="" className="w-full h-full object-cover"/>
+                          : <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-sm">{review.fromUserName?.charAt(0)?.toUpperCase()}</div>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-900 text-[12px] truncate">{review.fromUserName}</p>
+                        {review.productTitle && <p className="text-[10px] text-slate-400 truncate">{review.productTitle}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <Stars rating={review.rating} size={11}/>
+                        {review.createdAt && (
+                          <span className="text-[9px] text-slate-300">
+                            {new Date((review.createdAt as any)?.toDate?.() || review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {review.comment && <p className="text-[12px] text-slate-600 italic leading-snug">"{review.comment}"</p>}
+                  </div>
+                ))}
               </div>
             )}
 

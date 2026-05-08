@@ -15,7 +15,8 @@ import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
-import { getRepostsFeed, getRecentReposts } from '@/services/shopFeaturesService';
+import { getRepostsFeed, getRecentReposts, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
+import { searchSellers } from '@/services/userService';
 import type { Repost } from '@/types';
 
 interface HomePageProps {
@@ -101,6 +102,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [loadingTrending, setLoadingTrending] = useState(false);
   const [repostsFeed, setRepostsFeed] = useState<any[]>([]);
   const [allReposts, setAllReposts] = useState<any[]>([]);
+  const [sellerResults, setSellerResults] = useState<any[]>([]);
+  const [sellerSearchLoading, setSellerSearchLoading] = useState(false);
+  const [sellerSearchTerm, setSellerSearchTerm] = useState('');
 
   // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
   const ALL_CATEGORIES = [
@@ -201,6 +205,22 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   useEffect(() => {
     getRecentReposts(15).then(setAllReposts).catch(() => {});
   }, []);
+
+  // ── Recherche vendeurs quand searchTerm contient @ ou "vendeur:" ──
+  useEffect(() => {
+    const term = searchTerm.trim();
+    if (!term.startsWith('@') && !term.toLowerCase().startsWith('vendeur:')) {
+      setSellerResults([]);
+      return;
+    }
+    const q = term.startsWith('@') ? term.slice(1) : term.slice(8);
+    if (q.length < 1) { setSellerResults([]); return; }
+    setSellerSearchLoading(true);
+    searchSellers(q, 10)
+      .then(setSellerResults)
+      .catch(() => {})
+      .finally(() => setSellerSearchLoading(false));
+  }, [searchTerm]);
 
   // ── Charger le feed "Pour toi" quand l'onglet est activé ──
   useEffect(() => {
@@ -352,6 +372,72 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       </div>
 
       {/* Bouton alerte de recherche — affiché quand il y a un terme de recherche */}
+      {/* ── RÉSULTATS RECHERCHE VENDEURS (@nom) ── */}
+      {sellerResults.length > 0 && (
+        <div className="px-5 pt-4 pb-2">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            Vendeurs ({sellerResults.length})
+          </p>
+          <div className="space-y-2">
+            {sellerResults.map(seller => (
+              <div key={seller.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 p-3 active:scale-[0.98] transition-all">
+                {/* Avatar */}
+                <button onClick={() => onSellerClick?.(seller.id)} className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100">
+                    {seller.photoURL
+                      ? <img src={seller.photoURL} alt={seller.name} className="w-full h-full object-cover"/>
+                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-lg">{seller.name?.charAt(0)?.toUpperCase()}</div>
+                    }
+                  </div>
+                </button>
+                {/* Infos */}
+                <button onClick={() => onSellerClick?.(seller.id)} className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-black text-slate-900 text-[13px] truncate">{seller.name}</p>
+                    {(seller.isVerified || seller.isPremium) && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <polyline points="9,12 11,14 15,10"/>
+                      </svg>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-bold truncate">
+                    {seller.neighborhood && `📍 ${seller.neighborhood}`}
+                    {seller.followerCount > 0 && ` · ${seller.followerCount} abonnés`}
+                  </p>
+                </button>
+                {/* Bouton Suivre inline */}
+                {!isGuest && currentUser && currentUser.uid !== seller.id && (
+                  <button
+                    onClick={async () => {
+                      const isF = userProfile?.followingSellers?.includes(seller.id);
+                      try {
+                        if (isF) await unfollowSeller(currentUser.uid, seller.id);
+                        else await followSeller(currentUser.uid, seller.id, seller.name);
+                        await refreshUserProfile?.();
+                      } catch {}
+                    }}
+                    className="flex-shrink-0 px-3 py-2 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all active:scale-95 border-2"
+                    style={{
+                      borderColor: '#16A34A',
+                      color: userProfile?.followingSellers?.includes(seller.id) ? 'white' : '#16A34A',
+                      background: userProfile?.followingSellers?.includes(seller.id) ? '#16A34A' : 'transparent',
+                    }}
+                  >
+                    {userProfile?.followingSellers?.includes(seller.id) ? '✓ Suivi' : '+ Suivre'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {sellerSearchLoading && (
+        <div className="px-5 pt-4 text-center">
+          <div className="w-5 h-5 border-2 border-slate-200 border-t-green-500 rounded-full animate-spin mx-auto"/>
+        </div>
+      )}
+
       {searchTerm.trim().length >= 2 && (
         <div className="px-5 pb-2 flex items-center gap-2">
           <span className="text-[11px] text-slate-400 font-medium">
