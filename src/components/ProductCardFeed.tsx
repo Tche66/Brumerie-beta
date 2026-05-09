@@ -17,6 +17,7 @@ interface ProductCardFeedProps {
   isBookmarked?: boolean;
   isBoosted?: boolean;
   onGuestAction?: () => void;
+  onSellerClick?: (sellerId: string) => void;
 }
 
 function safeTs(val: any): number {
@@ -27,7 +28,7 @@ function safeTs(val: any): number {
 }
 
 export function ProductCardFeed({
-  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction,
+  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick,
 }: ProductCardFeedProps) {
   const { currentUser } = useAuth();
   const images = product.images?.length
@@ -122,15 +123,21 @@ export function ProductCardFeed({
   return (
     <div className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm">
 
-      {/* ── Header vendeur ── */}
+      {/* ── Header vendeur — cliquable ── */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <div className="w-10 h-10 rounded-2xl overflow-hidden bg-green-50 flex-shrink-0 border border-gray-100">
+        <button
+          onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
+          className="w-10 h-10 rounded-2xl overflow-hidden bg-green-50 flex-shrink-0 border border-gray-100 active:scale-90 transition-all"
+        >
           {product.sellerPhoto
             ? <img src={product.sellerPhoto} alt={product.sellerName} className="w-full h-full object-cover"/>
             : <div className="w-full h-full flex items-center justify-center text-green-600 font-black text-sm">{product.sellerName?.charAt(0)}</div>
           }
-        </div>
-        <div className="flex-1 min-w-0">
+        </button>
+        <button
+          onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
+          className="flex-1 min-w-0 text-left active:opacity-70 transition-all"
+        >
           <div className="flex items-center gap-1.5">
             <span className="text-[13px] font-black text-gray-900 truncate">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
@@ -141,7 +148,7 @@ export function ProductCardFeed({
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="3" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{product.neighborhood}</span>
           </div>
-        </div>
+        </button>
         {isBoosted && (
           <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-tighter flex-shrink-0">⚡ Sponsorisé</span>
         )}
@@ -185,7 +192,18 @@ export function ProductCardFeed({
           {isNew && <span className="bg-green-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter">Nouveau</span>}
           {product.status === 'sold' && <span className="bg-gray-900/90 text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter">Vendu</span>}
           {product.condition && product.status !== 'sold' && <ConditionBadge condition={product.condition} size="sm"/>}
+          {(p as any).hasAcceptedOffer && product.status !== 'sold' && (
+            <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-tighter">🤝 Offre</span>
+          )}
         </div>
+        {/* Badge Vente flash */}
+        {(p as any).flashSaleActive && (p as any).flashSaleLabel && (
+          <div className="absolute bottom-10 left-0 right-0 mx-3">
+            <div className="bg-red-500/95 backdrop-blur-sm text-white text-[9px] font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 justify-center animate-pulse">
+              🔥 {(p as any).flashSaleLabel}
+            </div>
+          </div>
+        )}
 
         {/* Indicateurs de position */}
         {images.length > 1 && (

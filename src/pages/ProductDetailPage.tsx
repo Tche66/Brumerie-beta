@@ -5,6 +5,7 @@ import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments } from '@/services/productService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
+import { searchAllUsers } from '@/services/userService';
 import { repostProduct, getRepostsForProduct } from '@/services/shopFeaturesService';
 import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
@@ -84,6 +85,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [commentPhoto, setCommentPhoto] = useState<File | null>(null);
   const [commentPhotoPreview, setCommentPhotoPreview] = useState<string | null>(null);
   const [uploadingCommentPhoto, setUploadingCommentPhoto] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionResults, setMentionResults] = useState<any[]>([]);
+  const [mentionLoading, setMentionLoading] = useState(false);
+  const [mentionStart, setMentionStart] = useState(-1);
   const [showAllComments, setShowAllComments] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; userName: string } | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -702,11 +707,13 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 const pct = crossed ? Math.round(((crossed - displayPrice) / crossed) * 100) : 0;
                 return (
                   <>
-                    {p.flashSaleLabel && promoActive && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-3 py-1 rounded-full mb-1">
-                        🔥 {p.flashSaleLabel}
-                        {p.promoActiveUntil && <span className="text-orange-400">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>}
-                      </span>
+                    {(p.flashSaleLabel || p.flashSaleActive) && (
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-full mb-2 animate-pulse shadow-md">
+                        🔥 {p.flashSaleLabel || 'Vente flash en cours'}
+                        {p.promoActiveUntil && (
+                          <span className="opacity-80 font-bold">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                        )}
+                      </div>
                     )}
                     <p className="price-brumerie text-[38px] text-slate-900 leading-none" style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, letterSpacing:'-0.04em' }}>
                       {displayPrice.toLocaleString('fr-FR')} <span className="text-[20px] text-slate-400 font-bold" style={{ fontFamily:"'DM Sans',sans-serif" }}>FCFA</span>
@@ -943,6 +950,42 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{userProfile?.name?.charAt(0)}</div>
                 }
               </div>
+              {/* ── Dropdown mentions @utilisateur ── */}
+              {mentionResults.length > 0 && (
+                <div className="mb-2 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+                  {mentionResults.map(user => (
+                    <button key={user.id}
+                      onClick={() => {
+                        // Remplacer @query par @nom dans le texte
+                        const before = commentText.slice(0, mentionStart);
+                        const after = commentText.slice(mentionStart + 1 + mentionQuery.length);
+                        setCommentText(before + '@' + user.name + ' ' + after);
+                        setMentionResults([]);
+                        setMentionStart(-1);
+                      }}
+                      className="flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-slate-50 active:bg-slate-100 transition-all border-b border-slate-50 last:border-none"
+                    >
+                      <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                        {user.photoURL
+                          ? <img src={user.photoURL} alt="" className="w-full h-full object-cover"/>
+                          : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{user.name?.charAt(0)?.toUpperCase()}</div>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-900 text-[12px] truncate">{user.name}</p>
+                        {user.neighborhood && <p className="text-[10px] text-slate-400 truncate">{user.neighborhood}</p>}
+                      </div>
+                      {(user.isVerified || user.isPremium) && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                          <polyline points="9,12 11,14 15,10"/>
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="flex-1 bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-green-400 transition-all overflow-hidden">
                 {/* Preview photo sélectionnée */}
                 {commentPhotoPreview && (
@@ -956,9 +999,29 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 )}
                 <textarea
                   value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setCommentText(val);
+                    // Détecter @ pour les mentions
+                    const cursor = e.target.selectionStart || 0;
+                    const before = val.slice(0, cursor);
+                    const atIdx = before.lastIndexOf('@');
+                    if (atIdx >= 0 && !before.slice(atIdx + 1).includes(' ') && before.slice(atIdx + 1).length >= 1) {
+                      const q = before.slice(atIdx + 1);
+                      setMentionStart(atIdx);
+                      setMentionQuery(q);
+                      setMentionLoading(true);
+                      searchAllUsers(q, 5)
+                        .then(setMentionResults)
+                        .catch(() => {})
+                        .finally(() => setMentionLoading(false));
+                    } else {
+                      setMentionResults([]);
+                      setMentionStart(-1);
+                    }
+                  }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
-                  placeholder={commentPhoto ? "Ajouter un texte... (optionnel)" : "Ajouter un commentaire..."}
+                  placeholder={commentPhoto ? "Ajouter un texte... (optionnel)" : "Ajouter un commentaire... (@ pour mentionner)"}
                   rows={commentText.length > 60 ? 3 : 1}
                   className="w-full px-4 pt-3 pb-1 bg-transparent text-[13px] font-medium text-slate-700 placeholder:text-slate-400 outline-none resize-none"
                 />

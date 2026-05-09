@@ -588,6 +588,7 @@ useEffect(() => {
         {activePage === 'home' && (
           <HomePage
             onProductClick={handleProductClick}
+            onSellerClick={handleSellerClick}
             onProfileClick={() => navigate('profile')}
             onLogoClick={handleLogoClick}
             onNotificationsClick={() => navigate('notifications')}

@@ -32,6 +32,7 @@ interface HomePageProps {
   onSwitchToSeller?: () => void;
   onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
   onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
+  onSellerClick?: (sellerId: string) => void;
 }
 
 
@@ -78,7 +79,8 @@ function safeTs(val: any): number {
   try { return new Date(val).getTime() || 0; } catch { return 0; }
 }
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller }: HomePageProps) {
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller   onSellerClick,
+}: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const appConfig = useAppConfig();
   const [products, setProducts] = useState<Product[]>([]);
@@ -950,6 +952,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                         isBookmarked={bookmarkIds.has(item.data.id)}
                         isBoosted={boostedIds.has(item.data.id)}
                         onGuestAction={() => onGuestAction?.('like')}
+                        onSellerClick={onSellerClick}
                       />
                     );
                   })}

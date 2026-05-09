@@ -378,43 +378,56 @@ export function SellerProfilePage({
                 )}
               </div>
 
-              {/* CTA principal — visiteur */}
+              {/* CTA visiteur — côte à côte compact style Depop */}
               {!isSelf && !isGuest && currentUser && (
-                <button
-                  disabled={followLoading}
-                  onClick={async () => {
-                    if (!currentUser) return;
-                    setFollowLoading(true);
-                    try {
-                      if (isFollowing) {
-                        await unfollowSeller(currentUser.uid, sellerId);
-                        setIsFollowing(false);
-                        setFollowersCount(c => Math.max(0, c - 1));
-                      } else {
-                        await followSeller(currentUser.uid, sellerId, seller.name);
-                        setIsFollowing(true);
-                        setFollowersCount(c => c + 1);
-                      }
-                      await refreshUserProfile();
-                    } catch {}
-                    setFollowLoading(false);
-                  }}
-                  className="px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 border-2 flex-shrink-0"
-                  style={{
-                    borderColor: s?.shopThemeColor || '#16A34A',
-                    color: isFollowing ? 'white' : (s?.shopThemeColor || '#16A34A'),
-                    background: isFollowing ? (s?.shopThemeColor || '#16A34A') : 'transparent',
-                  }}>
-                  {followLoading ? '...' : isFollowing ? '✓ Suivi' : '+ Suivre'}
-                </button>
-              )}
-              {!isSelf && !isGuest && onStartChat && (
-                <button onClick={() => onStartChat(sellerId, seller.name)}
-                  className="w-full max-w-xs py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 shadow-lg shadow-green-200 active:scale-95 transition-all mb-2"
-                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                  Contacter le vendeur
-                </button>
+                <div className="flex gap-2 w-full max-w-xs">
+                  {/* Suivre */}
+                  <button
+                    disabled={followLoading}
+                    onClick={async () => {
+                      if (!currentUser) return;
+                      setFollowLoading(true);
+                      try {
+                        if (isFollowing) {
+                          await unfollowSeller(currentUser.uid, sellerId);
+                          setIsFollowing(false);
+                          setFollowersCount(c => Math.max(0, c - 1));
+                        } else {
+                          await followSeller(currentUser.uid, sellerId, seller.name);
+                          setIsFollowing(true);
+                          setFollowersCount(c => c + 1);
+                        }
+                        await refreshUserProfile();
+                      } catch {}
+                      setFollowLoading(false);
+                    }}
+                    className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 border-2 transition-all flex items-center justify-center gap-1.5"
+                    style={{
+                      borderColor: s?.shopThemeColor || '#16A34A',
+                      color: isFollowing ? 'white' : (s?.shopThemeColor || '#16A34A'),
+                      background: isFollowing ? (s?.shopThemeColor || '#16A34A') : 'transparent',
+                    }}
+                  >
+                    {followLoading ? (
+                      <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"/>
+                    ) : isFollowing ? (
+                      <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20,6 9,17 4,12"/></svg> Suivi</>
+                    ) : (
+                      <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Suivre</>
+                    )}
+                  </button>
+                  {/* Contacter */}
+                  {onStartChat && (
+                    <button
+                      onClick={() => onStartChat(sellerId, seller.name)}
+                      className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      Contacter
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* CTA propriétaire */}
@@ -630,6 +643,7 @@ export function SellerProfilePage({
                           onBookmark={handleBookmark}
                           isBookmarked={bookmarkIds.has(product.id)}
                           isBoosted={false}
+                          onSellerClick={onSellerClick}
                         />
                       ))}
                     </div>

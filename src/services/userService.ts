@@ -141,18 +141,40 @@ export async function searchSellers(nameQuery: string, limitCount: number = 10):
   if (!nameQuery.trim()) return [];
   const q = nameQuery.trim().toLowerCase();
   try {
-    // Firestore ne supporte pas les recherches LIKE — on charge et filtre côté client
+    // Stratégie 1 : chercher par role === 'seller'
     const snap = await getDocs(
       query(collection(db, 'users'),
-        where('isSeller', '==', true),
-        limit(200)
+        where('role', '==', 'seller'),
+        limit(300)
       )
     );
-    return snap.docs
+    const results = snap.docs
+      .map(d => ({ id: d.id, uid: d.id, ...d.data() }) as User)
+      .filter(u => u.name?.toLowerCase().includes(q))
+      .slice(0, limitCount);
+
+    if (results.length > 0) return results;
+
+    // Fallback : chercher parmi tous les users (si role non défini)
+    const snapAll = await getDocs(query(collection(db, 'users'), limit(300)));
+    return snapAll.docs
       .map(d => ({ id: d.id, uid: d.id, ...d.data() }) as User)
       .filter(u => u.name?.toLowerCase().includes(q))
       .slice(0, limitCount);
   } catch {
     return [];
   }
+}
+
+// Recherche de tous les utilisateurs (pour mentions @)
+export async function searchAllUsers(nameQuery: string, limitCount: number = 8): Promise<User[]> {
+  if (!nameQuery.trim()) return [];
+  const q = nameQuery.trim().toLowerCase();
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), limit(300)));
+    return snap.docs
+      .map(d => ({ id: d.id, uid: d.id, ...d.data() }) as User)
+      .filter(u => u.name?.toLowerCase().includes(q))
+      .slice(0, limitCount);
+  } catch { return []; }
 }
