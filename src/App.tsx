@@ -651,6 +651,7 @@ useEffect(() => {
             onNavigate={handleNavigate}
             isGuest={!currentUser}
             onGuestAction={(reason) => { navigate('auth'); }}
+            onSellerClick={handleSellerClick}
           />
         )}
         {activePage === 'profile' && isBuyer && (

@@ -64,13 +64,14 @@ interface SellerProfilePageProps {
   onNavigate?: (page: string) => void;
   isGuest?: boolean;
   onGuestAction?: (reason: string) => void;
+  onSellerClick?: (sellerId: string) => void;
 }
 
 type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections' | 'reposts' | 'avis';
 
 export function SellerProfilePage({
   sellerId, onBack, onProductClick, onStartChat,
-  onEditProduct, onNavigate, isGuest, onGuestAction,
+  onEditProduct, onNavigate, isGuest, onGuestAction, onSellerClick,
 }: SellerProfilePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const isSelf = currentUser?.uid === sellerId;

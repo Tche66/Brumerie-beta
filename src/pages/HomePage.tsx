@@ -79,7 +79,7 @@ function safeTs(val: any): number {
   try { return new Date(val).getTime() || 0; } catch { return 0; }
 }
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller,   onSellerClick,
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller, onSellerClick,
 }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const appConfig = useAppConfig();
