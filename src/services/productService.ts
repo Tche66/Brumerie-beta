@@ -23,6 +23,10 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { createNotification } from '@/services/notificationService';
+import { db } from '@/config/firebase';
+import { Product } from '@/types';
+import type { ProductComment } from '@/types';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 
 // Helper interne — timestamp sécurisé pour les tris
 function safeGetTime(val: any): number {
@@ -32,12 +36,6 @@ function safeGetTime(val: any): number {
   if (val.seconds) return val.seconds * 1000;
   try { const d = new Date(val); return isNaN(d.getTime()) ? 0 : d.getTime(); } catch { return 0; }
 }
-
-
-import { db } from '@/config/firebase';
-import { Product } from '@/types';
-import type { ProductComment } from '@/types';
-import { uploadToCloudinary } from '@/utils/uploadImage';
 
 // ── Supprimer les champs undefined (Firestore les refuse) ──────
 function cleanUndefined(obj: Record<string, any>): Record<string, any> {
