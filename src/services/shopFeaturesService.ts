@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { createNotification } from '@/services/notificationService';
+import type { Repost } from '@/types';
 
 // ════════════════════════════════════════════════════════════
 // 1. PRÉSENCE & DERNIER VU
@@ -376,7 +377,6 @@ export function getEffectivePrice(product: { price: number; promoPrice?: number;
 // ════════════════════════════════════════════════════════════
 // REPOST — Partage d'un article avec commentaire
 // ════════════════════════════════════════════════════════════
-import type { Repost } from '@/types';
 
 export async function repostProduct(
   reposterId: string,

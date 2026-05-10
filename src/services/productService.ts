@@ -36,6 +36,7 @@ function safeGetTime(val: any): number {
 
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
+import type { ProductComment } from '@/types';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 
 // ── Supprimer les champs undefined (Firestore les refuse) ──────
@@ -420,7 +421,6 @@ export async function syncSellerDataToProducts(
 // SOCIAL COMMERCE — Likes & Commentaires
 // ─────────────────────────────────────────────────────────────
 
-import type { ProductComment } from '@/types';
 
 
 export async function getProductById(productId: string): Promise<Product | null> {
