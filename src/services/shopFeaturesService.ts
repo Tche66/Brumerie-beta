@@ -7,7 +7,6 @@ import {
   increment, serverTimestamp, setDoc, onSnapshot, addDoc,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { createNotification } from '@/services/notificationService';
 import type { Repost } from '@/types';
 
 // ════════════════════════════════════════════════════════════
@@ -161,7 +160,8 @@ export async function followSeller(buyerId: string, sellerId: string, sellerName
       followerCount: increment(1),
     });
   } catch {}
-  await createNotification(sellerId, 'follow',
+  const { createNotification: cnF } = await import('@/services/notificationService');
+  await cnF(sellerId, 'follow',
     '👤 Nouvel abonné !',
     `${buyerId} suit maintenant ta boutique. Continue à publier pour rester visible !`,
     { senderId: buyerId }
@@ -398,7 +398,8 @@ export async function repostProduct(
     comment: comment.trim(),
     createdAt: serverTimestamp(),
   });
-  await createNotification(
+  const { createNotification: cnR } = await import('@/services/notificationService');
+  await cnR(
     product.sellerId,
     'repost',
     '🔄 ' + reposterName + ' a partagé ton article',

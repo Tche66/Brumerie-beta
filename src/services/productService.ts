@@ -22,7 +22,6 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import { createNotification } from '@/services/notificationService';
 import { db } from '@/config/firebase';
 import { Product } from '@/types';
 import type { ProductComment } from '@/types';
@@ -464,7 +463,8 @@ export async function toggleLike(
       const sellerId = prodSnap2.data()?.sellerId;
       const productTitle = prodSnap2.data()?.title || 'ton article';
       if (sellerId && sellerId !== userId) {
-        await createNotification(sellerId, 'like',
+        const { createNotification: cn } = await import('@/services/notificationService');
+        await cn(sellerId, 'like',
           "❤️ Nouveau j'aime",
           `Quelqu'un a aimé "${productTitle.slice(0, 40)}${productTitle.length > 40 ? '...' : ''}"`,
           { productId }
@@ -510,7 +510,8 @@ export async function addComment(
     const sellerId = prodSnap.data()?.sellerId;
     const productTitle = prodSnap.data()?.title || 'ton article';
     if (sellerId && sellerId !== userId) {
-      await createNotification(sellerId, 'comment',
+      const { createNotification: cn2 } = await import('@/services/notificationService');
+      await cn2(sellerId, 'comment',
         '💬 Nouveau commentaire',
         `${userName} a commenté "${productTitle.slice(0, 30)}${productTitle.length > 30 ? '...' : ''}" : "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"`,
         { productId }
@@ -521,7 +522,8 @@ export async function addComment(
       const parentSnap = await getDoc(doc(db, 'products', productId, 'comments', parentId));
       const parentAuthorId = parentSnap.data()?.userId;
       if (parentAuthorId && parentAuthorId !== userId) {
-        await createNotification(parentAuthorId, 'comment_reply',
+        const { createNotification: cn3 } = await import('@/services/notificationService');
+        await cn3(parentAuthorId, 'comment_reply',
           '↩️ Réponse à ton commentaire',
           `${userName} a répondu : "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
           { productId }
