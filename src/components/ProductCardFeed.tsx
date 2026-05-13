@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Product } from '@/types';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
+import { CountdownBadge } from '@/components/CountdownBadge';
 import { toggleLike, checkIsLiked } from '@/services/productService';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -120,6 +121,9 @@ export function ProductCardFeed({
 
   const isNew = safeTs(product.createdAt) > Date.now() - 48 * 60 * 60 * 1000;
 
+  // Vente flash
+  const isFlash = p.flashSaleActive && (p.flashSaleLabel || p.flashSaleExpiresAt);
+
   return (
     <div className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm">
 
@@ -153,6 +157,35 @@ export function ProductCardFeed({
           <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-tighter flex-shrink-0">⚡ Sponsorisé</span>
         )}
       </div>
+
+      {/* ── BANDEAU VENTE FLASH — AU-DESSUS de la galerie si actif ── */}
+      {isFlash && product.status !== 'sold' && (
+        <div className="mx-0 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg leading-none">🔥</span>
+            <div className="min-w-0">
+              <p className="text-white text-[11px] font-black uppercase tracking-wide leading-tight">
+                {p.flashSaleLabel || 'Vente Flash'}
+              </p>
+              {p.flashSaleExpiresAt && (
+                <p className="text-white/80 text-[9px] font-bold mt-0.5">Offre limitée — se termine dans</p>
+              )}
+            </div>
+          </div>
+          {p.flashSaleExpiresAt ? (
+            <div className="flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 border border-white/30">
+              <CountdownBadge
+                expiresAt={p.flashSaleExpiresAt}
+                size="md"
+              />
+            </div>
+          ) : (
+            <span className="flex-shrink-0 text-white/90 text-[9px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-lg animate-pulse">
+              Stock limité
+            </span>
+          )}
+        </div>
+      )}
 
       {/* ── Galerie images avec swipe ── */}
       <div
@@ -196,12 +229,13 @@ export function ProductCardFeed({
             <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-tighter">🤝 Offre</span>
           )}
         </div>
-        {/* Badge Vente flash */}
-        {(p as any).flashSaleActive && (p as any).flashSaleLabel && (
-          <div className="absolute bottom-10 left-0 right-0 mx-3">
-            <div className="bg-red-500/95 backdrop-blur-sm text-white text-[9px] font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 justify-center animate-pulse">
-              🔥 {(p as any).flashSaleLabel}
-            </div>
+
+        {/* Stock restant si flash actif — crée l'urgence */}
+        {isFlash && product.quantity && product.quantity <= 5 && product.status !== 'sold' && (
+          <div className="absolute top-3 right-3">
+            <span className="bg-red-600/90 backdrop-blur-sm text-white text-[9px] font-black px-2.5 py-1 rounded-xl shadow-lg animate-pulse">
+              🚨 Plus que {product.quantity} en stock
+            </span>
           </div>
         )}
 

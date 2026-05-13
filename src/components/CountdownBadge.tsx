@@ -9,13 +9,14 @@ interface Props {
 
 function msToHuman(ms: number): string {
   if (ms <= 0) return 'Expiré';
-  const totalMinutes = Math.floor(ms / 60000);
-  const days    = Math.floor(totalMinutes / 1440);
-  const hours   = Math.floor((totalMinutes % 1440) / 60);
-  const minutes = totalMinutes % 60;
-  if (days > 0)  return `${days}j ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
+  const totalSeconds = Math.floor(ms / 1000);
+  const days    = Math.floor(totalSeconds / 86400);
+  const hours   = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0)  return `${days}j ${String(hours).padStart(2,'0')}h${String(minutes).padStart(2,'0')}`;
+  if (hours > 0) return `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
 }
 
 function urgencyColor(ms: number): { bg: string; text: string; dot: string } {
@@ -26,38 +27,41 @@ function urgencyColor(ms: number): { bg: string; text: string; dot: string } {
 }
 
 export function CountdownBadge({ expiresAt, onExpire, size = 'sm' }: Props) {
-  const [ms, setMs] = useState(() => {
+  const getMs = () => {
     const d = expiresAt?.toDate ? expiresAt.toDate() : new Date(expiresAt);
     return d.getTime() - Date.now();
-  });
+  };
+
+  const [ms, setMs] = useState(getMs);
 
   useEffect(() => {
+    // Tick chaque seconde pour affichage HH:MM:SS
     const tick = setInterval(() => {
-      const d = expiresAt?.toDate ? expiresAt.toDate() : new Date(expiresAt);
-      const remaining = d.getTime() - Date.now();
+      const remaining = getMs();
       setMs(remaining);
       if (remaining <= 0) {
         clearInterval(tick);
         onExpire?.();
       }
-    }, 30000); // refresh toutes les 30s
+    }, 1000);
     return () => clearInterval(tick);
   }, [expiresAt]);
 
   const { bg, text, dot } = urgencyColor(ms);
   const label = msToHuman(ms);
   const isExpired = ms <= 0;
+  const isUrgent = ms > 0 && ms < 24 * 3600000;
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl font-bold ${size === 'md' ? 'text-[11px]' : 'text-[10px]'} ${bg} ${text}`}>
       {/* Point clignotant si urgent */}
-      {!isExpired && ms < 24 * 3600000 ? (
-        <span className="relative flex h-2 w-2">
+      {!isExpired && isUrgent ? (
+        <span className="relative flex h-2 w-2 flex-shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: dot }}/>
           <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: dot }}/>
         </span>
       ) : (
-        <span className="w-2 h-2 rounded-full" style={{ background: dot }}/>
+        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }}/>
       )}
       {isExpired ? 'Expiré' : `⏱ ${label}`}
     </span>
