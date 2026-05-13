@@ -569,4 +569,341 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                       <p className="font-black text-slate-900 text-[11px] truncate">{p.title}</p>
                       <p className="text-[9px] text-slate-500 font-bold">
                         {p.price.toLocaleString('fr-FR')} FCFA
-                        {p.originalP
+                        {p.originalPrice && p.originalPrice > p.price && (
+                          <span className="ml-1 text-red-500">
+                            -{Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-[8px] text-slate-400 flex items-center gap-0.5">
+                          <span className="text-slate-300">{Icon.chat}</span> {p.whatsappClickCount || 0}
+                        </span>
+                        {!isSimple && (
+                          <span className="text-[8px] text-slate-400 flex items-center gap-0.5">
+                            <span className="text-slate-300">{Icon.eye}</span> {p.viewCount || 0}
+                          </span>
+                        )}
+                        {p.quantity && p.quantity > 1 && (
+                          <span className="text-[8px] bg-slate-100 text-slate-600 px-1.5 rounded font-bold">{p.quantity} en stock</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <span className={`text-[8px] font-black px-2 py-1 rounded-lg ${
+                        p.status === 'sold' ? 'bg-slate-100 text-slate-400' : 'bg-green-100 text-green-700'}`}>
+                        {p.status === 'sold' ? 'Vendu' : 'Actif'}
+                      </span>
+                      {onEditProduct && p.status !== 'sold' && (
+                        <button onClick={() => onEditProduct(p)}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all text-slate-500">
+                          {Icon.edit}
+                        </button>
+                      )}
+                      {p.status !== 'sold' && (
+                        <button onClick={() => setBoostProduct(p)}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl bg-blue-500 active:scale-90 transition-all shadow-sm shadow-blue-200"
+                          title="Booster l'annonce">
+                          <span className="text-[14px]"><BruIcons.Zap size={14}/></span>
+                        </button>
+                      )}
+                      <button onClick={() => setActionProduct(p)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all text-slate-500 text-lg font-black">
+                        ···
+                      </button>
+                      {activeBoosts[p.id] && (
+                        <CountdownBadge expiresAt={activeBoosts[p.id].expiresAt} size="sm"/>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════ COMMANDES ══════════════ */}
+        {activeTab === 'commandes' && (
+          activeOrders.length === 0 ? (
+            <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm">
+              <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-400 mx-auto mb-3">
+                {Icon.order}
+              </div>
+              <p className="font-black text-slate-400 text-[10px] uppercase">Aucune commande en cours</p>
+              <p className="text-slate-300 text-[9px] font-bold mt-1">Les nouvelles commandes apparaîtront ici</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+              <div className="divide-y divide-slate-50">
+                {activeOrders.map((o: Order) => (
+                  <button key={o.id} onClick={() => onOpenOrder?.(o.id)}
+                    className="w-full flex items-center gap-3 p-4 active:bg-slate-50 text-left">
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                      {o.productImage && <img src={o.productImage} alt="" className="w-full h-full object-cover"/>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-900 text-[11px] truncate">{o.productTitle}</p>
+                      <p className="text-[9px] text-slate-500 font-bold">{o.buyerName}</p>
+                      <p className="text-[9px] text-slate-400">{o.totalAmount?.toLocaleString('fr-FR')} FCFA · {fmt(o.createdAt)}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <StatusBadge status={o.status}/>
+                      <span className="text-slate-300">{Icon.arrowRight}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        )}
+
+        {/* ══════════════ OFFRES ══════════════ */}
+        {activeTab === 'offres' && (
+          pendingOffers.length === 0 ? (
+            <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm">
+              <div className="w-16 h-16 bg-amber-50 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-3"></div>
+              <p className="font-black text-slate-400 text-[10px] uppercase">Aucune offre en attente</p>
+              <p className="text-slate-300 text-[9px] font-bold mt-1">Les offres de tes acheteurs apparaîtront ici</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingOffers.map((offer: any) => (
+                <div key={offer.msgId} className="bg-white rounded-3xl border-2 border-amber-200 overflow-hidden shadow-sm p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                      {offer.productRef?.image && <img src={offer.productRef.image} alt="" className="w-full h-full object-cover"/>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Offre de {offer.buyerName}</p>
+                      <p className="font-black text-slate-900 text-[13px]">{offer.offerPrice.toLocaleString('fr-FR')} FCFA</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[9px] text-slate-400 truncate">{offer.productTitle}</p>
+                        {offer.productRef?.price && (
+                          <span className="text-[8px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-lg font-bold">
+                            Prix demandé : {offer.productRef.price.toLocaleString('fr-FR')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {offer.productRef?.price && (
+                      <div className={`text-center flex-shrink-0 px-2 py-1 rounded-xl ${
+                        offer.offerPrice < offer.productRef.price * 0.7 ? 'bg-red-50' : offer.offerPrice >= offer.productRef.price * 0.9 ? 'bg-green-50' : 'bg-amber-50'
+                      }`}>
+                        <p className={`font-black text-[11px] ${
+                          offer.offerPrice < offer.productRef.price * 0.7 ? 'text-red-600' : offer.offerPrice >= offer.productRef.price * 0.9 ? 'text-green-700' : 'text-amber-700'
+                        }`}>
+                          -{Math.round((1 - offer.offerPrice / offer.productRef.price) * 100)}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!userProfile) return;
+                        setRespondingOffer(offer.msgId);
+                        try { await respondToOffer(offer.convId, offer.msgId, userProfile.id, userProfile.name, 'refused', userProfile.photoURL); }
+                        finally { setRespondingOffer(null); }
+                      }}
+                      disabled={respondingOffer === offer.msgId}
+                      className="flex-1 py-3 rounded-2xl bg-red-100 text-red-700 font-black text-[10px] uppercase active:scale-95 transition-all disabled:opacity-50">
+                      <BruIcons.XCircle size={14}/> Refuser
+                    </button>
+                    <button
+                      onClick={() => onOpenChat?.(offer.convId)}
+                      className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-700 font-black text-[10px] uppercase active:scale-95 transition-all">
+                      <BruIcons.MessageCircle size={14}/> Discuter
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!userProfile) return;
+                        setRespondingOffer(offer.msgId);
+                        try { await respondToOffer(offer.convId, offer.msgId, userProfile.id, userProfile.name, 'accepted', userProfile.photoURL); }
+                        finally { setRespondingOffer(null); }
+                      }}
+                      disabled={respondingOffer === offer.msgId}
+                      className="flex-[2] py-3 rounded-2xl text-white font-black text-[10px] uppercase active:scale-95 transition-all disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                      {respondingOffer === offer.msgId ? '...' : 'Accepter'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* ══════════════ VENTES — Vérifié/Premium ══════════════ */}
+        {activeTab === 'ventes' && !isSimple && (
+          <>
+            {/* Hero revenus */}
+            <div className="rounded-3xl p-5 text-white relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg,#0F0F0F,#1a1a1a)' }}>
+              <div className="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-white/5"/>
+              <p className="text-[9px] font-black uppercase tracking-widest opacity-50 mb-1 flex items-center gap-1.5">
+                {Icon.trending} Revenus totaux
+              </p>
+              <p className="font-black text-3xl mb-3">
+                {totalRevenue.toLocaleString('fr-FR')} <span className="text-lg opacity-50">FCFA</span>
+              </p>
+              <div className="flex gap-5">
+                <div>
+                  <p className="font-black text-xl">{completedSales.length}</p>
+                  <p className="text-[8px] uppercase font-bold opacity-50">Ventes</p>
+                </div>
+                <div className="w-px bg-white/10"/>
+                <div>
+                  <p className="font-black text-xl">{avgOrder > 0 ? avgOrder.toLocaleString('fr-FR') : '—'}</p>
+                  <p className="text-[8px] uppercase font-bold opacity-50">Panier moyen (F)</p>
+                </div>
+              </div>
+            </div>
+
+            {completedSales.length === 0 ? (
+              <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm">
+                <div className="w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-400 mx-auto mb-3">
+                  {Icon.coin}
+                </div>
+                <p className="font-black text-slate-400 text-[10px] uppercase">Aucune vente complétée</p>
+                <p className="text-slate-300 text-[9px] font-bold mt-1">Tes ventes livrées apparaîtront ici</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                <div className="divide-y divide-slate-50">
+                  {completedSales.map((o: Order) => (
+                    <button key={o.id} onClick={() => onOpenOrder?.(o.id)}
+                      className="w-full flex items-center gap-3 p-4 active:bg-slate-50 text-left">
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
+                        {o.productImage && <img src={o.productImage} alt="" className="w-full h-full object-cover"/>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-slate-900 text-[11px] truncate">{o.productTitle}</p>
+                        <p className="text-[9px] text-slate-500 font-bold">{o.buyerName}</p>
+                        <p className="text-[9px] text-slate-400">{fmt(o.createdAt)}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-black text-green-700 text-sm">+{(o.sellerReceives || o.totalAmount || 0).toLocaleString('fr-FR')}</p>
+                        <p className="text-[8px] text-slate-400 font-bold">FCFA</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {boostProduct && (
+        <BoostModal
+          product={boostProduct}
+          onClose={() => setBoostProduct(null)}
+          onBoosted={() => setBoostProduct(null)}
+        />
+      )}
+
+      {/* Action Sheet — Marquer vendu / Supprimer / Booster */}
+      {actionProduct && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-end justify-center p-4"
+          onClick={() => setActionProduct(null)}>
+          <div className="w-full max-w-md bg-white rounded-[2.5rem] p-6 pb-8"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center mb-5 truncate px-4">
+              {actionProduct.title}
+            </p>
+            {actionProduct.status === 'sold' && (
+              <button onClick={async () => {
+                setRelistingProduct(true);
+                await updateProductStatus(actionProduct.id, 'active');
+                setProducts(prev => prev.map((p: Product) => p.id === actionProduct.id ? { ...p, status: 'active' as any } : p));
+                setRelistingProduct(false);
+                setActionProduct(null);
+              }} disabled={relistingProduct}
+                className="w-full py-5 rounded-3xl font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#1D9BF0,#0E6FC7)', color: 'white' }}>
+                {relistingProduct
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Remise en vente...</>
+                  : <><BruIcons.Refresh size={14}/> Remettre en vente</>}
+              </button>
+            )}
+            {actionProduct.status !== 'sold' && (
+              <button onClick={async () => {
+                await updateProductStatus(actionProduct.id, 'sold');
+                setActionProduct(null);
+                setProducts(prev => prev.map((p: Product) => p.id === actionProduct.id ? {...p, status: 'sold' as any} : p));
+              }} className="w-full py-5 rounded-3xl bg-green-600 text-white font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <BruIcons.CheckCircle size={14}/> Marquer comme vendu
+              </button>
+            )}
+            <button onClick={() => { setConfirmDeleteProduct(actionProduct); setActionProduct(null); }}
+              className="w-full py-5 rounded-3xl bg-red-50 text-red-600 font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all">
+              Supprimer l'annonce
+            </button>
+            {actionProduct.status !== 'sold' && (
+              <button onClick={() => { setBoostProduct(actionProduct); setActionProduct(null); }}
+                className="w-full py-5 rounded-3xl bg-blue-500 text-white font-black text-[11px] uppercase tracking-[0.15em] mb-3 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-100">
+                <BruIcons.Zap size={14}/> Booster l'annonce
+              </button>
+            )}
+            <button onClick={() => setActionProduct(null)}
+              className="w-full py-4 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL CONFIRMATION SUPPRESSION ── */}
+      {confirmDeleteProduct && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[300] flex items-end justify-center p-4"
+          onClick={() => !deletingProduct && setConfirmDeleteProduct(null)}>
+          <div className="bg-white w-full max-w-md rounded-[3rem] overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+              <h3 className="font-black text-[16px] text-slate-900 text-center mb-1">Supprimer cette annonce ?</h3>
+              <p className="text-[11px] text-slate-500 text-center leading-snug mb-2">Cette action est irréversible.</p>
+              <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-5 flex items-center gap-3">
+                {confirmDeleteProduct.images?.[0] && (
+                  <img src={confirmDeleteProduct.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0"/>
+                )}
+                <div className="min-w-0">
+                  <p className="font-black text-[13px] text-slate-900 truncate">{confirmDeleteProduct.title}</p>
+                  <p className="text-[10px] text-slate-400 font-bold">{confirmDeleteProduct.price?.toLocaleString('fr-FR')} FCFA</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setConfirmDeleteProduct(null)} disabled={deletingProduct}
+                  className="flex-1 py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                  Annuler
+                </button>
+                <button onClick={async () => {
+                  setDeletingProduct(true);
+                  try {
+                    await deleteProduct(confirmDeleteProduct.id, confirmDeleteProduct.sellerId);
+                    setProducts(prev => prev.filter((p: Product) => p.id !== confirmDeleteProduct.id));
+                    setConfirmDeleteProduct(null);
+                  } finally { setDeletingProduct(false); }
+                }} disabled={deletingProduct}
+                  className="flex-[2] py-4 rounded-[2rem] text-white font-black text-[11px] uppercase tracking-widest active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#991B1B,#DC2626)' }}>
+                  {deletingProduct
+                    ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Suppression...</>
+                    : '️ Supprimer définitivement'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
