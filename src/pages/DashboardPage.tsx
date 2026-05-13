@@ -42,15 +42,21 @@ interface DashboardPageProps {
 type Tab = 'stats' | 'articles' | 'commandes' | 'ventes' | 'offres';
 
 function StatusBadge({ status }: { status: OrderStatus }) {
-  const map: Record<OrderStatus, { label: string; bg: string; color: string }> = {
-    initiated:  { label: 'En attente',    bg: '#FEF3C7', color: '#92400E' },
-    proof_sent: { label: 'Preuve envoyée',bg: '#DBEAFE', color: '#1D4ED8' },
-    confirmed:  { label: 'Confirmé',      bg: '#D1FAE5', color: '#065F46' },
-    delivered:  { label: 'Livré',         bg: '#DCFCE7', color: '#166534' },
-    disputed:   { label: 'Litige',        bg: '#FFEDD5', color: '#9A3412' },
-    cancelled:  { label: 'Annulé',        bg: '#F3F4F6', color: '#374151' },
+  // IMPORTANT: Partial<> car tous les statuts ne sont pas listés — fallback sur 'initiated'
+  const map: Partial<Record<OrderStatus, { label: string; bg: string; color: string }>> = {
+    initiated:     { label: 'En attente',       bg: '#FEF3C7', color: '#92400E' },
+    proof_sent:    { label: 'Preuve envoyée',   bg: '#DBEAFE', color: '#1D4ED8' },
+    confirmed:     { label: 'Confirmé',         bg: '#D1FAE5', color: '#065F46' },
+    ready:         { label: 'Prêt',             bg: '#EDE9FE', color: '#5B21B6' },
+    picked:        { label: 'Récupéré',         bg: '#FEF9C3', color: '#713F12' },
+    delivered:     { label: 'Livré',            bg: '#DCFCE7', color: '#166534' },
+    cod_pending:   { label: 'COD en attente',   bg: '#FEF3C7', color: '#92400E' },
+    cod_confirmed: { label: 'COD confirmé',     bg: '#D1FAE5', color: '#065F46' },
+    cod_delivered: { label: 'COD livré',        bg: '#DCFCE7', color: '#166534' },
+    disputed:      { label: 'Litige',           bg: '#FFEDD5', color: '#9A3412' },
+    cancelled:     { label: 'Annulé',           bg: '#F3F4F6', color: '#374151' },
   };
-  const s = map[status] || map.initiated;
+  const s = map[status] ?? map['initiated']!;
   return (
     <span className="px-2 py-1 rounded-xl text-[8px] font-black uppercase tracking-widest flex-shrink-0"
       style={{ background: s.bg, color: s.color }}>{s.label}</span>
