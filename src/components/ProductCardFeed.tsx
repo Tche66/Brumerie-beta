@@ -40,35 +40,9 @@ export function ProductCardFeed({
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
   const [currentImg, setCurrentImg] = useState(0);
-  const [countdown, setCountdown] = useState('');
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
-
-  // ── Compte à rebours vente flash ──
-  useEffect(() => {
-    const expiry = (p as any).promoActiveUntil || (p as any).flashSaleExpiry;
-    if (!(p as any).flashSaleActive || !expiry) return;
-
-    const tick = () => {
-      const diff = new Date(expiry).getTime() - Date.now();
-      if (diff <= 0) { setCountdown('Terminé'); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      if (h > 24) {
-        const d = Math.floor(h / 24);
-        setCountdown(`${d}j ${h % 24}h`);
-      } else if (h > 0) {
-        setCountdown(`${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
-      } else {
-        setCountdown(`${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
-      }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [(p as any).flashSaleActive, (p as any).promoActiveUntil, (p as any).flashSaleExpiry]);
 
   // Likes temps réel depuis sous-collection
   useEffect(() => {
@@ -180,57 +154,6 @@ export function ProductCardFeed({
         )}
       </div>
 
-      {/* ── BANDEAU URGENCE VENTE FLASH ── */}
-      {(p as any).flashSaleActive && (
-        <div className="mx-4 mb-3 rounded-2xl overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #DC2626, #EA580C)' }}>
-          <div className="flex items-center justify-between px-4 py-2.5">
-            {/* Label gauche */}
-            <div className="flex items-center gap-2">
-              <span className="text-lg animate-bounce">🔥</span>
-              <div>
-                <p className="text-white font-black text-[11px] uppercase tracking-widest leading-none">
-                  {(p as any).flashSaleLabel || 'Vente flash'}
-                </p>
-                <p className="text-white/70 text-[9px] font-bold mt-0.5">
-                  Prix limité — quantité limitée
-                </p>
-              </div>
-            </div>
-            {/* Compte à rebours droite */}
-            {countdown && countdown !== 'Terminé' ? (
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-1.5 text-right flex-shrink-0">
-                <p className="text-white/70 text-[7px] font-black uppercase tracking-widest leading-none mb-0.5">Fin dans</p>
-                <p className="text-white font-black text-[14px] leading-none tabular-nums tracking-tight">
-                  {countdown}
-                </p>
-              </div>
-            ) : countdown === 'Terminé' ? (
-              <span className="bg-white/20 text-white text-[9px] font-black px-2 py-1 rounded-lg">Terminé</span>
-            ) : (
-              <div className="bg-white/20 rounded-xl px-3 py-1.5">
-                <p className="text-white/70 text-[7px] font-black uppercase">Durée limitée</p>
-              </div>
-            )}
-          </div>
-          {/* Barre de progression temps restant */}
-          {countdown && countdown !== 'Terminé' && (p as any).promoActiveUntil && (
-            <div className="h-0.5 bg-white/20 mx-4 mb-2 rounded-full overflow-hidden">
-              <div className="h-full bg-white/70 rounded-full transition-all duration-1000"
-                style={{
-                  width: (() => {
-                    const total = new Date((p as any).promoActiveUntil).getTime() - (new Date((p as any).promoActiveFrom || Date.now() - 86400000).getTime());
-                    const remaining = new Date((p as any).promoActiveUntil).getTime() - Date.now();
-                    const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
-                    return `${pct}%`;
-                  })()
-                }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ── Galerie images avec swipe ── */}
       <div
         className="relative aspect-square bg-gray-50 overflow-hidden"
@@ -273,7 +196,14 @@ export function ProductCardFeed({
             <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg uppercase tracking-tighter">🤝 Offre</span>
           )}
         </div>
-
+        {/* Badge Vente flash */}
+        {(p as any).flashSaleActive && (p as any).flashSaleLabel && (
+          <div className="absolute bottom-10 left-0 right-0 mx-3">
+            <div className="bg-red-500/95 backdrop-blur-sm text-white text-[9px] font-black px-3 py-1.5 rounded-xl flex items-center gap-1.5 justify-center animate-pulse">
+              🔥 {(p as any).flashSaleLabel}
+            </div>
+          </div>
+        )}
 
         {/* Indicateurs de position */}
         {images.length > 1 && (

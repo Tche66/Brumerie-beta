@@ -99,7 +99,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [repostDone, setRepostDone] = useState(false);
   const [reposts, setReposts] = useState<any[]>([]);
   const [expandedDesc, setExpandedDesc] = useState(false);
-  const [flashCountdown, setFlashCountdown] = useState('');
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -171,26 +170,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       if (score && score.riskLevel !== 'safe') setSellerRiskScore(score);
     }).catch(() => {});
   }, [product.sellerId]);
-
-  // ── Compte à rebours vente flash ──
-  useEffect(() => {
-    const pp = product as any;
-    const expiry = pp.promoActiveUntil || pp.flashSaleExpiry;
-    if (!pp.flashSaleActive || !expiry) return;
-    const tick = () => {
-      const diff = new Date(expiry).getTime() - Date.now();
-      if (diff <= 0) { setFlashCountdown('Terminé'); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      if (h > 24) { setFlashCountdown(`${Math.floor(h/24)}j ${h%24}h`); }
-      else if (h > 0) { setFlashCountdown(`${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`); }
-      else { setFlashCountdown(`${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`); }
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [(product as any).flashSaleActive]);
 
   // ── Charger les reposts de cet article ──
   useEffect(() => {
@@ -729,36 +708,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 return (
                   <>
                     {(p.flashSaleLabel || p.flashSaleActive) && (
-                      <div className="mb-3 rounded-2xl overflow-hidden"
-                        style={{ background: 'linear-gradient(135deg, #DC2626, #EA580C)' }}>
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl animate-bounce">🔥</span>
-                            <div>
-                              <p className="text-white font-black text-[12px] uppercase tracking-widest leading-none">
-                                {p.flashSaleLabel || 'Vente flash'}
-                              </p>
-                              <p className="text-white/70 text-[10px] font-bold mt-0.5">Prix limité — dépêche-toi !</p>
-                            </div>
-                          </div>
-                          {flashCountdown && flashCountdown !== 'Terminé' ? (
-                            <div className="bg-white/20 rounded-xl px-3 py-2 text-right flex-shrink-0">
-                              <p className="text-white/70 text-[8px] font-black uppercase tracking-widest leading-none mb-0.5">Fin dans</p>
-                              <p className="text-white font-black text-[18px] leading-none tabular-nums">{flashCountdown}</p>
-                            </div>
-                          ) : !flashCountdown && p.promoActiveUntil ? (
-                            <div className="bg-white/20 rounded-xl px-3 py-2 flex-shrink-0">
-                              <p className="text-white/70 text-[8px] font-black uppercase">Jusqu'au</p>
-                              <p className="text-white font-black text-[11px]">{new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>
-                            </div>
-                          ) : null}
-                        </div>
-                        {flashCountdown && flashCountdown !== 'Terminé' && p.promoActiveUntil && (
-                          <div className="h-1 bg-white/20 mx-4 mb-3 rounded-full overflow-hidden">
-                            <div className="h-full bg-white rounded-full transition-all duration-1000"
-                              style={{ width: `${Math.max(0, Math.min(100, ((new Date(p.promoActiveUntil).getTime() - Date.now()) / (24 * 3600000)) * 100))}%` }}
-                            />
-                          </div>
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-full mb-2 animate-pulse shadow-md">
+                        🔥 {p.flashSaleLabel || 'Vente flash en cours'}
+                        {p.promoActiveUntil && (
+                          <span className="opacity-80 font-bold">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
                         )}
                       </div>
                     )}

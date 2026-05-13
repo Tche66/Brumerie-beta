@@ -6,7 +6,7 @@ import {
 import { db } from '@/config/firebase';
 import { ProductBoost, BoostDuration, BOOST_PLANS } from '@/types';
 
-const boostsCol = () => collection(db, 'boosts');
+const boostsCol = collection(db, 'boosts');
 
 // ── Créer une demande de boost (status: pending) ──────────────
 export async function createBoost(params: {
@@ -18,7 +18,7 @@ export async function createBoost(params: {
   waveRef?: string;
 }): Promise<string> {
   const plan = BOOST_PLANS.find(p => p.duration === params.duration)!;
-  const ref = await addDoc(boostsCol(), {
+  const ref = await addDoc(boostsCol, {
     ...params,
     price: plan.price,
     status: 'pending',           // ← EN ATTENTE — pas encore actif
@@ -32,7 +32,7 @@ export async function createBoost(params: {
 
 // ── ADMIN — Activer un boost ──────────────────────────────────
 export async function activateBoost(boostId: string, adminUid: string): Promise<void> {
-  const boostRef = doc(boostsCol(), boostId);
+  const boostRef = doc(boostsCol, boostId);
   const snap = await import('firebase/firestore').then(({ getDoc }) => getDoc(boostRef));
   if (!snap.exists()) throw new Error('Boost introuvable');
 
@@ -52,7 +52,7 @@ export async function activateBoost(boostId: string, adminUid: string): Promise<
 
 // ── ADMIN — Rejeter un boost ──────────────────────────────────
 export async function rejectBoost(boostId: string, adminUid: string, reason?: string): Promise<void> {
-  await updateDoc(doc(boostsCol(), boostId), {
+  await updateDoc(doc(boostsCol, boostId), {
     status: 'rejected',
     activatedBy: adminUid,
     rejectionReason: reason || 'Paiement non confirmé',
@@ -63,7 +63,7 @@ export async function rejectBoost(boostId: string, adminUid: string, reason?: st
 export function subscribePendingBoosts(
   callback: (boosts: ProductBoost[]) => void,
 ): () => void {
-  const q = query(boostsCol(), where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
+  const q = query(boostsCol, where('status', '==', 'pending'), orderBy('createdAt', 'desc'));
   return onSnapshot(q, snap => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as ProductBoost)));
   }, () => callback([]));
@@ -73,7 +73,7 @@ export function subscribePendingBoosts(
 export function subscribeAllBoosts(
   callback: (boosts: ProductBoost[]) => void,
 ): () => void {
-  const q = query(boostsCol(), orderBy('createdAt', 'desc'));
+  const q = query(boostsCol, orderBy('createdAt', 'desc'));
   return onSnapshot(q, snap => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as ProductBoost)));
   }, () => callback([]));
@@ -87,7 +87,7 @@ export function subscribeBoostedProductIds(
   // Inclure les boosts actifs ET en attente de validation (pending)
   // Les pending sont placés en tête immédiatement — l'admin valide ensuite
   const q = query(
-    boostsCol(),
+    boostsCol,
     where('status', 'in', ['active', 'pending']),
   );
   return onSnapshot(q, snap => {
@@ -109,7 +109,7 @@ export function subscribeBoostedProductIds(
 export async function isProductBoosted(productId: string): Promise<boolean> {
   const now = Timestamp.now();
   const q = query(
-    boostsCol(),
+    boostsCol,
     where('productId', '==', productId),
     where('status', '==', 'active'),
     where('expiresAt', '>', now),
@@ -120,7 +120,7 @@ export async function isProductBoosted(productId: string): Promise<boolean> {
 
 // ── Récupérer les boosts d'un vendeur ────────────────────────
 export async function getSellerBoosts(sellerId: string): Promise<ProductBoost[]> {
-  const q = query(boostsCol(), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
+  const q = query(boostsCol, where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() } as ProductBoost));
 }

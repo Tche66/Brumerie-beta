@@ -6,7 +6,7 @@ import {
 import { db } from '@/config/firebase';
 import { Review, RatingRole } from '@/types';
 
-const reviewsCol = () => collection(db, 'reviews');
+const reviewsCol = collection(db, 'reviews');
 
 export async function submitReview(params: {
   orderId: string; productId: string; productTitle: string;
@@ -15,7 +15,7 @@ export async function submitReview(params: {
   toUserId: string; role: RatingRole; rating: number; comment: string;
 }): Promise<void> {
   // Vérifier doublon
-  const existing = await getDocs(query(reviewsCol(),
+  const existing = await getDocs(query(reviewsCol,
     where('orderId', '==', params.orderId),
     where('fromUserId', '==', params.fromUserId),
   ));
@@ -37,7 +37,7 @@ export async function submitReview(params: {
   if (params.fromUserPhoto) reviewData.fromUserPhoto = params.fromUserPhoto;
   if (params.fromUserNeighborhood) reviewData.fromUserNeighborhood = params.fromUserNeighborhood;
 
-  await addDoc(reviewsCol(), reviewData);
+  await addDoc(reviewsCol, reviewData);
 
   // Marquer la commande comme notée
   try {
@@ -55,7 +55,7 @@ export async function submitReview(params: {
 
 export async function hasReviewed(orderId: string, fromUserId: string): Promise<boolean> {
   try {
-    const snap = await getDocs(query(reviewsCol(),
+    const snap = await getDocs(query(reviewsCol,
       where('orderId', '==', orderId),
       where('fromUserId', '==', fromUserId),
     ));
@@ -67,7 +67,7 @@ export function subscribeSellerReviews(
   sellerId: string,
   callback: (reviews: Review[], avgRating: number, count: number) => void,
 ): () => void {
-  const q = query(reviewsCol(),
+  const q = query(reviewsCol,
     where('toUserId', '==', sellerId),
     where('role', '==', 'buyer_to_seller'),
   );
@@ -89,7 +89,7 @@ export function subscribeDelivererReviews(
   delivererId: string,
   callback: (reviews: Review[], avgRating: number, count: number) => void,
 ): () => void {
-  const q = query(reviewsCol(), where('toUserId', '==', delivererId));
+  const q = query(reviewsCol, where('toUserId', '==', delivererId));
   return onSnapshot(q, snap => {
     const reviews = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
     reviews.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
