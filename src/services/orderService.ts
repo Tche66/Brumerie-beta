@@ -9,7 +9,7 @@ import { Order, OrderStatus, OrderProof, PaymentInfo, BRUMERIE_FEE_PERCENT } fro
 import { createNotification } from './notificationService';
 import { showLocalPushNotification } from './pushService';
 
-const ordersCol = collection(db, 'orders');
+const ordersCol = () => collection(db, 'orders');
 
 // ── Calcul frais ───────────────────────────────────────────
 export function calcOrderFees(price: number) {
@@ -51,7 +51,7 @@ export async function createOrder(params: {
 
   let ref;
   try {
-    ref = await addDoc(ordersCol, cleanParams);
+    ref = await addDoc(ordersCol(), cleanParams);
   } catch (firestoreErr: any) {
     console.error('[createOrder] Firestore addDoc failed:', firestoreErr);
     throw new Error(firestoreErr?.message || firestoreErr?.code || 'Firestore write failed');
@@ -95,11 +95,11 @@ export async function submitProof(
   // Rappel = maintenant + 6h
   const reminderAt = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     proof: { ...proof, submittedAt: serverTimestamp() },
     status: 'proof_sent' as OrderStatus,
     proofSentAt: serverTimestamp(),
@@ -125,7 +125,7 @@ export async function submitProof(
 
 // ── COD : Vendeur confirme qu'il est prêt à livrer → génère QR escrow ──
 export async function confirmCODReady(orderId: string): Promise<string> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return '';
   const order = { id: snap.id, ...snap.data() } as Order;
 
@@ -134,7 +134,7 @@ export async function confirmCODReady(orderId: string): Promise<string> {
   const qrPickupPayload   = 'brumerie://pickup/'   + orderId + '/' + deliveryCode;
   const qrDeliveryPayload = 'brumerie://delivery/' + orderId + '/' + deliveryCode;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'cod_confirmed' as OrderStatus,
     deliveryCode,
     qrPickupPayload,
@@ -165,14 +165,14 @@ export async function confirmCODReady(orderId: string): Promise<string> {
 
 // ── COD : Acheteur confirme réception + paiement effectué ─────
 export async function confirmCODDelivered(orderId: string): Promise<void> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
   const isCOD = (order as any).isCOD;
 
   // Pour COD : passe à cod_delivered (attente confirmation vendeur)
   // Pour mobile money : passe directement à delivered
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: (isCOD ? 'cod_delivered' : 'delivered') as OrderStatus,
     deliveredAt: serverTimestamp(),
   });
@@ -208,11 +208,11 @@ export async function confirmCODDelivered(orderId: string): Promise<void> {
 
 // ── Vendeur confirme réception ─────────────────────────────
 export async function confirmPaymentReceived(orderId: string): Promise<void> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'confirmed' as OrderStatus,
     confirmedAt: serverTimestamp(),
     sellerBlocked: false,
@@ -249,7 +249,7 @@ function generateDeliveryCode(): string {
 
 // ── Vendeur clique "Prêt à livrer" → génère le code ────────
 export async function markReadyToDeliver(orderId: string): Promise<string> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) throw new Error('Commande introuvable');
   const order = { id: snap.id, ...snap.data() } as Order;
 
@@ -259,7 +259,7 @@ export async function markReadyToDeliver(orderId: string): Promise<string> {
   const qrPickupPayload   = 'brumerie://pickup/'   + orderId + '/' + deliveryCode;
   const qrDeliveryPayload = 'brumerie://delivery/' + orderId + '/' + deliveryCode;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'ready' as OrderStatus,
     deliveryCode,
     qrPickupPayload,
@@ -294,7 +294,7 @@ export async function validateDeliveryCode(
   orderId: string,
   inputCode: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return { success: false, error: 'Commande introuvable' };
   const order = { id: snap.id, ...snap.data() } as Order;
 
@@ -314,7 +314,7 @@ export async function validateDeliveryCode(
   }
 
   // Code valide → livraison confirmée + avis débloqués
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'delivered' as OrderStatus,
     deliveredAt: serverTimestamp(),
     deliveryValidatedAt: serverTimestamp(),
@@ -344,7 +344,7 @@ export async function validateDeliveryCode(
       { orderId }
     );
     try {
-      const userSnap = await getDoc(doc(ordersCol, order.delivererId));
+      const userSnap = await getDoc(doc(ordersCol(), order.delivererId));
       // Note: on utilise la collection users via import dynamique pour éviter la circularité
       // Les stats sont mises à jour dans deliveryService.confirmDeliveryByBuyer
     } catch {}
@@ -355,11 +355,11 @@ export async function validateDeliveryCode(
 
 // ── Acheteur confirme réception physique ───────────────────
 export async function confirmDelivery(orderId: string): Promise<void> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'delivered' as OrderStatus,
     deliveredAt: serverTimestamp(),
   });
@@ -382,11 +382,11 @@ export async function confirmDelivery(orderId: string): Promise<void> {
 
 // ── Signalement vendeur / acheteur ─────────────────────────
 export async function openOrderDispute(orderId: string, reason: string): Promise<void> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as Order;
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: 'disputed' as OrderStatus,
     disputedAt: serverTimestamp(),
     disputeReason: reason,
@@ -425,7 +425,7 @@ export async function openOrderDispute(orderId: string, reason: string): Promise
 // ── Vérifier si vendeur est bloqué ────────────────────────
 export async function isSellerBlocked(sellerId: string): Promise<boolean> {
   const q = query(
-    ordersCol,
+    ordersCol(),
     where('sellerId', '==', sellerId),
     where('sellerBlocked', '==', true),
     limit(1),
@@ -438,7 +438,7 @@ export async function isSellerBlocked(sellerId: string): Promise<boolean> {
 export async function checkExpiredOrders(sellerId: string): Promise<void> {
   const now = Timestamp.now();
   const q = query(
-    ordersCol,
+    ordersCol(),
     where('sellerId', '==', sellerId),
     where('status', '==', 'proof_sent'),
   );
@@ -475,7 +475,7 @@ export function subscribeToOrder(
   orderId: string,
   callback: (order: Order | null) => void,
 ): () => void {
-  return onSnapshot(doc(ordersCol, orderId), snap => {
+  return onSnapshot(doc(ordersCol(), orderId), snap => {
     callback(snap.exists() ? { id: snap.id, ...snap.data() } as Order : null);
   });
 }
@@ -486,7 +486,7 @@ export function subscribeUserOrders(
   callback: (orders: Order[]) => void,
 ): () => void {
   const field = role === 'buyer' ? 'buyerId' : 'sellerId';
-  const q = query(ordersCol, where(field, '==', userId), orderBy('createdAt', 'desc'));
+  const q = query(ordersCol(), where(field, '==', userId), orderBy('createdAt', 'desc'));
   return onSnapshot(q, snap => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
   });
@@ -498,7 +498,7 @@ export function subscribeOrdersAsBuyer(
   callback: (orders: Order[]) => void,
 ): () => void {
   // Pas de orderBy pour éviter l'index composite Firestore
-  const q = query(ordersCol, where('buyerId', '==', userId));
+  const q = query(ordersCol(), where('buyerId', '==', userId));
   return onSnapshot(q, snap => {
     const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
     // Tri client-side par date décroissante
@@ -519,7 +519,7 @@ export function subscribeOrdersAsSeller(
   callback: (orders: Order[]) => void,
 ): () => void {
   // Pas de orderBy pour éviter l'index composite Firestore
-  const q = query(ordersCol, where('sellerId', '==', userId));
+  const q = query(ordersCol(), where('sellerId', '==', userId));
   return onSnapshot(q, snap => {
     const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
     // Tri client-side par date décroissante
@@ -542,7 +542,7 @@ export async function cancelDelivery(
   cancelledBy: 'buyer' | 'seller',
   reason: string,
 ): Promise<void> {
-  const snap = await getDoc(doc(ordersCol, orderId));
+  const snap = await getDoc(doc(ordersCol(), orderId));
   if (!snap.exists()) return;
   const order = { id: snap.id, ...snap.data() } as any;
 
@@ -552,7 +552,7 @@ export async function cancelDelivery(
   const wasPickedUp = order.status === 'picked';
   const newStatus = wasPickedUp ? 'disputed' : (order.isCOD ? 'cod_pending' : 'confirmed');
 
-  await updateDoc(doc(ordersCol, orderId), {
+  await updateDoc(doc(ordersCol(), orderId), {
     status: newStatus,
     delivererId: null,
     delivererName: null,

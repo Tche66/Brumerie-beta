@@ -10,7 +10,7 @@ import { createNotification } from './notificationService';
 import { showLocalPushNotification } from './pushService';
 import { incrementContactCount } from './productService';
 
-const convsCol = collection(db, 'conversations');
+const convsCol = () => collection(db, 'conversations');
 
 // ── Trouver ou créer une conversation ──────────────────────
 export async function checkChatLimit(userId: string): Promise<{ allowed: boolean; reason?: string }> {
@@ -50,7 +50,7 @@ export async function getOrCreateConversation(
   // Chercher conversation existante pour ce produit entre CES DEUX users précisément
   // On filtre par productId + buyerId puis on vérifie que sellerId est bien là
   const q = query(
-    convsCol,
+    convsCol(),
     where('productId', '==', product.id),
     where('participants', 'array-contains', buyerId),
     limit(10),
@@ -82,7 +82,7 @@ export async function getOrCreateConversation(
     createdAt: serverTimestamp(),
   };
 
-  const ref = await addDoc(convsCol, newConv);
+  const ref = await addDoc(convsCol(), newConv);
 
   // Message système d'ouverture
   await addDoc(collection(db, 'conversations', ref.id, 'messages'), {
@@ -276,7 +276,7 @@ export function subscribeToConversations(
   callback: (convs: Conversation[]) => void,
 ): () => void {
   const q = query(
-    convsCol,
+    convsCol(),
     where('participants', 'array-contains', userId),
     orderBy('lastMessageAt', 'desc'),
   );
@@ -291,7 +291,7 @@ export function subscribeTotalUnread(
   userId: string,
   callback: (total: number) => void,
 ): () => void {
-  const q = query(convsCol, where('participants', 'array-contains', userId));
+  const q = query(convsCol(), where('participants', 'array-contains', userId));
   return onSnapshot(q, snap => {
     let total = 0;
     snap.docs.forEach(d => {
@@ -445,7 +445,7 @@ export function subscribeSellerPendingOffers(
   callback: (offers: Array<{ msgId: string; convId: string; buyerName: string; productTitle: string; offerPrice: number; productRef: any; createdAt: any }>) => void,
 ): () => void {
   // Écouter les conversations du vendeur
-  const q = query(convsCol, where('participants', 'array-contains', sellerId));
+  const q = query(convsCol(), where('participants', 'array-contains', sellerId));
   
   let allOffers: Array<any> = [];
   const unsubsByConv: Record<string, () => void> = {};

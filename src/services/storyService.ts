@@ -6,7 +6,7 @@ import {
 import { db } from '@/config/firebase';
 import { Story } from '@/types';
 
-const storiesCol = collection(db, 'stories');
+const storiesCol = () => collection(db, 'stories');
 
 // ── Publier une story ─────────────────────────────────────────
 export async function publishStory(params: {
@@ -34,14 +34,14 @@ export async function publishStory(params: {
   if (params.caption)     data.caption     = params.caption;
   if (params.productRef)  data.productRef  = params.productRef;
 
-  const ref = await addDoc(storiesCol, data);
+  const ref = await addDoc(storiesCol(), data);
   return ref.id;
 }
 
 // ── Marquer une story comme vue ───────────────────────────────
 export async function markStoryViewed(storyId: string, userId: string): Promise<void> {
   try {
-    const ref = doc(storiesCol, storyId);
+    const ref = doc(storiesCol(), storyId);
     const { arrayUnion } = await import('firebase/firestore');
     await updateDoc(ref, { views: arrayUnion(userId) });
   } catch {}
@@ -49,7 +49,7 @@ export async function markStoryViewed(storyId: string, userId: string): Promise<
 
 // ── Supprimer une story ───────────────────────────────────────
 export async function deleteStory(storyId: string): Promise<void> {
-  await deleteDoc(doc(storiesCol, storyId));
+  await deleteDoc(doc(storiesCol(), storyId));
 }
 
 // ── Écouter les stories actives (non expirées) ────────────────
@@ -60,7 +60,7 @@ export function subscribeActiveStories(
   // Requête simple sans orderBy — pas d'index composite requis
   // Le tri se fait côté client
   const q = query(
-    storiesCol,
+    storiesCol(),
     where('expiresAt', '>', now),
   );
   return onSnapshot(q, snap => {
@@ -87,7 +87,7 @@ export async function getSellerStories(sellerId: string): Promise<Story[]> {
   const now = Timestamp.now();
   // Requête simple par sellerId — filtre expiresAt côté client
   const q = query(
-    storiesCol,
+    storiesCol(),
     where('sellerId', '==', sellerId),
   );
   const snap = await getDocs(q);
