@@ -568,7 +568,6 @@ export function subscribeComments(
 export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
   if (!followingIds || followingIds.length === 0) return [];
 
-  // Firestore limite "in" à 30 valeurs — on pagine si nécessaire
   const chunks: string[][] = [];
   for (let i = 0; i < followingIds.length; i += 30) {
     chunks.push(followingIds.slice(i, i + 30));
@@ -580,20 +579,19 @@ export async function getFollowingFeed(followingIds: string[]): Promise<Product[
       const q = query(
         collection(db, 'products'),
         where('sellerId', 'in', chunk),
-        where('status', '==', 'active'),
         orderBy('createdAt', 'desc'),
-        limit(40)
+        limit(60)
       );
       const snap = await getDocs(q);
       snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Product));
     } catch (e) { console.error('[getFollowingFeed]', e); }
   }
 
-  // Trier par date décroissante et dédupliquer
   return results
+    .filter(p => p.status === 'active')
     .sort((a, b) => {
-      const ta = a.createdAt?.toMillis?.() ?? a.createdAt?.seconds * 1000 ?? 0;
-      const tb = b.createdAt?.toMillis?.() ?? b.createdAt?.seconds * 1000 ?? 0;
+      const ta = a.createdAt?.toMillis?.() ?? (a.createdAt?.seconds || 0) * 1000;
+      const tb = b.createdAt?.toMillis?.() ?? (b.createdAt?.seconds || 0) * 1000;
       return tb - ta;
     })
     .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
@@ -606,19 +604,16 @@ export async function getFollowingFeed(followingIds: string[]): Promise<Product[
  */
 export async function getTrendingProducts(): Promise<Product[]> {
   try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const q = query(
       collection(db, 'products'),
-      where('status', '==', 'active'),
       orderBy('createdAt', 'desc'),
       limit(100)
     );
     const snap = await getDocs(q);
-    const products = snap.docs.map(d => ({ id: d.id, ...d.data() })) as Product[];
+    const products = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }) as Product)
+      .filter(p => p.status === 'active');
 
-    // Score de tendance — fonctionne même avec 0 likes (fallback sur viewCount)
     const scored = products.map(p => ({
       ...p,
       _score: (p.likeCount || 0) * 3
@@ -627,7 +622,6 @@ export async function getTrendingProducts(): Promise<Product[]> {
              + (p.whatsappClickCount || 0) * 4,
     })).sort((a, b) => (b as any)._score - (a as any)._score);
 
-    // Fallback: si aucun score > 0, retourner tous les articles triés par date
     const hasScores = scored.some(p => (p as any)._score > 0);
     return (hasScores ? scored : products).slice(0, 20);
   } catch (e) {
