@@ -268,6 +268,8 @@ useEffect(() => {
     // Charger le produit depuis Firestore et naviguer vers sa fiche
     const loadAndOpen = async () => {
       try {
+        const { getDoc, doc } = await import('firebase/firestore');
+        const { db } = await import('@/config/firebase');
         const snap = await getDoc(doc(db, 'products', productId));
         if (snap.exists()) {
           const product = { id: snap.id, ...snap.data() } as any;
