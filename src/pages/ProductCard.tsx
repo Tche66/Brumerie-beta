@@ -22,7 +22,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
   React.useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
 
   const isNew = product.createdAt
-    ? new Date().getTime() - new Date(product.createdAt).getTime() < 48 * 60 * 60 * 1000
+    ? (() => { try { const ts = product.createdAt?.toMillis?.() ?? (product.createdAt?.seconds ? product.createdAt.seconds * 1000 : new Date(product.createdAt).getTime()); return !isNaN(ts) && Date.now() - ts < 48 * 60 * 60 * 1000; } catch { return false; } })()
     : false;
 
   const handleBookmark = async (e: React.MouseEvent) => {
