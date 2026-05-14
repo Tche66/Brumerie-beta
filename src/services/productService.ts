@@ -22,10 +22,7 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import { Product } from '@/types';
-import type { ProductComment } from '@/types';
-import { uploadToCloudinary } from '@/utils/uploadImage';
+import { createNotification } from '@/services/notificationService';
 
 // Helper interne — timestamp sécurisé pour les tris
 function safeGetTime(val: any): number {
@@ -35,6 +32,11 @@ function safeGetTime(val: any): number {
   if (val.seconds) return val.seconds * 1000;
   try { const d = new Date(val); return isNaN(d.getTime()) ? 0 : d.getTime(); } catch { return 0; }
 }
+
+
+import { db } from '@/config/firebase';
+import { Product } from '@/types';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 
 // ── Supprimer les champs undefined (Firestore les refuse) ──────
 function cleanUndefined(obj: Record<string, any>): Record<string, any> {
@@ -418,6 +420,7 @@ export async function syncSellerDataToProducts(
 // SOCIAL COMMERCE — Likes & Commentaires
 // ─────────────────────────────────────────────────────────────
 
+import type { ProductComment } from '@/types';
 
 
 export async function getProductById(productId: string): Promise<Product | null> {
@@ -463,8 +466,7 @@ export async function toggleLike(
       const sellerId = prodSnap2.data()?.sellerId;
       const productTitle = prodSnap2.data()?.title || 'ton article';
       if (sellerId && sellerId !== userId) {
-        const { createNotification: cn } = await import('@/services/notificationService');
-        await cn(sellerId, 'like',
+        await createNotification(sellerId, 'like',
           "❤️ Nouveau j'aime",
           `Quelqu'un a aimé "${productTitle.slice(0, 40)}${productTitle.length > 40 ? '...' : ''}"`,
           { productId }
@@ -510,8 +512,7 @@ export async function addComment(
     const sellerId = prodSnap.data()?.sellerId;
     const productTitle = prodSnap.data()?.title || 'ton article';
     if (sellerId && sellerId !== userId) {
-      const { createNotification: cn2 } = await import('@/services/notificationService');
-      await cn2(sellerId, 'comment',
+      await createNotification(sellerId, 'comment',
         '💬 Nouveau commentaire',
         `${userName} a commenté "${productTitle.slice(0, 30)}${productTitle.length > 30 ? '...' : ''}" : "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"`,
         { productId }
@@ -522,8 +523,7 @@ export async function addComment(
       const parentSnap = await getDoc(doc(db, 'products', productId, 'comments', parentId));
       const parentAuthorId = parentSnap.data()?.userId;
       if (parentAuthorId && parentAuthorId !== userId) {
-        const { createNotification: cn3 } = await import('@/services/notificationService');
-        await cn3(parentAuthorId, 'comment_reply',
+        await createNotification(parentAuthorId, 'comment_reply',
           '↩️ Réponse à ton commentaire',
           `${userName} a répondu : "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
           { productId }
