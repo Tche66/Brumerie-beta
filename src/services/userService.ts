@@ -98,6 +98,42 @@ export async function getAllActiveSellers(): Promise<User[]> {
   return snap.docs.map(d => ({ ...d.data(), id: d.id, uid: d.id } as User));
 }
 
+// ── Suggestions de vendeurs à suivre ──
+export async function getSuggestedSellers(
+  currentUserId?: string,
+  followingIds: string[] = [],
+  userNeighborhood?: string,
+  maxResults = 6,
+): Promise<User[]> {
+  const { collection, getDocs, query, where, orderBy, limit: fbLimit } = await import('firebase/firestore');
+  const { db } = await import('@/config/firebase');
+  const snap = await getDocs(query(
+    collection(db, 'users'),
+    where('role', '==', 'seller'),
+    fbLimit(50),
+  ));
+  const exclude = new Set([...(followingIds || []), currentUserId || '']);
+  let sellers = snap.docs
+    .map(d => ({ ...d.data(), id: d.id, uid: d.id } as User))
+    .filter(s => !exclude.has(s.id) && s.photoURL && s.name);
+
+  // Scoring : quartier match +3, vérifié +2, followerCount, activité récente +1
+  const now = Date.now();
+  sellers = sellers.map(s => {
+    let score = 0;
+    if (userNeighborhood && s.neighborhood === userNeighborhood) score += 3;
+    if (s.isVerified) score += 2;
+    score += Math.min((s.followerCount || 0) / 10, 3);
+    const lastActive = (s as any).lastActiveAt?.toMillis?.() || (s as any).lastActiveAt?.seconds * 1000 || 0;
+    if (lastActive && now - lastActive < 7 * 24 * 60 * 60 * 1000) score += 1;
+    (s as any)._score = score;
+    return s;
+  });
+
+  sellers.sort((a, b) => ((b as any)._score || 0) - ((a as any)._score || 0));
+  return sellers.slice(0, maxResults);
+}
+
 // Chercher un utilisateur par numéro de téléphone
 export async function getUserByPhone(phone: string): Promise<User | null> {
   try {

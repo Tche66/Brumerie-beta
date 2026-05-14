@@ -7,10 +7,10 @@ import { getProducts } from '@/services/productService';
 import { subscribeOrdersAsBuyer } from '@/services/orderService';
 import { Product, Order } from '@/types';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
-import { updateUserProfile } from '@/services/userService';
+import { updateUserProfile, getSuggestedSellers } from '@/services/userService';
 import {
   removeFromWishlist, toggleWishlistPublic, buildWishlistLink,
-  unfollowSeller, getRedeemablePoints,
+  followSeller, unfollowSeller, getRedeemablePoints,
   CASHBACK_RATE, CASHBACK_REDEEM, CASHBACK_VALUE,
   formatLastSeen,
 } from '@/services/shopFeaturesService';
@@ -190,6 +190,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const [wishlistLink, setWishlistLink]         = useState('');
   const [wishlistCopied, setWishlistCopied]     = useState(false);
   const [followedSellers, setFollowedSellers]   = useState<any[]>([]);
+  const [suggestedSellers, setSuggestedSellers] = useState<any[]>([]);
   const [recentlyViewed, setRecentlyViewed]     = useState<Product[]>([]);
   const [loadingRecent, setLoadingRecent]       = useState(false);
 
@@ -234,6 +235,16 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
     Promise.all(ids.map(id => getDoc(doc(db, 'users', id)).then(d => d.exists() ? { id: d.id, ...d.data() } : null)))
       .then(list => setFollowedSellers(list.filter(Boolean) as any[])).catch(() => {});
   }, [JSON.stringify((userProfile as any)?.followingSellers)]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    getSuggestedSellers(
+      currentUser.uid,
+      (userProfile as any)?.followingSellers || [],
+      userProfile?.neighborhood,
+      4,
+    ).then(setSuggestedSellers).catch(() => {});
+  }, [currentUser?.uid, followedSellers.length]);
 
   async function loadBookmarks() {
     setLoadingFavs(true);
@@ -542,8 +553,41 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
         {/* ─── VENDEURS SUIVIS ──────────────────────────────────────── */}
         {tab === 'following' && (
           followedSellers.length === 0 ? (
-            <EmptyState svgIcon={Icons.following_empty()} title="Aucun vendeur suivi"
-              sub="Depuis une fiche produit, clique sur le bouton de suivi pour être notifié des nouveaux articles"/>
+            <div>
+              <EmptyState svgIcon={Icons.following_empty()} title="Aucun vendeur suivi"
+                sub="Suis des vendeurs pour être notifié de leurs nouveaux articles"/>
+              {suggestedSellers.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-1">Suggestions pour toi</p>
+                  <div className="space-y-2">
+                    {suggestedSellers.map((s: any) => (
+                      <div key={s.id} className="bg-white rounded-2xl p-3 flex items-center gap-3 border border-slate-100">
+                        <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 cursor-pointer"
+                          onClick={() => onSellerClick?.(s.id)}>
+                          {s.photoURL
+                            ? <img src={s.photoURL} alt="" className="w-full h-full object-cover"/>
+                            : <div className="w-full h-full flex items-center justify-center font-black text-slate-400">{s.name?.charAt(0)}</div>}
+                        </div>
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onSellerClick?.(s.id)}>
+                          <p className="text-[12px] font-bold text-slate-800 truncate">{s.name}</p>
+                          <p className="text-[9px] text-slate-400">{s.neighborhood || ''}{s.isVerified ? ' · Vérifié' : ''}</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!currentUser) return;
+                            await followSeller(currentUser.uid, s.id, s.name || '');
+                            await refreshUserProfile();
+                            setSuggestedSellers(prev => prev.filter(x => x.id !== s.id));
+                          }}
+                          className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider text-white bg-green-600 active:scale-95 transition-all flex-shrink-0">
+                          Suivre
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-2">
               {followedSellers.map((seller: any) => (

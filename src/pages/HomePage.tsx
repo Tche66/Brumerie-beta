@@ -16,7 +16,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
 import { getRepostsFeed, getRecentReposts, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
-import { searchSellers } from '@/services/userService';
+import { searchSellers, getSuggestedSellers } from '@/services/userService';
 import type { Repost } from '@/types';
 
 interface HomePageProps {
@@ -107,6 +107,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [sellerResults, setSellerResults] = useState<any[]>([]);
   const [sellerSearchLoading, setSellerSearchLoading] = useState(false);
   const [sellerSearchTerm, setSellerSearchTerm] = useState('');
+  const [suggestedSellers, setSuggestedSellers] = useState<any[]>([]);
 
   // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
   const ALL_CATEGORIES = [
@@ -123,6 +124,16 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   useEffect(() => {
     return subscribeBoostedProductIds(setBoostedIds);
   }, []);
+
+  // Charger les vendeurs suggérés
+  useEffect(() => {
+    getSuggestedSellers(
+      currentUser?.uid,
+      userProfile?.followingSellers || [],
+      userProfile?.neighborhood,
+      6,
+    ).then(setSuggestedSellers).catch(() => {});
+  }, [currentUser?.uid, userProfile?.followingSellers?.length]);
 
   // ── Texte hero modifiable depuis admin ──
   const [heroText, setHeroText] = useState('');  // Vide par défaut — admin définit le texte
@@ -566,6 +577,31 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
           })}
         </div>
       </div>
+
+      {/* Vendeurs suggérés */}
+      {suggestedSellers.length > 0 && (
+        <div className="mt-6">
+          <div className="px-6 mb-3">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Vendeurs à découvrir</h3>
+          </div>
+          <div className="flex gap-3 overflow-x-auto px-5 pb-4 scrollbar-hide">
+            {suggestedSellers.map((s) => (
+              <button key={s.id} onClick={() => onSellerClick?.(s.id)}
+                className="flex-shrink-0 flex flex-col items-center w-[100px] p-3 rounded-2xl bg-slate-50 hover:bg-green-50 transition-all">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-200 mb-2 shadow-sm">
+                  {s.photoURL
+                    ? <img src={s.photoURL} alt="" className="w-full h-full object-cover"/>
+                    : <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">{s.name?.charAt(0)}</div>
+                  }
+                </div>
+                <p className="text-[10px] font-bold text-slate-700 truncate w-full text-center">{s.name?.split(' ')[0]}</p>
+                {s.isVerified && <span className="text-[8px] text-green-600 font-bold mt-0.5">Vérifié</span>}
+                {!s.isVerified && s.neighborhood && <span className="text-[8px] text-slate-400 font-medium mt-0.5">{s.neighborhood}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quartiers */}
       <div className="mt-2">
