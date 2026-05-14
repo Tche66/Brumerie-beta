@@ -235,10 +235,11 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       .finally(() => setSellerSearchLoading(false));
   }, [searchTerm]);
 
-  // ── Charger le feed "Pour toi" quand l'onglet est activé ──
+  // ── Charger le feed "Pour toi" ──
+  const followingIdsStr = JSON.stringify(userProfile?.followingSellers || []);
   useEffect(() => {
     if (!userProfile) return;
-    const ids = userProfile.followingSellers || [];
+    const ids: string[] = userProfile.followingSellers || [];
     if (ids.length === 0) { setFollowingFeed([]); return; }
     const allIds = currentUser
       ? [...new Set([...ids, currentUser.uid])]
@@ -254,7 +255,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       })
       .catch((e) => console.error('[HomePage] followingFeed error:', e))
       .finally(() => setLoadingFollowing(false));
-  }, [userProfile?.followingSellers?.join(','), currentUser?.uid]);
+  }, [followingIdsStr, currentUser?.uid]);
 
   // ── Charger les tendances ──
   useEffect(() => {

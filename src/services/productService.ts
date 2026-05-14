@@ -579,8 +579,7 @@ export async function getFollowingFeed(followingIds: string[]): Promise<Product[
       const q = query(
         collection(db, 'products'),
         where('sellerId', 'in', chunk),
-        orderBy('createdAt', 'desc'),
-        limit(60)
+        limit(100)
       );
       const snap = await getDocs(q);
       snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Product));
