@@ -21,19 +21,25 @@ export function formatPrice(price: number): string {
 /**
  * Formater la date relative (il y a X jours)
  */
-export function formatRelativeDate(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+export function formatRelativeDate(date: any): string {
+  if (!date) return '';
+  try {
+    const d = typeof date.toDate === 'function' ? date.toDate()
+      : date.seconds ? new Date(date.seconds * 1000)
+      : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const diffMs = Date.now() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "À l'instant";
-  if (diffMins < 60) return `Il y a ${diffMins} min`;
-  if (diffHours < 24) return `Il y a ${diffHours}h`;
-  if (diffDays < 30) return `Il y a ${diffDays}j`;
-  
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    if (diffMins < 1) return "À l'instant";
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays < 30) return `Il y a ${diffDays}j`;
+
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  } catch { return ''; }
 }
 
 /**

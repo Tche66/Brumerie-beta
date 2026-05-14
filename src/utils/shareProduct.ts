@@ -36,7 +36,6 @@ export async function shareProduct(product: Product): Promise<void> {
       await navigator.share({
         title: `${product.title} — ${product.price.toLocaleString('fr-FR')} FCFA`,
         text,
-        url,
       });
       return;
     } catch (e) {
