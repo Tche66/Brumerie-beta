@@ -1,6 +1,5 @@
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
-import { CountdownBadge } from '@/components/CountdownBadge';
 import React, { useState, useRef, useEffect } from 'react';
 import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
@@ -709,30 +708,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 return (
                   <>
                     {(p.flashSaleLabel || p.flashSaleActive) && (
-                      <div className="w-full rounded-2xl overflow-hidden mb-3 shadow-lg">
-                        <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 px-4 py-2.5 flex items-center gap-2">
-                          <span className="text-xl leading-none">🔥</span>
-                          <div>
-                            <p className="text-white text-[13px] font-black uppercase tracking-wide leading-tight">
-                              {p.flashSaleLabel || 'Vente Flash'}
-                            </p>
-                            <p className="text-white/75 text-[10px] font-bold">Offre à durée limitée</p>
-                          </div>
-                        </div>
+                      <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-full mb-2 animate-pulse shadow-md">
+                        🔥 {p.flashSaleLabel || 'Vente flash en cours'}
                         {p.promoActiveUntil && (
-                          <div className="bg-red-50 border border-red-100 px-4 py-2.5 flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-red-700 text-[10px] font-black uppercase tracking-widest">Se termine dans</p>
-                              {p.quantity && p.quantity <= 5 && (
-                                <p className="text-red-500 text-[9px] font-bold mt-0.5 animate-pulse">
-                                  🚨 Plus que {p.quantity} en stock
-                                </p>
-                              )}
-                            </div>
-                            <div className="bg-white border border-red-200 rounded-xl px-3 py-1.5 shadow-sm">
-                              <CountdownBadge expiresAt={p.promoActiveUntil} size="md" />
-                            </div>
-                          </div>
+                          <span className="opacity-80 font-bold">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
                         )}
                       </div>
                     )}

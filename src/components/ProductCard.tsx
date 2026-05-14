@@ -1,7 +1,6 @@
 // src/components/ProductCard.tsx
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
-import { CountdownBadge } from '@/components/CountdownBadge';
 import React, { useState } from 'react';
 import { Product } from '@/types';
 import { formatPrice } from '@/utils/helpers';
@@ -38,10 +37,6 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
       setSaved(!newSaved);
     }
   };
-
-  // Vente flash
-  const p = product as any;
-  const isFlash = p.flashSaleActive && (p.flashSaleLabel || p.flashSaleExpiresAt);
 
   return (
     <div
@@ -124,30 +119,8 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           )}
         </div>
 
-        {/* ── VENTE FLASH BANDEAU — sur image, en bas ── */}
-        {isFlash && product.status !== 'sold' && (
-          <div className="absolute bottom-0 left-0 right-0">
-            <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white px-3 py-2 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-[11px] animate-bounce">🔥</span>
-                <span className="text-[9px] font-black uppercase tracking-tight truncate">
-                  {p.flashSaleLabel || 'Vente Flash'}
-                </span>
-              </div>
-              {p.flashSaleExpiresAt && (
-                <div className="flex-shrink-0 bg-white/20 rounded-lg px-1.5 py-0.5">
-                  <CountdownBadge
-                    expiresAt={p.flashSaleExpiresAt}
-                    size="sm"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Stock badge bottom right — remonté si flash actif */}
-        {product.quantity && product.quantity > 1 && product.status !== 'sold' && !isFlash && (
+        {/* Stock badge bottom right */}
+        {product.quantity && product.quantity > 1 && product.status !== 'sold' && (
           <div className="absolute bottom-3 right-3">
             <span className="bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2.5 py-1 rounded-xl shadow-lg">
               {product.quantity} en stock
@@ -157,10 +130,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
 
         {/* WhatsApp Count */}
         {product.whatsappClickCount > 0 && !product.hideStats && (
-          <div className={`absolute right-3 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${
-            isFlash ? 'bottom-12' :
-            product.quantity && product.quantity > 1 && product.status !== 'sold' ? 'bottom-10' : 'bottom-3'
-          }`}>
+          <div className={`absolute right-3 bg-black/50 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${product.quantity && product.quantity > 1 && product.status !== 'sold' ? 'bottom-10' : 'bottom-3'}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 2.008C6.465 2.008 2.011 6.46 2.011 11.985a9.916 9.916 0 001.337 5.003L2 22l5.16-1.321a9.955 9.955 0 004.83 1.24c5.524 0 9.979-4.452 9.979-9.977 0-2.665-1.038-5.168-2.921-7.054A9.926 9.926 0 0011.99 2.008z"/></svg>
             <span>{product.whatsappClickCount}</span>
           </div>
@@ -188,6 +158,7 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
             const promoActive = p.promoPrice && p.promoPrice < product.price
               && (!p.promoActiveFrom || p.promoActiveFrom <= now)
               && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+            const originalForPct = promoActive ? product.price : (product.originalPrice || 0);
             const displayedPrice = promoActive ? p.promoPrice : product.price;
             if (promoActive || (product.originalPrice && product.originalPrice > product.price)) {
               const base = promoActive ? product.price : product.originalPrice!;
@@ -209,6 +180,8 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           }
           return null;
         })()}
+        {/* Label vente flash */}
+        {(() => { const p = product as any; return p.flashSaleLabel ? <p className="text-[8px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-lg mt-0.5">🔥 {p.flashSaleLabel}</p> : null; })()}
 
         {/* Titre */}
         <h3 className="text-[11px] font-bold text-gray-500 mt-1 line-clamp-1 uppercase tracking-tight">
