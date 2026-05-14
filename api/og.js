@@ -81,7 +81,11 @@ function serveOG(res, { title, description, image, url }) {
 <meta http-equiv="refresh" content="0;url=${esc(url)}"/>
 </head>
 <body>
-<p>Redirection vers <a href="${esc(url)}">Brumerie</a>...</p>
+<script>window.location.replace("${url.replace(/"/g, '\\"')}");</script>
+<noscript><meta http-equiv="refresh" content="0;url=${esc(url)}"/></noscript>
+<p style="font-family:sans-serif;text-align:center;padding:40px;">
+Redirection vers <a href="${esc(url)}">${esc(title)}</a>...
+</p>
 </body>
 </html>`;
 

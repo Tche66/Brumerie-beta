@@ -1,6 +1,6 @@
 // src/components/GuestShell.tsx
 // Shell pour les visiteurs non connectés — accès à Home, ProductDetail, SellerProfile, Discover
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { SellerProfilePage } from '@/pages/SellerProfilePage';
@@ -19,6 +19,31 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const [guestModal, setGuestModal]       = useState<{ visible: boolean; reason: any }>({ visible: false, reason: 'default' });
+
+  // Deep link : ?product=ID ou /vendeur/ID
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('product');
+    const sellerMatch = window.location.pathname.match(/^\/vendeur\/([^/]+)$/);
+
+    if (productId) {
+      window.history.replaceState({}, '', '/');
+      import('firebase/firestore').then(({ getDoc, doc }) => {
+        import('@/config/firebase').then(({ db }) => {
+          getDoc(doc(db, 'products', productId)).then((snap: any) => {
+            if (snap.exists()) {
+              setSelectedProduct({ id: snap.id, ...snap.data() } as any);
+              setPage('product-detail');
+            }
+          }).catch(() => {});
+        });
+      });
+    } else if (sellerMatch) {
+      window.history.replaceState({}, '', '/');
+      setSelectedSellerId(sellerMatch[1]);
+      setPage('seller-profile');
+    }
+  }, []);
 
   const showGuest = (reason: any) => setGuestModal({ visible: true, reason });
   const hideGuest = () => setGuestModal({ visible: false, reason: 'default' });

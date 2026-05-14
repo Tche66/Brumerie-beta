@@ -27,7 +27,7 @@ export function buildWhatsAppShareMessage(product: Product, url: string): string
 
 // Ouvre le partage natif (API Web Share) ou bascule sur WhatsApp
 export async function shareProduct(product: Product): Promise<void> {
-  const url = `${window.location.origin}?product=${product.id}`;
+  const url = `${window.location.origin}/p/${product.id}`;
   const text = buildWhatsAppShareMessage(product, url);
 
   // API Web Share native (Android/iOS récents)
@@ -51,7 +51,7 @@ export async function shareProduct(product: Product): Promise<void> {
 
 // Copier le lien dans le presse-papier
 export async function copyProductLink(productId: string): Promise<boolean> {
-  const url = `${window.location.origin}?product=${productId}`;
+  const url = `${window.location.origin}/p/${productId}`;
   try {
     await navigator.clipboard.writeText(url);
     return true;
