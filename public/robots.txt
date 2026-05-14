@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /__/
+
+Sitemap: https://brumerie.com/sitemap.xml

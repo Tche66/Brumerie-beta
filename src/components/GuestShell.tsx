@@ -1,17 +1,18 @@
 // src/components/GuestShell.tsx
-// Shell pour les visiteurs non connectés — accès limité à Home, ProductDetail, SellerProfile
+// Shell pour les visiteurs non connectés — accès à Home, ProductDetail, SellerProfile, Discover
 import React, { useState } from 'react';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { SellerProfilePage } from '@/pages/SellerProfilePage';
+import { DiscoverPage } from '@/pages/DiscoverPage';
 import { GuestModal } from '@/components/GuestModal';
 import { Product } from '@/types';
 
 interface GuestShellProps {
-  onAuthRequired: () => void; // appelé quand le visiteur veut se connecter
+  onAuthRequired: () => void;
 }
 
-type GuestPage = 'home' | 'product-detail' | 'seller-profile';
+type GuestPage = 'home' | 'product-detail' | 'seller-profile' | 'discover';
 
 export function GuestShell({ onAuthRequired }: GuestShellProps) {
   const [page, setPage]                   = useState<GuestPage>('home');
@@ -27,9 +28,28 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
   return (
     <div className="min-h-full bg-white pb-32">
       {/* Bannière "Mode visiteur" discrète en haut */}
-      {page === 'home' && (
+      {(page === 'home' || page === 'discover') && (
         <div className="bg-slate-900 text-white text-[11px] font-bold text-center py-2.5 px-4 flex items-center justify-center gap-3">
-          <span>👋 Tu explores Brumerie en visiteur</span>
+          <span>Tu explores Brumerie en visiteur</span>
+          <button onClick={onAuthRequired} className="ml-2 px-3 py-1 bg-green-600 rounded-full text-[10px] font-black uppercase tracking-wider">
+            S'inscrire
+          </button>
+        </div>
+      )}
+
+      {/* ── Navigation Guest simplifiée (Home / Discover) ── */}
+      {(page === 'home' || page === 'discover') && (
+        <div className="flex border-b border-slate-100 bg-white sticky top-0 z-50">
+          <button
+            onClick={goHome}
+            className={`flex-1 py-3 text-[12px] font-black uppercase tracking-wider transition-all ${page === 'home' ? 'text-green-600 border-b-2 border-green-600' : 'text-slate-400'}`}>
+            Accueil
+          </button>
+          <button
+            onClick={() => setPage('discover')}
+            className={`flex-1 py-3 text-[12px] font-black uppercase tracking-wider transition-all ${page === 'discover' ? 'text-green-600 border-b-2 border-green-600' : 'text-slate-400'}`}>
+            Explorer
+          </button>
         </div>
       )}
 
@@ -48,7 +68,7 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
           </span>
         </button>
         <p className="text-center text-[10px] text-slate-400 font-medium mt-2">
-          Rejoins des milliers de vendeurs en Côte d'Ivoire 🇨🇮
+          Rejoins des milliers de vendeurs en Côte d'Ivoire
         </p>
       </div>
 
@@ -56,6 +76,7 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
       {page === 'home' && (
         <HomePage
           onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
+          onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
           onProfileClick={() => showGuest('default')}
           onNotificationsClick={() => showGuest('default')}
           onOpenChatWithSeller={() => showGuest('default')}
@@ -64,10 +85,17 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
         />
       )}
 
+      {page === 'discover' && (
+        <DiscoverPage
+          onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
+          onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
+        />
+      )}
+
       {page === 'product-detail' && selectedProduct && (
         <ProductDetailPage
           product={selectedProduct}
-          onBack={goHome}
+          onBack={() => { if (selectedSellerId) setPage('seller-profile'); else goHome(); }}
           onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
           onStartChat={() => showGuest('message')}
           onProductClick={(p) => { setSelectedProduct(p); setPage('product-detail'); }}

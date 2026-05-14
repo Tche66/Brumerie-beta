@@ -997,9 +997,11 @@ function AppContent() {
     );
   }
 
-  // Pas connecté → page de connexion directement (pas de mode visiteur sur APK)
+  // Pas connecté → mode visiteur (GuestShell) pour le SEO et l'exploration
+  // Le visiteur peut voir Home, produits, vendeurs et Discover sans inscription
   if (!currentUser) {
-    return <AuthGate />;
+    if (showAuth) return <AuthGate />;
+    return <GuestShell onAuthRequired={() => setShowAuth(true)} />;
   }
 
   // Connecté mais rôle manquant → sélection du rôle
