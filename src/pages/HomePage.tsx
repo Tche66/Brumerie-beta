@@ -237,10 +237,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
 
   // ── Charger le feed "Pour toi" quand l'onglet est activé ──
   useEffect(() => {
-    if (feedTab !== 'forYou' || !userProfile) return;
+    if (!userProfile) return;
     const ids = userProfile.followingSellers || [];
-    if (ids.length === 0) return;
-    // Inclure ses propres articles si on est vendeur
+    if (ids.length === 0) { setFollowingFeed([]); return; }
     const allIds = currentUser
       ? [...new Set([...ids, currentUser.uid])]
       : ids;
@@ -253,19 +252,18 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         setFollowingFeed(feed);
         setRepostsFeed(reposts);
       })
-      .catch(() => {})
+      .catch((e) => console.error('[HomePage] followingFeed error:', e))
       .finally(() => setLoadingFollowing(false));
-  }, [feedTab, userProfile?.followingSellers?.join(','), currentUser?.uid]);
+  }, [userProfile?.followingSellers?.join(','), currentUser?.uid]);
 
   // ── Charger les tendances ──
   useEffect(() => {
-    if (feedTab !== 'trending') return;
     setLoadingTrending(true);
     getTrendingProducts()
       .then(setTrendingProducts)
-      .catch(() => {})
+      .catch((e) => console.error('[HomePage] trending error:', e))
       .finally(() => setLoadingTrending(false));
-  }, [feedTab]);
+  }, []);
 
   // Compter les vendeurs dans le même quartier que l'utilisateur
   useEffect(() => {
