@@ -258,13 +258,13 @@ useEffect(() => {
     }
   }, [currentUser?.uid, (userProfile as any)?.needsOnboarding, userProfile?.neighborhood, userProfile?.phone]);
 
-  // ── useEffect #2b — deep link ?product=ID au démarrage ─────────
+  // ── useEffect #2b — deep link ?product=ID ou /p/ID au démarrage ─────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const productId = params.get('product');
+    const productId = params.get('product') || window.location.pathname.match(/^\/p\/([^/]+)/)?.[1];
     if (!productId) return;
     // Nettoyer l'URL immédiatement
-    window.history.replaceState({}, '', window.location.pathname);
+    window.history.replaceState({}, '', '/');
     // Charger le produit depuis Firestore et naviguer vers sa fiche
     const loadAndOpen = async () => {
       try {
@@ -280,10 +280,10 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // une seule fois au montage
 
-  // ── useEffect #2c — deep link /vendeur/{sellerId} ──────────────
+  // ── useEffect #2c — deep link /vendeur/{sellerId} ou /s/{sellerId} ──────────────
   useEffect(() => {
     const path = window.location.pathname;
-    const match = path.match(/^\/vendeur\/([^/]+)$/);
+    const match = path.match(/^\/vendeur\/([^/]+)$/) || path.match(/^\/s\/([^/]+)$/);
     if (!match) return;
     const sellerIdFromUrl = match[1];
     // Nettoyer l'URL immédiatement

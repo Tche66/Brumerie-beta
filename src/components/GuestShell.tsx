@@ -20,11 +20,13 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const [guestModal, setGuestModal]       = useState<{ visible: boolean; reason: any }>({ visible: false, reason: 'default' });
 
-  // Deep link : ?product=ID ou /vendeur/ID
+  // Deep link : ?product=ID, /p/ID, /vendeur/ID, /s/ID
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const productId = params.get('product');
-    const sellerMatch = window.location.pathname.match(/^\/vendeur\/([^/]+)$/);
+    const path = window.location.pathname;
+
+    const productId = params.get('product') || path.match(/^\/p\/([^/]+)/)?.[1];
+    const sellerId = path.match(/^\/vendeur\/([^/]+)/)?.[1] || path.match(/^\/s\/([^/]+)/)?.[1];
 
     if (productId) {
       window.history.replaceState({}, '', '/');
@@ -38,9 +40,9 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
           }).catch(() => {});
         });
       });
-    } else if (sellerMatch) {
+    } else if (sellerId) {
       window.history.replaceState({}, '', '/');
-      setSelectedSellerId(sellerMatch[1]);
+      setSelectedSellerId(sellerId);
       setPage('seller-profile');
     }
   }, []);
