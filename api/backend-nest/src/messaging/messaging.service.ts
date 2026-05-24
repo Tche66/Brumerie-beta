@@ -1,36 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { firebaseAdmin } from '../../firebase/firebase.config';
+import { firebaseAdmin } from '../firebase.config';
 
 @Injectable()
 export class MessagingService {
   private db = firebaseAdmin.firestore();
 
-  async getMessages(conversationId: string, limit = 30, before?: string) {
-    let query: FirebaseFirestore.Query = this.db
+  async getUserConversations(userId: string) {
+    const snapshot = await this.db
+      .collection('conversations')
+      .where('participants', 'array-contains', userId)
+      .orderBy('lastMessageAt', 'desc')
+      .limit(50)
+      .get();
+
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+  async getMessages(conversationId: string, limit = 30) {
+    const snapshot = await this.db
       .collection('conversations')
       .doc(conversationId)
       .collection('messages')
       .orderBy('createdAt', 'desc')
-      .limit(limit);
+      .limit(limit)
+      .get();
 
-    if (before) {
-      const beforeDoc = await this.db
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
-        .doc(before)
-        .get();
-      
-      if (beforeDoc.exists) {
-        query = query.startAfter(beforeDoc);
-      }
-    }
-
-    const snapshot = await query.get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
-  async sendMessage(data: { conversationId: string; content: string }, senderId: string) {
+  async sendMessage(
+    data: { conversationId: string; content: string },
+    senderId: string,
+  ) {
     const messageRef = this.db
       .collection('conversations')
       .doc(data.conversationId)

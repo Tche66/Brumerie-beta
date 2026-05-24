@@ -1,15 +1,17 @@
-import { IsUUID, IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsString, IsNumber, IsOptional, IsIn, Min, Max,
+} from 'class-validator';
 
 export class CreateReviewDto {
-  @IsUUID()
-  reviewedId: string;
+  @IsString() orderId: string;
+  @IsString() productId: string;
+  @IsString() productTitle: string;
+  @IsString() toUserId: string;
 
-  @IsNumber()
-  @Min(1)
-  @Max(5)
-  rating: number;
+  @IsIn(['buyer_to_seller','seller_to_buyer','buyer_to_deliverer','seller_to_deliverer'])
+  role: 'buyer_to_seller' | 'seller_to_buyer' | 'buyer_to_deliverer' | 'seller_to_deliverer';
 
-  @IsString()
-  @IsOptional()
-  comment?: string;
+  @IsNumber() @Min(1) @Max(5) rating: number;
+  @IsString() @IsOptional() comment?: string;
+  @IsString() @IsOptional() fromUserNeighborhood?: string;
 }
