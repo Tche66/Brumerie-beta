@@ -4,9 +4,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
-import { MessagingModule } from './messaging/messaging.module';
 import { OrdersModule } from './orders/orders.module';
 import { TrustModule } from './trust/trust.module';
+import { MessagingModule } from './messaging/messaging.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { ReferralsModule } from './referrals/referrals.module';
+import { BoostsModule } from './boosts/boosts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
@@ -16,9 +19,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
     EventBusModule,
     UsersModule,
     ProductsModule,
-    MessagingModule,
     OrdersModule,
     TrustModule,
+    MessagingModule,
+    DeliveryModule,
+    ReferralsModule,
+    BoostsModule,
     DashboardModule,
   ],
 })
