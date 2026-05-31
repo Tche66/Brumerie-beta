@@ -19,6 +19,7 @@ import { auth, db } from '@/config/firebase';
 import { User } from '@/types';
 import { sendOTPEmail, verifyOTPRemote, sendWelcomeEmail } from '@/services/otpService';
 import { applyReferral, ensureReferralCode } from '@/services/referralService';
+import { usersApi } from '@/services/apiClient';
 
 interface AuthContextType {
   currentUser: FirebaseUser | null;
@@ -218,7 +219,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user: FirebaseUser | null) => {
       setCurrentUser(user);
-      if (user) await loadUserProfile(user.uid);
+      if (user) {
+        await loadUserProfile(user.uid);
+        // Sync Firebase → Neon (silencieux, ne bloque pas l'UI)
+        user.getIdToken().then(() => {
+          usersApi.sync({
+            firebaseUid: user.uid,
+            email: user.email || '',
+            name: user.displayName || '',
+            photoURL: user.photoURL || undefined,
+          }).catch(() => {}); // silencieux si offline
+        });
+      }
       else setUserProfile(null);
       setLoading(false);
     });
