@@ -268,6 +268,11 @@ model Product {
   reposts   Repost[]
   bookmarks Bookmark[]
 
+  @@index([sellerId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([category, status])
+  @@index([neighborhood, status])
+  @@index([likeCount, viewCount])
   @@map("products")
 }
 
@@ -387,6 +392,10 @@ model Order {
   product   Product @relation(fields: [productId], references: [id])
   reviews   Review[]
 
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([delivererId, status])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -422,6 +431,7 @@ model TrustScore {
 
   user User @relation(fields: [userId], references: [firebaseUid])
 
+  @@index([score])
   @@map("trust_scores")
 }
 
@@ -438,6 +448,9 @@ model TrustReport {
   reporter User @relation("TrustReporter", fields: [reporterId], references: [firebaseUid])
   reported User @relation("TrustReported", fields: [reportedId], references: [firebaseUid])
 
+  @@index([status, createdAt])
+  @@index([reporterId, status])
+  @@index([reportedId, createdAt])
   @@map("trust_reports")
 }
 
@@ -459,6 +472,7 @@ model Story {
 
   seller User @relation(fields: [sellerId], references: [firebaseUid])
 
+  @@index([sellerId, expiresAt])
   @@map("stories")
 }
 
@@ -482,6 +496,8 @@ model ProductBoost {
   product Product @relation(fields: [productId], references: [id])
   seller  User    @relation(fields: [sellerId], references: [firebaseUid])
 
+  @@index([status, expiresAt])
+  @@index([sellerId])
   @@map("product_boosts")
 }
 
@@ -498,6 +514,8 @@ model Referral {
   referred User @relation("ReferralReferred", fields: [referredId], references: [firebaseUid])
 
   @@unique([ownerId, referredId])
+  @@index([ownerId])
+  @@index([referredId])
   @@map("referrals")
 }
 
@@ -524,6 +542,7 @@ model SearchAlert {
 
   user User @relation(fields: [userId], references: [firebaseUid])
 
+  @@index([userId])
   @@map("search_alerts")
 }
 
