@@ -91,3 +91,13 @@ export function subscribeBoostedProductIds(
   poll();
   return () => { active = false; };
 }
+
+// ── Boosts d'un vendeur spécifique ────────────────────────────────
+export async function getSellerBoosts(sellerId: string): Promise<ProductBoost[]> {
+  try {
+    const boosts = await boostsApi.getMy() as ProductBoost[];
+    return boosts;
+  } catch {
+    return [];
+  }
+}
