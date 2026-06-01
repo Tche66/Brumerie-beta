@@ -1,30 +1,18 @@
-// src/services/productService.ts
+// src/services/productService.ts — v20 hybride NestJS + Firestore
 import {
-  collection,
-  addDoc,
-  deleteField,
-  getDocs,
-  getDoc,
-  doc,
-  query,
-  limit,
-  where,
-  updateDoc,
-  serverTimestamp,
-  Timestamp,
-  increment,
-  orderBy,
-  writeBatch,
-  startAfter,
-  QueryDocumentSnapshot,
-  DocumentData,
-  setDoc,
-  deleteDoc,
+  collection, addDoc, deleteDoc, getDocs, getDoc, doc,
+  query, limit, where, updateDoc, serverTimestamp,
+  Timestamp, increment, orderBy, writeBatch,
+  startAfter, QueryDocumentSnapshot, DocumentData,
   onSnapshot,
 } from 'firebase/firestore';
+import { db } from '@/config/firebase';
+import { Product } from '@/types';
+import { uploadToCloudinary } from '@/utils/uploadImage';
 import { createNotification } from '@/services/notificationService';
+import { productsApi } from './apiClient';
 
-// Helper interne — timestamp sécurisé pour les tris
+// ── Helpers ───────────────────────────────────────────────────────
 function safeGetTime(val: any): number {
   if (!val) return 0;
   if (typeof val.getTime === 'function') return val.getTime() || 0;
@@ -33,135 +21,95 @@ function safeGetTime(val: any): number {
   try { const d = new Date(val); return isNaN(d.getTime()) ? 0 : d.getTime(); } catch { return 0; }
 }
 
-
-import { db } from '@/config/firebase';
-import { Product } from '@/types';
-import { uploadToCloudinary } from '@/utils/uploadImage';
-
-// ── Supprimer les champs undefined (Firestore les refuse) ──────
 function cleanUndefined(obj: Record<string, any>): Record<string, any> {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined)
-  );
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
 }
 
-/**
- * Publier un produit (Version Ultra-Robuste)
- */
+export const PRODUCTS_PER_PAGE = 30;
+
+// ── Créer un produit — Firestore + sync Neon ──────────────────────
 export async function createProduct(
   productData: Omit<Product, 'id' | 'createdAt' | 'whatsappClickCount' | 'status'>,
   imageFiles: File[]
 ): Promise<string> {
-  try {
-    const imageUrls: string[] = [];
-    
-    for (const file of imageFiles) {
-      const url = await uploadToCloudinary(file, 'brumerie_products');
-      imageUrls.push(url);
-    }
-
-    const product = {
-      ...productData,
-      images: imageUrls,
-      whatsappClickCount: 0,
-      viewCount: 0,
-      // Respecter le status fourni (ex: 'draft') sinon 'active' par défaut
-      status: (productData as any).status || 'active',
-      createdAt: serverTimestamp(),
-      priceHistory: [{ price: productData.price, date: new Date().toISOString() }],
-    };
-
-    const docRef = await addDoc(collection(db, 'products'), cleanUndefined(product as Record<string, any>));
-    
-    // Incrémenter le compteur uniquement pour les vraies publications (pas les brouillons)
-    if ((productData as any).status !== 'draft') {
-      try {
-        await updateDoc(doc(db, 'users', productData.sellerId), {
-          publicationCount: increment(1),
-          productCount: increment(1),
-        });
-      } catch (e) { console.warn('publicationCount non mis à jour:', e); }
-    }
-
-    return docRef.id;
-
-  } catch (error: any) {
-    console.error("Erreur de publication:", error.message);
-    throw error;
+  const imageUrls: string[] = [];
+  for (const file of imageFiles) {
+    const url = await uploadToCloudinary(file, 'brumerie_products');
+    imageUrls.push(url);
   }
+
+  const product = {
+    ...productData,
+    images: imageUrls,
+    whatsappClickCount: 0,
+    viewCount: 0,
+    status: (productData as any).status || 'active',
+    createdAt: serverTimestamp(),
+    priceHistory: [{ price: productData.price, date: new Date().toISOString() }],
+  };
+
+  // Firestore reste la source de vérité principale
+  const docRef = await addDoc(collection(db, 'products'), cleanUndefined(product as Record<string, any>));
+
+  if ((productData as any).status !== 'draft') {
+    updateDoc(doc(db, 'users', productData.sellerId), {
+      publicationCount: increment(1),
+      productCount: increment(1),
+    }).catch(() => {});
+  }
+
+  // Sync Neon en background
+  productsApi.create({
+    ...productData,
+    images: imageUrls,
+    status: (productData as any).status || 'active',
+    firebaseId: docRef.id,
+  }).catch(() => {});
+
+  return docRef.id;
 }
 
-/**
- * Récupérer les produits (Accueil) - OPTIMISÉ POUR LES VENDUS
- */
+// ── Récupérer les produits — Firestore (source de vérité) ─────────
 export async function getProducts(filters?: {
   category?: string;
   neighborhood?: string;
   searchTerm?: string;
 }): Promise<Product[]> {
   try {
-    // Requête simple sans index composite — filtres côté client
-    const q = query(
-      collection(db, 'products'),
-      where('status', 'in', ['active', 'sold']),
-      limit(200)
-    );
+    const q = query(collection(db, 'products'), where('status', 'in', ['active', 'sold']), limit(200));
+    const snapshot = await getDocs(q);
 
-    const snapshot = await getDocs(q); // Cache + serveur — plus résilient sur mobile 4G
-    let products = snapshot.docs.map(doc => {
-      const d = doc.data();
-      // Compatibilité : anciens articles ont imageUrl (string), nouveaux ont images (array)
+    let products = snapshot.docs.map(d => {
+      const data = d.data();
       let images: string[] = [];
-      if (Array.isArray(d.images) && d.images.length > 0) {
-        images = d.images;
-      } else if (typeof d.imageUrl === 'string' && d.imageUrl) {
-        images = [d.imageUrl];
-      }
-      return {
-        id: doc.id,
-        ...d,
-        images,
-        createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
-      };
+      if (Array.isArray(data.images) && data.images.length > 0) images = data.images;
+      else if (typeof data.imageUrl === 'string' && data.imageUrl) images = [data.imageUrl];
+      return { id: d.id, ...data, images, createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date() };
     }) as Product[];
 
-    // Tous les filtres côté client — pas d'index composite requis
     products = products.filter(p => !(p as any).hidden);
-    if (filters?.category && filters.category !== 'all') {
-      products = products.filter(p => p.category === filters.category);
-    }
+    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
     if (filters?.neighborhood && filters.neighborhood !== 'all') {
       products = products.filter(p => {
         const neighborhoods = (p as any).neighborhoods || [p.neighborhood];
         return neighborhoods.includes(filters.neighborhood);
       });
     }
-
-    // Tri : vérifié en premier (+20% visibilité), puis par date
     products.sort((a, b) => {
-      const aScore = (a.sellerVerified ? 1 : 0);
-      const bScore = (b.sellerVerified ? 1 : 0);
-      if (bScore !== aScore) return bScore - aScore; // vérifié d'abord
+      const aScore = a.sellerVerified ? 1 : 0;
+      const bScore = b.sellerVerified ? 1 : 0;
+      if (bScore !== aScore) return bScore - aScore;
       return safeGetTime(b.createdAt) - safeGetTime(a.createdAt);
     });
-
     if (filters?.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      products = products.filter(p =>
-        p.title.toLowerCase().includes(searchLower) ||
-        p.description.toLowerCase().includes(searchLower)
-      );
+      const s = filters.searchTerm.toLowerCase();
+      products = products.filter(p => p.title.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
     }
     return products;
-  } catch (error) {
-    console.error('Erreur getProducts:', error);
-    return [];
-  }
+  } catch { return []; }
 }
 
-// ── Pagination : charger une page de produits ───────────────────
-export const PRODUCTS_PER_PAGE = 30;
-
+// ── Pagination ────────────────────────────────────────────────────
 export async function getProductsPage(
   lastDoc?: QueryDocumentSnapshot<DocumentData> | null,
   filters?: { category?: string; neighborhood?: string }
@@ -170,10 +118,9 @@ export async function getProductsPage(
     const constraints: any[] = [
       where('status', 'in', ['active', 'sold']),
       orderBy('createdAt', 'desc'),
-      limit(PRODUCTS_PER_PAGE + 1), // +1 pour détecter s'il y a une suite
+      limit(PRODUCTS_PER_PAGE + 1),
     ];
     if (lastDoc) constraints.push(startAfter(lastDoc));
-
     const snapshot = await getDocs(query(collection(db, 'products'), ...constraints));
     const docs = snapshot.docs;
     const hasMore = docs.length > PRODUCTS_PER_PAGE;
@@ -182,449 +129,197 @@ export async function getProductsPage(
     let products = pageDocs.map(d => {
       const data = d.data();
       let images: string[] = [];
-      if (Array.isArray(data.images) && data.images.length > 0) {
-        images = data.images;
-      } else if (typeof data.imageUrl === 'string' && data.imageUrl) {
-        images = [data.imageUrl];
-      }
-      return {
-        id: d.id,
-        ...data,
-        images,
-        createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date(),
-      } as Product;
+      if (Array.isArray(data.images) && data.images.length > 0) images = data.images;
+      else if (typeof data.imageUrl === 'string' && data.imageUrl) images = [data.imageUrl];
+      return { id: d.id, ...data, images, createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date() } as Product;
     }).filter(p => !(p as any).hidden);
 
-    // Filtres optionnels côté client
-    if (filters?.category && filters.category !== 'all') {
-      products = products.filter(p => p.category === filters.category);
-    }
+    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
     if (filters?.neighborhood && filters.neighborhood !== 'all') {
       products = products.filter(p => {
-        const nh = (p as any).neighborhoods || [p.neighborhood];
-        return nh.includes(filters.neighborhood);
+        const n = (p as any).neighborhoods || [p.neighborhood];
+        return n.includes(filters.neighborhood);
       });
     }
 
-    return {
-      products,
-      lastDoc: pageDocs.length > 0 ? pageDocs[pageDocs.length - 1] : null,
-      hasMore,
-    };
-  } catch (error) {
-    console.error('Erreur getProductsPage:', error);
-    return { products: [], lastDoc: null, hasMore: false };
-  }
+    return { products, lastDoc: hasMore ? pageDocs[pageDocs.length - 1] : null, hasMore };
+  } catch { return { products: [], lastDoc: null, hasMore: false }; }
 }
 
-/**
- * Récupérer les produits d'un vendeur (Profil) - OPTIMISÉ
- */
+// ── Produits d'un vendeur ─────────────────────────────────────────
 export async function getSellerProducts(sellerId: string): Promise<Product[]> {
   try {
-    // Requête simple par sellerId — filtre status côté client
-    const q = query(
-      collection(db, 'products'),
-      where('sellerId', '==', sellerId)
-    );
+    const q = query(collection(db, 'products'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    const products = snapshot.docs.map(doc => {
-      const d = doc.data();
-      let images: string[] = [];
-      if (Array.isArray(d.images) && d.images.length > 0) {
-        images = d.images;
-      } else if (typeof d.imageUrl === 'string' && d.imageUrl) {
-        images = [d.imageUrl];
-      }
-      return {
-        id: doc.id,
-        ...d,
-        images,
-        createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
-      };
-    }).filter((p: any) => p.status !== 'deleted') as Product[];
-    
-    return products.sort((a, b) => safeGetTime(b.createdAt) - safeGetTime(a.createdAt));
-  } catch (error) {
-    console.error('Erreur getSellerProducts:', error);
-    return [];
-  }
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  } catch { return []; }
 }
 
-/**
- * Marquer comme vendu (Ne fait plus disparaître le produit)
- */
-export async function markProductAsSold(productId: string): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'products', productId), { 
-      status: 'sold' 
-    });
-  } catch (error) {
-    console.error("Erreur markProductAsSold:", error);
-    throw error;
-  }
-}
-
-/**
- * Supprimer un produit (Cache le produit de l'app)
- */
-export async function deleteProduct(productId: string, sellerId: string): Promise<void> {
-  await updateDoc(doc(db, 'products', productId), { status: 'deleted' });
-  await updateDoc(doc(db, 'users', sellerId), { publicationCount: increment(-1) });
-}
-
-/**
- * Compteur WhatsApp
- */
-export async function incrementWhatsAppClick(productId: string): Promise<void> {
-  await updateDoc(doc(db, 'products', productId), { whatsappClickCount: increment(1) });
-}
-
-export async function incrementViewCount(productId: string): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'products', productId), { viewCount: increment(1) });
-  } catch(e) {
-    console.error('[incrementViewCount] Firestore refusé — vérifier les règles Firestore :', e);
-  }
-}
-
-// Sprint 5 — compteur de contacts (remplace WhatsApp click)
-export async function incrementContactCount(productId: string, sellerId: string): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'products', productId), { whatsappClickCount: increment(1) });
-    await updateDoc(doc(db, 'users', sellerId), { contactCount: increment(1) });
-  } catch(e) { console.error('[contactCount]', e); }
-}
-
-/**
- * Limite de publication
- */
-export async function canUserPublish(userId: string): Promise<{
-  canPublish: boolean;
-  reason?: string;
-  count: number;
-  limit: number;
-}> {
-  try {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (!userDoc.exists()) return { canPublish: false, reason: 'Utilisateur non trouvé', count: 0, limit: 0 };
-    
-    const userData = userDoc.data();
-    const count = userData.publicationCount || 0;
-    const limit = userData.publicationLimit || 50;
-    
-    if (count >= limit) return { canPublish: false, reason: `Limite mensuelle atteinte`, count, limit };
-    return { canPublish: true, count, limit };
-  } catch (error) {
-    // En cas d'erreur technique → ne pas bloquer la publication
-    console.warn('canUserPublish erreur:', error);
-    return { canPublish: true, count: 0, limit: 50 };
-  }
-}
-
-export function requestVerificationViaWhatsApp(user: { name: string; phone: string }) {
-  const msg = `🏅 Demande badge Vendeur Vérifié - ${user.name}`;
-  return `https://wa.me/22586867693?text=${encodeURIComponent(msg)}`;
-}
-
-export function sendFeedbackViaEmail(feedback: { type: string; message: string; name: string; email: string }) {
-  const subject = encodeURIComponent(`Feedback Brumerie - ${feedback.type}`);
-  const body = encodeURIComponent(`De: ${feedback.name}\n\n${feedback.message}`);
-  return `mailto:contact.brumerie@gmail.com?subject=${subject}&body=${body}`;
-}
-
-/**
- * Remettre un produit vendu sur le marché (Re-listing)
- */
-export async function updateProductStatus(productId: string, status: 'active' | 'sold'): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'products', productId), { status });
-  } catch (error) {
-    console.error('Erreur updateProductStatus:', error);
-    throw error;
-  }
-}
-
-/**
- * Modifier les détails d'un article (titre, prix, description, originalPrice)
- */
-export async function updateProduct(
-  productId: string,
-  data: {
-    title?: string;
-    description?: string;
-    price?: number;
-    originalPrice?: number | null;
-    category?: string;
-    neighborhood?: string;
-    neighborhoods?: string[];
-    condition?: 'new' | 'like_new' | 'second_hand';
-    quantity?: number;
-  }
-): Promise<void> {
-  try {
-    // Nettoyer les undefined + remplacer null par deleteField()
-    const cleaned: Record<string, any> = {};
-    for (const [k, v] of Object.entries({ ...data, updatedAt: new Date() })) {
-      if (v === undefined) continue;
-      if (v === null) { cleaned[k] = deleteField(); }
-      else cleaned[k] = v;
-    }
-    await updateDoc(doc(db, 'products', productId), cleaned);
-  } catch (error) {
-    console.error('Erreur updateProduct:', error);
-    throw error;
-  }
-}
-
-// ── Sync données vendeur sur tous ses produits ──────────────
-// À appeler après : changement de nom, photo, badge vérifié (gain ou perte)
-export async function syncSellerDataToProducts(
-  sellerId: string,
-  data: {
-    sellerName?: string;
-    sellerPhoto?: string;
-    sellerVerified?: boolean;
-    sellerPremium?: boolean;
-  }
-): Promise<void> {
-  // Récupérer tous les produits actifs du vendeur
-  const q = query(
-    collection(db, 'products'),
-    where('sellerId', '==', sellerId),
-    where('status', 'in', ['active', 'sold']),
-  );
-  const snap = await getDocs(q);
-  if (snap.empty) return;
-
-  // Filtrer les champs définis uniquement
-  const updatePayload: Record<string, any> = {};
-  if (data.sellerName     !== undefined) updatePayload.sellerName     = data.sellerName;
-  if (data.sellerPhoto    !== undefined) updatePayload.sellerPhoto    = data.sellerPhoto;
-  if (data.sellerVerified !== undefined) updatePayload.sellerVerified = data.sellerVerified;
-  if (data.sellerPremium  !== undefined) updatePayload.sellerPremium  = data.sellerPremium;
-  if (Object.keys(updatePayload).length === 0) return;
-
-  // Batch write (max 500 docs par batch — limite Firestore)
-  const BATCH_SIZE = 400;
-  const docs = snap.docs;
-  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-    const batch = writeBatch(db);
-    docs.slice(i, i + BATCH_SIZE).forEach(d => batch.update(d.ref, updatePayload));
-    await batch.commit();
-  }
-}
-
-
-// ─────────────────────────────────────────────────────────────
-// SOCIAL COMMERCE — Likes & Commentaires
-// ─────────────────────────────────────────────────────────────
-
-import type { ProductComment } from '@/types';
-
-
+// ── Produit par ID ────────────────────────────────────────────────
 export async function getProductById(productId: string): Promise<Product | null> {
   try {
     const snap = await getDoc(doc(db, 'products', productId));
     if (!snap.exists()) return null;
-    const d = snap.data();
-    return {
-      id: snap.id,
-      ...d,
-      createdAt: d.createdAt ? (d.createdAt as Timestamp).toDate() : new Date(),
-    } as Product;
+    return { id: snap.id, ...snap.data() } as Product;
   } catch { return null; }
 }
 
-export async function toggleLike(
+// ── Mettre à jour un produit ──────────────────────────────────────
+export async function updateProduct(
   productId: string,
-  userId: string
-): Promise<{ liked: boolean; count: number }> {
+  updates: Partial<Product>,
+): Promise<void> {
+  const clean = cleanUndefined(updates as Record<string, any>);
+  await updateDoc(doc(db, 'products', productId), { ...clean, updatedAt: serverTimestamp() });
+  productsApi.update(productId, clean).catch(() => {});
+}
+
+// ── Marquer vendu ─────────────────────────────────────────────────
+export async function markProductAsSold(productId: string): Promise<void> {
+  await updateDoc(doc(db, 'products', productId), { status: 'sold' });
+  productsApi.update(productId, { status: 'sold' }).catch(() => {});
+}
+
+// ── Mettre à jour le statut ───────────────────────────────────────
+export async function updateProductStatus(productId: string, status: 'active' | 'sold'): Promise<void> {
+  await updateDoc(doc(db, 'products', productId), { status });
+  productsApi.update(productId, { status }).catch(() => {});
+}
+
+// ── Supprimer un produit ──────────────────────────────────────────
+export async function deleteProduct(productId: string, sellerId: string): Promise<void> {
+  await deleteDoc(doc(db, 'products', productId));
+  updateDoc(doc(db, 'users', sellerId), { productCount: increment(-1) }).catch(() => {});
+  productsApi.delete(productId).catch(() => {});
+}
+
+// ── Compteurs ─────────────────────────────────────────────────────
+export async function incrementWhatsAppClick(productId: string): Promise<void> {
+  updateDoc(doc(db, 'products', productId), { whatsappClickCount: increment(1) }).catch(() => {});
+  productsApi.incrementWhatsApp(productId).catch(() => {});
+}
+
+export async function incrementViewCount(productId: string): Promise<void> {
+  updateDoc(doc(db, 'products', productId), { viewCount: increment(1) }).catch(() => {});
+  productsApi.incrementView(productId).catch(() => {});
+}
+
+export async function incrementContactCount(productId: string, sellerId: string): Promise<void> {
+  updateDoc(doc(db, 'products', productId), { contactCount: increment(1) }).catch(() => {});
+  updateDoc(doc(db, 'users', sellerId), { contactCount: increment(1) }).catch(() => {});
+}
+
+// ── Toggle Like ───────────────────────────────────────────────────
+export async function toggleLike(productId: string, userId: string): Promise<boolean> {
   const likeRef = doc(db, 'products', productId, 'likes', userId);
   const snap = await getDoc(likeRef);
-  const alreadyLiked = snap.exists();
 
-  if (alreadyLiked) {
+  if (snap.exists()) {
     await deleteDoc(likeRef);
+    updateDoc(doc(db, 'products', productId), { likeCount: increment(-1) }).catch(() => {});
+    productsApi.toggleLike(productId).catch(() => {});
+    return false;
   } else {
-    await setDoc(likeRef, { userId, createdAt: serverTimestamp() });
+    await updateDoc(doc(db, 'products', productId, 'likes', userId) as any, { userId, createdAt: serverTimestamp() })
+      .catch(() => addDoc(collection(db, 'products', productId, 'likes'), { userId, createdAt: serverTimestamp() }));
+    updateDoc(doc(db, 'products', productId), { likeCount: increment(1) }).catch(() => {});
+    productsApi.toggleLike(productId).catch(() => {});
+    return true;
   }
-
-  // Compter depuis la sous-collection directement — pas de updateDoc sur le produit
-  const likesSnap = await getDocs(collection(db, 'products', productId, 'likes'));
-  const count = likesSnap.size;
-
-  // Mettre à jour likeCount en best-effort
-  try {
-    await updateDoc(doc(db, 'products', productId), { likeCount: count });
-  } catch {}
-
-  // Notifier le vendeur quand quelqu'un like (pas si c'est lui-même)
-  if (!alreadyLiked) {
-    try {
-      const prodSnap2 = await getDoc(doc(db, 'products', productId));
-      const sellerId = prodSnap2.data()?.sellerId;
-      const productTitle = prodSnap2.data()?.title || 'ton article';
-      if (sellerId && sellerId !== userId) {
-        await createNotification(sellerId, 'like',
-          "❤️ Nouveau j'aime",
-          `Quelqu'un a aimé "${productTitle.slice(0, 40)}${productTitle.length > 40 ? '...' : ''}"`,
-          { productId }
-        );
-      }
-    } catch {}
-  }
-
-  return { liked: !alreadyLiked, count };
 }
 
 export async function checkIsLiked(productId: string, userId: string): Promise<boolean> {
-  const likeRef = doc(db, 'products', productId, 'likes', userId);
-  const snap = await getDoc(likeRef);
-  return snap.exists();
+  try {
+    const snap = await getDoc(doc(db, 'products', productId, 'likes', userId));
+    return snap.exists();
+  } catch { return false; }
 }
 
+// ── Commentaires ──────────────────────────────────────────────────
 export async function addComment(
-  productId: string,
-  userId: string,
-  userName: string,
-  text: string,
-  userPhoto?: string,
-  userVerified?: boolean,
-  parentId?: string,
-  photoUrl?: string,
+  productId: string, userId: string, userName: string,
+  text: string, userPhoto?: string, parentId?: string, photoUrl?: string,
 ): Promise<string> {
-  const commentsRef = collection(db, 'products', productId, 'comments');
-  const docRef = await addDoc(commentsRef, {
-    productId, userId, userName,
-    text: text.trim(),
-    userPhoto: userPhoto || null,
-    userVerified: userVerified || false,
-    parentId: parentId || null,
-    photoUrl: photoUrl || null,
+  const ref = await addDoc(collection(db, 'products', productId, 'comments'), {
+    userId, userName, userPhoto: userPhoto || null, text,
+    parentId: parentId || null, photoUrl: photoUrl || null,
     createdAt: serverTimestamp(),
   });
-  await updateDoc(doc(db, 'products', productId), { commentCount: increment(1) });
-
-  // Notifier le vendeur d'un nouveau commentaire (pas si c'est lui-même)
-  try {
-    const prodSnap = await getDoc(doc(db, 'products', productId));
-    const sellerId = prodSnap.data()?.sellerId;
-    const productTitle = prodSnap.data()?.title || 'ton article';
-    if (sellerId && sellerId !== userId) {
-      await createNotification(sellerId, 'comment',
-        '💬 Nouveau commentaire',
-        `${userName} a commenté "${productTitle.slice(0, 30)}${productTitle.length > 30 ? '...' : ''}" : "${text.slice(0, 50)}${text.length > 50 ? '...' : ''}"`,
-        { productId }
-      );
-    }
-    // Si c'est une réponse, notifier aussi l'auteur du commentaire parent
-    if (parentId) {
-      const parentSnap = await getDoc(doc(db, 'products', productId, 'comments', parentId));
-      const parentAuthorId = parentSnap.data()?.userId;
-      if (parentAuthorId && parentAuthorId !== userId) {
-        await createNotification(parentAuthorId, 'comment_reply',
-          '↩️ Réponse à ton commentaire',
-          `${userName} a répondu : "${text.slice(0, 60)}${text.length > 60 ? '...' : ''}"`,
-          { productId }
-        );
-      }
-    }
-  } catch {}
-
-  return docRef.id;
+  updateDoc(doc(db, 'products', productId), { commentCount: increment(1) }).catch(() => {});
+  productsApi.addComment(productId, text, photoUrl).catch(() => {});
+  return ref.id;
 }
 
 export async function deleteComment(productId: string, commentId: string): Promise<void> {
   await deleteDoc(doc(db, 'products', productId, 'comments', commentId));
-  await updateDoc(doc(db, 'products', productId), { commentCount: increment(-1) });
+  updateDoc(doc(db, 'products', productId), { commentCount: increment(-1) }).catch(() => {});
+  productsApi.deleteComment(productId, commentId).catch(() => {});
 }
 
 export function subscribeComments(
   productId: string,
-  callback: (comments: ProductComment[]) => void
+  callback: (comments: any[]) => void,
 ): () => void {
-  const q = query(
-    collection(db, 'products', productId, 'comments'),
-    orderBy('createdAt', 'asc'),
-    limit(100)
-  );
-  return onSnapshot(q, (snap) => {
-    const comments: ProductComment[] = snap.docs.map(d => ({
-      id: d.id, ...d.data(), createdAt: d.data().createdAt,
-    })) as ProductComment[];
-    callback(comments);
-  });
+  const q = query(collection(db, 'products', productId, 'comments'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
 }
 
-// ════════════════════════════════════════════════════════════
-// GRAPHE SOCIAL — Feed personnalisé + Tendances
-// ════════════════════════════════════════════════════════════
-
-/**
- * Feed "Pour toi" — articles des vendeurs suivis, les plus récents en premier
- * Si followingIds est vide, retourne un feed mixte (populaire + récent)
- */
-export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
-  if (!followingIds || followingIds.length === 0) return [];
-
-  const chunks: string[][] = [];
-  for (let i = 0; i < followingIds.length; i += 30) {
-    chunks.push(followingIds.slice(i, i + 30));
-  }
-
-  const results: Product[] = [];
-  for (const chunk of chunks) {
-    try {
-      const q = query(
-        collection(db, 'products'),
-        where('sellerId', 'in', chunk),
-        limit(100)
-      );
-      const snap = await getDocs(q);
-      snap.docs.forEach(d => results.push({ id: d.id, ...d.data() } as Product));
-    } catch (e) { console.error('[getFollowingFeed]', e); }
-  }
-
-  return results
-    .filter(p => p.status === 'active')
-    .sort((a, b) => {
-      const ta = a.createdAt?.toMillis?.() ?? (a.createdAt?.seconds || 0) * 1000;
-      const tb = b.createdAt?.toMillis?.() ?? (b.createdAt?.seconds || 0) * 1000;
-      return tb - ta;
-    })
-    .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
-    .slice(0, 60);
-}
-
-/**
- * "Tendances Abidjan" — algo : score = likeCount*3 + viewCount + commentCount*2
- * Articles des 30 derniers jours, top 20
- */
+// ── Trending ──────────────────────────────────────────────────────
 export async function getTrendingProducts(): Promise<Product[]> {
   try {
-    const q = query(
-      collection(db, 'products'),
-      orderBy('createdAt', 'desc'),
-      limit(100)
-    );
+    const q = query(collection(db, 'products'), where('status', '==', 'active'), limit(30));
     const snap = await getDocs(q);
-    const products = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }) as Product)
-      .filter(p => p.status === 'active');
+    const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    return products.sort((a, b) => ((b as any).likeCount || 0) - ((a as any).likeCount || 0));
+  } catch { return []; }
+}
 
-    const scored = products.map(p => ({
-      ...p,
-      _score: (p.likeCount || 0) * 3
-             + (p.viewCount || 0)
-             + (p.commentCount || 0) * 2
-             + (p.whatsappClickCount || 0) * 4,
-    })).sort((a, b) => (b as any)._score - (a as any)._score);
+// ── Feed following ────────────────────────────────────────────────
+export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
+  if (!followingIds.length) return [];
+  try {
+    const chunks = Array.from({ length: Math.ceil(followingIds.length / 10) }, (_, i) => followingIds.slice(i * 10, i * 10 + 10));
+    const results = await Promise.all(chunks.map(chunk =>
+      getDocs(query(collection(db, 'products'), where('sellerId', 'in', chunk), where('status', '==', 'active'), limit(20)))
+    ));
+    const products = results.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    return products.sort((a, b) => safeGetTime(b.createdAt) - safeGetTime(a.createdAt));
+  } catch { return []; }
+}
 
-    const hasScores = scored.some(p => (p as any)._score > 0);
-    return (hasScores ? scored : products).slice(0, 20);
-  } catch (e) {
-    console.error('[getTrendingProducts]', e);
-    return [];
-  }
+// ── Sync données vendeur vers ses produits ────────────────────────
+export async function syncSellerDataToProducts(sellerId: string, updates: { name?: string; photoURL?: string; isVerified?: boolean }): Promise<void> {
+  try {
+    const snap = await getDocs(query(collection(db, 'products'), where('sellerId', '==', sellerId), where('status', 'in', ['active', 'draft'])));
+    if (snap.empty) return;
+    const batch = writeBatch(db);
+    const data: Record<string, any> = {};
+    if (updates.name) data.sellerName = updates.name;
+    if (updates.photoURL) data.sellerPhoto = updates.photoURL;
+    if (updates.isVerified !== undefined) data.sellerVerified = updates.isVerified;
+    snap.docs.forEach(d => batch.update(d.ref, data));
+    await batch.commit();
+  } catch (e) { console.error('syncSellerDataToProducts:', e); }
+}
+
+// ── Vérifier si peut publier ──────────────────────────────────────
+export async function canUserPublish(userId: string): Promise<{ canPublish: boolean; reason?: string; remaining?: number }> {
+  try {
+    const userSnap = await getDoc(doc(db, 'users', userId));
+    if (!userSnap.exists()) return { canPublish: false, reason: 'Utilisateur introuvable' };
+    const user = userSnap.data();
+    if (user.isBanned) return { canPublish: false, reason: 'Compte suspendu' };
+    return { canPublish: true };
+  } catch { return { canPublish: true }; }
+}
+
+// ── Demandes contact vendeur ──────────────────────────────────────
+export function requestVerificationViaWhatsApp(user: { name: string; phone: string }) {
+  const msg = `Bonjour, je suis ${user.name} (${user.phone}). Je souhaite obtenir la vérification Brumerie.`;
+  window.open(`https://wa.me/2250000000000?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+export function sendFeedbackViaEmail(feedback: { type: string; message: string; name: string; email: string }) {
+  const subject = `[Brumerie] ${feedback.type} — ${feedback.name}`;
+  window.open(`mailto:contact@brumerie.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(feedback.message)}`, '_blank');
 }
