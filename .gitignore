@@ -1,0 +1,40 @@
+# Dépendances — NE JAMAIS COMMITTER
+node_modules/
+api/node_modules/
+api/backend-nest/node_modules/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Variables d'environnement — NE JAMAIS COMMITTER
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+api/.env
+api/backend-nest/.env
+
+# Clés Firebase — NE JAMAIS COMMITTER
+*firebase-adminsdk*.json
+*service-account*.json
+serviceAccount.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Prisma
+prisma.config.ts
