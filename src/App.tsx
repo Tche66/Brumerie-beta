@@ -55,6 +55,7 @@ import { OfferModal } from '@/components/OfferModal';
 import { GoogleNeighborhoodModal } from '@/components/GoogleNeighborhoodModal';
 import { BecomeDelivererPage } from '@/pages/BecomeDelivererPage';
 import { updatePresence } from '@/services/shopFeaturesService';
+import { addRecentlyViewed } from '@/services/userService';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
 
@@ -129,7 +130,7 @@ function RoleSwitchModal({ currentRole, onConfirm, onCancel }: {
 // ── AppShell — rendu uniquement si authentifié ────────────────
 // TOUS les hooks sont déclarés ici, AUCUN return conditionnel avant eux
 function AppShell() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
   const { showOnboarding, doneOnboarding } = useOnboarding();
 
@@ -146,6 +147,7 @@ function AppShell() {
   const [showNeighborhoodModal, setShowNeighborhoodModal] = useState(false);
   const [acceptedOfferPrice, setAcceptedOfferPrice] = useState<number | undefined>(undefined);
   const [selectedOrderId, setSelectedOrderId]     = useState<string>('');
+  const [selectedDelivererId, setSelectedDelivererId] = useState<string | null>(null);
   const [navigationHistory, setNavigationHistory] = useState<Page[]>(['home']);
   const [showRoleSwitch, setShowRoleSwitch]       = useState(false);
   const [unreadMessages, setUnreadMessages]       = useState(0);
@@ -600,9 +602,9 @@ useEffect(() => {
             onSwitchToSeller={() => setShowRoleSwitch(true)}
             onOrderFromStory={async (productRef, sellerId, sellerName) => {
               try {
+                const { getDoc, doc } = await import('firebase/firestore');
+                const { db } = await import('@/config/firebase');
                 const snap = await getDoc(doc(db, 'products', productRef.id));
-                // Si le produit existe → utiliser ses vraies données (images Cloudinary)
-                // Sinon → fallback avec l'imageUrl de la story
                 const fullProduct = snap.exists()
                   ? { id: snap.id, ...snap.data() }
                   : { id: productRef.id, title: productRef.title, price: productRef.price,
@@ -619,6 +621,8 @@ useEffect(() => {
             }}
             onOfferFromStory={async (productRef, sellerId, sellerName) => {
               try {
+                const { getDoc, doc } = await import('firebase/firestore');
+                const { db } = await import('@/config/firebase');
                 const snap = await getDoc(doc(db, 'products', productRef.id));
                 const fullProduct = snap.exists()
                   ? { id: snap.id, ...snap.data() }
