@@ -26,10 +26,17 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  user-select: none;
 }
 
-input, textarea { user-select: text; }
+/* Désactiver la sélection uniquement sur mobile (natif app) */
+@media (max-width: 768px) {
+  * { user-select: none; }
+  input, textarea { user-select: text; }
+}
+/* Sur desktop permettre la sélection normale */
+@media (min-width: 769px) {
+  * { user-select: auto; }
+}
 
 /* ── Anti-zoom iOS/Android — SANS casser le scroll natif ── */
 input, textarea, select {
@@ -64,12 +71,34 @@ body {
   margin: 0 auto;
   background: #fff;
   position: relative;
-  box-shadow: 0 0 80px rgba(15, 23, 42, 0.04);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-::-webkit-scrollbar { width: 0; height: 0; }
+/* Desktop : cadre simulateur mobile + fond */
+@media (min-width: 769px) {
+  body {
+    background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+  }
+  #root {
+    margin-top: 0;
+    border-left: 1px solid #E2E8F0;
+    border-right: 1px solid #E2E8F0;
+    box-shadow: 0 0 60px rgba(15, 23, 42, 0.08);
+  }
+}
 
-::-webkit-scrollbar { width: 0; height: 0; }
+/* Sur mobile : masquer les scrollbars pour un rendu natif */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar { width: 0; height: 0; }
+}
+/* Sur desktop : scrollbar fine et discrète */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+}
 
 /* Badge Vérifié bleu réseau social */
 .badge-verified {
