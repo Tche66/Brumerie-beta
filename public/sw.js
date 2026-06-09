@@ -1,6 +1,6 @@
-// sw.js — Service Worker Brumerie v18
+// sw.js — Service Worker Brumerie v19 — force refresh après migration Neon
 // Push notifications avec icône + badge Brumerie + channelId Android
-const CACHE_NAME = 'brumerie-v4';
+const CACHE_NAME = 'brumerie-v5';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
