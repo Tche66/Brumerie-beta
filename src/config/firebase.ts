@@ -1,13 +1,11 @@
 // src/config/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  // ⚙️  DOMAINE — passe par VITE_FIREBASE_AUTH_DOMAIN dans .env.local / secrets GitHub
-  // Aujourd'hui : brumerie-beta.vercel.app → plus tard : brumerie.com
   authDomain:        import.meta.env.VITE_APP_DOMAIN || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
@@ -17,11 +15,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Firestore avec cache persistant multi-onglets (Firebase v10)
+// Firestore avec cache memoire (evite le crash IndexedDB QuotaExceeded)
+// La lecture principale est maintenant via Neon/NestJS
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
+  localCache: memoryLocalCache(),
 });
 
 export const auth    = getAuth(app);

@@ -94,15 +94,26 @@ export class ProductsService {
     };
   }
 
-  // ── Produit par ID ────────────────────────────────────────────
+  // ── Produit par ID (UUID Neon ou firebaseId) ───────────────────
   async getProductById(productId: string) {
-    const product = await this.prisma.product.findUnique({
+    let product = await this.prisma.product.findUnique({
       where: { id: productId },
       include: {
         likes: { select: { userId: true } },
         comments: { orderBy: { createdAt: 'asc' } },
       },
     });
+
+    if (!product) {
+      product = await this.prisma.product.findUnique({
+        where: { firebaseId: productId },
+        include: {
+          likes: { select: { userId: true } },
+          comments: { orderBy: { createdAt: 'asc' } },
+        },
+      });
+    }
+
     if (!product) throw new NotFoundException('Produit introuvable');
     return product;
   }

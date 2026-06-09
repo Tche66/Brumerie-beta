@@ -185,30 +185,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return verifyOTPRemote(email, code);
   }
 
-  // ── Charger profil ───────────────────────────────────────────
+  // ── Charger profil — Firestore, fallback Neon si IndexedDB plein ──
   const loadUserProfile = useCallback(async (uid: string) => {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      // ── Vérification bannissement ─────────────────────────────
-      if (data.isBanned) {
-        // Déconnecter immédiatement l'utilisateur banni
-        await firebaseSignOut(auth);
-        setUserProfile(null);
-        // Stocker le motif pour afficher un message
-        sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
-        return;
-      }
-      setUserProfile({
-        ...data,
-        bookmarkedProductIds:  data.bookmarkedProductIds  || [],
-        defaultPaymentMethods: data.defaultPaymentMethods || [],
-        deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
-        deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
-        managesDelivery: data.managesDelivery || false,
-        contactCount:    data.contactCount    || 0,
-      } as User);
+    let data: any = null;
+
+    // Tenter Firestore d'abord
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) data = snap.data();
+    } catch (e) {
+      console.warn('[Auth] Firestore failed (IndexedDB full?), trying Neon:', e);
     }
+
+    // Fallback Neon si Firestore echoue ou ne trouve pas le profil
+    if (!data) {
+      try {
+        const neonProfile = await usersApi.getMe() as any;
+        if (neonProfile && neonProfile.firebaseUid) data = neonProfile;
+      } catch {
+        console.warn('[Auth] Neon fallback also failed');
+      }
+    }
+
+    if (!data) return;
+
+    // Vérification bannissement
+    if (data.isBanned) {
+      await firebaseSignOut(auth);
+      setUserProfile(null);
+      sessionStorage.setItem('ban_reason', data.banReason || 'Compte suspendu par Brumerie.');
+      return;
+    }
+
+    setUserProfile({
+      ...data,
+      bookmarkedProductIds:  data.bookmarkedProductIds  || [],
+      defaultPaymentMethods: data.defaultPaymentMethods || [],
+      deliveryPriceSameZone:  data.deliveryPriceSameZone  || 0,
+      deliveryPriceOtherZone: data.deliveryPriceOtherZone || 0,
+      managesDelivery: data.managesDelivery || false,
+      contactCount:    data.contactCount    || 0,
+    } as User);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function refreshUserProfile() {

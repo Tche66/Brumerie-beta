@@ -28,6 +28,9 @@ function cleanUndefined(obj: Record<string, any>): Record<string, any> {
 function normalizeProduct(p: any): Product {
   return {
     ...p,
+    // Si le produit vient de Neon (a un firebaseId), utiliser firebaseId comme id
+    // pour rester compatible avec Firestore onSnapshot et les references existantes
+    id: p.firebaseId || p.id,
     images: Array.isArray(p.images) && p.images.length > 0
       ? p.images
       : (p.imageUrl ? [p.imageUrl] : []),
