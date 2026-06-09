@@ -105,15 +105,18 @@ export async function getProductsPage(
 export async function getSellerProducts(sellerId: string): Promise<Product[]> {
   try {
     const data = await productsApi.getBySelller(sellerId) as any;
-    return (Array.isArray(data) ? data : []).map(normalizeProduct);
-  } catch {
-    // Fallback Firestore
-    try {
-      const q = query(collection(db, 'products'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-    } catch { return []; }
-  }
+    const products = (Array.isArray(data) ? data : []).map(normalizeProduct);
+    // Si Neon retourne des resultats, les utiliser
+    if (products.length > 0) return products;
+    // Sinon fallback Firestore (produits pas encore migres)
+  } catch { /* Neon echoue → fallback */ }
+
+  // Fallback Firestore
+  try {
+    const q = query(collection(db, 'products'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  } catch { return []; }
 }
 
 // -- Produit par ID -------------------------------------------------------
