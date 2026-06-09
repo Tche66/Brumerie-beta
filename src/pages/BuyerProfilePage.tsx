@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductCard } from '@/components/ProductCard';
 import { removeBookmark } from '@/services/bookmarkService';
-import { getProducts } from '@/services/productService';
+import { getProducts, getProductById } from '@/services/productService';
 import { subscribeOrdersAsBuyer } from '@/services/orderService';
 import { Product, Order } from '@/types';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
