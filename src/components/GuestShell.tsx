@@ -6,6 +6,7 @@ import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { SellerProfilePage } from '@/pages/SellerProfilePage';
 import { DiscoverPage } from '@/pages/DiscoverPage';
 import { GuestModal } from '@/components/GuestModal';
+import { GuestErrorBoundary } from '@/components/ErrorBoundary';
 import { Product } from '@/types';
 
 interface GuestShellProps {
@@ -99,47 +100,55 @@ export function GuestShell({ onAuthRequired }: GuestShellProps) {
         </p>
       </div>
 
-      {/* Pages accessibles */}
+      {/* Pages accessibles — chaque page encapsulée pour capturer les crashs guest */}
       {page === 'home' && (
-        <HomePage
-          onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
-          onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
-          onProfileClick={() => showGuest('default')}
-          onNotificationsClick={() => showGuest('default')}
-          onOpenChatWithSeller={() => showGuest('default')}
-          isGuest
-          onGuestAction={showGuest}
-        />
+        <GuestErrorBoundary onLogin={onAuthRequired}>
+          <HomePage
+            onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
+            onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
+            onProfileClick={() => showGuest('default')}
+            onNotificationsClick={() => showGuest('default')}
+            onOpenChatWithSeller={() => showGuest('default')}
+            isGuest
+            onGuestAction={showGuest}
+          />
+        </GuestErrorBoundary>
       )}
 
       {page === 'discover' && (
-        <DiscoverPage
-          onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
-          onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
-        />
+        <GuestErrorBoundary onLogin={onAuthRequired}>
+          <DiscoverPage
+            onProductClick={(product) => { setSelectedProduct(product); setPage('product-detail'); }}
+            onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
+          />
+        </GuestErrorBoundary>
       )}
 
       {page === 'product-detail' && selectedProduct && (
-        <ProductDetailPage
-          product={selectedProduct}
-          onBack={() => { if (selectedSellerId) setPage('seller-profile'); else goHome(); }}
-          onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
-          onStartChat={() => showGuest('message')}
-          onProductClick={(p) => { setSelectedProduct(p); setPage('product-detail'); }}
-          onBuyClick={() => showGuest('contact')}
-          isGuest
-          onGuestAction={showGuest}
-        />
+        <GuestErrorBoundary onLogin={onAuthRequired}>
+          <ProductDetailPage
+            product={selectedProduct}
+            onBack={() => { if (selectedSellerId) setPage('seller-profile'); else goHome(); }}
+            onSellerClick={(id) => { setSelectedSellerId(id); setPage('seller-profile'); }}
+            onStartChat={() => showGuest('message')}
+            onProductClick={(p) => { setSelectedProduct(p); setPage('product-detail'); }}
+            onBuyClick={() => showGuest('contact')}
+            isGuest
+            onGuestAction={showGuest}
+          />
+        </GuestErrorBoundary>
       )}
 
       {page === 'seller-profile' && selectedSellerId && (
-        <SellerProfilePage
-          sellerId={selectedSellerId}
-          onBack={() => { if (selectedProduct) setPage('product-detail'); else goHome(); }}
-          onProductClick={(p) => { setSelectedProduct(p); setPage('product-detail'); }}
-          isGuest
-          onGuestAction={showGuest}
-        />
+        <GuestErrorBoundary onLogin={onAuthRequired}>
+          <SellerProfilePage
+            sellerId={selectedSellerId}
+            onBack={() => { if (selectedProduct) setPage('product-detail'); else goHome(); }}
+            onProductClick={(p) => { setSelectedProduct(p); setPage('product-detail'); }}
+            isGuest
+            onGuestAction={showGuest}
+          />
+        </GuestErrorBoundary>
       )}
 
       {/* Modal visiteur */}

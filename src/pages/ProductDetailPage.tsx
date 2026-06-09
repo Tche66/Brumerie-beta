@@ -112,17 +112,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       const data = snap.data();
       setLiveViewCount(data.viewCount ?? 0);
       setLiveContactCount(data.whatsappClickCount ?? 0);
-      // ✅ likeCount temps réel — sync immédiate entre tous les utilisateurs
       setLikeCount(data.likeCount ?? 0);
 
-      // Incrémenter UNE SEULE FOIS après le premier snapshot — jamais pour le vendeur
       if (!viewIncrementedRef.current && !isSeller && currentUser) {
         viewIncrementedRef.current = true;
         incrementViewCount(product.id).catch(e =>
           console.error('[ViewCount] Règles Firestore — voir FIRESTORE_RULES.md :', e)
         );
       }
-    });
+    }, () => {});
 
     return () => {
       viewIncrementedRef.current = false;
@@ -197,7 +195,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     if (!product.id) return;
     const unsub = onSnapshot(
       collection(db, 'products', product.id, 'likes'),
-      (snap) => setLikeCount(snap.size)
+      (snap) => setLikeCount(snap.size),
+      () => {}
     );
     return unsub;
   }, [product.id]);

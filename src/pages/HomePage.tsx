@@ -150,13 +150,13 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
             setHeroBannerUrl(d.heroBannerUrl);
             setHeroBannerExpiry(expiry || null);
           } else {
-            setHeroBannerUrl(''); // bannière expirée → retour texte
+            setHeroBannerUrl('');
           }
         } else {
           setHeroBannerUrl('');
         }
       }
-    });
+    }, () => {});
     return unsub;
   }, []);
 

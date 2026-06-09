@@ -49,7 +49,7 @@ export function ProductCardFeed({
     if (!product.id) return;
     const unsub = onSnapshot(collection(db, 'products', product.id, 'likes'), snap => {
       setLikeCount(snap.size);
-    });
+    }, () => {});
     return unsub;
   }, [product.id]);
 

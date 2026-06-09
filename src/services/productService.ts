@@ -261,7 +261,7 @@ export function subscribeComments(
   callback: (comments: any[]) => void,
 ): () => void {
   const q = query(collection(db, 'products', productId, 'comments'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+  return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), () => callback([]));
 }
 
 // ── Trending ──────────────────────────────────────────────────────
