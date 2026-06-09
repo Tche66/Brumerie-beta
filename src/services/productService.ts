@@ -1,4 +1,4 @@
-// src/services/productService.ts — v20 hybride NestJS + Firestore
+// src/services/productService.ts — v21 hybride Neon (lecture) + Firestore (realtime)
 import {
   collection, addDoc, deleteDoc, getDocs, getDoc, doc,
   query, limit, where, updateDoc, serverTimestamp,
@@ -12,7 +12,7 @@ import { uploadToCloudinary } from '@/utils/uploadImage';
 import { createNotification } from '@/services/notificationService';
 import { productsApi } from './apiClient';
 
-// ── Helpers ───────────────────────────────────────────────────────
+// -- Helpers --------------------------------------------------------------
 function safeGetTime(val: any): number {
   if (!val) return 0;
   if (typeof val.getTime === 'function') return val.getTime() || 0;
@@ -25,9 +25,143 @@ function cleanUndefined(obj: Record<string, any>): Record<string, any> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
 }
 
+function normalizeProduct(p: any): Product {
+  return {
+    ...p,
+    images: Array.isArray(p.images) && p.images.length > 0
+      ? p.images
+      : (p.imageUrl ? [p.imageUrl] : []),
+    createdAt: p.createdAt ? (typeof p.createdAt === 'string' ? new Date(p.createdAt) : p.createdAt?.toDate?.() || p.createdAt) : new Date(),
+  } as Product;
+}
+
 export const PRODUCTS_PER_PAGE = 30;
 
-// ── Créer un produit — Firestore + sync Neon ──────────────────────
+// =========================================================================
+// LECTURE — Neon (via NestJS) avec fallback Firestore
+// =========================================================================
+
+// -- Liste des produits (accueil) -----------------------------------------
+export async function getProducts(filters?: {
+  category?: string;
+  neighborhood?: string;
+  searchTerm?: string;
+}): Promise<Product[]> {
+  try {
+    // Tenter Neon en priorité
+    const params: Record<string, string> = {};
+    if (filters?.category && filters.category !== 'all') params.category = filters.category;
+    if (filters?.neighborhood && filters.neighborhood !== 'all') params.neighborhood = filters.neighborhood;
+    if (filters?.searchTerm) params.search = filters.searchTerm;
+
+    const data = await productsApi.getAll(params) as any;
+    const products = (Array.isArray(data) ? data : data.products || []).map(normalizeProduct);
+    return products.filter((p: any) => !p.hidden);
+  } catch {
+    // Fallback Firestore
+    return getProductsFromFirestore(filters);
+  }
+}
+
+// -- Pagination -----------------------------------------------------------
+export async function getProductsPage(
+  lastDoc?: QueryDocumentSnapshot<DocumentData> | null,
+  filters?: { category?: string; neighborhood?: string }
+): Promise<{ products: Product[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> {
+  // La pagination curseur reste sur Firestore (Neon utilise offset/cursor string)
+  try {
+    const constraints: any[] = [
+      where('status', 'in', ['active', 'sold']),
+      orderBy('createdAt', 'desc'),
+      limit(PRODUCTS_PER_PAGE + 1),
+    ];
+    if (lastDoc) constraints.push(startAfter(lastDoc));
+    const snapshot = await getDocs(query(collection(db, 'products'), ...constraints));
+    const docs = snapshot.docs;
+    const hasMore = docs.length > PRODUCTS_PER_PAGE;
+    const pageDocs = hasMore ? docs.slice(0, PRODUCTS_PER_PAGE) : docs;
+
+    let products = pageDocs.map(d => {
+      const data = d.data();
+      return normalizeProduct({ id: d.id, ...data });
+    }).filter((p: any) => !p.hidden);
+
+    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
+    if (filters?.neighborhood && filters.neighborhood !== 'all') {
+      products = products.filter(p => {
+        const n = (p as any).neighborhoods || [p.neighborhood];
+        return n.includes(filters.neighborhood);
+      });
+    }
+
+    return { products, lastDoc: hasMore ? pageDocs[pageDocs.length - 1] : null, hasMore };
+  } catch { return { products: [], lastDoc: null, hasMore: false }; }
+}
+
+// -- Produits d'un vendeur ------------------------------------------------
+export async function getSellerProducts(sellerId: string): Promise<Product[]> {
+  try {
+    const data = await productsApi.getBySelller(sellerId) as any;
+    return (Array.isArray(data) ? data : []).map(normalizeProduct);
+  } catch {
+    // Fallback Firestore
+    try {
+      const q = query(collection(db, 'products'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+    } catch { return []; }
+  }
+}
+
+// -- Produit par ID -------------------------------------------------------
+export async function getProductById(productId: string): Promise<Product | null> {
+  try {
+    const data = await productsApi.getById(productId) as any;
+    if (!data || !data.id) throw new Error('not found');
+    return normalizeProduct(data);
+  } catch {
+    // Fallback Firestore
+    try {
+      const snap = await getDoc(doc(db, 'products', productId));
+      if (!snap.exists()) return null;
+      return { id: snap.id, ...snap.data() } as Product;
+    } catch { return null; }
+  }
+}
+
+// -- Trending -------------------------------------------------------------
+export async function getTrendingProducts(): Promise<Product[]> {
+  try {
+    const data = await productsApi.getTrending() as any;
+    return (Array.isArray(data) ? data : []).map(normalizeProduct);
+  } catch {
+    try {
+      const q = query(collection(db, 'products'), where('status', '==', 'active'), limit(30));
+      const snap = await getDocs(q);
+      const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+      return products.sort((a, b) => ((b as any).likeCount || 0) - ((a as any).likeCount || 0));
+    } catch { return []; }
+  }
+}
+
+// -- Feed following -------------------------------------------------------
+export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
+  if (!followingIds.length) return [];
+  try {
+    const chunks = Array.from({ length: Math.ceil(followingIds.length / 10) }, (_, i) => followingIds.slice(i * 10, i * 10 + 10));
+    const results = await Promise.all(chunks.map(chunk =>
+      getDocs(query(collection(db, 'products'), where('sellerId', 'in', chunk), where('status', '==', 'active'), limit(20)))
+    ));
+    const products = results.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
+    return products.sort((a, b) => safeGetTime(b.createdAt) - safeGetTime(a.createdAt));
+  } catch { return []; }
+}
+
+// =========================================================================
+// ECRITURE — Firestore (source) + sync Neon en background
+// =========================================================================
+
+// -- Creer un produit -----------------------------------------------------
 export async function createProduct(
   productData: Omit<Product, 'id' | 'createdAt' | 'whatsappClickCount' | 'status'>,
   imageFiles: File[]
@@ -48,7 +182,6 @@ export async function createProduct(
     priceHistory: [{ price: productData.price, date: new Date().toISOString() }],
   };
 
-  // Firestore reste la source de vérité principale
   const docRef = await addDoc(collection(db, 'products'), cleanUndefined(product as Record<string, any>));
 
   if ((productData as any).status !== 'draft') {
@@ -69,102 +202,7 @@ export async function createProduct(
   return docRef.id;
 }
 
-// ── Récupérer les produits — Firestore (source de vérité) ─────────
-export async function getProducts(filters?: {
-  category?: string;
-  neighborhood?: string;
-  searchTerm?: string;
-}): Promise<Product[]> {
-  try {
-    const q = query(collection(db, 'products'), where('status', 'in', ['active', 'sold']), limit(200));
-    const snapshot = await getDocs(q);
-
-    let products = snapshot.docs.map(d => {
-      const data = d.data();
-      let images: string[] = [];
-      if (Array.isArray(data.images) && data.images.length > 0) images = data.images;
-      else if (typeof data.imageUrl === 'string' && data.imageUrl) images = [data.imageUrl];
-      return { id: d.id, ...data, images, createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date() };
-    }) as Product[];
-
-    products = products.filter(p => !(p as any).hidden);
-    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
-    if (filters?.neighborhood && filters.neighborhood !== 'all') {
-      products = products.filter(p => {
-        const neighborhoods = (p as any).neighborhoods || [p.neighborhood];
-        return neighborhoods.includes(filters.neighborhood);
-      });
-    }
-    products.sort((a, b) => {
-      const aScore = a.sellerVerified ? 1 : 0;
-      const bScore = b.sellerVerified ? 1 : 0;
-      if (bScore !== aScore) return bScore - aScore;
-      return safeGetTime(b.createdAt) - safeGetTime(a.createdAt);
-    });
-    if (filters?.searchTerm) {
-      const s = filters.searchTerm.toLowerCase();
-      products = products.filter(p => p.title.toLowerCase().includes(s) || p.description.toLowerCase().includes(s));
-    }
-    return products;
-  } catch { return []; }
-}
-
-// ── Pagination ────────────────────────────────────────────────────
-export async function getProductsPage(
-  lastDoc?: QueryDocumentSnapshot<DocumentData> | null,
-  filters?: { category?: string; neighborhood?: string }
-): Promise<{ products: Product[]; lastDoc: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> {
-  try {
-    const constraints: any[] = [
-      where('status', 'in', ['active', 'sold']),
-      orderBy('createdAt', 'desc'),
-      limit(PRODUCTS_PER_PAGE + 1),
-    ];
-    if (lastDoc) constraints.push(startAfter(lastDoc));
-    const snapshot = await getDocs(query(collection(db, 'products'), ...constraints));
-    const docs = snapshot.docs;
-    const hasMore = docs.length > PRODUCTS_PER_PAGE;
-    const pageDocs = hasMore ? docs.slice(0, PRODUCTS_PER_PAGE) : docs;
-
-    let products = pageDocs.map(d => {
-      const data = d.data();
-      let images: string[] = [];
-      if (Array.isArray(data.images) && data.images.length > 0) images = data.images;
-      else if (typeof data.imageUrl === 'string' && data.imageUrl) images = [data.imageUrl];
-      return { id: d.id, ...data, images, createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : new Date() } as Product;
-    }).filter(p => !(p as any).hidden);
-
-    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
-    if (filters?.neighborhood && filters.neighborhood !== 'all') {
-      products = products.filter(p => {
-        const n = (p as any).neighborhoods || [p.neighborhood];
-        return n.includes(filters.neighborhood);
-      });
-    }
-
-    return { products, lastDoc: hasMore ? pageDocs[pageDocs.length - 1] : null, hasMore };
-  } catch { return { products: [], lastDoc: null, hasMore: false }; }
-}
-
-// ── Produits d'un vendeur ─────────────────────────────────────────
-export async function getSellerProducts(sellerId: string): Promise<Product[]> {
-  try {
-    const q = query(collection(db, 'products'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-  } catch { return []; }
-}
-
-// ── Produit par ID ────────────────────────────────────────────────
-export async function getProductById(productId: string): Promise<Product | null> {
-  try {
-    const snap = await getDoc(doc(db, 'products', productId));
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as Product;
-  } catch { return null; }
-}
-
-// ── Mettre à jour un produit ──────────────────────────────────────
+// -- Mettre a jour --------------------------------------------------------
 export async function updateProduct(
   productId: string,
   updates: Partial<Product>,
@@ -174,26 +212,29 @@ export async function updateProduct(
   productsApi.update(productId, clean).catch(() => {});
 }
 
-// ── Marquer vendu ─────────────────────────────────────────────────
+// -- Marquer vendu --------------------------------------------------------
 export async function markProductAsSold(productId: string): Promise<void> {
   await updateDoc(doc(db, 'products', productId), { status: 'sold' });
   productsApi.update(productId, { status: 'sold' }).catch(() => {});
 }
 
-// ── Mettre à jour le statut ───────────────────────────────────────
+// -- Mettre a jour le statut ----------------------------------------------
 export async function updateProductStatus(productId: string, status: 'active' | 'sold'): Promise<void> {
   await updateDoc(doc(db, 'products', productId), { status });
   productsApi.update(productId, { status }).catch(() => {});
 }
 
-// ── Supprimer un produit ──────────────────────────────────────────
+// -- Supprimer ------------------------------------------------------------
 export async function deleteProduct(productId: string, sellerId: string): Promise<void> {
   await deleteDoc(doc(db, 'products', productId));
   updateDoc(doc(db, 'users', sellerId), { productCount: increment(-1) }).catch(() => {});
   productsApi.delete(productId).catch(() => {});
 }
 
-// ── Compteurs ─────────────────────────────────────────────────────
+// =========================================================================
+// COMPTEURS — dual write
+// =========================================================================
+
 export async function incrementWhatsAppClick(productId: string): Promise<void> {
   updateDoc(doc(db, 'products', productId), { whatsappClickCount: increment(1) }).catch(() => {});
   productsApi.incrementWhatsApp(productId).catch(() => {});
@@ -209,8 +250,11 @@ export async function incrementContactCount(productId: string, sellerId: string)
   updateDoc(doc(db, 'users', sellerId), { contactCount: increment(1) }).catch(() => {});
 }
 
-// ── Toggle Like ───────────────────────────────────────────────────
-export async function toggleLike(productId: string, userId: string): Promise<boolean> {
+// =========================================================================
+// SOCIAL — Likes & Commentaires (Firestore realtime + sync Neon)
+// =========================================================================
+
+export async function toggleLike(productId: string, userId: string): Promise<{ liked: boolean }> {
   const likeRef = doc(db, 'products', productId, 'likes', userId);
   const snap = await getDoc(likeRef);
 
@@ -218,13 +262,13 @@ export async function toggleLike(productId: string, userId: string): Promise<boo
     await deleteDoc(likeRef);
     updateDoc(doc(db, 'products', productId), { likeCount: increment(-1) }).catch(() => {});
     productsApi.toggleLike(productId).catch(() => {});
-    return false;
+    return { liked: false };
   } else {
     await updateDoc(doc(db, 'products', productId, 'likes', userId) as any, { userId, createdAt: serverTimestamp() })
       .catch(() => addDoc(collection(db, 'products', productId, 'likes'), { userId, createdAt: serverTimestamp() }));
     updateDoc(doc(db, 'products', productId), { likeCount: increment(1) }).catch(() => {});
     productsApi.toggleLike(productId).catch(() => {});
-    return true;
+    return { liked: true };
   }
 }
 
@@ -235,7 +279,6 @@ export async function checkIsLiked(productId: string, userId: string): Promise<b
   } catch { return false; }
 }
 
-// ── Commentaires ──────────────────────────────────────────────────
 export async function addComment(
   productId: string, userId: string, userName: string,
   text: string, userPhoto?: string, parentId?: string, photoUrl?: string,
@@ -256,6 +299,7 @@ export async function deleteComment(productId: string, commentId: string): Promi
   productsApi.deleteComment(productId, commentId).catch(() => {});
 }
 
+// -- Realtime comments (Firestore onSnapshot) -----------------------------
 export function subscribeComments(
   productId: string,
   callback: (comments: any[]) => void,
@@ -264,30 +308,10 @@ export function subscribeComments(
   return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))), () => callback([]));
 }
 
-// ── Trending ──────────────────────────────────────────────────────
-export async function getTrendingProducts(): Promise<Product[]> {
-  try {
-    const q = query(collection(db, 'products'), where('status', '==', 'active'), limit(30));
-    const snap = await getDocs(q);
-    const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-    return products.sort((a, b) => ((b as any).likeCount || 0) - ((a as any).likeCount || 0));
-  } catch { return []; }
-}
+// =========================================================================
+// UTILS
+// =========================================================================
 
-// ── Feed following ────────────────────────────────────────────────
-export async function getFollowingFeed(followingIds: string[]): Promise<Product[]> {
-  if (!followingIds.length) return [];
-  try {
-    const chunks = Array.from({ length: Math.ceil(followingIds.length / 10) }, (_, i) => followingIds.slice(i * 10, i * 10 + 10));
-    const results = await Promise.all(chunks.map(chunk =>
-      getDocs(query(collection(db, 'products'), where('sellerId', 'in', chunk), where('status', '==', 'active'), limit(20)))
-    ));
-    const products = results.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
-    return products.sort((a, b) => safeGetTime(b.createdAt) - safeGetTime(a.createdAt));
-  } catch { return []; }
-}
-
-// ── Sync données vendeur vers ses produits ────────────────────────
 export async function syncSellerDataToProducts(sellerId: string, updates: { name?: string; photoURL?: string; isVerified?: boolean }): Promise<void> {
   try {
     const snap = await getDocs(query(collection(db, 'products'), where('sellerId', '==', sellerId), where('status', 'in', ['active', 'draft'])));
@@ -302,7 +326,6 @@ export async function syncSellerDataToProducts(sellerId: string, updates: { name
   } catch (e) { console.error('syncSellerDataToProducts:', e); }
 }
 
-// ── Vérifier si peut publier ──────────────────────────────────────
 export async function canUserPublish(userId: string): Promise<{ canPublish: boolean; reason?: string; remaining?: number }> {
   try {
     const userSnap = await getDoc(doc(db, 'users', userId));
@@ -313,7 +336,6 @@ export async function canUserPublish(userId: string): Promise<{ canPublish: bool
   } catch { return { canPublish: true }; }
 }
 
-// ── Demandes contact vendeur ──────────────────────────────────────
 export function requestVerificationViaWhatsApp(user: { name: string; phone: string }) {
   const msg = `Bonjour, je suis ${user.name} (${user.phone}). Je souhaite obtenir la vérification Brumerie.`;
   window.open(`https://wa.me/2250000000000?text=${encodeURIComponent(msg)}`, '_blank');
@@ -322,4 +344,37 @@ export function requestVerificationViaWhatsApp(user: { name: string; phone: stri
 export function sendFeedbackViaEmail(feedback: { type: string; message: string; name: string; email: string }) {
   const subject = `[Brumerie] ${feedback.type} — ${feedback.name}`;
   window.open(`mailto:contact@brumerie.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(feedback.message)}`, '_blank');
+}
+
+// -- Fallback interne (Firestore direct) ----------------------------------
+async function getProductsFromFirestore(filters?: {
+  category?: string;
+  neighborhood?: string;
+  searchTerm?: string;
+}): Promise<Product[]> {
+  try {
+    const q = query(collection(db, 'products'), where('status', 'in', ['active', 'sold']), limit(200));
+    const snapshot = await getDocs(q);
+
+    let products = snapshot.docs.map(d => normalizeProduct({ id: d.id, ...d.data() }));
+    products = products.filter((p: any) => !p.hidden);
+    if (filters?.category && filters.category !== 'all') products = products.filter(p => p.category === filters.category);
+    if (filters?.neighborhood && filters.neighborhood !== 'all') {
+      products = products.filter(p => {
+        const neighborhoods = (p as any).neighborhoods || [p.neighborhood];
+        return neighborhoods.includes(filters.neighborhood);
+      });
+    }
+    products.sort((a, b) => {
+      const aScore = a.sellerVerified ? 1 : 0;
+      const bScore = b.sellerVerified ? 1 : 0;
+      if (bScore !== aScore) return bScore - aScore;
+      return safeGetTime(b.createdAt) - safeGetTime(a.createdAt);
+    });
+    if (filters?.searchTerm) {
+      const s = filters.searchTerm.toLowerCase();
+      products = products.filter(p => p.title.toLowerCase().includes(s) || p.description?.toLowerCase().includes(s));
+    }
+    return products;
+  } catch { return []; }
 }
