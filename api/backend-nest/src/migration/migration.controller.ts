@@ -1,5 +1,5 @@
 import {
-  Controller, Post, Body, Headers, UnauthorizedException, BadRequestException,
+  Controller, Post, Delete, Body, Headers, UnauthorizedException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
@@ -14,6 +14,21 @@ export class MigrationController {
   private checkKey(key: string) {
     const secret = this.config.get('MIGRATION_SECRET') || 'brumerie-migrate-2026';
     if (key !== secret) throw new UnauthorizedException('Invalid migration key');
+  }
+
+  @Delete('reset')
+  async resetAll(@Headers('x-migration-key') key: string) {
+    this.checkKey(key);
+    // Supprimer dans l'ordre pour respecter les foreign keys
+    await this.prisma.productComment.deleteMany({});
+    await this.prisma.productLike.deleteMany({});
+    await this.prisma.bookmark.deleteMany({});
+    await this.prisma.repost.deleteMany({});
+    await this.prisma.review.deleteMany({});
+    await this.prisma.productBoost.deleteMany({});
+    await this.prisma.order.deleteMany({});
+    await this.prisma.product.deleteMany({});
+    return { status: 'reset_complete' };
   }
 
   @Post('product')

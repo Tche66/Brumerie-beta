@@ -142,7 +142,10 @@ async function migrateUsers(db, token) {
 // -- Migrer PRODUCTS ------------------------------------------------------
 async function migrateProducts(db) {
   console.log(bold(cyan('\n  PRODUCTS...')));
-  const snap = await db.collection('products').get();
+  // Ne migrer que les produits actifs/vendus/en pause/brouillons (pas les supprimes)
+  const snap = await db.collection('products')
+    .where('status', 'in', ['active', 'sold', 'paused', 'draft'])
+    .get();
   stats.products.total = snap.size;
   console.log(cyan(`  ${snap.size} produits dans Firestore`));
 
@@ -265,11 +268,25 @@ async function migrateOrders(db) {
 // -- Helper sleep ---------------------------------------------------------
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
+// -- Reset Neon (supprimer produits + orders) --------------------------------
+async function resetNeon() {
+  console.log(bold(yellow('\n  RESET — Suppression produits & orders dans Neon...')));
+  const res = await fetch(`${BACKEND_URL}/migration/reset`, {
+    method: 'DELETE',
+    headers: { 'x-migration-key': MIGRATION_KEY },
+  });
+  if (res.ok) console.log(green('  Reset OK — Neon videe'));
+  else console.log(red(`  Reset echoue: ${res.status}`));
+}
+
 // -- MAIN -----------------------------------------------------------------
 async function main() {
+  const doReset = process.argv.includes('--reset');
+
   console.log(bold(cyan('\n  Brumerie — Migration Firestore -> Neon (v2)')));
   console.log(cyan(`  Backend: ${BACKEND_URL}`));
   console.log(cyan(`  Service Account: ${SERVICE_ACCOUNT_PATH}`));
+  if (doReset) console.log(yellow('  MODE: --reset (purge avant migration)'));
   console.log(cyan('  ' + '-'.repeat(50)));
 
   const db = initFirebase();
@@ -281,6 +298,9 @@ async function main() {
     process.exit(1);
   }
   console.log(green('  Backend OK'));
+
+  // Reset si demande
+  if (doReset) await resetNeon();
 
   // Token admin pour /users/sync
   let token = null;
