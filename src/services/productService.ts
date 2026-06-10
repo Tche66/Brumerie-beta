@@ -1,6 +1,6 @@
 // src/services/productService.ts — v21 hybride Neon (lecture) + Firestore (realtime)
 import {
-  collection, addDoc, deleteDoc, getDocs, getDoc, doc,
+  collection, addDoc, deleteDoc, getDocs, getDoc, doc, setDoc,
   query, limit, where, updateDoc, serverTimestamp,
   Timestamp, increment, orderBy, writeBatch,
   startAfter, QueryDocumentSnapshot, DocumentData,
@@ -270,8 +270,7 @@ export async function toggleLike(productId: string, userId: string): Promise<{ l
     productsApi.toggleLike(productId).catch(() => {});
     return { liked: false };
   } else {
-    await updateDoc(doc(db, 'products', productId, 'likes', userId) as any, { userId, createdAt: serverTimestamp() })
-      .catch(() => addDoc(collection(db, 'products', productId, 'likes'), { userId, createdAt: serverTimestamp() }));
+    await setDoc(likeRef, { userId, createdAt: serverTimestamp() });
     updateDoc(doc(db, 'products', productId), { likeCount: increment(1) }).catch(() => {});
     productsApi.toggleLike(productId).catch(() => {});
     return { liked: true };
