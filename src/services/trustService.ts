@@ -217,15 +217,17 @@ export async function banUser(userId: string, adminNote: string): Promise<void> 
 
 // ─── Lectures ────────────────────────────────────────────────────
 export async function getTrustScore(userId: string): Promise<TrustScore | null> {
-  // Essayer Neon d'abord pour avoir le score calculé
+  // Essayer Neon — mais seulement si le retour contient un riskLevel valide
   try {
     const score = await trustApi.getScore(userId) as any;
-    if (score) return score;
+    if (score && score.riskLevel) return score;
   } catch {}
   // Fallback Firestore
-  const snap = await getDoc(doc(db, 'trust_scores', userId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as TrustScore;
+  try {
+    const snap = await getDoc(doc(db, 'trust_scores', userId));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as TrustScore;
+  } catch { return null; }
 }
 
 export function subscribeTrustScore(
