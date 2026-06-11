@@ -540,7 +540,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     setFollowingLoading(true);
                     try {
                       if (isFollowingSeller) {
-                        await unfollowSeller(currentUser.uid, product.sellerId);
+                        await unfollowSeller(currentUser.uid, product.sellerId, userProfile?.name);
                         setIsFollowingSeller(false);
                       } else {
                         await followSeller(currentUser.uid, product.sellerId, product.sellerName || '', userProfile?.name);

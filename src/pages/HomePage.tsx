@@ -424,7 +424,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                     onClick={async () => {
                       const isF = userProfile?.followingSellers?.includes(seller.id);
                       try {
-                        if (isF) await unfollowSeller(currentUser.uid, seller.id);
+                        if (isF) await unfollowSeller(currentUser.uid, seller.id, userProfile?.name);
                         else await followSeller(currentUser.uid, seller.id, seller.name, userProfile?.name);
                         await refreshUserProfile?.();
                       } catch {}

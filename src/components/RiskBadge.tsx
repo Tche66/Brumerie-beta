@@ -42,7 +42,7 @@ interface RiskAlertBannerProps {
 }
 
 export function RiskAlertBanner({ level, reportCount, userName }: RiskAlertBannerProps) {
-  if (level === 'safe') return null;
+  if (!level || level === 'safe') return null;
 
   const isBanned = level === 'banned';
   const isRisk   = level === 'risk';

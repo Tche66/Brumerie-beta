@@ -390,7 +390,7 @@ export function SellerProfilePage({
                       setFollowLoading(true);
                       try {
                         if (isFollowing) {
-                          await unfollowSeller(currentUser.uid, sellerId);
+                          await unfollowSeller(currentUser.uid, sellerId, userProfile?.name);
                           setIsFollowing(false);
                           setFollowersCount(c => Math.max(0, c - 1));
                         } else {

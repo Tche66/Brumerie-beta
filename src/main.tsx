@@ -6,6 +6,14 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
 
+// Nettoyer IndexedDB Firebase corrompu au premier chargement apres migration
+if (!localStorage.getItem('idb_cleaned_v1')) {
+  indexedDB.databases?.().then(dbs => {
+    dbs.forEach(d => { if (d.name) indexedDB.deleteDatabase(d.name); });
+  }).catch(() => {});
+  localStorage.setItem('idb_cleaned_v1', '1');
+}
+
 // ── Vercel Analytics + Speed Insights ────────────────────────
 // Collecte visiteurs, pages vues et métriques de performance
 injectAnalytics();

@@ -167,16 +167,21 @@ export async function followSeller(buyerId: string, sellerId: string, sellerName
   );
 }
 
-export async function unfollowSeller(buyerId: string, sellerId: string): Promise<void> {
+export async function unfollowSeller(buyerId: string, sellerId: string, buyerName?: string): Promise<void> {
   await updateDoc(doc(db, 'users', buyerId), {
     followingSellers: arrayRemove(sellerId),
   });
-  // Décrémenter le compteur sur le vendeur
   try {
     await updateDoc(doc(db, 'users', sellerId), {
       followerCount: increment(-1),
     });
   } catch {}
+  const displayName = buyerName || 'Un utilisateur';
+  await createNotification(sellerId, 'follow',
+    '👋 Désabonnement',
+    `${displayName} ne suit plus ta boutique.`,
+    { senderId: buyerId }
+  ).catch(() => {});
 }
 
 export function isFollowingSeller(buyerId: string, sellerId: string, followingList: string[]): boolean {

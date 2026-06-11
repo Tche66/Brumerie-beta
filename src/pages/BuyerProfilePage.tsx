@@ -629,7 +629,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                       onClick={async (e) => {
                         e.stopPropagation();
                         if (!currentUser) return;
-                        await unfollowSeller(currentUser.uid, seller.id);
+                        await unfollowSeller(currentUser.uid, seller.id, userProfile?.name);
                         setFollowedSellers(prev => prev.filter((s: any) => s.id !== seller.id));
                         await refreshUserProfile();
                       }}
