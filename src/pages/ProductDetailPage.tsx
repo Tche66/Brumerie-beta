@@ -543,7 +543,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                         await unfollowSeller(currentUser.uid, product.sellerId);
                         setIsFollowingSeller(false);
                       } else {
-                        await followSeller(currentUser.uid, product.sellerId, product.sellerName || '');
+                        await followSeller(currentUser.uid, product.sellerId, product.sellerName || '', userProfile?.name);
                         setIsFollowingSeller(true);
                       }
                       await refreshUserProfile();

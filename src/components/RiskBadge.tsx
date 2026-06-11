@@ -10,9 +10,10 @@ interface RiskBadgeProps {
 }
 
 export function RiskBadge({ level, size = 'md', showLabel = true }: RiskBadgeProps) {
-  if (level === 'safe') return null; // ne rien afficher pour les fiables
+  if (!level || level === 'safe') return null;
 
   const cfg = RISK_LABELS[level];
+  if (!cfg) return null;
   const sizeClass = size === 'sm'
     ? 'text-[8px] px-2 py-0.5 gap-1'
     : size === 'lg'

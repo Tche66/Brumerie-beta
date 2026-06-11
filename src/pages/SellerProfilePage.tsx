@@ -394,7 +394,7 @@ export function SellerProfilePage({
                           setIsFollowing(false);
                           setFollowersCount(c => Math.max(0, c - 1));
                         } else {
-                          await followSeller(currentUser.uid, sellerId, seller.name);
+                          await followSeller(currentUser.uid, sellerId, seller.name, userProfile?.name);
                           setIsFollowing(true);
                           setFollowersCount(c => c + 1);
                         }

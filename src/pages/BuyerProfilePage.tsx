@@ -575,7 +575,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                         <button
                           onClick={async () => {
                             if (!currentUser) return;
-                            await followSeller(currentUser.uid, s.id, s.name || '');
+                            await followSeller(currentUser.uid, s.id, s.name || '', userProfile?.name);
                             await refreshUserProfile();
                             setSuggestedSellers(prev => prev.filter(x => x.id !== s.id));
                           }}

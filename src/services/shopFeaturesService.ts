@@ -150,19 +150,19 @@ export async function trackProductView(productId: string): Promise<void> {
 // 3. SUIVRE UN VENDEUR
 // ════════════════════════════════════════════════════════════
 
-export async function followSeller(buyerId: string, sellerId: string, sellerName: string): Promise<void> {
+export async function followSeller(buyerId: string, sellerId: string, sellerName: string, buyerName?: string): Promise<void> {
   await updateDoc(doc(db, 'users', buyerId), {
     followingSellers: arrayUnion(sellerId),
   });
-  // Dénormaliser le compteur sur le vendeur
   try {
     await updateDoc(doc(db, 'users', sellerId), {
       followerCount: increment(1),
     });
   } catch {}
+  const displayName = buyerName || 'Un utilisateur';
   await createNotification(sellerId, 'follow',
     '👤 Nouvel abonné !',
-    `${buyerId} suit maintenant ta boutique. Continue à publier pour rester visible !`,
+    `${displayName} suit maintenant ta boutique. Continue à publier pour rester visible !`,
     { senderId: buyerId }
   );
 }
