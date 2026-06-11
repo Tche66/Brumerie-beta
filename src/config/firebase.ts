@@ -1,6 +1,6 @@
 // src/config/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -16,11 +16,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Firestore avec cache memoire (evite le crash IndexedDB QuotaExceeded)
-// La lecture principale est maintenant via Neon/NestJS
 export const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
 });
 
-export const auth    = getAuth(app);
+// Auth avec persistence localStorage (evite la dependance a IndexedDB)
+export const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+
 export const storage = getStorage(app);
 export default app;
