@@ -32,13 +32,15 @@ function Toast({ toast, onDismiss }: ToastProps) {
     setTimeout(() => onDismiss(toast.id), 300);
   }, [onDismiss, toast.id]);
 
-  const colors = {
+  const colors: Record<string, { bg: string; icon: string; bar: string }> = {
     message:  { bg: '#1D4ED8', icon: '#93C5FD', bar: '#3B82F6' },
     reply:    { bg: '#1D4ED8', icon: '#93C5FD', bar: '#60A5FA' },
     favorite: { bg: '#115E2E', icon: '#86EFAC', bar: '#16A34A' },
+    follow:   { bg: '#7C3AED', icon: '#C4B5FD', bar: '#8B5CF6' },
+    commande: { bg: '#EA580C', icon: '#FDBA74', bar: '#F97316' },
     system:   { bg: '#374151', icon: '#D1D5DB', bar: '#6B7280' },
   };
-  const c = colors[toast.type];
+  const c = colors[toast.type] || colors.system;
 
   const icons = {
     message: (

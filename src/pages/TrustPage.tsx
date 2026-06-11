@@ -153,7 +153,7 @@ export function TrustPage({ onBack }: TrustPageProps) {
               ) : (
                 <div className="space-y-3">
                   {riskUsers.map(user => {
-                    const cfg = RISK_LABELS[user.riskLevel];
+                    const cfg = RISK_LABELS[user.riskLevel] || RISK_LABELS.safe;
                     return (
                       <div key={user.userId}
                         className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">

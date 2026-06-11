@@ -202,7 +202,7 @@ export function TrustAdminPanel() {
             </div>
           )}
           {riskUsers.map(user => {
-            const cfg = RISK_LABELS[user.riskLevel];
+            const cfg = RISK_LABELS[user.riskLevel] || RISK_LABELS.safe;
             const isBanActive = activeBanUserId === user.userId;
             return (
               <div key={user.userId} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
