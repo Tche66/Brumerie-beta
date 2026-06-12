@@ -26,13 +26,13 @@ interface BuyerProfilePageProps {
 
 type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback' | 'recent';
 
-// ── Palette Brumerie — ZERO bleu ─────────────────────────────────
-const G1  = '#1a3d17';   // vert très foncé
-const G2  = '#2d5a27';   // vert principal
-const G3  = '#4a8a42';   // vert clair
-const GOLD = '#c8962a';  // or Abidjan
-const CREAM = '#faf7f2'; // crème
-const INK  = '#1a1a18';  // encre
+// ── Palette Brumerie — Dark premium ──────────────────────────────
+const G1  = '#0f172a';   // slate-900
+const G2  = '#1e293b';   // slate-800
+const G3  = '#334155';   // slate-700
+const GOLD = '#f59e0b';  // amber-500
+const CREAM = '#f8fafc'; // slate-50
+const INK  = '#0f172a';  // slate-900
 
 // ── Helpers ───────────────────────────────────────────────────────
 function fmtDate(ts: any): string {
@@ -44,15 +44,15 @@ function fmtDate(ts: any): string {
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  delivered:     { label: 'Livré',         color: G2,    bg: '#E8F5E2' },
-  cod_delivered: { label: 'Livré',         color: G2,    bg: '#E8F5E2' },
+  delivered:     { label: 'Livré',         color: '#16a34a', bg: '#f0fdf4' },
+  cod_delivered: { label: 'Livré',         color: '#16a34a', bg: '#f0fdf4' },
   cancelled:     { label: 'Annulé',        color: '#B91C1C', bg: '#FEE2E2' },
-  confirmed:     { label: 'Confirmé',      color: G2,    bg: '#E8F5E2' },
-  cod_confirmed: { label: 'En livraison',  color: GOLD,  bg: '#FDF3E0' },
-  ready:         { label: 'Prêt',          color: GOLD,  bg: '#FDF3E0' },
-  picked:        { label: 'En route',      color: GOLD,  bg: '#FDF3E0' },
+  confirmed:     { label: 'Confirmé',      color: '#16a34a', bg: '#f0fdf4' },
+  cod_confirmed: { label: 'En livraison',  color: GOLD,  bg: '#fffbeb' },
+  ready:         { label: 'Prêt',          color: GOLD,  bg: '#fffbeb' },
+  picked:        { label: 'En route',      color: GOLD,  bg: '#fffbeb' },
   initiated:     { label: 'En attente',    color: '#71717A', bg: '#F4F4F5' },
-  proof_sent:    { label: 'Preuve',        color: G3,    bg: '#E8F5E2' },
+  proof_sent:    { label: 'Preuve',        color: '#0ea5e9', bg: '#f0f9ff' },
   cod_pending:   { label: 'En attente',    color: '#71717A', bg: '#F4F4F5' },
 };
 
@@ -285,113 +285,83 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   return (
     <div className="min-h-screen pb-28" style={{ background: CREAM }}>
 
-      {/* ══ HERO — pleine largeur, vert dominant ════════════════════ */}
-      <div className="relative overflow-hidden">
-        {/* Fond texture vert + motif géométrique */}
-        <div className="absolute inset-0" style={{
-          background: `linear-gradient(155deg, ${G1} 0%, ${G2} 50%, ${G3} 100%)`,
-        }}/>
-        {/* Grille décorative subtile */}
-        <div className="absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: 'repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)', backgroundSize: '24px 24px' }}/>
-        {/* Accents or */}
-        <div className="absolute top-10 right-10 w-36 h-36 rounded-full opacity-15"
-          style={{ background: `radial-gradient(circle, ${GOLD}, transparent 70%)` }}/>
-        <div className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full opacity-10"
-          style={{ background: `radial-gradient(circle, white, transparent 70%)` }}/>
+      {/* ══ HERO — dark immersif ════════════════════════════════════ */}
+      <div className="relative overflow-hidden bg-slate-900 rounded-b-[3rem]">
+        {/* Pattern subtil */}
+        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
         <div className="relative px-5 pt-14 pb-7">
           {/* Paramètres */}
           <button onClick={() => onNavigate?.('settings')}
-            className="absolute top-14 right-5 w-9 h-9 rounded-2xl flex items-center justify-center transition-all active:scale-90"
-            style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)' }}>
+            className="absolute top-5 right-5 w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all"
+            style={{ color: 'rgba(255,255,255,0.7)' }}>
             {Icons.settings()}
           </button>
 
-          {/* Avatar + nom */}
-          <div className="flex items-end gap-4">
-            <div className="relative flex-shrink-0">
-              {/* Anneau or */}
-              <div className="absolute -inset-1 rounded-[1.6rem]"
-                style={{ background: `linear-gradient(135deg, ${GOLD}80, transparent 60%)` }}/>
-              <div className="relative w-[74px] h-[74px] rounded-[1.4rem] overflow-hidden shadow-2xl">
-                <img
-                  src={userProfile.photoURL ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=1a3d17&color=c8962a&bold=true`}
-                  alt="" className="w-full h-full object-cover"
-                />
-              </div>
+          {/* Avatar centré + nom */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl mb-3">
+              <img
+                src={userProfile.photoURL ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=1e293b&color=f59e0b&bold=true`}
+                alt="" className="w-full h-full object-cover"
+              />
             </div>
 
-            <div className="flex-1 min-w-0 pb-1.5">
-              <h1 style={{
-                color: 'white', fontFamily: "'Syne', 'DM Sans', sans-serif",
-                fontWeight: 900, fontSize: '1.25rem', letterSpacing: '-0.02em',
-                lineHeight: 1.1, textTransform: 'uppercase',
-              }} className="truncate">
-                {userProfile.name}
-              </h1>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {(userProfile as any).neighborhood && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                    <span style={{ color: GOLD }}>{Icons.pin()}</span>
-                    {(userProfile as any).neighborhood}
-                  </span>
-                )}
-                {memberSince && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    Depuis {memberSince}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+            <h1 className="text-xl font-black text-white uppercase tracking-tight truncate max-w-[250px]">
+              {userProfile.name}
+            </h1>
 
-          {/* 3 stats — glassmorphism */}
-          <div className="grid grid-cols-3 gap-2.5 mt-5">
-            {[
-              { val: bookmarkIds.size,       label: 'Favoris',  accent: GOLD },
-              { val: activeOrders.length,    label: 'En cours', accent: 'white' },
-              { val: completedOrders.length, label: 'Achetés',  accent: '#a3d99a' },
-            ].map(s => (
-              <div key={s.label}
-                className="rounded-2xl py-3 px-2 text-center"
-                style={{
-                  background: 'rgba(255,255,255,0.10)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                }}>
-                <p className="font-black text-[24px] leading-none" style={{ color: s.accent }}>{s.val}</p>
-                <p className="text-[8px] font-bold uppercase tracking-widest mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  {s.label}
-                </p>
-              </div>
-            ))}
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center">
+              {(userProfile as any).neighborhood && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
+                  <span className="text-amber-400">{Icons.pin()}</span>
+                  {(userProfile as any).neighborhood}
+                </span>
+              )}
+              {memberSince && (
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white/35">
+                  Depuis {memberSince}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ══ ONGLETS — vert actif, jamais bleu ═══════════════════════ */}
-      <div className="bg-white sticky top-0 z-30"
-        style={{ borderBottom: `1px solid ${G2}20`, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-        <div className="flex overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      {/* ── Stats card ── */}
+      <div className="px-4 -mt-5 relative z-10">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 grid grid-cols-3 gap-3">
+          {[
+            { val: bookmarkIds.size,       label: 'Favoris' },
+            { val: activeOrders.length,    label: 'En cours' },
+            { val: completedOrders.length, label: 'Achetés' },
+          ].map(s => (
+            <div key={s.label} className="text-center">
+              <p className="text-xl font-black text-slate-900">{s.val}</p>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ ONGLETS ═══════════════════════════════════════════════════ */}
+      <div className="bg-white sticky top-0 z-30 border-b border-slate-100 shadow-sm mt-4">
+        <div className="flex overflow-x-auto px-2 py-1" style={{ scrollbarWidth: 'none' }}>
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className="flex-shrink-0 flex flex-col items-center gap-1 px-4 pt-3 pb-2.5 relative min-w-[58px] transition-colors"
-              style={{ color: tab === t.id ? G2 : '#A3A3A3' }}>
-              {/* Indicateur bas */}
+              className={`flex-shrink-0 flex flex-col items-center gap-1 px-3.5 pt-2.5 pb-2 relative min-w-[54px] transition-colors ${
+                tab === t.id ? 'text-slate-900' : 'text-slate-400'
+              }`}>
               {tab === t.id && (
-                <div className="absolute bottom-0 left-3 right-3 h-[2.5px] rounded-full"
-                  style={{ background: `linear-gradient(90deg, ${G2}, ${G3})` }}/>
+                <div className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-slate-900"/>
               )}
               <div className="w-5 h-5 flex items-center justify-center">{t.icon}</div>
               <span className="text-[7.5px] font-black uppercase tracking-widest leading-none">{t.label}</span>
               {t.count > 0 && (
-                <span className="absolute top-1.5 right-2 text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center"
-                  style={{
-                    background: tab === t.id ? G2 : '#E5E7EB',
-                    color: tab === t.id ? 'white' : '#71717A',
-                  }}>
+                <span className={`absolute top-1 right-1.5 text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center ${
+                  tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
+                }`}>
                   {t.count > 99 ? '+' : t.count}
                 </span>
               )}
@@ -813,16 +783,14 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
 
         {/* ══ BOUTONS BAS DE PAGE ════════════════════════════════════ */}
         <button onClick={() => onNavigate?.('edit-profile')}
-          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
-          style={{ background: 'white', border: `1.5px solid ${G2}30`, color: G2 }}>
-          <span style={{ color: G2 }}>{Icons.edit()}</span>
+          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all bg-white border-2 border-slate-200 text-slate-700">
+          {Icons.edit()}
           Modifier mon profil
         </button>
 
         <button onClick={() => onNavigate?.('switch-to-seller')}
-          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 active:scale-95 transition-all"
-          style={{ background: `linear-gradient(135deg, ${G1}, ${G2})`, boxShadow: `0 4px 20px ${G2}40` }}>
-          <span style={{ color: 'white' }}>{Icons.store()}</span>
+          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 active:scale-95 transition-all bg-slate-900 shadow-lg">
+          {Icons.store()}
           Passer en mode Vendeur
         </button>
       </div>
