@@ -33,6 +33,8 @@ interface HomePageProps {
   onOrderFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
   onOfferFromStory?: (productRef: { id: string; title: string; price: number; imageUrl?: string }, sellerId: string, sellerName: string) => void;
   onSellerClick?: (sellerId: string) => void;
+  onBuyClick?: (product: Product) => void;
+  onOfferClick?: (product: Product) => void;
 }
 
 
@@ -79,7 +81,7 @@ function safeTs(val: any): number {
   try { return new Date(val).getTime() || 0; } catch { return 0; }
 }
 
-export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller, onSellerClick,
+export function HomePage({ onProductClick, onProfileClick, onNotificationsClick, onLogoClick, isGuest, onGuestAction, onOpenChatWithSeller, onOrderFromStory, onOfferFromStory, onNavigateToVerification, onNavigateToChat, onSwitchToSeller, onSellerClick, onBuyClick, onOfferClick,
 }: HomePageProps) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const appConfig = useAppConfig();
@@ -801,6 +803,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                             onGuestAction={() => onGuestAction?.('like')}
                             onStartChat={onOpenChatWithSeller}
                             onSellerClick={onSellerClick}
+                            onBuyClick={onBuyClick}
+                            onOfferClick={onOfferClick}
                           />
                         );
                       });
@@ -991,6 +995,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                         onGuestAction={() => onGuestAction?.('like')}
                         onSellerClick={onSellerClick}
                         onStartChat={onOpenChatWithSeller}
+                        onBuyClick={onBuyClick}
+                        onOfferClick={onOfferClick}
                       />
                     );
                   })}

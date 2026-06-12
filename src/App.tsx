@@ -619,6 +619,8 @@ useEffect(() => {
                 navigate('order-flow');
               }
             }}
+            onBuyClick={(product) => { setOrderFlowProduct(product); navigate('order-flow'); }}
+            onOfferClick={(product) => { setStoryOfferProduct(product); }}
             onOfferFromStory={async (productRef, sellerId, sellerName) => {
               try {
                 const { getDoc, doc } = await import('firebase/firestore');

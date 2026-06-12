@@ -19,6 +19,8 @@ interface ProductCardFeedProps {
   onGuestAction?: () => void;
   onSellerClick?: (sellerId: string) => void;
   onStartChat?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
+  onBuyClick?: (product: Product) => void;
+  onOfferClick?: (product: Product) => void;
 }
 
 function safeTs(val: any): number {
@@ -29,7 +31,7 @@ function safeTs(val: any): number {
 }
 
 export function ProductCardFeed({
-  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat,
+  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat, onBuyClick, onOfferClick,
 }: ProductCardFeedProps) {
   const { currentUser } = useAuth();
   const images = product.images?.length
@@ -152,11 +154,13 @@ export function ProductCardFeed({
           </button>
           <button
             onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
-            className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0"
+            className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0 overflow-visible"
           >
-            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[110px]">{product.sellerName}</span>
+            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[100px]">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
-              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
+              <span className="flex-shrink-0">
+                <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
+              </span>
             )}
           </button>
           {/* Bouton Suivre */}
@@ -193,7 +197,11 @@ export function ProductCardFeed({
           </button>
 
           {/* Offre */}
-          <button onClick={onClick}
+          <button onClick={e => {
+              e.stopPropagation();
+              if (!currentUser) { onGuestAction?.(); return; }
+              if (onOfferClick) { onOfferClick(product); } else { onClick(); }
+            }}
             className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
           >
             <div className="w-11 h-11 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
@@ -363,13 +371,17 @@ export function ProductCardFeed({
             Discuter
           </button>
           <button
-            onClick={e => { e.stopPropagation(); onClick(); }}
+            onClick={e => {
+              e.stopPropagation();
+              if (!currentUser) { onGuestAction?.(); return; }
+              if (onBuyClick) { onBuyClick(product); } else { onClick(); }
+            }}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-black text-[12px] active:scale-95 transition-all shadow-lg"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+              <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
             </svg>
-            Faire une offre
+            Acheter
           </button>
         </div>
       </div>
