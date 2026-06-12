@@ -6,6 +6,7 @@ import { Product } from '@/types';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
 import { toggleLike, checkIsLiked } from '@/services/productService';
+import { followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,7 +34,7 @@ function safeTs(val: any): number {
 export function ProductCardFeed({
   product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat, onBuyClick, onOfferClick,
 }: ProductCardFeedProps) {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const images = product.images?.length
     ? product.images
     : [(product as any).imageUrl].filter(Boolean) as string[];
@@ -43,9 +44,34 @@ export function ProductCardFeed({
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
   const [currentImg, setCurrentImg] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
+
+  useEffect(() => {
+    if (!userProfile) return;
+    const followIds = (userProfile as any)?.followingSellers || [];
+    setIsFollowing(followIds.includes(product.sellerId));
+  }, [userProfile, product.sellerId]);
+
+  const handleFollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) { onGuestAction?.(); return; }
+    if (followLoading || currentUser.uid === product.sellerId) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        await unfollowSeller(currentUser.uid, product.sellerId);
+        setIsFollowing(false);
+      } else {
+        await followSeller(currentUser.uid, product.sellerId, product.sellerName || '');
+        setIsFollowing(true);
+      }
+    } catch {}
+    setFollowLoading(false);
+  };
 
   useEffect(() => {
     if (!product.id) return;
@@ -154,22 +180,29 @@ export function ProductCardFeed({
           </button>
           <button
             onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
-            className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0 overflow-visible"
+            className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0"
           >
             <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[100px]">{product.sellerName}</span>
-            {(product.sellerVerified || product.sellerPremium) && (
-              <span className="flex-shrink-0">
-                <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
-              </span>
-            )}
           </button>
-          {/* Bouton Suivre */}
-          <button
-            onClick={e => { e.stopPropagation(); if (!currentUser) { onGuestAction?.(); return; } if (product.sellerId) onSellerClick?.(product.sellerId); }}
-            className="ml-auto bg-green-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-full active:scale-90 transition-all shadow-lg flex-shrink-0"
-          >
-            Suivre
-          </button>
+          {(product.sellerVerified || product.sellerPremium) && (
+            <span className="flex-shrink-0 drop-shadow-lg">
+              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="md"/>
+            </span>
+          )}
+          {/* Bouton Suivre — vraie action follow */}
+          {currentUser?.uid !== product.sellerId && (
+            <button
+              onClick={handleFollow}
+              disabled={followLoading}
+              className={`ml-auto text-[10px] font-black px-3.5 py-1.5 rounded-full active:scale-90 transition-all shadow-lg flex-shrink-0 disabled:opacity-50 ${
+                isFollowing
+                  ? 'bg-white/20 backdrop-blur-md text-white border border-white/40'
+                  : 'bg-green-500 text-white'
+              }`}
+            >
+              {followLoading ? '...' : isFollowing ? 'Suivi ✓' : 'Suivre'}
+            </button>
+          )}
         </div>
 
         {/* ── Badge état (Neuf, etc.) sous le header ── */}
