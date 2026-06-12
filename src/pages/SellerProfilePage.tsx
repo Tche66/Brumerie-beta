@@ -1,14 +1,12 @@
 // src/pages/SellerProfilePage.tsx — v5 · Bannière grande, logos réseaux, horaires accordéon
 import React, { useState, useEffect } from 'react';
 import { Review, Product, User } from '@/types';
-import { ProductCard } from '@/components/ProductCard';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { SocialIcon, SocialBar, SocialNetwork } from '@/components/SocialIcon';
 import { getUserById, updateUserProfile } from '@/services/userService';
 import { formatLastSeen, getActivityColor, isShopClosed, formatShopClosedUntil, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
 import { getRecentReposts } from '@/services/shopFeaturesService';
-import { ProductCardFeed } from '@/components/ProductCardFeed';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
@@ -244,35 +242,11 @@ export function SellerProfilePage({
       ) : seller ? (
         <>
           {/* ══════════════════════════════════════════
-              SECTION 1 — BANNIÈRE + IDENTITÉ
+              SECTION 1 — IDENTITÉ (sans bannière)
           ══════════════════════════════════════════ */}
 
-          {/* Bannière */}
-          {s?.shopBanner ? (
-            <div className="w-full h-56 overflow-hidden relative">
-              <img src={s.shopBanner} alt="Bannière" className="w-full h-full object-cover"/>
-              <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5))' }}/>
-              {hasFlash && (
-                <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse shadow-lg">
-                  <BruIcons.Zap size={14}/> {s.flashSaleLabel}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="w-full h-40 relative overflow-hidden" style={{
-              background: s?.shopThemeColor
-                ? `linear-gradient(135deg, ${s.shopThemeColor}40, ${s.shopThemeColor}15)`: 'linear-gradient(135deg,#e8f5e9,#f0fdf4)'
-            }}>
-              {hasFlash && (
-                <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase animate-pulse shadow-lg">
-                  <BruIcons.Zap size={14}/> {s.flashSaleLabel}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Carte identité */}
-          <div className="bg-white border-b border-slate-100 shadow-sm px-5 pb-6 -mt-6 relative">
+          <div className="bg-white border-b border-slate-100 shadow-sm px-5 pb-6 pt-6 relative">
             <div className="flex flex-col items-center text-center">
 
               {/* Avatar + badge */}
@@ -617,11 +591,10 @@ export function SellerProfilePage({
               ))}
             </div>
 
-            {/* Grille articles actifs / vendus */}
+            {/* Grille photos catalogue — style Depop/Instagram */}
             {(tab === 'actifs' || tab === 'vendus') && (
               (tab === 'actifs' ? activeProducts : soldProducts).length === 0 ? (
                 <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-                  <p className="text-3xl mb-3">{tab === 'actifs' ? '' : ''}</p>
                   <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">
                     {tab === 'actifs' ? (isSelf ? 'Aucun article en ligne' : 'Boutique vide') : 'Aucune vente pour l\'instant'}
                   </p>
@@ -633,32 +606,28 @@ export function SellerProfilePage({
                   )}
                 </div>
               ) : (
-                <>
-                  {tab === 'actifs' ? (
-                    <div className="space-y-4">
-                      {activeProducts.map(product => (
-                        <ProductCardFeed
-                          key={product.id}
-                          product={product}
-                          onClick={() => onProductClick(product)}
-                          onBookmark={handleBookmark}
-                          isBookmarked={bookmarkIds.has(product.id)}
-                          isBoosted={false}
-                          onSellerClick={onSellerClick}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {soldProducts.map(product => (
-                        <div key={product.id} className="active:scale-95 transition-transform">
-                          <ProductCard product={product} onClick={() => onProductClick(product)}
-                            onBookmark={handleBookmark} isBookmarked={bookmarkIds.has(product.id)}/>
+                <div className="grid grid-cols-3 gap-0.5">
+                  {(tab === 'actifs' ? activeProducts : soldProducts).map(product => (
+                    <button
+                      key={product.id}
+                      onClick={() => onProductClick(product)}
+                      className="relative aspect-square overflow-hidden bg-slate-100 active:opacity-80 transition-opacity"
+                    >
+                      <img
+                        src={product.images?.[0] || (product as any).imageUrl}
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {product.status === 'sold' && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="bg-white text-slate-900 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-wider">
+                            Vendu
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </>
+                      )}
+                    </button>
+                  ))}
+                </div>
               )
             )}
 
