@@ -456,8 +456,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   return (
     <div className="min-h-screen bg-white pb-32 font-sans">
 
-      {/* ── SLIDER PHOTOS ── */}
-      <div className="relative bg-slate-100" style={{ aspectRatio: '1/1' }}>
+      {/* ── ZONE IMAGE IMMERSIVE ── */}
+      <div className="relative bg-slate-100" style={{ aspectRatio: '3/4' }}>
         <div ref={scrollRef} onScroll={handleScroll}
           className="flex overflow-x-auto h-full snap-x snap-mandatory scrollbar-hide"
           style={{ scrollbarWidth: 'none' }}>
@@ -472,180 +472,222 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 style={{ transform: idx === currentImageIndex ? `scale(${scale})` : 'scale(1)' }}
                 draggable={false}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://placehold.co/600x600/f1f5f9/94a3b8?text=${encodeURIComponent(product.title)}`;
+                  (e.target as HTMLImageElement).src = `https://placehold.co/600x800/f1f5f9/94a3b8?text=${encodeURIComponent(product.title)}`;
                 }} />
             </div>
           ))}
         </div>
 
-        {scale === 1 && product.images.length > 0 && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full">
-            <p className="text-[9px] text-white font-bold">Tap pour agrandir & zoomer</p>
+        {/* Gradient overlay haut et bas */}
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+
+        {/* ── Header : Retour + Vendeur overlay ── */}
+        <div className="absolute top-0 inset-x-0 px-4 pt-5 pb-8 flex items-center gap-3 z-10">
+          <button onClick={onBack} className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 active:scale-90 transition-all">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <button
+            onClick={() => onSellerClick(product.sellerId)}
+            className="w-9 h-9 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex-shrink-0 border-2 border-white/60 active:scale-90 transition-all"
+          >
+            {product.sellerPhoto
+              ? <img src={product.sellerPhoto} alt={product.sellerName} className="w-full h-full object-cover"/>
+              : <div className="w-full h-full flex items-center justify-center text-white font-black text-xs">{product.sellerName?.charAt(0)}</div>
+            }
+          </button>
+          <button
+            onClick={() => onSellerClick(product.sellerId)}
+            className="flex items-center gap-1.5 active:opacity-70 transition-all"
+          >
+            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
+            {(product.sellerVerified || product.sellerPremium) && (
+              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="xs"/>
+            )}
+          </button>
+          {/* Bouton Suivre */}
+          {!isGuest && currentUser && !isSelf && (
+            <button
+              disabled={followingLoading}
+              onClick={async () => {
+                if (!currentUser) return;
+                setFollowingLoading(true);
+                try {
+                  if (isFollowingSeller) {
+                    await unfollowSeller(currentUser.uid, product.sellerId, userProfile?.name);
+                    setIsFollowingSeller(false);
+                  } else {
+                    await followSeller(currentUser.uid, product.sellerId, product.sellerName || '', userProfile?.name);
+                    setIsFollowingSeller(true);
+                  }
+                  await refreshUserProfile();
+                } catch {}
+                setFollowingLoading(false);
+              }}
+              className={`ml-auto px-4 py-1.5 rounded-full text-[10px] font-black active:scale-90 transition-all shadow-lg disabled:opacity-50 ${
+                isFollowingSeller
+                  ? 'bg-white/20 backdrop-blur-md text-white border border-white/30'
+                  : 'bg-green-500 text-white'
+              }`}
+            >
+              {followingLoading ? '...' : isFollowingSeller ? 'Suivi ✓' : 'Suivre'}
+            </button>
+          )}
+        </div>
+
+        {/* ── Badge état (Neuf, etc.) ── */}
+        {product.condition && product.status !== 'sold' && (
+          <div className="absolute top-16 left-4 z-10">
+            <ConditionBadge condition={product.condition} size="md"/>
           </div>
         )}
 
-        {/* Boutons top */}
-        <div className="absolute top-6 left-0 right-0 px-6 flex justify-between items-center z-10">
-          <button onClick={onBack} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#0F172A" strokeWidth="3"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {/* ── Actions latérales droites — style TikTok ── */}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-10">
+          {/* Like */}
+          <button onClick={handleLike} disabled={likeLoading}
+            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform disabled:opacity-60"
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isLiked ? 'bg-red-500/80 backdrop-blur-md' : 'bg-white/20 backdrop-blur-md'}`}>
+              <svg width="22" height="22" viewBox="0 0 24 24"
+                fill={isLiked ? 'white' : 'none'}
+                stroke="white"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+              </svg>
+            </div>
+            <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount > 0 ? likeCount : ''}</span>
           </button>
-          <div className="flex gap-2">
-            {/* Bookmark favori */}
-            <div className="flex flex-col items-center gap-0.5">
-              <button onClick={handleBookmark} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
-                <svg width="20" height="20" viewBox="0 0 24 24"
-                  fill={isBookmarked ? '#1D9BF0' : 'none'}
-                  stroke={isBookmarked ? '#1D9BF0' : '#0F172A'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-                </svg>
-              </button>
-              {((product as any).bookmarkCount || 0) > 0 && (
-                <span className="text-[8px] font-black text-blue-600 bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm">
-                  ❤️ {(product as any).bookmarkCount}
-                </span>
-              )}
+
+          {/* Panier */}
+          <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
+            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          >
+            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+              </svg>
             </div>
-            {/* Wishlist ✨ */}
-            {!isGuest && currentUser && (
-              <div className="flex flex-col items-center gap-0.5">
-                <button
-                  onClick={async () => {
-                    if (!currentUser) return;
-                    try {
-                      if (isInWishlist) {
-                        await removeFromWishlist(currentUser.uid, product.id);
-                        setIsInWishlist(false);
-                      } else {
-                        await addToWishlist(currentUser.uid, product.id);
-                        setIsInWishlist(true);
-                      }
-                      await refreshUserProfile();
-                    } catch {}
-                  }}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
-                  <span className="text-[18px]">{isInWishlist ? '✨' : '☆'}</span>
-                </button>
-                <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm text-slate-500">
-                  {isInWishlist ? 'Wishlist' : 'Wishlist'}
-                </span>
-              </div>
+            <span className="text-[9px] font-black text-white drop-shadow-md">Panier</span>
+          </button>
+
+          {/* Bookmark */}
+          <button onClick={handleBookmark}
+            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isBookmarked ? 'bg-blue-500' : 'bg-white/20 backdrop-blur-md'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24"
+                fill={isBookmarked ? 'white' : 'none'}
+                stroke="white"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+              </svg>
+            </div>
+            {((product as any).bookmarkCount || 0) > 0 && (
+              <span className="text-[11px] font-black text-white drop-shadow-md">{(product as any).bookmarkCount}</span>
             )}
-            {/* Suivre le vendeur */}
-            {!isGuest && currentUser && !isSelf && (
-              <div className="flex flex-col items-center gap-0.5">
-                <button
-                  disabled={followingLoading}
-                  onClick={async () => {
-                    if (!currentUser) return;
-                    setFollowingLoading(true);
-                    try {
-                      if (isFollowingSeller) {
-                        await unfollowSeller(currentUser.uid, product.sellerId, userProfile?.name);
-                        setIsFollowingSeller(false);
-                      } else {
-                        await followSeller(currentUser.uid, product.sellerId, product.sellerName || '', userProfile?.name);
-                        setIsFollowingSeller(true);
-                      }
-                      await refreshUserProfile();
-                    } catch {}
-                    setFollowingLoading(false);
-                  }}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all disabled:opacity-50">
-                  <span className="text-[18px]">{followingLoading ? '⏳' : isFollowingSeller ? '🔔' : '🔕'}</span>
-                </button>
-                <span className="text-[8px] font-black bg-white/90 backdrop-blur-sm rounded-full px-1.5 py-0.5 shadow-sm"
-                  style={{ color: isFollowingSeller ? '#16A34A' : '#64748B' }}>
-                  {isFollowingSeller ? 'Suivi' : 'Suivre'}
-                </span>
-              </div>
-            )}
-            {/* Partager */}
-            <div className="flex flex-col items-center gap-0.5">
-              <button onClick={handleShare} className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all">
+          </button>
+
+          {/* Partager */}
+          <button onClick={handleShare}
+            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          >
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
               {copySuccess
-                ? <span className="text-[10px] font-black text-green-600">OK</span>
-                : <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0F172A" strokeWidth="2.5"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ? <span className="text-[12px] font-black text-white">OK</span>
+                : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
               }
-            </button>
             </div>
-          </div>
+          </button>
+
+          {/* Wishlist */}
+          {!isGuest && currentUser && (
+            <button
+              onClick={async () => {
+                if (!currentUser) return;
+                try {
+                  if (isInWishlist) {
+                    await removeFromWishlist(currentUser.uid, product.id);
+                    setIsInWishlist(false);
+                  } else {
+                    await addToWishlist(currentUser.uid, product.id);
+                    setIsInWishlist(true);
+                  }
+                  await refreshUserProfile();
+                } catch {}
+              }}
+              className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+            >
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isInWishlist ? 'bg-amber-400' : 'bg-white/20 backdrop-blur-md'}`}>
+                <span className="text-[18px]">{isInWishlist ? '✨' : '☆'}</span>
+              </div>
+            </button>
+          )}
         </div>
 
-        {/* Badges status */}
-        <div className="absolute top-24 right-6 flex flex-col gap-2 z-10">
-          {isNew && <span className="bg-green-600 text-white text-[9px] font-black px-4 py-2 rounded-full shadow-lg uppercase">NOUVEAU</span>}
-          {product.status === 'sold' && <span className="bg-slate-900 text-white text-[9px] font-black px-4 py-2 rounded-full shadow-lg uppercase">VENDU</span>}
+        {/* ── Badges status en bas à gauche ── */}
+        <div className="absolute bottom-14 left-4 flex flex-col gap-2 z-10">
+          {isNew && <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg uppercase">Nouveau</span>}
+          {product.status === 'sold' && <span className="bg-slate-900 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg uppercase">Vendu</span>}
         </div>
 
-        {/* Dots */}
+        {/* Dots indicateurs */}
         {product.images.length > 1 && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10">
-            {product.images.map((_, idx) => (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+            {product.images.map((_: string, idx: number) => (
               <button key={idx} onClick={() => scrollToImage(idx)}
-                className={`rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-5 h-2' : 'bg-white/40 w-2 h-2'}`}/>
+                className={`h-1.5 rounded-full transition-all ${idx === currentImageIndex ? 'bg-white w-5' : 'bg-white/50 w-1.5'}`}/>
             ))}
           </div>
         )}
-        <div className="absolute bottom-6 left-6 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full">
-          <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{currentImageIndex + 1} / {product.images.length}</p>
-        </div>
+
+        {/* Compteur images */}
+        {product.images.length > 1 && (
+          <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full z-10">
+            {currentImageIndex + 1}/{product.images.length}
+          </div>
+        )}
       </div>
 
-      {/* ── BARRE SOCIAL — Likes ── */}
-      <div className="px-6 py-3 flex items-center gap-4 border-b border-slate-100 bg-white">
-        {/* Like button */}
-        <button
-          onClick={handleLike}
-          disabled={likeLoading}
-          className="flex items-center gap-2 active:scale-90 transition-transform disabled:opacity-60"
-        >
-          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all ${isLiked ? 'bg-red-50' : 'bg-slate-100'}`}>
-            <svg width="18" height="18" viewBox="0 0 24 24"
-              fill={isLiked ? '#EF4444' : 'none'}
-              stroke={isLiked ? '#EF4444' : '#64748B'}
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-            </svg>
-          </div>
-          <span className={`text-[13px] font-black ${isLiked ? 'text-red-500' : 'text-slate-500'}`}>
-            {likeCount > 0 ? likeCount.toLocaleString('fr-FR') : "J'aimer"}
-          </span>
-        </button>
-
-        {/* Commentaires — scroll vers section */}
+      {/* ── BARRE SOCIAL COMPACTE ── */}
+      <div className="px-5 py-3 flex items-center gap-5 border-b border-slate-100 bg-white">
+        {/* Commentaires */}
         <button
           onClick={() => {
             const el = document.getElementById('comments-section');
             el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
-          className="flex items-center gap-2 active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 active:scale-90 transition-transform"
         >
-          <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-            </svg>
-          </div>
-          <span className="text-[13px] font-black text-slate-500">
-            {comments.length > 0 ? comments.length : 'Commenter'}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+          <span className="text-[12px] font-black text-slate-500">
+            {comments.length > 0 ? `${comments.length} commentaire${comments.length > 1 ? 's' : ''}` : 'Commenter'}
           </span>
         </button>
 
         {/* Repost */}
         <button
           onClick={() => setShowRepost(v => !v)}
-          className="flex items-center gap-2 active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 active:scale-90 transition-transform"
         >
-          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center transition-all ${repostDone ? 'bg-green-100' : 'bg-slate-100'}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={repostDone ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
-            </svg>
-          </div>
-          <span className={`text-[13px] font-black ${repostDone ? 'text-green-600' : 'text-slate-500'}`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={repostDone ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+          </svg>
+          <span className={`text-[12px] font-black ${repostDone ? 'text-green-600' : 'text-slate-500'}`}>
             {repostDone ? "Partagé ✓" : "Repost"}
           </span>
         </button>
 
-
+        {/* Vues */}
+        {!product.hideStats && liveViewCount > 0 && (
+          <span className="text-[11px] font-bold text-slate-400 ml-auto">{liveViewCount} vue{liveViewCount > 1 ? 's' : ''}</span>
+        )}
       </div>
 
       {/* ── MODAL REPOST ── */}
