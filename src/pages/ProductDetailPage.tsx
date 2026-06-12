@@ -502,7 +502,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           >
             <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
-              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="xs"/>
+              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
             )}
           </button>
           {/* Bouton Suivre */}
@@ -559,17 +559,16 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount > 0 ? likeCount : ''}</span>
           </button>
 
-          {/* Panier */}
-          <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
+          {/* Offre */}
+          <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } setShowOfferModal(true); }}
             className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
           >
             <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
               </svg>
             </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">Panier</span>
+            <span className="text-[9px] font-black text-white drop-shadow-md">Offre</span>
           </button>
 
           {/* Bookmark */}

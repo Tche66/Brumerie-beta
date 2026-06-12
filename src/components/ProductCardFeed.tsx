@@ -18,6 +18,7 @@ interface ProductCardFeedProps {
   isBoosted?: boolean;
   onGuestAction?: () => void;
   onSellerClick?: (sellerId: string) => void;
+  onStartChat?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
 }
 
 function safeTs(val: any): number {
@@ -28,7 +29,7 @@ function safeTs(val: any): number {
 }
 
 export function ProductCardFeed({
-  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick,
+  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat,
 }: ProductCardFeedProps) {
   const { currentUser } = useAuth();
   const images = product.images?.length
@@ -139,7 +140,7 @@ export function ProductCardFeed({
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
         {/* ── Header vendeur — overlay en haut ── */}
-        <div className="absolute top-0 inset-x-0 flex items-center gap-2.5 px-4 pt-4 pb-8 bg-gradient-to-b from-black/30 to-transparent">
+        <div className="absolute top-0 inset-x-0 z-20 flex items-center gap-2.5 px-4 pt-4 pb-8 bg-gradient-to-b from-black/40 to-transparent">
           <button
             onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
             className="w-9 h-9 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex-shrink-0 border-2 border-white/60 active:scale-90 transition-all"
@@ -151,25 +152,25 @@ export function ProductCardFeed({
           </button>
           <button
             onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
-            className="flex items-center gap-1.5 active:opacity-70 transition-all"
+            className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0"
           >
-            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
+            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[110px]">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
-              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="xs"/>
+              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
             )}
           </button>
           {/* Bouton Suivre */}
           <button
             onClick={e => { e.stopPropagation(); if (!currentUser) { onGuestAction?.(); return; } if (product.sellerId) onSellerClick?.(product.sellerId); }}
-            className="ml-auto bg-green-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-full active:scale-90 transition-all shadow-lg"
+            className="ml-auto bg-green-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-full active:scale-90 transition-all shadow-lg flex-shrink-0"
           >
             Suivre
           </button>
         </div>
 
-        {/* ── Badge état (Neuf, etc.) en haut à droite ── */}
+        {/* ── Badge état (Neuf, etc.) sous le header ── */}
         {product.condition && product.status !== 'sold' && (
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-14 right-16 z-10">
             <ConditionBadge condition={product.condition} size="sm"/>
           </div>
         )}
@@ -191,17 +192,16 @@ export function ProductCardFeed({
             {likeCount > 0 && <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount}</span>}
           </button>
 
-          {/* Panier / Acheter */}
+          {/* Offre */}
           <button onClick={onClick}
             className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
           >
             <div className="w-11 h-11 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
               </svg>
             </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">Panier</span>
+            <span className="text-[9px] font-black text-white drop-shadow-md">Offre</span>
           </button>
 
           {/* Bookmark */}
@@ -346,22 +346,30 @@ export function ProductCardFeed({
         {/* ── Boutons CTA en bas ── */}
         <div className="flex items-center gap-3 mt-4">
           <button
-            onClick={e => { e.stopPropagation(); onClick(); }}
+            onClick={e => {
+              e.stopPropagation();
+              if (!currentUser) { onGuestAction?.(); return; }
+              if (onStartChat && product.sellerId) {
+                onStartChat(product.sellerId, product.sellerName || '', product.id, product.title);
+              } else {
+                onClick();
+              }
+            }}
             className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-green-500 text-green-600 rounded-full font-black text-[12px] active:scale-95 transition-all"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
             </svg>
-            Bavarder
+            Discuter
           </button>
           <button
             onClick={e => { e.stopPropagation(); onClick(); }}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-black text-[12px] active:scale-95 transition-all shadow-lg"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
             </svg>
-            Acheter
+            Faire une offre
           </button>
         </div>
       </div>

@@ -799,6 +799,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                             isBookmarked={bookmarkIds.has(product.id)}
                             isBoosted={boostedIds.has(product.id)}
                             onGuestAction={() => onGuestAction?.('like')}
+                            onStartChat={onOpenChatWithSeller}
+                            onSellerClick={onSellerClick}
                           />
                         );
                       });
@@ -988,6 +990,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                         isBoosted={boostedIds.has(item.data.id)}
                         onGuestAction={() => onGuestAction?.('like')}
                         onSellerClick={onSellerClick}
+                        onStartChat={onOpenChatWithSeller}
                       />
                     );
                   })}
