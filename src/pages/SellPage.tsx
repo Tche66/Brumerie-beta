@@ -5,7 +5,7 @@ import { createProduct, canUserPublish } from '@/services/productService';
 import { setProductPromo, notifyFollowersNewProduct } from '@/services/shopFeaturesService';
 import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
-import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS } from '@/types';
+import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS, getNeighborhoodsForCity } from '@/types';
 import { subscribeAppConfig } from '@/services/appConfigService';
 
 interface SellPageProps {
@@ -631,7 +631,7 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
               )}
 
               <div className="grid grid-cols-2 gap-2 bg-green-50/50 p-4 rounded-[2rem] border border-green-100/50 max-h-72 overflow-y-auto">
-                {[...NEIGHBORHOODS, ...customNeighborhoods].map(n => {
+                {[...getNeighborhoodsForCity(userProfile?.city || 'Abidjan'), ...customNeighborhoods].map(n => {
                   const isSelected = selectedCities.includes(n);
                   const isDisabled = !isSelected && selectedCities.length >= MAX_CITIES;
                   return (

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { verifyBeforeUpdateEmail, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { NEIGHBORHOODS, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
+import { NEIGHBORHOODS, CITIES, MOBILE_PAYMENT_METHODS, PaymentInfo, getNeighborhoodsForCity } from '@/types';
 import { PaymentLogo } from '@/components/PaymentLogo';
 import { compressImage } from '@/utils/helpers';
 import { getAllActiveSellers } from '@/services/userService';
@@ -68,6 +68,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
   // ── Champs communs ────────────────────────────────────────
   const [name, setName] = useState(userProfile?.name || '');
   const [phone, setPhone] = useState(userProfile?.phone || '');
+  const [city, setCity] = useState((userProfile as any)?.city || 'Abidjan');
   const [neighborhood, setNeighborhood] = useState(userProfile?.neighborhood || '');
   const [awCode, setAwCode] = useState(userProfile?.awAddressCode || '');
   const [awVerified, setAwVerified] = useState(false);
@@ -169,7 +170,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
       const digits = phone.replace(/\D/g, '');
       const formattedPhone = digits ? (digits.startsWith('225') ? '+' + digits : '+225' + digits) : '';
-      const updateData: any = { name: name.trim(), neighborhood, photoURL, phone: formattedPhone, awAddressCode: awCode || null };
+      const updateData: any = { name: name.trim(), city, neighborhood, photoURL, phone: formattedPhone, awAddressCode: awCode || null };
       // Bio accessible à tous les vendeurs
       if (isSeller) {
         updateData.bio = bio.trim();
@@ -289,12 +290,25 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               </p>
             </div>
 
+            {/* Ville */}
+            <div>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ville</label>
+              <div className="flex gap-2 flex-wrap">
+                {CITIES.map(c => (
+                  <button key={c} onClick={() => { setCity(c); setNeighborhood(''); }}
+                    className={`py-2.5 px-4 rounded-xl border-2 text-[11px] font-bold transition-all ${city === c ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 text-slate-500'}`}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Quartier */}
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Quartier</label>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Quartier à {city}</label>
               {!isCustomNeighborhood ? (
                 <div className="grid grid-cols-2 gap-2">
-                  {NEIGHBORHOODS.slice(0, 5).map(n => (
+                  {getNeighborhoodsForCity(city).slice(0, 5).map(n => (
                     <button key={n} onClick={() => setNeighborhood(n)}
                       className={`py-3 px-3 rounded-xl border-2 text-[11px] font-bold transition-all ${neighborhood === n ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-white text-slate-500 shadow-sm'}`}>
                       {n}

@@ -14,7 +14,7 @@ export function DesktopSidebar() {
               <h1 className="text-white font-black text-3xl tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
                 🛍 Brumerie
               </h1>
-              <p className="text-green-400 text-xs font-bold uppercase tracking-widest mt-0.5">Abidjan · Côte d'Ivoire 🇨🇮</p>
+              <p className="text-green-400 text-xs font-bold uppercase tracking-widest mt-0.5">Côte d'Ivoire 🇨🇮</p>
             </div>
           </div>
           <p className="text-slate-400 text-sm leading-relaxed font-medium">

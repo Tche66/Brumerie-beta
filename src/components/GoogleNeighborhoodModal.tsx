@@ -5,7 +5,7 @@
 // 3. Code parrainage (optionnel)
 
 import React, { useState } from 'react';
-import { NEIGHBORHOODS } from '@/types';
+import { CITIES, getNeighborhoodsForCity } from '@/types';
 import { updateUserProfile } from '@/services/userService';
 import { useAuth } from '@/contexts/AuthContext';
 import { applyReferral, ensureReferralCode } from '@/services/referralService';
@@ -14,18 +14,24 @@ interface Props {
   onDone: () => void;
 }
 
-type Step = 'neighborhood' | 'whatsapp' | 'referral';
+type Step = 'city' | 'neighborhood' | 'whatsapp' | 'referral';
 
 export function GoogleNeighborhoodModal({ onDone }: Props) {
   const { currentUser, refreshUserProfile } = useAuth();
 
-  const [step, setStep]                     = useState<Step>('neighborhood');
+  const [step, setStep]                     = useState<Step>('city');
+  const [city, setCity]                     = useState('');
   const [neighborhood, setNeighborhood]     = useState('');
   const [customHood, setCustomHood]         = useState(false);
   const [whatsapp, setWhatsapp]             = useState('');
   const [referralCode, setReferralCode]     = useState('');
   const [referralStatus, setReferralStatus] = useState<'idle'|'ok'|'err'>('idle');
   const [loading, setLoading]               = useState(false);
+
+  const handleCityNext = () => {
+    if (!city.trim()) return;
+    setStep('neighborhood');
+  };
 
   const handleNeighborhoodNext = () => {
     if (!neighborhood.trim()) return;
@@ -46,9 +52,10 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
       const phone  = digits.startsWith('225') ? '+' + digits : '+225' + digits;
 
       await updateUserProfile(currentUser.uid, {
+        city: city.trim() || 'Abidjan',
         neighborhood: neighborhood.trim(),
         phone,
-        needsOnboarding: false,  // effacer le flag
+        needsOnboarding: false,
       } as any);
 
       if (referralCode.trim()) {
@@ -67,7 +74,7 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
     }
   };
 
-  const progress = step === 'neighborhood' ? 33 : step === 'whatsapp' ? 66 : 100;
+  const progress = step === 'city' ? 20 : step === 'neighborhood' ? 45 : step === 'whatsapp' ? 70 : 100;
 
   return (
     <div className="fixed inset-0 z-[500] flex items-end justify-center"
@@ -82,22 +89,54 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
             style={{ width: progress + '%', background: 'linear-gradient(90deg,#115E2E,#16A34A)' }} />
         </div>
 
-        {/* ── ÉTAPE 1 — Quartier ── */}
+        {/* ── ÉTAPE 1 — Ville ── */}
+        {step === 'city' && (
+          <>
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-3">🇨🇮</div>
+              <h2 className="font-black text-slate-900 text-[20px] leading-tight mb-2">
+                Tu es dans quelle ville ?
+              </h2>
+              <p className="text-[12px] text-slate-500 font-medium">
+                On te connecte aux vendeurs de ta ville
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-[2rem] mb-5">
+              {CITIES.map(c => (
+                <button key={c} type="button" onClick={() => setCity(c)}
+                  className={'py-4 px-3 rounded-2xl border-2 text-[11px] font-bold transition-all ' +
+                    (city === c
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-lg'
+                      : 'bg-white border-white text-slate-500 shadow-sm')}>
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={handleCityNext} disabled={!city.trim()}
+              className="w-full py-5 rounded-[1.5rem] text-white font-black text-[12px] uppercase tracking-widest disabled:opacity-30 active:scale-95 transition-all bg-slate-900">
+              Continuer
+            </button>
+          </>
+        )}
+
+        {/* ── ÉTAPE 2 — Quartier ── */}
         {step === 'neighborhood' && (
           <>
             <div className="text-center mb-6">
               <div className="text-5xl mb-3">📍</div>
               <h2 className="font-black text-slate-900 text-[20px] leading-tight mb-2">
-                Tu habites où à Abidjan ?
+                Ton quartier à {city || 'Abidjan'} ?
               </h2>
               <p className="text-[12px] text-slate-500 font-medium">
-                On affiche les vendeurs de ton quartier en priorité
+                On affiche les vendeurs près de toi en priorité
               </p>
             </div>
 
             {!customHood ? (
               <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-[2rem] mb-5">
-                {NEIGHBORHOODS.slice(0, 5).map(n => (
+                {getNeighborhoodsForCity(city || 'Abidjan').slice(0, 5).map(n => (
                   <button key={n} type="button" onClick={() => setNeighborhood(n)}
                     className={'py-4 px-3 rounded-2xl border-2 text-[11px] font-bold transition-all ' +
                       (neighborhood === n

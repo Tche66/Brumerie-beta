@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/config/firebase';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { NEIGHBORHOODS, CATEGORIES, CITIES } from '@/types';
+import { NEIGHBORHOODS, CATEGORIES, CITIES, CITY_NEIGHBORHOODS } from '@/types';
 import { subscribeAppConfig } from '@/services/appConfigService';
 
 interface SuggestionsPageProps { onBack: () => void; }
@@ -29,7 +29,7 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
     return unsub;
   }, []);
 
-  const allNeighborhoods = [...NEIGHBORHOODS, ...CITIES, ...customNeighborhoods];
+  const allNeighborhoods = [...Object.values(CITY_NEIGHBORHOODS).flat(), ...customNeighborhoods];
   const allCategories    = [...CATEGORIES.map(c => c.label), ...customCategories];
 
   const handleAddNeighborhood = async () => {
@@ -157,10 +157,10 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
             {/* Quartiers Abidjan existants */}
             <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                Déjà disponibles sur Brumerie ({NEIGHBORHOODS.length + CITIES.length})
+                Déjà disponibles sur Brumerie ({Object.values(CITY_NEIGHBORHOODS).flat().length} quartiers · {CITIES.length} villes)
               </p>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-                {[...CITIES, ...NEIGHBORHOODS].map(n => (
+                {[...CITIES, ...Object.values(CITY_NEIGHBORHOODS).flat()].map(n => (
                   <span key={n} className="text-[9px] font-bold bg-slate-50 text-slate-500 px-2.5 py-1 rounded-full">
                     {n}
                   </span>

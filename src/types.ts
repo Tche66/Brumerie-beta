@@ -1,17 +1,65 @@
 // src/types.ts — Sprint 7
 
-// ─── QUARTIERS ───────────────────────────────────────────
-export const NEIGHBORHOODS = [
-  'Yopougon','Cocody','Abobo','Adjamé','Plateau','Marcory','Treichville',
-  'Koumassi','Port-Bouët','Attécoubé','Bingerville','Songon','Jacqueville',
-  'Braffedon','Deux-Plateaux','Riviera','Angré','Bonoumin',
-  'Palmeraie','Sogefiha','Williamsville','Gbagba','Avocatier','Biabou',
-  'Locodjro','Selmer','Belleville','Niangon','Sideci','Doukouré',
-  'Wassakara','Sagbé','Ancien Agban','Banco','Baoulé','Belleville-Yop',
-  'Dar-es-Salam','Doukouré Sud','Gesco',
-];
+// ─── VILLES & QUARTIERS — Côte d'Ivoire ─────────────────
+export const CITY_NEIGHBORHOODS: Record<string, string[]> = {
+  'Abidjan': [
+    'Yopougon','Cocody','Abobo','Adjamé','Plateau','Marcory','Treichville',
+    'Koumassi','Port-Bouët','Attécoubé','Bingerville','Songon','Jacqueville',
+    'Braffedon','Deux-Plateaux','Riviera','Angré','Bonoumin',
+    'Palmeraie','Sogefiha','Williamsville','Gbagba','Avocatier','Biabou',
+    'Locodjro','Selmer','Belleville','Niangon','Sideci','Doukouré',
+    'Wassakara','Sagbé','Ancien Agban','Banco','Baoulé','Belleville-Yop',
+    'Dar-es-Salam','Doukouré Sud','Gesco',
+  ],
+  'Bouaké': [
+    'Commerce','Air France','Koko','Dar-es-Salam','Zone Industrielle',
+    'Ahougnansou','Belleville','Gonfreville','N\'Gattakro','Sokoura',
+    'Bromakoté','Nimbo','Kennedy','Tolakouadiokro','Djébonoua',
+  ],
+  'Yamoussoukro': [
+    'Habitat','Dioulakro','Morofé','N\'Zuessi','Kokrenou',
+    'Millionnaire','Assabou','Nanan','Sopim','Zone Industrielle',
+  ],
+  'San-Pédro': [
+    'Bardot','Lac','Séwéké','Zimbabwe','Bardo','Cité',
+    'Port','Zone Industrielle','Balmer','Campement',
+  ],
+  'Korhogo': [
+    'Sinistré','Petit Paris','Koko','Soba','Haoussabougou',
+    'Cocody','Commerce','Dem','Kassirimé','Mongaha',
+  ],
+  'Daloa': [
+    'Commerce','Tazibouo','Orly','Lobia','Gbeuliville',
+    'Sapia','Huberson','Kennedy','Marais','Soleil',
+  ],
+  'Man': [
+    'Commerce','Domoraud','Libreville','Kôpleu','Bléniméouin',
+    'Gbapleu','Doyagouiné','Lycée','Camp Militaire','Château',
+  ],
+  'Gagnoa': [
+    'Commerce','Dioulabougou','Garahio','Sabbath','Odiennékaha',
+    'Bel-Air','Résidentiel','Zone Industrielle',
+  ],
+  'Abengourou': [
+    'Commerce','Dioulakro','Plateau','Résidentiel','Camp Militaire',
+    'Agnikro','Aniassué','Zaranou',
+  ],
+  'Divo': [
+    'Commerce','Bromakoté','Résidentiel','Neka','Kennedy',
+    'Petit Paris','Zone Industrielle',
+  ],
+};
 
-export const CITIES = ['Abidjan','Bouaké','Yamoussoukro','San-Pédro','Korhogo'];
+export const CITIES = Object.keys(CITY_NEIGHBORHOODS);
+
+// Rétro-compatibilité : liste plate de tous les quartiers (Abidjan par défaut)
+export const NEIGHBORHOODS = CITY_NEIGHBORHOODS['Abidjan'];
+
+// Obtenir les quartiers d'une ville
+export function getNeighborhoodsForCity(city: string): string[] {
+  return CITY_NEIGHBORHOODS[city] || CITY_NEIGHBORHOODS['Abidjan'];
+}
+
 const MAX_CITIES = 3;
 export { MAX_CITIES };
 
@@ -164,6 +212,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  city?: string;              // Ville (ex: 'Abidjan', 'Bouaké')
   neighborhood?: string;
   awAddressCode?: string;     // Code Address-Web ex: AW-ABJ-84321
   photoURL?: string;
@@ -267,6 +316,7 @@ export interface Product {
   condition?: 'new' | 'like_new' | 'second_hand';  // État du produit
   quantity?: number;        // Quantité disponible (1 par défaut)
   category: string;
+  city?: string;              // Ville du produit
   neighborhood: string;
   neighborhoods?: string[];
   images: string[];

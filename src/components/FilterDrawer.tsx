@@ -1,6 +1,6 @@
 // src/components/FilterDrawer.tsx — Filtres avancés (prix, catégorie, quartier, condition, tri)
 import React, { useState } from 'react';
-import { CATEGORIES, NEIGHBORHOODS } from '@/types';
+import { CATEGORIES, NEIGHBORHOODS, getNeighborhoodsForCity } from '@/types';
 
 export interface FilterState {
   priceMin: string;
@@ -25,6 +25,7 @@ interface FilterDrawerProps {
   onClose: () => void;
   customCategories?: string[];
   customNeighborhoods?: string[];
+  city?: string;
 }
 
 const SORT_OPTIONS = [
@@ -41,14 +42,14 @@ const CONDITIONS = [
   { value: 'second_hand', label: '🟡 Occasion' },
 ];
 
-export function FilterDrawer({ visible, filters, onApply, onClose, customCategories = [], customNeighborhoods = [] }: FilterDrawerProps) {
+export function FilterDrawer({ visible, filters, onApply, onClose, customCategories = [], customNeighborhoods = [], city = 'Abidjan' }: FilterDrawerProps) {
   const [local, setLocal] = useState<FilterState>(filters);
 
   const allCategories = [
     ...CATEGORIES,
     ...customCategories.map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' })),
   ];
-  const allNeighborhoods = [...NEIGHBORHOODS, ...customNeighborhoods];
+  const allNeighborhoods = [...getNeighborhoodsForCity(city), ...customNeighborhoods];
 
   const set = (key: keyof FilterState, val: string) =>
     setLocal((prev: FilterState) => ({ ...prev, [key]: val }));

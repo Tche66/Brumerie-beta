@@ -380,7 +380,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           <SettingItem
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>}
             label="À propos"
-            sublabel="Brumerie — Social Commerce · Abidjan"
+            sublabel="Brumerie — Social Commerce · Côte d'Ivoire"
             onClick={() => onNavigate('about')}
           />
         </Section>
@@ -406,7 +406,7 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
         </div>
 
         <p className="text-center text-[8px] font-bold text-slate-300 uppercase tracking-[0.3em] mb-4">
-          Brumerie v1.0 · Abidjan, Côte d'Ivoire
+          Brumerie v1.0 · Côte d'Ivoire 🇨🇮
         </p>
       </div>
 

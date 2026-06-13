@@ -1,7 +1,7 @@
 // src/pages/BecomeDelivererPage.tsx
 // Inscription livreur partenaire — 5 étapes + CGU + auto-redirect si déjà inscrit
 import React, { useState, useEffect } from 'react';
-import { NEIGHBORHOODS } from '@/types';
+import { NEIGHBORHOODS, getNeighborhoodsForCity } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { updateDelivererProfile } from '@/services/deliveryService';
@@ -31,7 +31,8 @@ const STATUSES = [
 export function BecomeDelivererPage({ onBack, onDone }: Props) {
   const { currentUser, userProfile, refreshUserProfile } = useAuth();
   const appConfig = useAppConfig();
-  const allNeighborhoods = [...new Set([...NEIGHBORHOODS, ...(appConfig.customNeighborhoods || [])])];
+  const userCity = (userProfile as any)?.city || 'Abidjan';
+  const allNeighborhoods = [...new Set([...getNeighborhoodsForCity(userCity), ...(appConfig.customNeighborhoods || [])])];
 
   useEffect(() => {
     if (userProfile?.role === 'livreur') onDone();

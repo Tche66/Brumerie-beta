@@ -8,7 +8,7 @@ import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { FilterDrawer, FilterState, DEFAULT_FILTERS } from '@/components/FilterDrawer';
 import { SearchAlertButton } from '@/components/SearchAlertButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
+import { Product, CATEGORIES, NEIGHBORHOODS, getNeighborhoodsForCity } from '@/types';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { subscribeBoostedProductIds } from '@/services/boostService';
 import { StoriesBar } from '@/components/StoriesBar';
@@ -117,8 +117,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     ...CATEGORIES,
     ...(appConfig.customCategories || []).map((label, i) => ({ id: `custom_${i}`, label, icon: '🏷️' })),
   ];
+  const userCity = userProfile?.city || 'Abidjan';
   const ALL_NEIGHBORHOODS = [
-    ...NEIGHBORHOODS,
+    ...getNeighborhoodsForCity(userCity),
     ...(appConfig.customNeighborhoods || []),
   ];
 
@@ -315,7 +316,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       {!isGuest && userProfile && (
         <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none bg-white sticky top-[56px] z-30">
           {([
-            { id: 'all',      label: 'Tout Abidjan', icon: '🏪' },
+            { id: 'all',      label: `${userProfile?.city || 'Abidjan'}`, icon: '🏪' },
             { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
             { id: 'trending', label: 'Tendances',    icon: '🔥' },
           ] as { id: FeedTab; label: string; icon: string }[]).map(tab => (
@@ -618,7 +619,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
           <button onClick={() => setFilters(f => ({ ...f, neighborhood: 'all' }))}
             className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${filters.neighborhood === 'all' ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
-            Tout Abidjan
+            Toute la ville
           </button>
           {ALL_NEIGHBORHOODS.map((n) => (
             <button key={n} onClick={() => setFilters(f => ({ ...f, neighborhood: n }))}
@@ -880,7 +881,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
           </>
         )}
 
-        {/* ── ONGLET : TOUT ABIDJAN (défaut) ── */}
+        {/* ── ONGLET : MA VILLE (défaut) ── */}
         {(feedTab === 'all' || isGuest) && (
           <>
             <div className="flex items-center justify-between mb-6">
