@@ -28,13 +28,15 @@ function cleanUndefined(obj: Record<string, any>): Record<string, any> {
 function normalizeProduct(p: any): Product {
   return {
     ...p,
-    // Si le produit vient de Neon (a un firebaseId), utiliser firebaseId comme id
-    // pour rester compatible avec Firestore onSnapshot et les references existantes
     id: p.firebaseId || p.id,
     images: Array.isArray(p.images) && p.images.length > 0
       ? p.images
       : (p.imageUrl ? [p.imageUrl] : []),
     createdAt: p.createdAt ? (typeof p.createdAt === 'string' ? new Date(p.createdAt) : p.createdAt?.toDate?.() || p.createdAt) : new Date(),
+    sellerVerified: p.sellerVerified ?? p.seller_verified ?? false,
+    sellerPremium: p.sellerPremium ?? p.seller_premium ?? false,
+    sellerName: p.sellerName || p.seller_name || '',
+    sellerPhoto: p.sellerPhoto || p.seller_photo || '',
   } as Product;
 }
 
@@ -51,18 +53,17 @@ export async function getProducts(filters?: {
   searchTerm?: string;
 }): Promise<Product[]> {
   try {
-    // Tenter Neon en priorité
+    // Firestore = source de vérité (données vendeur toujours à jour)
+    return getProductsFromFirestore(filters);
+  } catch {
+    // Fallback API Neon si Firestore échoue
     const params: Record<string, string> = {};
     if (filters?.category && filters.category !== 'all') params.category = filters.category;
     if (filters?.neighborhood && filters.neighborhood !== 'all') params.neighborhood = filters.neighborhood;
     if (filters?.searchTerm) params.search = filters.searchTerm;
-
     const data = await productsApi.getAll(params) as any;
     const products = (Array.isArray(data) ? data : data.products || []).map(normalizeProduct);
     return products.filter((p: any) => !p.hidden);
-  } catch {
-    // Fallback Firestore
-    return getProductsFromFirestore(filters);
   }
 }
 
