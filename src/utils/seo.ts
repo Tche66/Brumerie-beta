@@ -1,5 +1,5 @@
 // src/utils/seo.ts — Gestion dynamique des meta tags SEO
-// Brumerie · Abidjan, Côte d'Ivoire
+// Brumerie · Côte d'Ivoire
 
 const BASE_URL = 'https://brumerie.com';
 const DEFAULT_IMAGE = `${BASE_URL}/assets/og-image.png`;
@@ -79,7 +79,7 @@ export function updateMeta(config: MetaConfig) {
       '@type': 'WebSite',
       name: SITE_NAME,
       url: BASE_URL,
-      description: "Marketplace C2C hyperlocale à Abidjan, Côte d'Ivoire",
+      description: "Le premier social commerce de Côte d'Ivoire — achète et vends dans ton quartier",
       potentialAction: {
         '@type': 'SearchAction',
         target: `${BASE_URL}?q={search_term_string}`,
@@ -93,8 +93,8 @@ export function updateMeta(config: MetaConfig) {
 
 export function setHomeMeta() {
   updateMeta({
-    title: "Brumerie — Le marché de ton quartier à Abidjan",
-    description: "Découvre, vends et achètes des articles près de chez toi à Abidjan. Mode, high-tech, beauté, maison — des milliers d'annonces dans ton quartier. Gratuit et local. 🇨🇮",
+    title: "Brumerie — Le social commerce de ton quartier",
+    description: "Découvre, vends et achète des articles près de chez toi en Côte d'Ivoire. Mode, high-tech, beauté, maison — des milliers d'annonces dans ton quartier. 🇨🇮",
     url: BASE_URL,
     type: 'website',
   });
@@ -112,7 +112,7 @@ export function setProductMeta(product: {
 }) {
   const desc = product.description
     ? `${product.description.slice(0, 120)}... | ${product.price.toLocaleString('fr-FR')} FCFA à ${product.neighborhood}`
-    : `${product.title} à ${product.price.toLocaleString('fr-FR')} FCFA — disponible à ${product.neighborhood}, Abidjan. Vendeur : ${product.sellerName}`;
+    : `${product.title} à ${product.price.toLocaleString('fr-FR')} FCFA — disponible à ${product.neighborhood}. Vendeur : ${product.sellerName}`;
 
   updateMeta({
     title: `${product.title} — ${product.price.toLocaleString('fr-FR')} FCFA`,
@@ -135,7 +135,7 @@ export function setSellerMeta(seller: {
     title: `${seller.name} — Boutique sur Brumerie`,
     description: seller.bio
       ? seller.bio.slice(0, 140)
-      : `Découvrez la boutique de ${seller.name} sur Brumerie — articles à vendre à ${seller.neighborhood || 'Abidjan'}.`,
+      : `Découvrez la boutique de ${seller.name} sur Brumerie — articles à vendre à ${seller.neighborhood || 'Côte d\'Ivoire'}.`,
     image: seller.photoURL || DEFAULT_IMAGE,
     url: `${BASE_URL}/vendeur/${seller.id}`,
     type: 'website',

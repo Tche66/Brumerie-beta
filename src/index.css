@@ -267,5 +267,125 @@ body {
 
 .settings-gear-btn:active { transform: scale(0.93); background: #F1F5F9; }
 
-/* ── Mode sombre Sprint 8 ── */
-/* Dark mode supprimé */
+/* ── Mode sombre ── */
+.dark {
+  --green-brumerie: #22C55E;
+  --green-dark: #16A34A;
+  --green-light: #4ADE80;
+  --slate-900: #F8FAFC;
+  --slate-600: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-100: #1E293B;
+  --surface: #0F172A;
+  --blue-verify: #38BDF8;
+}
+
+.dark body,
+.dark .min-h-screen {
+  background-color: #0F172A;
+  color: #F1F5F9;
+}
+
+.dark .bg-white {
+  background-color: #1E293B;
+}
+
+.dark .bg-slate-50 {
+  background-color: #0F172A;
+}
+
+.dark .bg-slate-100 {
+  background-color: #1E293B;
+}
+
+.dark .text-slate-900 {
+  color: #F1F5F9;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-800 {
+  color: #E2E8F0;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-600 {
+  color: #94A3B8;
+}
+
+.dark .text-slate-400 {
+  color: #64748B;
+}
+
+.dark .text-gray-900 {
+  color: #F1F5F9;
+}
+
+.dark .text-gray-700,
+.dark .text-gray-800 {
+  color: #E2E8F0;
+}
+
+.dark .text-gray-500 {
+  color: #94A3B8;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-50 {
+  border-color: #334155;
+}
+
+.dark .border-gray-100 {
+  border-color: #334155;
+}
+
+.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155;
+}
+
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg {
+  --tw-shadow-color: rgba(0,0,0,0.3);
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.dark .bg-green-100 {
+  background-color: rgba(22, 163, 74, 0.15);
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.dark .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.1);
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(139, 92, 246, 0.1);
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #F1F5F9;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748B;
+}
+
+.dark .page-container {
+  background-color: #0F172A;
+}

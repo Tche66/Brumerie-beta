@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { updateUserProfile } from '@/services/userService';
 import { subscribeTotalUnread, sendOfferCard, getOrCreateConversation } from '@/services/messagingService';
 import { subscribeOrdersAsSeller, subscribeOrdersAsBuyer } from '@/services/orderService';
@@ -10,7 +11,7 @@ import { AuthPage } from '@/pages/AuthPage';
 import { HomePage } from '@/pages/HomePage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { SellPage } from '@/pages/SellPage';
-import { ProfilePage } from '@/pages/ProfilePage';
+// ProfilePage supprimée — remplacée par SellerProfilePage + BuyerProfilePage
 import { BuyerProfilePage } from '@/pages/BuyerProfilePage';
 import { DiscoverPage } from '@/pages/DiscoverPage';
 import { SellerProfilePage } from '@/pages/SellerProfilePage';
@@ -1044,7 +1045,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <NetworkBanner />
-      <AuthProvider><AppContent /></AuthProvider>
+      <ThemeProvider><AuthProvider><AppContent /></AuthProvider></ThemeProvider>
     </ErrorBoundary>
   );
 }

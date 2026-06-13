@@ -51,19 +51,26 @@ export async function getProducts(filters?: {
   category?: string;
   neighborhood?: string;
   searchTerm?: string;
+  city?: string;
 }): Promise<Product[]> {
   try {
-    // Firestore = source de vérité (données vendeur toujours à jour)
-    return getProductsFromFirestore(filters);
+    let products = await getProductsFromFirestore(filters);
+    if (filters?.city && filters.city !== 'all') {
+      products = products.filter(p => (p as any).city === filters.city || !((p as any).city));
+    }
+    return products;
   } catch {
-    // Fallback API Neon si Firestore échoue
     const params: Record<string, string> = {};
     if (filters?.category && filters.category !== 'all') params.category = filters.category;
     if (filters?.neighborhood && filters.neighborhood !== 'all') params.neighborhood = filters.neighborhood;
     if (filters?.searchTerm) params.search = filters.searchTerm;
     const data = await productsApi.getAll(params) as any;
-    const products = (Array.isArray(data) ? data : data.products || []).map(normalizeProduct);
-    return products.filter((p: any) => !p.hidden);
+    let products = (Array.isArray(data) ? data : data.products || []).map(normalizeProduct);
+    products = products.filter((p: any) => !p.hidden);
+    if (filters?.city && filters.city !== 'all') {
+      products = products.filter(p => (p as any).city === filters.city || !((p as any).city));
+    }
+    return products;
   }
 }
 

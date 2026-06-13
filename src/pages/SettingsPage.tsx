@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ChangeEmailModal } from '@/components/ChangeEmailModal';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { updateUserProfile } from '@/services/userService';
 import { PaymentLogo } from '@/components/PaymentLogo';
@@ -76,6 +77,7 @@ function LockedItem({ label, sublabel, onNavigate }: { label: string; sublabel: 
 
 export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPageProps) {
   const { currentUser, userProfile, signOut, refreshUserProfile } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const isBuyer = role === 'buyer';
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
@@ -153,6 +155,30 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
       </div>
 
       <div className="px-4 pt-5">
+
+        {/* ══ APPARENCE ════════════════════════════════════════ */}
+        <Section title="Apparence">
+          <div className="flex items-center gap-3.5 px-5 py-4">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+              {isDark ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-slate-900 dark:text-white">Mode sombre</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{isDark ? 'Activé' : 'Désactivé'}</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="w-12 h-7 rounded-full transition-all relative flex-shrink-0"
+              style={{ background: isDark ? '#16A34A' : '#E2E8F0' }}>
+              <div className="w-5.5 h-5.5 bg-white rounded-full shadow-md absolute top-[3px] transition-all"
+                style={{ left: isDark ? '1.55rem' : '0.2rem', width: '1.35rem', height: '1.35rem' }}/>
+            </button>
+          </div>
+        </Section>
 
         {/* ══ COMPTE ═══════════════════════════════════════════ */}
         <Section title="Compte">

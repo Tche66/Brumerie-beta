@@ -176,6 +176,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         category: filters.category !== 'all' ? filters.category : undefined,
         neighborhood: filters.neighborhood !== 'all' ? filters.neighborhood : undefined,
         searchTerm: searchTerm || undefined,
+        city: userCity,
       });
       // Filtres côté client (prix, condition, tri)
       if (filters.priceMin) data = data.filter(p => p.price >= Number(filters.priceMin));
