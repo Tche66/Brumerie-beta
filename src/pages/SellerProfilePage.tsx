@@ -199,164 +199,112 @@ export function SellerProfilePage({
   return (
     <div className="min-h-screen pb-24 font-sans bg-slate-50">
 
-      {/* ── HEADER ── */}
-      <div className="bg-white sticky top-0 z-50 px-4 py-4 flex items-center gap-3 border-b border-slate-100 shadow-sm">
-        <button onClick={onBack} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 active:scale-90 transition-all flex-shrink-0">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-        <h1 className="font-black text-[13px] uppercase tracking-widest text-slate-900 flex-1 truncate">
-          {isSelf ? 'Ma Boutique' : 'Profil Vendeur'}
-        </h1>
-        {seller && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowQR(true)} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 active:scale-90 transition-all">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-                <rect x="5" y="5" width="3" height="3" fill="#475569" stroke="none"/>
-                <rect x="16" y="5" width="3" height="3" fill="#475569" stroke="none"/>
-                <rect x="5" y="16" width="3" height="3" fill="#475569" stroke="none"/>
-                <path d="M14 14h3v3h-3zM17 17h3v3h-3zM14 17h1v1h-1z"/>
-              </svg>
-            </button>
-            <button onClick={handleShare} className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 active:scale-90 transition-all">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-            </button>
-          </div>
-        )}
-        {!isSelf && isGuest && (
-          <button onClick={() => onGuestAction?.('default')} className="text-[10px] font-black text-green-600 bg-green-50 px-3 py-1.5 rounded-full uppercase tracking-wider">
-            Se connecter
-          </button>
-        )}
-      </div>
-
       {loading ? (
         <div className="flex flex-col items-center justify-center pt-32 gap-4">
-          <div className="w-14 h-14 border-4 border-slate-100 border-t-green-600 rounded-[2rem] animate-spin"/>
+          <div className="w-14 h-14 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"/>
           <p className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Chargement...</p>
         </div>
       ) : seller ? (
         <>
           {/* ══════════════════════════════════════════
-              SECTION 1 — IDENTITÉ (sans bannière)
+              SECTION 1 — HERO DARK + IDENTITÉ
           ══════════════════════════════════════════ */}
+          <div className="relative bg-slate-900 rounded-b-[3rem] overflow-hidden">
+            {/* Pattern */}
+            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-          {/* Carte identité */}
-          <div className="bg-white border-b border-slate-100 shadow-sm px-5 pb-6 pt-6 relative">
-            <div className="flex flex-col items-center text-center">
+            {/* Nav buttons */}
+            <div className="relative z-10 flex items-center justify-between px-4 pt-5">
+              <button onClick={onBack} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowQR(true)} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h3v3h-3z"/>
+                  </svg>
+                </button>
+                <button onClick={handleShare} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-              {/* Avatar + badge */}
+            {/* Identité */}
+            <div className="relative z-10 flex flex-col items-center text-center px-5 pt-4 pb-8">
+              {/* Avatar */}
               <div className="relative mb-3">
-                <div className="w-24 h-24 rounded-[2rem] overflow-hidden bg-slate-100 border-4 border-white shadow-xl">
+                <div className="w-22 h-22 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl" style={{ width: 88, height: 88 }}>
                   {seller.photoURL
                     ? <img src={seller.photoURL} alt={seller.name} className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white text-4xl font-black">{seller.name?.charAt(0)?.toUpperCase()}</div>
+                    : <div className="w-full h-full flex items-center justify-center bg-slate-700 text-white text-3xl font-black">{seller.name?.charAt(0)?.toUpperCase()}</div>
                   }
                 </div>
-                <div className="absolute -bottom-1 -right-1">
-                  <VerifiedTag tier={tier as any} size="sm"/>
-                </div>
+                {tier !== 'simple' && (
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                    <VerifiedTag tier={tier as any} size="sm"/>
+                  </div>
+                )}
               </div>
 
-              {/* Boutique fermée — bandeau visible */}
-              {isShopClosed(seller?.shopClosedUntil) && (
-                <div className="w-full mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
-                  <p className="font-black text-amber-800 text-[12px]">Boutique temporairement fermée</p>
-                  <p className="text-[10px] text-amber-700 mt-0.5">
-                    Réouvre le {formatShopClosedUntil(seller?.shopClosedUntil)}
-                  </p>
-                  {seller?.shopClosedMessage && (
-                    <p className="text-[10px] text-amber-600 italic mt-1">"{seller.shopClosedMessage}"</p>
-                  )}
-                </div>
-              )}
-
-              {/* Nom + note */}
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">{seller.name}</h2>
+              {/* Nom */}
+              <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">{seller.name}</h2>
 
               {/* Dernier vu */}
               {seller?.lastActiveAt && (() => {
                 const color = getActivityColor(seller.lastActiveAt);
                 return (
                   <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color === 'green' ? 'bg-green-500 animate-pulse' : color === 'amber' ? 'bg-amber-400' : 'bg-slate-300'}`}/>
-                    <span className="text-[10px] font-bold text-slate-500">{formatLastSeen(seller.lastActiveAt)}</span>
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color === 'green' ? 'bg-green-400 animate-pulse' : color === 'amber' ? 'bg-amber-400' : 'bg-slate-400'}`}/>
+                    <span className="text-[10px] font-bold text-white/50">{formatLastSeen(seller.lastActiveAt)}</span>
                   </div>
                 );
               })()}
+
+              {/* Note */}
               {avgRating > 0 && (
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Stars rating={avgRating} size={13}/>
-                  <span className="text-[11px] font-black text-amber-600">{avgRating.toFixed(1)}</span>
-                  <span className="text-[10px] text-slate-400">({reviewCount} avis)</span>
+                  <Stars rating={avgRating} size={12}/>
+                  <span className="text-[11px] font-black text-amber-400">{avgRating.toFixed(1)}</span>
+                  <span className="text-[10px] text-white/40">({reviewCount})</span>
                 </div>
               )}
 
               {/* Slogan */}
               {s?.shopSlogan && (
-                <p className="text-[11px] font-bold italic mb-2" style={{ color: s?.shopThemeColor || '#16A34A' }}>
-                  "{s.shopSlogan}"
-                </p>
+                <p className="text-[11px] font-bold italic text-white/60 mb-2">"{s.shopSlogan}"</p>
               )}
 
-              {/* Catégories boutique */}
-              {s?.shopCategories?.length > 0 && (
-                <div className="flex gap-1.5 flex-wrap justify-center mb-3">
-                  {s.shopCategories.map((cat: string) => (
-                    <span key={cat} className="text-[9px] font-black px-2.5 py-1 rounded-full text-white uppercase"
-                      style={{ background: s?.shopThemeColor || '#16A34A' }}>
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Bio */}
-              {s?.bio && (
-                <p className="text-[12px] text-slate-500 leading-relaxed max-w-xs mb-4" style={{ whiteSpace: 'pre-line' }}>
-                  {s.bio}
-                </p>
-              )}
-
-              {/* Pills infos */}
+              {/* Infos pills */}
               <div className="flex items-center gap-2 flex-wrap justify-center mb-4">
                 {seller.neighborhood && (
-                  <span className="flex items-center gap-1 text-[10px] text-slate-500 font-bold bg-slate-50 px-2.5 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-[10px] text-white/60 font-bold bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
                     <BruIcons.MapPin size={10}/> {seller.neighborhood}
                   </span>
                 )}
                 {memberSince && (
-                  <span className="text-[10px] text-slate-400 font-bold bg-slate-50 px-2.5 py-1 rounded-full">
-                    🗓 Depuis {memberSince}
+                  <span className="text-[10px] text-white/40 font-bold bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
+                    Depuis {memberSince}
                   </span>
                 )}
                 {seller.managesDelivery && (
-                  <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
-                    Livraison dispo
+                  <span className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/10">
+                    📦 Livraison
                   </span>
                 )}
                 {seller.hasPhysicalShop && (
-                  <span className="text-[10px] font-bold bg-slate-900 text-white px-2.5 py-1 rounded-full">
-                    🏠 Boutique physique
+                  <span className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/10">
+                    🏠 Boutique
                   </span>
-                )}
-                {s?.awAddressCode && (
-                  <a href={`https://addressweb.brumerie.com/${s.awAddressCode}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-black bg-sky-50 border border-sky-200 text-sky-700 px-2.5 py-1 rounded-full active:scale-95 transition-all">
-                    🗺 {s.awAddressCode}
-                  </a>
                 )}
               </div>
 
-              {/* CTA visiteur — côte à côte compact style Depop */}
+              {/* CTA visiteur */}
               {!isSelf && !isGuest && currentUser && (
                 <div className="flex gap-2 w-full max-w-xs">
-                  {/* Suivre */}
                   <button
                     disabled={followLoading}
                     onClick={async () => {
@@ -376,12 +324,9 @@ export function SellerProfilePage({
                       } catch {}
                       setFollowLoading(false);
                     }}
-                    className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 border-2 transition-all flex items-center justify-center gap-1.5"
-                    style={{
-                      borderColor: s?.shopThemeColor || '#16A34A',
-                      color: isFollowing ? 'white' : (s?.shopThemeColor || '#16A34A'),
-                      background: isFollowing ? (s?.shopThemeColor || '#16A34A') : 'transparent',
-                    }}
+                    className={`flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-1.5 border-2 ${
+                      isFollowing ? 'bg-white text-slate-900 border-white' : 'bg-transparent text-white border-white/40'
+                    }`}
                   >
                     {followLoading ? (
                       <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"/>
@@ -391,30 +336,32 @@ export function SellerProfilePage({
                       <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Suivre</>
                     )}
                   </button>
-                  {/* Contacter */}
                   {onStartChat && (
                     <button
                       onClick={() => onStartChat(sellerId, seller.name)}
-                      className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all"
-                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                      className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-900 bg-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-lg"
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                       Contacter
                     </button>
                   )}
                 </div>
+              )}
+              {!isSelf && isGuest && (
+                <button onClick={() => onGuestAction?.('default')} className="px-5 py-2.5 bg-white text-slate-900 font-black text-[10px] rounded-full uppercase tracking-widest active:scale-95 transition-all">
+                  Se connecter
+                </button>
               )}
 
               {/* CTA propriétaire */}
               {isSelf && (
                 <div className="flex gap-2 w-full max-w-xs mt-1">
                   <button onClick={() => onNavigate?.('edit-profile')}
-                    className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all bg-white">
+                    className="flex-1 py-3 rounded-2xl border-2 border-white/30 text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
                     Profil
                   </button>
                   <button onClick={() => onNavigate?.('sell')}
-                    className="flex-[2] py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white active:scale-95 transition-all"
-                    style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                    className="flex-[2] py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-white text-slate-900 active:scale-95 transition-all shadow-lg">
                     + Publier
                   </button>
                 </div>
@@ -423,62 +370,38 @@ export function SellerProfilePage({
           </div>
 
           {/* ══════════════════════════════════════════
-              SECTION 2 — STATS
+              SECTION 2 — STATS (card flottante)
           ══════════════════════════════════════════ */}
-          <div className="px-4 pt-4 pb-2">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="px-4 -mt-5 relative z-10">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 grid grid-cols-3 gap-2">
               {isSelf ? (
                 <>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-blue-600 text-lg leading-none">{totalViews}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vues</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{activeProducts.length}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">En ligne</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-purple-600 text-lg leading-none">{totalContacts}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Contacts</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{followersCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnés</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-green-600 text-lg leading-none">{soldProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vendus</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-green-600 text-lg leading-none">{activeProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">En ligne</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-purple-600 text-lg leading-none">{followersCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnés</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-amber-500 text-lg leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Note</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{soldProducts.length}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Vendus</p>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-green-600 text-xl leading-none">{activeProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Publications</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{activeProducts.length}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Publications</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-purple-600 text-xl leading-none">{followersCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnés</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{followersCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnés</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-sky-500 text-xl leading-none">{followingCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Abonnements</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-red-500 text-xl leading-none">{calcTotalLikes}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">J'aimes reçus</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-green-500 text-xl leading-none">{reposts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Reposts</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                    <p className="font-black text-amber-500 text-xl leading-none">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Note ⭐</p>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-slate-900">{followingCount}</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnements</p>
                   </div>
                 </>
               )}
@@ -525,7 +448,7 @@ export function SellerProfilePage({
                         ))}
                         {allHours.length > 2 && (
                           <button onClick={() => setShowAllHours(v => !v)}
-                            className="mt-1.5 text-[9px] font-black text-green-600 flex items-center gap-1 active:scale-95 transition-all">
+                            className="mt-1.5 text-[9px] font-black text-slate-600 flex items-center gap-1 active:scale-95 transition-all">
                             {showAllHours ? (
                               <><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 15l-6-6-6 6"/></svg>Masquer</>
                             ) : (
@@ -584,7 +507,7 @@ export function SellerProfilePage({
                   {t.label}
                   {t.count > 0 && (
                     <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
-                      tab === t.id ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-400'
+                      tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>{t.count}</span>
                   )}
                 </button>
