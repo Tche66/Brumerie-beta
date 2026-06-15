@@ -24,7 +24,7 @@ export function Header({ onProfileClick, onSearchChange, searchTerm = '', onNoti
   }, [currentUser]);
 
   return (
-    <header className="bg-white sticky top-0 z-50 border-b border-gray-100">
+    <header className="bg-white dark:bg-slate-900 sticky top-0 z-50 border-b border-gray-100 dark:border-slate-800">
       <div className="px-4 py-3">
 
         {/* Ligne unique : Logo | Cloche | Search | Avatar */}
@@ -52,7 +52,7 @@ export function Header({ onProfileClick, onSearchChange, searchTerm = '', onNoti
 
           {/* Cloche notifications */}
           <button onClick={onNotificationsClick}
-            className="relative flex-shrink-0 w-9 h-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center hover:border-slate-300 transition-all active:scale-90">
+            className="relative flex-shrink-0 w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center hover:border-slate-300 transition-all active:scale-90">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -78,7 +78,7 @@ export function Header({ onProfileClick, onSearchChange, searchTerm = '', onNoti
               onChange={(e) => onSearchChange?.(e.target.value)}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm placeholder-gray-400 transition-all duration-200 focus:outline-none focus:border-green-400 focus:bg-white"
+              className="w-full pl-9 pr-8 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 transition-all duration-200 focus:outline-none focus:border-green-400 focus:bg-white dark:focus:bg-slate-700"
             />
             {searchTerm && (
               <button onClick={() => onSearchChange?.('')}

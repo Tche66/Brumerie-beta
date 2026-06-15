@@ -389,3 +389,53 @@ body {
 .dark .page-container {
   background-color: #0F172A;
 }
+
+/* Navigation & overlays */
+.dark .bg-white\/95 {
+  background-color: rgba(15, 23, 42, 0.95);
+}
+
+.dark .bg-white\/90 {
+  background-color: rgba(30, 41, 59, 0.9);
+}
+
+/* Cards produits */
+.dark .bg-gray-50 {
+  background-color: #1E293B;
+}
+
+.dark .border-gray-200 {
+  border-color: #334155;
+}
+
+/* Sticky headers */
+.dark .sticky {
+  background-color: rgba(15, 23, 42, 0.95);
+}
+
+/* Boutons secondaires */
+.dark .bg-slate-900 {
+  background-color: #F8FAFC;
+  color: #0F172A;
+}
+
+.dark .text-white {
+  color: #F8FAFC;
+}
+
+/* Modals */
+.dark .bg-slate-900\/60,
+.dark .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Trust badges et pills */
+.dark .trust-badge {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: #334155;
+}
+
+/* Fix pour les éléments qui ont un bg-slate-900 dans le design dark (headers profil) */
+.dark [class*="bg-slate-900"]:not(button):not(nav) {
+  background-color: #0F172A;
+}

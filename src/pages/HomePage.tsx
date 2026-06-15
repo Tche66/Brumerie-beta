@@ -96,6 +96,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [neighborhoodSellerCount, setNeighborhoodSellerCount] = useState<number>(0);
+  const [searchAllCities, setSearchAllCities] = useState(false);
 
   // ── Feed social — onglets ──────────────────────────────
   type FeedTab = 'forYou' | 'trending' | 'all';
@@ -176,7 +177,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         category: filters.category !== 'all' ? filters.category : undefined,
         neighborhood: filters.neighborhood !== 'all' ? filters.neighborhood : undefined,
         searchTerm: searchTerm || undefined,
-        city: userCity,
+        city: searchAllCities ? undefined : userCity,
       });
       // Filtres côté client (prix, condition, tri)
       if (filters.priceMin) data = data.filter(p => p.price >= Number(filters.priceMin));
@@ -192,7 +193,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     } finally {
       setLoading(false);
     }
-  }, [filters, searchTerm]);
+  }, [filters, searchTerm, searchAllCities]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !lastDoc) return;
@@ -617,10 +618,14 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
           )}
         </div>
         <div className="flex gap-2 overflow-x-auto px-5 pb-3 scrollbar-hide">
-          <button onClick={() => setFilters(f => ({ ...f, neighborhood: 'all' }))}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${filters.neighborhood === 'all' ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
+          <button onClick={() => { setFilters(f => ({ ...f, neighborhood: 'all' })); setSearchAllCities(false); }}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${!searchAllCities && filters.neighborhood === 'all' ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
-            Toute la ville
+            {userCity}
+          </button>
+          <button onClick={() => { setSearchAllCities(true); setFilters(f => ({ ...f, neighborhood: 'all' })); }}
+            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${searchAllCities ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
+            🇨🇮 Toute la CI
           </button>
           {ALL_NEIGHBORHOODS.map((n) => (
             <button key={n} onClick={() => setFilters(f => ({ ...f, neighborhood: n }))}

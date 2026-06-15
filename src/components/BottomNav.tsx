@@ -64,11 +64,11 @@ function NavBtn({ id, label, icon, active, onClick, badge }: {
       className="flex flex-col items-center gap-1 px-3 py-2 transition-all active:scale-90 relative">
       {icon}
       {badge && badge > 0 ? (
-        <div className="absolute -top-0.5 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
+        <div className="absolute -top-0.5 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
           <span className="text-[7px] font-black text-white">{badge > 9 ? '9+' : badge}</span>
         </div>
       ) : null}
-      <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors ${active ? 'text-green-600' : 'text-slate-400'}`}>
+      <span className={`text-[9px] font-bold uppercase tracking-widest transition-colors ${active ? 'text-green-600' : 'text-slate-400 dark:text-slate-500'}`}>
         {label}
       </span>
     </button>
@@ -83,7 +83,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
   const isDeliverer = role === 'livreur';
 
   if (isDeliverer) return (
-    <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
+    <nav className="fixed bottom-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800"
       style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
       <div className="flex items-center justify-around h-16 px-2">
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
@@ -102,7 +102,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
 
   // ── Navigation ACHETEUR — 5 tabs avec Découvrir au centre ──────
   if (isBuyer) return (
-    <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
+    <nav className="fixed bottom-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800"
       style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
       <div className="flex items-center justify-around h-16 px-1">
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
@@ -128,7 +128,7 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
 
   // ── Navigation VENDEUR ──────────────────────────────────────────
   return (
-    <nav className="fixed bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-100"
+    <nav className="fixed bottom-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-100 dark:border-slate-800"
       style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
       <div className="flex items-center justify-around h-16 px-2">
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
