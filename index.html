@@ -22,18 +22,18 @@
          Remplacés dynamiquement par src/utils/seo.ts
          selon la page active (home / product / seller)
     ═══════════════════════════════════════════════════ -->
-    <title>Brumerie — Redéfinissons le commerce local en Afrique</title>
-    <meta name="description" content="Achetez et vendez vêtements, accessoires, high-tech et pépites mode à Abidjan. Rejoignez la communauté Brumerie — le marché de ton quartier. Gratuit, local, 🇨🇮." />
-    <meta name="keywords" content="marketplace Abidjan, vente en ligne Côte d'Ivoire, acheter vendre Abidjan, marché local Abidjan, annonces Yopougon Cocody Abobo, e-commerce Côte d'Ivoire, seconde main Abidjan" />
-    <meta name="robots" content="index, follow" />
+    <title>Brumerie — Le social commerce de ton quartier en Côte d'Ivoire</title>
+    <meta name="description" content="Achète et vends des articles près de chez toi en Côte d'Ivoire. Mode, high-tech, beauté, maison — des milliers d'annonces dans ton quartier. Abidjan, Bouaké, Yamoussoukro et partout en CI. 🇨🇮" />
+    <meta name="keywords" content="marketplace Côte d'Ivoire, vente en ligne CI, acheter vendre Abidjan, marché local Bouaké, annonces Cocody Yopougon, e-commerce ivoirien, seconde main, social commerce Afrique, marketplace Abidjan, Brumerie" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <meta name="author" content="Brumerie" />
     <meta name="geo.region" content="CI" />
-    <meta name="geo.placename" content="Abidjan, Côte d'Ivoire" />
+    <meta name="geo.placename" content="Côte d'Ivoire" />
     <link rel="canonical" href="https://brumerie.com" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="Brumerie — Redéfinissons le commerce local en Afrique" />
-    <meta property="og:description" content="Commerce social & seconde main. Achetez et vendez vêtements, accessoires et pépites mode en toute confiance. 🇨🇮 Côte d'Ivoire" />
+    <meta property="og:title" content="Brumerie — Le social commerce de ton quartier" />
+    <meta property="og:description" content="Achète et vends dans ton quartier en Côte d'Ivoire. Mode, high-tech, beauté — la marketplace locale de confiance. 🇨🇮" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://brumerie.com/assets/og-image.png" />
     <meta property="og:image:width" content="1200" />
@@ -44,8 +44,8 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Brumerie — Redéfinissons le commerce local en Afrique" />
-    <meta name="twitter:description" content="Commerce social & seconde main. Achetez et vendez vêtements, accessoires et pépites mode en toute confiance. 🇨🇮 Côte d'Ivoire" />
+    <meta name="twitter:title" content="Brumerie — Le social commerce de ton quartier" />
+    <meta name="twitter:description" content="Achète et vends dans ton quartier en Côte d'Ivoire. La marketplace locale de confiance. 🇨🇮" />
     <meta name="twitter:image" content="https://brumerie.com/assets/og-image.png" />
 
     <!-- ═══════════════════════════════════════════════════
@@ -61,7 +61,7 @@
           "@id": "https://brumerie.com/#website",
           "name": "Brumerie",
           "url": "https://brumerie.com",
-          "description": "Marketplace C2C hyperlocale à Abidjan, Côte d'Ivoire",
+          "description": "Le premier social commerce de Côte d'Ivoire — achète et vends dans ton quartier",
           "inLanguage": "fr-CI",
           "potentialAction": {
             "@type": "SearchAction",
@@ -78,29 +78,45 @@
             "@type": "ImageObject",
             "url": "https://brumerie.com/assets/Logos/logo-app-icon.png"
           },
-          "description": "Brumerie est une plateforme de mise en relation C2C permettant aux habitants d'Abidjan d'acheter et de vendre localement.",
+          "description": "Brumerie est le premier social commerce ivoirien. Achetez et vendez des articles dans votre quartier en toute confiance.",
           "areaServed": {
-            "@type": "City",
-            "name": "Abidjan",
-            "addressCountry": "CI"
+            "@type": "Country",
+            "name": "Côte d'Ivoire",
+            "identifier": "CI"
           },
           "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "customer support",
             "email": "contact.brumerie@gmail.com"
-          }
+          },
+          "sameAs": [
+            "https://www.instagram.com/brumerie",
+            "https://www.tiktok.com/@brumerie"
+          ]
         },
         {
           "@type": "MobileApplication",
           "name": "Brumerie",
-          "operatingSystem": "Android",
+          "operatingSystem": "Android, iOS",
           "applicationCategory": "ShoppingApplication",
-          "description": "Marketplace locale à Abidjan — achetez et vendez dans votre quartier",
+          "description": "Social commerce local — achète et vends dans ton quartier en Côte d'Ivoire",
           "offers": {
             "@type": "Offer",
             "price": "0",
             "priceCurrency": "XOF"
           }
+        },
+        {
+          "@type": "ItemList",
+          "@id": "https://brumerie.com/#categories",
+          "name": "Catégories Brumerie",
+          "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Mode & Prêt-à-porter", "url": "https://brumerie.com?cat=fashion"},
+            {"@type": "ListItem", "position": 2, "name": "High-Tech & Téléphones", "url": "https://brumerie.com?cat=tech"},
+            {"@type": "ListItem", "position": 3, "name": "Beauté & Cosmétiques", "url": "https://brumerie.com?cat=beauty"},
+            {"@type": "ListItem", "position": 4, "name": "Maison & Décoration", "url": "https://brumerie.com?cat=home"},
+            {"@type": "ListItem", "position": 5, "name": "Alimentation", "url": "https://brumerie.com?cat=food"}
+          ]
         }
       ]
     }

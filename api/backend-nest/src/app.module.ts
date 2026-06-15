@@ -12,6 +12,7 @@ import { ReferralsModule } from './referrals/referrals.module';
 import { BoostsModule } from './boosts/boosts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MigrationModule } from './migration/migration.module';
+import { SeoModule } from './seo/seo.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MigrationModule } from './migration/migration.module';
     BoostsModule,
     DashboardModule,
     MigrationModule,
+    SeoModule,
   ],
 })
 export class AppModule {}

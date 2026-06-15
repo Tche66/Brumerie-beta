@@ -10,6 +10,7 @@ import { SearchAlertButton } from '@/components/SearchAlertButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { Product, CATEGORIES, NEIGHBORHOODS, getNeighborhoodsForCity } from '@/types';
 import { useAppConfig } from '@/hooks/useAppConfig';
+import { setHomeMeta } from '@/utils/seo';
 import { subscribeBoostedProductIds } from '@/services/boostService';
 import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -123,6 +124,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     ...getNeighborhoodsForCity(userCity),
     ...(appConfig.customNeighborhoods || []),
   ];
+
+  useEffect(() => { setHomeMeta(); }, []);
 
   // Écouter les produits boostés
   useEffect(() => {

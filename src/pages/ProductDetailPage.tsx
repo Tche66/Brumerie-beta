@@ -22,6 +22,7 @@ import { shareProduct } from '@/utils/shareProduct';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { getTrustScore, TrustScore } from '@/services/trustService';
 import { RiskAlertBanner } from '@/components/RiskBadge';
+import { setProductMeta } from '@/utils/seo';
 
 
 interface ProductDetailPageProps {
@@ -101,6 +102,20 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [expandedDesc, setExpandedDesc] = useState(false);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
+
+  // ── SEO — meta tags dynamiques pour Google ──
+  useEffect(() => {
+    setProductMeta({
+      title: product.title,
+      description: product.description || '',
+      price: product.price,
+      images: product.images || [],
+      neighborhood: product.neighborhood,
+      category: product.category,
+      sellerName: product.sellerName || '',
+      id: product.id,
+    });
+  }, [product.id]);
 
   // ── Abonnement temps réel + incrément vue en une seule opération ──
   useEffect(() => {

@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /__/
+Disallow: /auth
 
-Sitemap: https://brumerie.com/sitemap.xml
+Sitemap: https://brumerie-beta-production.up.railway.app/sitemap.xml
