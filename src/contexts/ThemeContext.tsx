@@ -18,16 +18,15 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('brumerie-theme');
-    if (saved === 'dark' || saved === 'light') return saved;
+    if (saved === 'dark') return 'dark';
     return 'light';
   });
 
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.remove('dark');
     if (theme === 'dark') {
       root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
     }
     localStorage.setItem('brumerie-theme', theme);
   }, [theme]);
