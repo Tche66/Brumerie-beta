@@ -16,6 +16,18 @@
       "destination": "https://brumerie-app.firebaseapp.com/__/firebase/$1"
     },
     {
+      "source": "/p/:id",
+      "destination": "https://brumerie-beta-production.up.railway.app/p/:id"
+    },
+    {
+      "source": "/vendeur/:id",
+      "destination": "https://brumerie-beta-production.up.railway.app/vendeur/:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://brumerie-beta-production.up.railway.app/sitemap.xml"
+    },
+    {
       "source": "/((?!api|__/).*)",
       "destination": "/index.html"
     }

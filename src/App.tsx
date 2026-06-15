@@ -163,11 +163,29 @@ function AppShell() {
   const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])]; // 'deliverer-dashboard' exclu → la nav interne BruMove prend le relais
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
-  const navigate = (page: Page) => {
+  const getPageUrl = (page: Page, extra?: { productId?: string; sellerId?: string }) => {
+    switch (page) {
+      case 'home': return '/';
+      case 'discover': return '/explorer';
+      case 'messages': return '/messages';
+      case 'profile': return '/profil';
+      case 'settings': return '/parametres';
+      case 'sell': return '/publier';
+      case 'product-detail': return extra?.productId ? `/p/${extra.productId}` : '/';
+      case 'seller-profile': return extra?.sellerId ? `/vendeur/${extra.sellerId}` : '/';
+      case 'order-status': return '/commandes';
+      case 'dashboard': return '/tableau';
+      case 'notifications': return '/notifications';
+      default: return `/${page}`;
+    }
+  };
+
+  const navigate = (page: Page, extra?: { productId?: string; sellerId?: string }) => {
     setNavigationHistory((prev: Page[]) => [...prev, page]);
     setActivePage(page);
     setPageKey(k => k + 1);
-    window.history.pushState({ page }, '', window.location.pathname);
+    const url = getPageUrl(page, extra);
+    window.history.pushState({ page }, '', url);
   };
 
   // ── Logo / bouton Accueil → reset + scroll top ─────────────
@@ -176,12 +194,17 @@ function AppShell() {
     setNavigationHistory(['home']);
     setSelectedProduct(null);
     setSelectedSellerId(null);
+    window.history.replaceState({ page: 'home' }, '', '/');
     window.scrollTo(0, 0);
   };
 
   const goBack = () => {
     setNavigationHistory((prevNav: Page[]) => {
-      if (prevNav.length <= 1) { setActivePage('home'); return ['home']; }
+      if (prevNav.length <= 1) {
+        setActivePage('home');
+        window.history.replaceState({ page: 'home' }, '', '/');
+        return ['home'];
+      }
       const h = prevNav.slice(0, -1);
       const prevPage = h[h.length - 1];
       if (prevPage === 'product-detail') {
@@ -193,6 +216,8 @@ function AppShell() {
         });
       }
       setActivePage(prevPage);
+      const url = getPageUrl(prevPage);
+      window.history.replaceState({ page: prevPage }, '', url);
       return h;
     });
   };
@@ -236,6 +261,27 @@ useEffect(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage]);
 
+  // ── useEffect — routing initial selon l'URL (hors deep links produit/vendeur) ──
+  useEffect(() => {
+    const path = window.location.pathname;
+    const urlPageMap: Record<string, Page> = {
+      '/explorer': 'discover',
+      '/messages': 'messages',
+      '/profil': 'profile',
+      '/parametres': 'settings',
+      '/publier': 'sell',
+      '/commandes': 'order-status',
+      '/tableau': 'dashboard',
+      '/notifications': 'notifications',
+    };
+    const matched = urlPageMap[path];
+    if (matched) {
+      setActivePage(matched);
+      setNavigationHistory(['home', matched]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── useEffect #2 — reset état si déconnexion ─────────────────
   useEffect(() => {
     if (!currentUser) {
@@ -266,9 +312,6 @@ useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('product') || window.location.pathname.match(/^\/p\/([^/]+)/)?.[1];
     if (!productId) return;
-    // Nettoyer l'URL immédiatement
-    window.history.replaceState({}, '', '/');
-    // Charger le produit depuis Firestore et naviguer vers sa fiche
     const loadAndOpen = async () => {
       try {
         const { getDoc, doc } = await import('firebase/firestore');
@@ -277,13 +320,15 @@ useEffect(() => {
         if (snap.exists()) {
           const product = { id: snap.id, ...snap.data() } as any;
           setSelectedProduct(product);
-          navigate('product-detail');
+          setActivePage('product-detail');
+          setNavigationHistory(['home', 'product-detail']);
+          window.history.replaceState({ page: 'product-detail' }, '', `/p/${productId}`);
         }
       } catch (e) { console.error('[deeplink]', e); }
     };
     loadAndOpen();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // une seule fois au montage
+  }, []);
 
   // ── useEffect #2c — deep link /vendeur/{sellerId} ou /s/{sellerId} ──────────────
   useEffect(() => {
@@ -291,20 +336,15 @@ useEffect(() => {
     const match = path.match(/^\/vendeur\/([^/]+)$/) || path.match(/^\/s\/([^/]+)$/);
     if (!match) return;
     const sellerIdFromUrl = match[1];
-    // Nettoyer l'URL immédiatement
-    window.history.replaceState({}, '', '/');
-    // Naviguer vers le profil du vendeur
     setSelectedSellerId(sellerIdFromUrl);
-    // Attendre que l'auth soit prête avant de naviguer
     const tryNavigate = () => {
       setActivePage('seller-profile' as any);
-      setNavigationHistory(['seller-profile' as any]);
+      setNavigationHistory(['home', 'seller-profile' as any]);
     };
-    // Délai court pour laisser Firebase Auth s'initialiser
     const t = setTimeout(tryNavigate, 800);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // une seule fois au montage
+  }, []);
 
   // ── useEffect #3 — messages non-lus ──────────────────────────
   useEffect(() => {
@@ -458,7 +498,7 @@ useEffect(() => {
 
   // ── useEffect #6 — bouton retour physique Android + double appui pour quitter ──
   useEffect(() => {
-    window.history.replaceState({ page: 'home' }, '', window.location.pathname);
+    window.history.replaceState({ page: 'home' }, '', '/');
     const handlePopState = () => {
       // Lire l'état courant via setState fonctionnel
       setNavigationHistory(prevNav => {
@@ -467,7 +507,7 @@ useEffect(() => {
           // Sur l'accueil → double appui pour quitter
           setShowExitConfirm(true);
           // Remettre l'état history pour intercepter le prochain appui
-          window.history.pushState({ page: 'home' }, '', window.location.pathname);
+          window.history.pushState({ page: 'home' }, '', '/');
           // Auto-masquer le message après 3s
           if (exitConfirmTimer.current) clearTimeout(exitConfirmTimer.current);
           exitConfirmTimer.current = setTimeout(() => setShowExitConfirm(false), 3000);
@@ -475,7 +515,7 @@ useEffect(() => {
         } else {
           // Pas sur l'accueil → naviguer en arrière normalement
           setShowExitConfirm(false);
-          window.history.pushState({ page: 'home' }, '', window.location.pathname);
+          window.history.pushState({ page: 'home' }, '', '/');
           const h = prevNav.slice(0, -1);
           const prevPage = h[h.length - 1];
           if (prevPage === 'product-detail') {
@@ -504,21 +544,19 @@ useEffect(() => {
       setProductHistory(prev => [...prev, selectedProduct]);
     }
     setSelectedProduct(product);
-    navigate('product-detail');
-    // Enregistrer dans "Vu récemment"
+    navigate('product-detail', { productId: product.id });
     if (currentUser?.uid) {
       addRecentlyViewed(currentUser.uid, product.id).catch(() => {});
     }
   };
 
   const handleSellerClick = (sellerId: string) => {
-    // Vendeur clique sur son propre profil → rediriger vers son profil interne
     if (currentUser?.uid === sellerId) {
       navigate('profile');
       return;
     }
     setSelectedSellerId(sellerId);
-    navigate('seller-profile');
+    navigate('seller-profile', { sellerId });
   };
 
   const handleBottomNavNavigate = (page: string) => {
