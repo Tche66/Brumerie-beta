@@ -21,6 +21,8 @@ import { db } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 import { TrustAdminPanel } from '@/components/TrustAdminPanel';
 import { BruIcons } from '@/components/BruIcons';
+import { CITIES, CITY_NEIGHBORHOODS, CATEGORIES } from '@/types';
+import { subscribeActiveStories, deleteStory } from '@/services/storyService';
 
 const ADMIN_UID = (import.meta as any).env?.VITE_ADMIN_UID || '';
 
@@ -39,7 +41,7 @@ const timeLeft = (ts: any) => {
   return h > 24 ? `${Math.floor(h / 24)}j ${h % 24}h` : `${h}h ${Math.floor((diff % 3600000) / 60000)}m`;
 };
 
-type Tab = 'stats' | 'boosts' | 'users' | 'livreurs' | 'products' | 'orders' | 'broadcast' | 'settings' | 'logs' | 'trust';
+type Tab = 'stats' | 'boosts' | 'users' | 'livreurs' | 'products' | 'orders' | 'analytics' | 'territories' | 'categories' | 'broadcast' | 'settings' | 'logs' | 'trust';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:          'bg-amber-100 text-amber-800',
@@ -121,6 +123,14 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastResult, setBroadcastResult] = useState<{sent:number;errors:number}|null>(null);
+  // Nouveaux onglets
+  const [stories, setStories] = useState<any[]>([]);
+  const [newCityName, setNewCityName] = useState('');
+  const [newNeighborhoodCity, setNewNeighborhoodCity] = useState('Abidjan');
+  const [newNeighborhoodName, setNewNeighborhoodName] = useState('');
+  const [newCategoryId, setNewCategoryId] = useState('');
+  const [newCategoryLabel, setNewCategoryLabel] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState('🏷️');
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3200); };
   const logAction = useCallback(async (action: string, targetId: string, details?: string) => {
     if (currentUser?.uid) await logAdminAction(currentUser.uid, action, targetId, details);
@@ -152,6 +162,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
   useEffect(() => { if (!isAdmin) return; return subscribeAllOrders(setOrders); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeAdminLogs(setLogs); }, [isAdmin]);
   useEffect(() => { if (!isAdmin) return; return subscribeActiveBanners(setActiveBanners); }, [isAdmin]);
+  useEffect(() => { if (!isAdmin) return; return subscribeActiveStories(setStories); }, [isAdmin]);
   useEffect(() => {
     if (!isAdmin) return;
     getAdminStats()
@@ -313,16 +324,19 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
   const filteredBoosts = allBoosts.filter(b => boostFilter === 'all' || b.status === boostFilter);
 
   const TABS: { id: Tab; icon: string; label: string; badge?: number }[] = [
-    { id: 'stats',     icon: '', label: 'Stats' },
-    { id: 'boosts',    icon: '', label: 'Boosts',    badge: pendingBoosts.length },
-    { id: 'users',     icon: '', label: 'Users' },
-    { id: 'livreurs',  icon: '', label: 'Livreurs' },
-    { id: 'products',  icon: '', label: 'Articles' },
-    { id: 'orders',    icon: '', label: 'Commandes', badge: disputeCount },
-    { id: 'broadcast', icon: '', label: 'Broadcast' },
-    { id: 'settings',  icon: '', label: 'Config' },
-    { id: 'logs',      icon: '', label: 'Logs' },
-    { id: 'trust',     icon: '', label: 'Anti-arnaque' },
+    { id: 'stats',      icon: '', label: 'Stats' },
+    { id: 'boosts',     icon: '', label: 'Boosts',    badge: pendingBoosts.length },
+    { id: 'users',      icon: '', label: 'Users' },
+    { id: 'livreurs',   icon: '', label: 'Livreurs' },
+    { id: 'products',   icon: '', label: 'Articles' },
+    { id: 'orders',     icon: '', label: 'Commandes', badge: disputeCount },
+    { id: 'analytics',  icon: '', label: 'Analytics' },
+    { id: 'territories',icon: '', label: 'Villes' },
+    { id: 'categories', icon: '', label: 'Catégories' },
+    { id: 'broadcast',  icon: '', label: 'Broadcast' },
+    { id: 'settings',   icon: '', label: 'Config' },
+    { id: 'logs',       icon: '', label: 'Logs' },
+    { id: 'trust',      icon: '', label: 'Anti-arnaque' },
   ];
 
   if (!isAdmin) {
@@ -1593,6 +1607,239 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                 <p className="text-slate-600 text-[9px] flex-shrink-0 pt-0.5">{fmtDate(l.createdAt)}</p>
               </div>
             ))}
+          </>
+        )}
+
+        {/* ── ANALYTICS ── */}
+        {tab === 'analytics' && (
+          <>
+            {/* Top vendeurs par ventes */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Top 10 Vendeurs (par articles vendus)</p>
+              <div className="space-y-2">
+                {(() => {
+                  const sellerMap = new Map<string, { name: string; photo?: string; sold: number; revenue: number; views: number }>();
+                  products.forEach((p: any) => {
+                    const existing = sellerMap.get(p.sellerId) || { name: p.sellerName || '?', photo: p.sellerPhoto, sold: 0, revenue: 0, views: 0 };
+                    if (p.status === 'sold') { existing.sold++; existing.revenue += p.price || 0; }
+                    existing.views += p.viewCount || 0;
+                    sellerMap.set(p.sellerId, existing);
+                  });
+                  return [...sellerMap.entries()]
+                    .sort((a, b) => b[1].sold - a[1].sold)
+                    .slice(0, 10)
+                    .map(([id, s], i) => (
+                      <div key={id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
+                        <span className="text-[14px] font-black text-slate-500 w-5">{i + 1}</span>
+                        <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-700 flex-shrink-0">
+                          {s.photo ? <img src={s.photo} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full flex items-center justify-center text-white font-black text-sm">{s.name[0]}</div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-[12px] truncate">{s.name}</p>
+                          <p className="text-slate-500 text-[10px]">{s.sold} ventes · {s.views} vues</p>
+                        </div>
+                        <p className="text-green-400 font-black text-[12px]">{fmt(s.revenue)} F</p>
+                      </div>
+                    ));
+                })()}
+              </div>
+            </div>
+
+            {/* Top produits par vues */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Top 10 Produits (par vues)</p>
+              <div className="space-y-2">
+                {products
+                  .filter((p: any) => p.status === 'active')
+                  .sort((a: any, b: any) => (b.viewCount || 0) - (a.viewCount || 0))
+                  .slice(0, 10)
+                  .map((p: any, i: number) => (
+                    <div key={p.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-2.5">
+                      <span className="text-[13px] font-black text-slate-500 w-5">{i + 1}</span>
+                      {p.images?.[0] && <img src={p.images[0]} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt=""/>}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-[11px] truncate">{p.title}</p>
+                        <p className="text-slate-500 text-[10px]">{p.sellerName} · {p.neighborhood}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-blue-400 font-black text-[11px]">{p.viewCount || 0} vues</p>
+                        <p className="text-green-400 text-[10px] font-bold">{fmt(p.price)} F</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Répartition par ville */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Répartition par ville</p>
+              <div className="space-y-2">
+                {(() => {
+                  const cityCount = new Map<string, number>();
+                  users.forEach((u: any) => {
+                    const city = u.city || 'Abidjan';
+                    cityCount.set(city, (cityCount.get(city) || 0) + 1);
+                  });
+                  const total = users.length || 1;
+                  return [...cityCount.entries()]
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([city, count]) => (
+                      <div key={city} className="flex items-center gap-3">
+                        <p className="text-white font-bold text-[11px] w-28">{city}</p>
+                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round((count / total) * 100)}%` }}/>
+                        </div>
+                        <p className="text-slate-400 text-[10px] font-bold w-14 text-right">{count} ({Math.round((count / total) * 100)}%)</p>
+                      </div>
+                    ));
+                })()}
+              </div>
+            </div>
+
+            {/* Stories actives */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Stories actives ({stories.length})</p>
+              {stories.length === 0 ? (
+                <p className="text-slate-500 text-center py-8 text-[12px]">Aucune story active</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {stories.slice(0, 12).map((s: any) => (
+                    <div key={s.id} className="relative rounded-xl overflow-hidden aspect-[3/4] bg-slate-800">
+                      {s.imageUrl && <img src={s.imageUrl} className="w-full h-full object-cover" alt=""/>}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"/>
+                      <div className="absolute bottom-1 left-1 right-1">
+                        <p className="text-white text-[8px] font-bold truncate">{s.sellerName}</p>
+                        <p className="text-white/60 text-[7px]">{s.views?.length || 0} vues</p>
+                      </div>
+                      <button onClick={async () => {
+                        if (!confirm(`Supprimer la story de ${s.sellerName} ?`)) return;
+                        try { await deleteStory(s.id); showToast('Story supprimée'); }
+                        catch { showToast('Erreur'); }
+                      }} className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center active:scale-90">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ── VILLES & QUARTIERS ── */}
+        {tab === 'territories' && (
+          <>
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Villes actives ({CITIES.length})</p>
+              <div className="space-y-2 mb-4">
+                {CITIES.map(city => (
+                  <div key={city} className="flex items-center justify-between bg-white/5 rounded-xl p-3">
+                    <div>
+                      <p className="text-white font-bold text-[12px]">{city}</p>
+                      <p className="text-slate-500 text-[10px]">{CITY_NEIGHBORHOODS[city]?.length || 0} quartiers</p>
+                    </div>
+                    <span className="text-slate-500 text-[10px] font-bold">
+                      {users.filter((u: any) => (u.city || 'Abidjan') === city).length} users
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Ajouter un quartier custom */}
+              <div className="border-t border-white/10 pt-4">
+                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter un quartier (custom)</p>
+                <div className="flex gap-2 mb-2">
+                  <select value={newNeighborhoodCity} onChange={e => setNewNeighborhoodCity(e.target.value)}
+                    className="bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] outline-none">
+                    {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <input value={newNeighborhoodName} onChange={e => setNewNeighborhoodName(e.target.value)}
+                    placeholder="Nom du quartier" className="flex-1 bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] outline-none focus:border-green-500 placeholder-slate-600"/>
+                </div>
+                <button onClick={async () => {
+                  if (!newNeighborhoodName.trim()) return;
+                  try {
+                    const ref = doc(db, 'appConfig', 'main');
+                    const snap = await getDoc(ref);
+                    const existing = snap.exists() ? (snap.data().customNeighborhoods || []) : [];
+                    await updateDoc(ref, { customNeighborhoods: [...existing, `${newNeighborhoodCity}:${newNeighborhoodName.trim()}`] });
+                    setNewNeighborhoodName('');
+                    showToast(`Quartier "${newNeighborhoodName.trim()}" ajouté à ${newNeighborhoodCity}`);
+                  } catch { showToast('Erreur'); }
+                }} disabled={!newNeighborhoodName.trim()}
+                  className="w-full py-3 rounded-xl font-black text-[11px] uppercase text-white disabled:opacity-40 active:scale-95"
+                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                  + Ajouter le quartier
+                </button>
+              </div>
+            </div>
+
+            {/* Détail quartiers par ville */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Quartiers par ville</p>
+              {CITIES.map(city => (
+                <details key={city} className="mb-3">
+                  <summary className="text-white font-bold text-[12px] cursor-pointer py-2 border-b border-white/5">{city} ({CITY_NEIGHBORHOODS[city]?.length})</summary>
+                  <div className="flex flex-wrap gap-1.5 mt-2 pl-2">
+                    {(CITY_NEIGHBORHOODS[city] || []).map(n => (
+                      <span key={n} className="text-[9px] font-bold bg-white/10 text-slate-300 px-2.5 py-1 rounded-full">{n}</span>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── CATÉGORIES ── */}
+        {tab === 'categories' && (
+          <>
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Catégories actives ({CATEGORIES.length})</p>
+              <div className="space-y-2 mb-4">
+                {CATEGORIES.map(cat => {
+                  const count = products.filter((p: any) => p.category === cat.id && p.status === 'active').length;
+                  return (
+                    <div key={cat.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
+                      <span className="text-xl">{cat.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-[12px]">{cat.label}</p>
+                        <p className="text-slate-500 text-[10px]">ID: {cat.id}</p>
+                      </div>
+                      <span className="text-slate-400 font-black text-[12px]">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Ajouter catégorie custom */}
+              <div className="border-t border-white/10 pt-4">
+                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter une catégorie (custom)</p>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input value={newCategoryIcon} onChange={e => setNewCategoryIcon(e.target.value)}
+                      placeholder="🏷️" className="w-14 bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-white text-center text-[16px] outline-none"/>
+                    <input value={newCategoryLabel} onChange={e => setNewCategoryLabel(e.target.value)}
+                      placeholder="Nom de la catégorie" className="flex-1 bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] outline-none focus:border-green-500 placeholder-slate-600"/>
+                  </div>
+                  <button onClick={async () => {
+                    if (!newCategoryLabel.trim()) return;
+                    try {
+                      const ref = doc(db, 'appConfig', 'main');
+                      const snap = await getDoc(ref);
+                      const existing = snap.exists() ? (snap.data().customCategories || []) : [];
+                      await updateDoc(ref, { customCategories: [...existing, newCategoryLabel.trim()] });
+                      setNewCategoryLabel(''); setNewCategoryIcon('🏷️');
+                      showToast(`Catégorie "${newCategoryLabel.trim()}" ajoutée`);
+                    } catch { showToast('Erreur'); }
+                  }} disabled={!newCategoryLabel.trim()}
+                    className="w-full py-3 rounded-xl font-black text-[11px] uppercase text-white disabled:opacity-40 active:scale-95"
+                    style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                    + Ajouter la catégorie
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
