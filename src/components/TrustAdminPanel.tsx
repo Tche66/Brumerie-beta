@@ -1,4 +1,4 @@
-// src/components/TrustAdminPanel.tsx
+continu// src/components/TrustAdminPanel.tsx
 // ── Panneau admin Anti-Arnaque — intégrable dans AdminPage ou DashboardPage ──
 // Gestion des signalements : valider / rejeter + bannir
 import React, { useState, useEffect } from 'react';

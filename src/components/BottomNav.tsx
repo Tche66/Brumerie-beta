@@ -8,6 +8,7 @@ interface BottomNavProps {
   unreadMessages?: number;
   pendingDashboard?: number;  // commandes actives + offres (vendeur)
   activeMissions?: number;    // missions actives (livreur)
+  cartCount?: number;
 }
 
 const HomeIcon = (active: boolean, color: string) => (
@@ -36,6 +37,12 @@ const DashIcon = (active: boolean, color: string) => (
 const ProfileIcon = (active: boolean, color: string) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? color : 'none'} stroke={active ? color : '#94A3B8'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+const CartIcon = (active: boolean, color: string) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? color : 'none'} stroke={active ? color : '#94A3B8'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+    <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
   </svg>
 );
 const PlusIcon = () => (
@@ -75,7 +82,7 @@ function NavBtn({ id, label, icon, active, onClick, badge }: {
   );
 }
 
-export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0, pendingDashboard = 0, activeMissions = 0 }: BottomNavProps) {
+export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0, pendingDashboard = 0, activeMissions = 0, cartCount = 0 }: BottomNavProps) {
   const C = '#16A34A'; // vert vendeur
   const CB = '#3B82F6'; // bleu acheteur
   const CO = '#D97706'; // orange livreur
@@ -107,18 +114,18 @@ export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessa
       <div className="flex items-center justify-around h-16 px-1">
         <NavBtn id="home" label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}
           icon={HomeIcon(activePage === 'home', CB)}/>
-        <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
-          badge={unreadMessages} icon={MsgIcon(activePage === 'messages', CB)}/>
+        <NavBtn id="cart" label="Panier" active={activePage === 'cart'} onClick={() => onNavigate('cart')}
+          badge={cartCount} icon={CartIcon(activePage === 'cart', CB)}/>
         {/* Bouton Découvrir — centre, élevé */}
         <button onClick={() => onNavigate('discover')}
           className="-translate-y-4 w-14 h-14 rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all gap-0.5"
-          style={{ background: activePage === 'discover' ? 'linear-gradient(135deg,#1D4ED8,#3B82F6)' : 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 8px 24px rgba(59,130,246,0.45)' }}>
+          style={{ background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)', boxShadow: '0 8px 24px rgba(59,130,246,0.45)' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
         </button>
-        <NavBtn id="orders" label="Commandes" active={activePage === 'order-status'} onClick={() => onNavigate('orders')}
-          icon={OrderIcon(activePage === 'order-status', CB)}/>
+        <NavBtn id="messages" label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')}
+          badge={unreadMessages} icon={MsgIcon(activePage === 'messages', CB)}/>
         <NavBtn id="profile" label="Profil" active={activePage === 'profile'} onClick={() => onNavigate('profile')}
           icon={ProfileIcon(activePage === 'profile', CB)}/>
       </div>

@@ -23,6 +23,7 @@ import { ReportUserModal } from '@/components/ReportUserModal';
 import { getTrustScore, TrustScore } from '@/services/trustService';
 import { RiskAlertBanner } from '@/components/RiskBadge';
 import { setProductMeta } from '@/utils/seo';
+import { addToCart } from '@/services/cartService';
 
 
 interface ProductDetailPageProps {
@@ -100,6 +101,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [repostDone, setRepostDone] = useState(false);
   const [reposts, setReposts] = useState<any[]>([]);
   const [expandedDesc, setExpandedDesc] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const categoryLabel = CATEGORIES.find(c => c.id === product.category)?.label || product.category;
 
@@ -1187,7 +1189,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
                 const CommentBubble = ({ c, isReply = false }: { c: any; isReply?: boolean }) => (
                   <div className={`flex gap-2.5 ${isReply ? 'ml-10' : ''}`}>
-                    <div className={`${isReply ? 'w-7 h-7' : 'w-8 h-8'} rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5`}>
+                    <div className={`${isReply ? 'w-7 h-7' : 'w-8 h-8'} rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5 cursor-pointer active:scale-90 transition-all`}
+                      onClick={() => c.userId && onSellerClick(c.userId)}>
                       {c.userPhoto
                         ? <img src={c.userPhoto} alt="" className="w-full h-full object-cover"/>
                         : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[10px]">{c.userName?.charAt(0).toUpperCase()}</div>
@@ -1196,7 +1199,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     <div className="flex-1 min-w-0">
                       <div className={`${isReply ? 'bg-green-50 border border-green-100' : 'bg-slate-50'} rounded-2xl rounded-tl-sm px-3 py-2.5`}>
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="font-black text-slate-900 text-[11px]">{c.userName}</span>
+                          <span className="font-black text-slate-900 text-[11px] cursor-pointer active:text-green-700 transition-colors"
+                            onClick={() => c.userId && onSellerClick(c.userId)}>{c.userName}</span>
                           {c.userVerified && (
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
                               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1415,6 +1419,21 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 💰 Offre
               </button>
             )}
+            <button onClick={() => {
+                if (isGuest) { onGuestAction?.('cart'); return; }
+                addToCart(product);
+                setAddedToCart(true);
+                setTimeout(() => setAddedToCart(false), 2000);
+              }}
+              className={`flex-1 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest border-2 flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                addedToCart ? 'border-green-500 text-green-700 bg-green-50' : 'border-slate-200 text-slate-700 bg-white'
+              }`}>
+              {addedToCart ? (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Ajouté</>
+              ) : (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg> Panier</>
+              )}
+            </button>
             <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
               className="flex-[2] py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 shadow-xl shadow-green-200 active:scale-95 transition-all"
               style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>

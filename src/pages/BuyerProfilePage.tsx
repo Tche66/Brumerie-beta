@@ -175,6 +175,58 @@ function EmptyState({ svgIcon, title, sub }: { svgIcon: React.ReactNode; title: 
   );
 }
 
+// ── Accordéon adresse — discret, replié par défaut ────────────────
+function AddressAccordion({ awCode, currentUser, onSave, onRemove }: {
+  awCode: string; currentUser: any;
+  onSave: (code: string) => Promise<void>;
+  onRemove: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasAddress = !!awCode;
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden"
+      style={{ border: `1px solid ${G2}15`, boxShadow: `0 2px 12px ${G1}06` }}>
+      <button onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3.5 active:bg-slate-50 transition-colors">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${G2}10` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={G2} strokeWidth="2" strokeLinecap="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div className="text-left">
+            <p className="text-[11px] font-black text-slate-700">Adresse de livraison</p>
+            <p className="text-[9px] text-slate-400 font-medium">
+              {hasAddress ? '••••••' + awCode.slice(-5) : 'Non configurée'}
+            </p>
+          </div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round"
+          className={`transition-transform ${open ? 'rotate-180' : ''}`}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 pt-1 border-t border-slate-50">
+          <AWAddressPicker
+            value={awCode}
+            onChange={async (code) => { if (code) await onSave(code); }}
+            onSaveToProfile={async (code) => { await onSave(code); }}
+            onRemoveFromProfile={onRemove}
+            showSaveToProfile
+            label=""
+            placeholder="AW-ABJ-84321"
+            firebaseUid={currentUser?.uid}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Composant principal ───────────────────────────────────────────
 export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSellerClick }: BuyerProfilePageProps) {
   const { userProfile, currentUser, refreshUserProfile } = useAuth();
@@ -751,35 +803,23 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
           </div>
         )}
 
-        {/* ══ ADRESSE ADDRESSWEB — toujours visible ══════════════════ */}
-        <div className="bg-white rounded-2xl p-4"
-          style={{ border: `1px solid ${G2}15`, boxShadow: `0 2px 12px ${G1}06` }}>
-          <AWAddressPicker
-            value={(userProfile as any).awAddressCode || ''}
-            onChange={async (code) => {
-              if (currentUser && code) {
-                await updateUserProfile(currentUser.uid, { awAddressCode: code });
-                await refreshUserProfile();
-              }
-            }}
-            onSaveToProfile={async (code) => {
-              if (currentUser) {
-                await updateUserProfile(currentUser.uid, { awAddressCode: code });
-                await refreshUserProfile();
-              }
-            }}
-            onRemoveFromProfile={async () => {
-              if (currentUser) {
-                await updateUserProfile(currentUser.uid, { awAddressCode: '' });
-                await refreshUserProfile();
-              }
-            }}
-            showSaveToProfile
-            label="Mon adresse de livraison"
-            placeholder="AW-ABJ-84321"
-            firebaseUid={currentUser?.uid}
-          />
-        </div>
+        {/* ══ ADRESSE ADDRESSWEB — accordéon discret ══════════════════ */}
+        <AddressAccordion
+          awCode={(userProfile as any).awAddressCode || ''}
+          currentUser={currentUser}
+          onSave={async (code) => {
+            if (currentUser) {
+              await updateUserProfile(currentUser.uid, { awAddressCode: code });
+              await refreshUserProfile();
+            }
+          }}
+          onRemove={async () => {
+            if (currentUser) {
+              await updateUserProfile(currentUser.uid, { awAddressCode: '' });
+              await refreshUserProfile();
+            }
+          }}
+        />
 
         {/* ══ BOUTONS BAS DE PAGE ════════════════════════════════════ */}
         <button onClick={() => onNavigate?.('edit-profile')}

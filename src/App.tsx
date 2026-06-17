@@ -59,6 +59,8 @@ import { updatePresence } from '@/services/shopFeaturesService';
 import { addRecentlyViewed } from '@/services/userService';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
+import { CartPage } from '@/pages/CartPage';
+import { getCartCount } from '@/services/cartService';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
@@ -66,7 +68,7 @@ type Page =
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions' | 'trust'
-  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover';
+  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover' | 'cart';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {
@@ -155,12 +157,13 @@ function AppShell() {
   const [pendingDashboard, setPendingDashboard]   = useState(0); // commandes actives + offres en attente (vendeur)
   const [activeMissions, setActiveMissions]       = useState(0); // missions actives (livreur)
   const [showExitConfirm, setShowExitConfirm]     = useState(false);
+  const [cartCount, setCartCount]                 = useState(() => getCartCount());
   const exitConfirmTimer                          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevNotifsRef                             = useRef<Set<string>>(new Set());
 
   const role    = userProfile?.role || 'buyer';
   const isBuyer = role === 'buyer';
-  const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', ...(isBuyer ? [] : ['sell' as Page])]; // 'deliverer-dashboard' exclu → la nav interne BruMove prend le relais
+  const MAIN_PAGES: Page[] = ['home', 'messages', 'discover', 'profile', 'order-status', 'dashboard', 'settings', 'cart', ...(isBuyer ? [] : ['sell' as Page])]; // 'deliverer-dashboard' exclu → la nav interne BruMove prend le relais
 
   // ── Helpers navigation (définis AVANT les useEffect) ──────────
   const getPageUrl = (page: Page, extra?: { productId?: string; sellerId?: string }) => {
@@ -176,6 +179,7 @@ function AppShell() {
       case 'order-status': return '/commandes';
       case 'dashboard': return '/tableau';
       case 'notifications': return '/notifications';
+      case 'cart': return '/panier';
       default: return `/${page}`;
     }
   };
@@ -273,6 +277,7 @@ useEffect(() => {
       '/commandes': 'order-status',
       '/tableau': 'dashboard',
       '/notifications': 'notifications',
+      '/panier': 'cart',
     };
     const matched = urlPageMap[path];
     if (matched) {
@@ -344,6 +349,13 @@ useEffect(() => {
     const t = setTimeout(tryNavigate, 800);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── useEffect — cart count listener ──────────────────────────
+  useEffect(() => {
+    const handler = () => setCartCount(getCartCount());
+    window.addEventListener('cart-updated', handler);
+    return () => window.removeEventListener('cart-updated', handler);
   }, []);
 
   // ── useEffect #3 — messages non-lus ──────────────────────────
@@ -888,15 +900,47 @@ useEffect(() => {
           <DelivererDashboardPage
             onNavigate={handleNavigate}
             onChat={async (targetId: string, targetName: string) => {
-              // Passer targetId comme productId pour que chaque conv soit unique
               await handleOpenChatWithSeller(targetId, targetName, targetId, 'Contact Brumerie');
             }}
+          />
+        )}
+        {activePage === 'cart' && (
+          <CartPage
+            onBack={goBack}
+            onBuyClick={(cartItems, sellerId) => {
+              const first = cartItems[0];
+              if (!first) return;
+              const product = {
+                id: first.productId,
+                title: cartItems.length === 1 ? first.title : `${cartItems.length} articles`,
+                price: cartItems.reduce((s, i) => s + i.price * i.quantity, 0),
+                images: [first.image],
+                sellerId: first.sellerId,
+                sellerName: first.sellerName,
+                sellerPhoto: first.sellerPhoto,
+                neighborhood: first.neighborhood,
+              };
+              setOrderFlowProduct(product);
+              navigate('order-flow');
+            }}
+            onProductClick={(productId) => {
+              import('firebase/firestore').then(({ getDoc, doc }) => {
+                import('@/config/firebase').then(({ db }) => {
+                  getDoc(doc(db, 'products', productId)).then(snap => {
+                    if (snap.exists()) {
+                      handleProductClick({ id: snap.id, ...snap.data() } as any);
+                    }
+                  });
+                });
+              });
+            }}
+            onSellerClick={handleSellerClick}
           />
         )}
       </main>
 
       {MAIN_PAGES.includes(activePage) && !(role === 'livreur') && (
-        <BottomNav activePage={activePage} onNavigate={handleBottomNavNavigate} role={role} unreadMessages={unreadMessages} pendingDashboard={pendingDashboard} activeMissions={activeMissions} />
+        <BottomNav activePage={activePage} onNavigate={handleBottomNavNavigate} role={role} unreadMessages={unreadMessages} pendingDashboard={pendingDashboard} activeMissions={activeMissions} cartCount={cartCount} />
       )}
 
       {showRoleSwitch && userProfile && (
