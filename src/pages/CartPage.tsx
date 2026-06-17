@@ -42,8 +42,8 @@ export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick, on
             </div>
             {onNavigateToOrders && (
               <button onClick={onNavigateToOrders}
-                className="text-[10px] font-black text-blue-500 active:scale-95 transition-all flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-[10px] font-black text-blue-600 active:scale-95 transition-all flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
                 </svg>
                 Mes commandes
@@ -87,18 +87,18 @@ export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick, on
               <span className="ml-2 text-[11px] font-bold text-slate-400">({items.length})</span>
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {onNavigateToOrders && (
               <button onClick={onNavigateToOrders}
-                className="text-[10px] font-black text-blue-500 active:scale-95 transition-all flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-100 text-[10px] font-black text-blue-600 active:scale-95 transition-all flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
                 </svg>
                 Commandes
               </button>
             )}
             <button onClick={() => { clearCart(); loadCart(); }}
-              className="text-[10px] font-bold text-red-400 active:scale-95 transition-all">
+              className="px-2.5 py-2 rounded-xl text-[10px] font-bold text-red-400 active:scale-95 transition-all">
               Vider
             </button>
           </div>

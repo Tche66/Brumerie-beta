@@ -22,6 +22,7 @@ interface ProductCardFeedProps {
   onStartChat?: (sellerId: string, sellerName: string, productId?: string, productTitle?: string) => void;
   onBuyClick?: (product: Product) => void;
   onOfferClick?: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 function safeTs(val: any): number {
@@ -32,7 +33,7 @@ function safeTs(val: any): number {
 }
 
 export function ProductCardFeed({
-  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat, onBuyClick, onOfferClick,
+  product, onClick, onBookmark, isBookmarked = false, isBoosted = false, onGuestAction, onSellerClick, onStartChat, onBuyClick, onOfferClick, onAddToCart,
 }: ProductCardFeedProps) {
   const { currentUser, userProfile } = useAuth();
   const images = product.images?.length
@@ -243,6 +244,23 @@ export function ProductCardFeed({
               </svg>
             </div>
             <span className="text-[9px] font-black text-white drop-shadow-md">Offre</span>
+          </button>
+
+          {/* Panier */}
+          <button onClick={e => {
+              e.stopPropagation();
+              if (!currentUser) { onGuestAction?.(); return; }
+              if (onAddToCart) { onAddToCart(product); }
+            }}
+            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          >
+            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+              </svg>
+            </div>
+            <span className="text-[9px] font-black text-white drop-shadow-md">Panier</span>
           </button>
 
           {/* Bookmark */}

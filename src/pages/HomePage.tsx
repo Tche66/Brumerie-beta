@@ -12,6 +12,7 @@ import { Product, CATEGORIES, NEIGHBORHOODS, getNeighborhoodsForCity } from '@/t
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { setHomeMeta } from '@/utils/seo';
 import { subscribeBoostedProductIds } from '@/services/boostService';
+import { addToCart } from '@/services/cartService';
 import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -815,6 +816,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                             onSellerClick={onSellerClick}
                             onBuyClick={onBuyClick}
                             onOfferClick={onOfferClick}
+                            onAddToCart={(p) => addToCart(p)}
                           />
                         );
                       });
