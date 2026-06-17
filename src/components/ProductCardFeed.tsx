@@ -135,12 +135,23 @@ export function ProductCardFeed({
     touchStartX.current = null;
   };
 
-  // Prix avec promo
-  const now = new Date().toISOString();
+  // Prix avec promo / vente flash
+  const nowMs = Date.now();
   const p = product as any;
+  const toMs = (val: any): number => {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val.toMillis === 'function') return val.toMillis();
+    if (val.seconds) return val.seconds * 1000;
+    const d = new Date(val).getTime();
+    return isNaN(d) ? 0 : d;
+  };
+  const promoStart = toMs(p.promoActiveFrom);
+  const promoEnd = toMs(p.promoActiveUntil);
   const promoActive = p.promoPrice && p.promoPrice < product.price
-    && (!p.promoActiveFrom || p.promoActiveFrom <= now)
-    && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+    && (!promoStart || promoStart <= nowMs)
+    && (!promoEnd || promoEnd >= nowMs);
+  const isFlashSale = promoActive && (p.flashSaleActive || (!promoStart && p.promoPrice));
   const displayPrice = promoActive ? p.promoPrice : product.price;
   const crossedPrice = promoActive ? product.price : product.originalPrice;
   const pct = crossedPrice && crossedPrice > displayPrice
@@ -334,10 +345,17 @@ export function ProductCardFeed({
         )}
 
         {/* Badge Vente flash */}
-        {(p as any).flashSaleActive && (p as any).flashSaleLabel && (
+        {isFlashSale && (
           <div className="absolute bottom-16 left-3 right-16">
-            <div className="bg-red-500/95 backdrop-blur-sm text-white text-[9px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 justify-center animate-pulse shadow-lg">
-              🔥 {(p as any).flashSaleLabel}
+            <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white text-[10px] font-black px-4 py-2 rounded-2xl flex items-center gap-2 justify-center shadow-xl shadow-red-500/30"
+              style={{ animation: 'pulse 2s infinite' }}>
+              <span className="text-sm">🔥</span>
+              <span>{p.flashSaleLabel || `-${pct}% VENTE FLASH`}</span>
+              {promoEnd > 0 && (
+                <span className="text-[8px] font-bold opacity-80 ml-1">
+                  · {Math.max(0, Math.ceil((promoEnd - nowMs) / 3600000))}h
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -378,9 +396,13 @@ export function ProductCardFeed({
 
         {/* Prix */}
         <div className="flex items-baseline gap-2 mt-3">
-          <span className="text-[22px] font-black text-gray-900">{displayPrice.toLocaleString('fr-FR')}</span>
+          <span className={`text-[22px] font-black ${isFlashSale ? 'text-red-600' : 'text-gray-900'}`}>{displayPrice.toLocaleString('fr-FR')}</span>
           <span className="text-[12px] font-bold text-slate-400">FCFA</span>
-          {pct > 0 && <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">-{pct}%</span>}
+          {pct > 0 && (
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isFlashSale ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'}`}>
+              -{pct}%
+            </span>
+          )}
         </div>
         {crossedPrice && crossedPrice > displayPrice && (
           <p className="text-[11px] text-slate-400 line-through font-bold">{crossedPrice.toLocaleString('fr-FR')} FCFA</p>

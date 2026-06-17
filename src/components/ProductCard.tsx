@@ -140,48 +140,49 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
       {/* Content */}
       <div className="p-4">
         {/* Prix */}
-        <div className="flex items-baseline gap-1.5 flex-wrap">
-          <p className="price-brumerie text-[18px] text-gray-900">
-            {(() => {
-              const p = product as any;
-              const now = new Date().toISOString();
-              const promoActive = p.promoPrice && p.promoPrice < product.price
-                && (!p.promoActiveFrom || p.promoActiveFrom <= now)
-                && (!p.promoActiveUntil || p.promoActiveUntil >= now);
-              return promoActive ? p.promoPrice.toLocaleString('fr-FR') : product.price.toLocaleString('fr-FR');
-            })()}
-          </p>
-          <span className="text-[10px] font-bold text-slate-400 ml-0.5">FCFA</span>
-          {(() => {
-            const p = product as any;
-            const now = new Date().toISOString();
-            const promoActive = p.promoPrice && p.promoPrice < product.price
-              && (!p.promoActiveFrom || p.promoActiveFrom <= now)
-              && (!p.promoActiveUntil || p.promoActiveUntil >= now);
-            const originalForPct = promoActive ? product.price : (product.originalPrice || 0);
-            const displayedPrice = promoActive ? p.promoPrice : product.price;
-            if (promoActive || (product.originalPrice && product.originalPrice > product.price)) {
-              const base = promoActive ? product.price : product.originalPrice!;
-              const pct = Math.round(((base - displayedPrice) / base) * 100);
-              return <span className="bg-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded-lg">-{pct}%</span>;
-            }
-            return null;
-          })()}
-        </div>
         {(() => {
           const p = product as any;
-          const now = new Date().toISOString();
+          const nowMs = Date.now();
+          const toMs = (val: any): number => {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            if (typeof val.toMillis === 'function') return val.toMillis();
+            if (val.seconds) return val.seconds * 1000;
+            const d = new Date(val).getTime();
+            return isNaN(d) ? 0 : d;
+          };
+          const promoStart = toMs(p.promoActiveFrom);
+          const promoEnd = toMs(p.promoActiveUntil);
           const promoActive = p.promoPrice && p.promoPrice < product.price
-            && (!p.promoActiveFrom || p.promoActiveFrom <= now)
-            && (!p.promoActiveUntil || p.promoActiveUntil >= now);
+            && (!promoStart || promoStart <= nowMs)
+            && (!promoEnd || promoEnd >= nowMs);
+          const isFlash = promoActive && (p.flashSaleActive || (!promoStart && p.promoPrice));
+          const displayedPrice = promoActive ? p.promoPrice : product.price;
           const crossed = promoActive ? product.price : product.originalPrice;
-          if (crossed && crossed > (promoActive ? p.promoPrice : product.price)) {
-            return <p className="text-[9px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} FCFA</p>;
-          }
-          return null;
+          const pct = crossed && crossed > displayedPrice ? Math.round(((crossed - displayedPrice) / crossed) * 100) : 0;
+
+          return (
+            <>
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <p className={`price-brumerie text-[18px] ${isFlash ? 'text-red-600' : 'text-gray-900'}`}>
+                  {displayedPrice.toLocaleString('fr-FR')}
+                </p>
+                <span className="text-[10px] font-bold text-slate-400 ml-0.5">FCFA</span>
+                {pct > 0 && (
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-lg ${isFlash ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'}`}>-{pct}%</span>
+                )}
+              </div>
+              {crossed && crossed > displayedPrice && (
+                <p className="text-[9px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} FCFA</p>
+              )}
+              {isFlash && (
+                <p className="text-[9px] font-black text-white bg-gradient-to-r from-red-600 to-orange-500 px-2 py-0.5 rounded-lg mt-1 inline-flex items-center gap-1">
+                  🔥 {p.flashSaleLabel || 'VENTE FLASH'}
+                </p>
+              )}
+            </>
+          );
         })()}
-        {/* Label vente flash */}
-        {(() => { const p = product as any; return p.flashSaleLabel ? <p className="text-[8px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-lg mt-0.5">🔥 {p.flashSaleLabel}</p> : null; })()}
 
         {/* Titre */}
         <h3 className="text-[11px] font-bold text-gray-500 mt-1 line-clamp-1 uppercase tracking-tight">
