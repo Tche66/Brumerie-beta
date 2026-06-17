@@ -69,9 +69,9 @@ function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wide ${color}`}>{label}</span>;
 }
 
-interface AdminPageProps { onBack: () => void; onContact?: (userId: string, userName: string) => void; }
+interface AdminPageProps { onBack: () => void; onContact?: (userId: string, userName: string) => void; onSellerClick?: (sellerId: string) => void; }
 
-export function AdminPage({ onBack, onContact }: AdminPageProps) {
+export function AdminPage({ onBack, onContact, onSellerClick }: AdminPageProps) {
   const { currentUser } = useAuth();
   const isAdmin = !!(currentUser?.uid && ADMIN_UID && currentUser.uid === ADMIN_UID);
 
@@ -176,6 +176,17 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
     getGlobalSettings()
       .then(s => { setGlobalSettings(s || {}); setSettingsDraft(s || {}); })
       .catch(() => { setGlobalSettings({}); setSettingsDraft({}); });
+    // Charger les custom categories/neighborhoods depuis appConfig/main
+    getDoc(doc(db, 'appConfig', 'main')).then(snap => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setGlobalSettings((s: any) => ({
+          ...s,
+          customCategories: data.customCategories || [],
+          customNeighborhoods: data.customNeighborhoods || [],
+        }));
+      }
+    }).catch(() => {});
   }, [isAdmin]);
 
   const handleActivateBoost = async (id: string) => {
@@ -929,7 +940,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     </div>
                     {/* Ligne 3 — Voir profil + livreur + supprimer */}
                     <div className="flex gap-2">
-                      <button onClick={() => onContact?.(u.id, u.name || 'User')}
+                      <button onClick={() => onSellerClick?.(u.id)}
                         className="flex-1 py-2 rounded-xl bg-slate-50 text-slate-600 font-black text-[10px] uppercase active:scale-95">
                         👁 Profil
                       </button>

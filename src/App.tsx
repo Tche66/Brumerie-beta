@@ -837,6 +837,7 @@ useEffect(() => {
               await handleOpenChatWithSeller(userId, userName, userId, 'Contact Admin');
               goBack();
             }}
+            onSellerClick={(sellerId) => { setSelectedSellerId(sellerId); navigate('seller-profile', { sellerId }); }}
           />
         )}
         {activePage === 'compta' && (
