@@ -318,7 +318,13 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
   const pendingBoosts = allBoosts.filter(b => b.status === 'pending');
   const disputeCount = orders.filter(o => o.status === 'dispute').length;
 
-  const filteredUsers = users.filter(u => !userSearch || [u.name, u.email, u.phone].some(v => v?.toLowerCase().includes(userSearch.toLowerCase())));
+  const filteredUsers = users.filter(u => {
+    if (!userSearch) return true;
+    if (userSearch === 'verified_filter') return u.isVerified || u.isPremium;
+    if (userSearch === 'banned_filter') return u.isBanned;
+    if (userSearch.startsWith('role:')) return u.role === userSearch.split(':')[1];
+    return [u.name, u.email, u.phone, u.city, u.neighborhood].some(v => v?.toLowerCase().includes(userSearch.toLowerCase()));
+  });
   const filteredProducts = products.filter(p => (!productSearch || p.title?.toLowerCase().includes(productSearch.toLowerCase())) && p.status !== 'deleted');
   const filteredOrders = orders.filter(o => orderFilter === 'all' || o.status === orderFilter);
   const filteredBoosts = allBoosts.filter(b => boostFilter === 'all' || b.status === boostFilter);
@@ -729,21 +735,59 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         {/* ── USERS ── */}
         {tab === 'users' && (
           <>
-            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Nom, email, téléphone..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
+            <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Nom, email, téléphone, ville..." className="w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-white text-[12px] outline-none focus:border-green-500 placeholder-slate-500"/>
+
+            {/* Filtres rapides par rôle */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              {([['all','Tous',users.length],['seller','Vendeurs',users.filter((u:any)=>u.role==='seller').length],['buyer','Acheteurs',users.filter((u:any)=>u.role==='buyer').length],['verified','Vérifiés',users.filter((u:any)=>u.isVerified||u.isPremium).length],['banned','Bannis',users.filter((u:any)=>u.isBanned).length]] as [string,string,number][]).map(([f,l,c]) => (
+                <button key={f} onClick={() => setUserSearch(f === 'all' ? '' : f === 'verified' ? 'verified_filter' : f === 'banned' ? 'banned_filter' : `role:${f}`)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase ${
+                    (userSearch === `role:${f}` || (f==='verified'&&userSearch==='verified_filter') || (f==='banned'&&userSearch==='banned_filter') || (f==='all'&&!userSearch))
+                      ? 'bg-green-500 text-white' : 'bg-white/10 text-slate-400'
+                  }`}>{l} ({c})</button>
+              ))}
+            </div>
+
+            {/* Stats rapides users */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-white/5 rounded-xl p-2 text-center">
+                <p className="font-black text-[16px] text-white">{users.length}</p>
+                <p className="text-[7px] text-slate-500 uppercase font-bold">Total</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-2 text-center">
+                <p className="font-black text-[16px] text-green-400">{users.filter((u:any)=>u.createdAt&&(Date.now()-(u.createdAt?.toDate?u.createdAt.toDate().getTime():new Date(u.createdAt).getTime()))<7*86400000).length}</p>
+                <p className="text-[7px] text-slate-500 uppercase font-bold">7 jours</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-2 text-center">
+                <p className="font-black text-[16px] text-blue-400">{users.filter((u:any)=>u.isVerified||u.isPremium).length}</p>
+                <p className="text-[7px] text-slate-500 uppercase font-bold">Badges</p>
+              </div>
+              <div className="bg-white/5 rounded-xl p-2 text-center">
+                <p className="font-black text-[16px] text-red-400">{users.filter((u:any)=>u.isBanned).length}</p>
+                <p className="text-[7px] text-slate-500 uppercase font-bold">Bannis</p>
+              </div>
+            </div>
+
             <p className="text-slate-500 text-[10px] font-bold">{filteredUsers.length} résultat(s)</p>
             {filteredUsers.map(u => (
               <div key={u.id} className={`bg-white rounded-2xl overflow-hidden ${u.isBanned ? 'border-2 border-red-200' : ''}`}>
                 <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-                  {u.photoURL ? <img src={u.photoURL} className="w-10 h-10 rounded-full object-cover flex-shrink-0" alt=""/> : <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 font-black text-slate-500">{u.name?.[0]||'?'}</div>}
+                  {u.photoURL ? <img src={u.photoURL} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" alt=""/> : <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 font-black text-slate-500 text-lg">{u.name?.[0]||'?'}</div>}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-black text-slate-900 text-[13px]">{u.name||'—'}</p>
-                      {u.isVerified && <Badge label="✓" color="bg-green-100 text-green-700"/>}
-                      {u.isBanned && <Badge label="" color="bg-red-100 text-red-700"/>}
-                      <Badge label={u.role||'buyer'} color={u.role==='seller'?'bg-blue-100 text-blue-700':'bg-slate-100 text-slate-500'}/>
+                      {u.isVerified && !u.isPremium && <Badge label="Vérifié" color="bg-blue-100 text-blue-700"/>}
+                      {u.isPremium && <Badge label="Premium" color="bg-amber-100 text-amber-700"/>}
+                      {u.isBanned && <Badge label="Banni" color="bg-red-100 text-red-700"/>}
+                      <Badge label={u.role||'buyer'} color={u.role==='seller'?'bg-green-100 text-green-700':u.role==='livreur'?'bg-orange-100 text-orange-700':'bg-slate-100 text-slate-500'}/>
                     </div>
                     <p className="text-slate-400 text-[10px] truncate">{u.email}</p>
-                    {u.phone && <p className="text-slate-400 text-[10px]">{u.phone}</p>}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {u.phone && <span className="text-slate-400 text-[9px]">{u.phone}</span>}
+                      {(u.city || u.neighborhood) && <span className="text-slate-300 text-[9px]">📍 {u.city || ''} {u.neighborhood || ''}</span>}
+                      <span className="text-slate-300 text-[9px]">📦 {products.filter((p:any)=>p.sellerId===u.id).length} articles</span>
+                      {u.createdAt && <span className="text-slate-300 text-[9px]">{fmtDate(u.createdAt)}</span>}
+                    </div>
                   </div>
                 </div>
                 {u.isBanned && u.banReason && <div className="mx-4 mb-2 bg-red-50 rounded-xl px-3 py-1.5"><p className="text-[10px] text-red-600 font-bold"><BruIcons.XCircle size={14}/> {u.banReason}</p></div>}
@@ -883,6 +927,33 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                         </button>
                       )}
                     </div>
+                    {/* Ligne 3 — Voir profil + livreur + supprimer */}
+                    <div className="flex gap-2">
+                      <button onClick={() => onContact?.(u.id, u.name || 'User')}
+                        className="flex-1 py-2 rounded-xl bg-slate-50 text-slate-600 font-black text-[10px] uppercase active:scale-95">
+                        👁 Profil
+                      </button>
+                      {u.role !== 'livreur' && (
+                        <button onClick={() => handleSetRole(u.id,'livreur')} disabled={busy===u.id}
+                          className="flex-1 py-2 rounded-xl bg-orange-50 text-orange-600 font-black text-[10px] uppercase disabled:opacity-50 active:scale-95">
+                          → Livreur
+                        </button>
+                      )}
+                      <button onClick={async () => {
+                        if (!confirm(`SUPPRIMER le compte de ${u.name} ? Cette action est irréversible.`)) return;
+                        setBusy('del_'+u.id);
+                        try {
+                          const { deleteDoc } = await import('firebase/firestore');
+                          await deleteDoc(doc(db,'users',u.id));
+                          await logAction('USER_DELETED', u.id, u.email);
+                          showToast('Compte supprimé');
+                        } catch { showToast('Erreur suppression'); }
+                        finally { setBusy(''); }
+                      }} disabled={busy==='del_'+u.id}
+                        className="py-2 px-3 rounded-xl bg-red-50 text-red-500 font-black text-[10px] uppercase active:scale-95 disabled:opacity-50">
+                        🗑
+                      </button>
+                    </div>
                     {/* Changer l'email — panneau inline */}
                     {emailTarget === u.id && (
                       <div className="mt-2 bg-indigo-50 rounded-2xl p-3 space-y-2">
@@ -905,7 +976,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                             {busy==='email_'+u.id ? '...' : '✓'}
                           </button>
                         </div>
-                        <p className="text-[9px] text-indigo-400"><BruIcons.Zap size={14}/> Changement immédiat sans OTP (accès admin)</p>
+                        <p className="text-[9px] text-indigo-400">Changement immédiat sans OTP (accès admin)</p>
                       </div>
                     )}
                   </div>
@@ -1747,7 +1818,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
 
               {/* Ajouter un quartier custom */}
               <div className="border-t border-white/10 pt-4">
-                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter un quartier (custom)</p>
+                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter un quartier</p>
                 <div className="flex gap-2 mb-2">
                   <select value={newNeighborhoodCity} onChange={e => setNewNeighborhoodCity(e.target.value)}
                     className="bg-white/10 border border-white/10 rounded-xl px-3 py-2 text-white text-[11px] outline-none">
@@ -1762,9 +1833,9 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                     const ref = doc(db, 'appConfig', 'main');
                     const snap = await getDoc(ref);
                     const existing = snap.exists() ? (snap.data().customNeighborhoods || []) : [];
-                    await updateDoc(ref, { customNeighborhoods: [...existing, `${newNeighborhoodCity}:${newNeighborhoodName.trim()}`] });
+                    await updateDoc(ref, { customNeighborhoods: [...existing, newNeighborhoodName.trim()] });
                     setNewNeighborhoodName('');
-                    showToast(`Quartier "${newNeighborhoodName.trim()}" ajouté à ${newNeighborhoodCity}`);
+                    showToast(`Quartier "${newNeighborhoodName.trim()}" ajouté`);
                   } catch { showToast('Erreur'); }
                 }} disabled={!newNeighborhoodName.trim()}
                   className="w-full py-3 rounded-xl font-black text-[11px] uppercase text-white disabled:opacity-40 active:scale-95"
@@ -1774,9 +1845,40 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
               </div>
             </div>
 
+            {/* Quartiers custom ajoutés — avec suppression */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Quartiers custom (supprimables)</p>
+              <p className="text-[9px] text-slate-600 mb-3">Ces quartiers ont été ajoutés manuellement via l'admin ou les suggestions.</p>
+              {(() => {
+                const custom = (globalSettings.customNeighborhoods || []) as string[];
+                if (custom.length === 0) return <p className="text-slate-600 text-[11px] text-center py-4">Aucun quartier custom</p>;
+                return (
+                  <div className="space-y-1.5">
+                    {custom.map((n: string, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
+                        <span className="text-white text-[11px] font-bold">{n}</span>
+                        <button onClick={async () => {
+                          if (!confirm(`Supprimer le quartier "${n}" ?`)) return;
+                          try {
+                            const ref = doc(db, 'appConfig', 'main');
+                            const updated = custom.filter((_: string, i: number) => i !== idx);
+                            await updateDoc(ref, { customNeighborhoods: updated });
+                            setGlobalSettings((s: any) => ({ ...s, customNeighborhoods: updated }));
+                            showToast(`"${n}" supprimé`);
+                          } catch { showToast('Erreur'); }
+                        }} className="w-7 h-7 bg-red-500/20 rounded-lg flex items-center justify-center active:scale-90">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Détail quartiers par ville */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Quartiers par ville</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Quartiers par ville (intégrés)</p>
               {CITIES.map(city => (
                 <details key={city} className="mb-3">
                   <summary className="text-white font-bold text-[12px] cursor-pointer py-2 border-b border-white/5">{city} ({CITY_NEIGHBORHOODS[city]?.length})</summary>
@@ -1794,8 +1896,9 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
         {/* ── CATÉGORIES ── */}
         {tab === 'categories' && (
           <>
+            {/* Catégories intégrées */}
             <div className="bg-white/5 rounded-2xl p-4">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Catégories actives ({CATEGORIES.length})</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Catégories système ({CATEGORIES.length})</p>
               <div className="space-y-2 mb-4">
                 {CATEGORIES.map(cat => {
                   const count = products.filter((p: any) => p.category === cat.id && p.status === 'active').length;
@@ -1806,15 +1909,49 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                         <p className="text-white font-bold text-[12px]">{cat.label}</p>
                         <p className="text-slate-500 text-[10px]">ID: {cat.id}</p>
                       </div>
-                      <span className="text-slate-400 font-black text-[12px]">{count}</span>
+                      <span className="text-green-400 font-black text-[12px]">{count}</span>
                     </div>
                   );
                 })}
               </div>
+            </div>
+
+            {/* Catégories custom — avec suppression */}
+            <div className="bg-white/5 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Catégories custom (supprimables)</p>
+              {(() => {
+                const custom = (globalSettings.customCategories || []) as string[];
+                if (custom.length === 0) return <p className="text-slate-600 text-[11px] text-center py-4">Aucune catégorie custom</p>;
+                return (
+                  <div className="space-y-1.5 mb-4">
+                    {custom.map((cat: string, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🏷️</span>
+                          <span className="text-white text-[11px] font-bold">{cat}</span>
+                          <span className="text-slate-500 text-[9px]">{products.filter((p:any)=>p.category===cat && p.status==='active').length} articles</span>
+                        </div>
+                        <button onClick={async () => {
+                          if (!confirm(`Supprimer la catégorie "${cat}" ?`)) return;
+                          try {
+                            const ref = doc(db, 'appConfig', 'main');
+                            const updated = custom.filter((_: string, i: number) => i !== idx);
+                            await updateDoc(ref, { customCategories: updated });
+                            setGlobalSettings((s: any) => ({ ...s, customCategories: updated }));
+                            showToast(`"${cat}" supprimée`);
+                          } catch { showToast('Erreur'); }
+                        }} className="w-7 h-7 bg-red-500/20 rounded-lg flex items-center justify-center active:scale-90">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Ajouter catégorie custom */}
               <div className="border-t border-white/10 pt-4">
-                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter une catégorie (custom)</p>
+                <p className="text-[10px] font-black text-slate-300 mb-2">Ajouter une catégorie</p>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input value={newCategoryIcon} onChange={e => setNewCategoryIcon(e.target.value)}
@@ -1829,6 +1966,7 @@ export function AdminPage({ onBack, onContact }: AdminPageProps) {
                       const snap = await getDoc(ref);
                       const existing = snap.exists() ? (snap.data().customCategories || []) : [];
                       await updateDoc(ref, { customCategories: [...existing, newCategoryLabel.trim()] });
+                      setGlobalSettings((s: any) => ({ ...s, customCategories: [...(s.customCategories||[]), newCategoryLabel.trim()] }));
                       setNewCategoryLabel(''); setNewCategoryIcon('🏷️');
                       showToast(`Catégorie "${newCategoryLabel.trim()}" ajoutée`);
                     } catch { showToast('Erreur'); }
