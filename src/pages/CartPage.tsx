@@ -6,9 +6,10 @@ interface CartPageProps {
   onBuyClick: (items: CartItem[], sellerId: string) => void;
   onProductClick?: (productId: string) => void;
   onSellerClick?: (sellerId: string) => void;
+  onNavigateToOrders?: () => void;
 }
 
-export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick }: CartPageProps) {
+export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick, onNavigateToOrders }: CartPageProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [groupedItems, setGroupedItems] = useState<Record<string, CartItem[]>>({});
 
@@ -32,11 +33,22 @@ export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick }: 
       <div className="min-h-screen bg-slate-50 pb-28">
         {/* Header */}
         <div className="sticky top-0 z-30 bg-white border-b border-slate-100">
-          <div className="flex items-center gap-3 px-4 py-4">
-            <button onClick={onBack} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </button>
-            <h1 className="text-[15px] font-black text-slate-900 uppercase tracking-tight">Mon Panier</h1>
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <button onClick={onBack} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              </button>
+              <h1 className="text-[15px] font-black text-slate-900 uppercase tracking-tight">Mon Panier</h1>
+            </div>
+            {onNavigateToOrders && (
+              <button onClick={onNavigateToOrders}
+                className="text-[10px] font-black text-blue-500 active:scale-95 transition-all flex items-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+                </svg>
+                Mes commandes
+              </button>
+            )}
           </div>
         </div>
 
@@ -75,10 +87,21 @@ export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick }: 
               <span className="ml-2 text-[11px] font-bold text-slate-400">({items.length})</span>
             </h1>
           </div>
-          <button onClick={() => { clearCart(); loadCart(); }}
-            className="text-[10px] font-bold text-red-400 active:scale-95 transition-all">
-            Tout vider
-          </button>
+          <div className="flex items-center gap-3">
+            {onNavigateToOrders && (
+              <button onClick={onNavigateToOrders}
+                className="text-[10px] font-black text-blue-500 active:scale-95 transition-all flex items-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
+                </svg>
+                Commandes
+              </button>
+            )}
+            <button onClick={() => { clearCart(); loadCart(); }}
+              className="text-[10px] font-bold text-red-400 active:scale-95 transition-all">
+              Vider
+            </button>
+          </div>
         </div>
       </div>
 

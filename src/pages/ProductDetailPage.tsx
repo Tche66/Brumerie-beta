@@ -1405,17 +1405,9 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         ) : (
           <>
           <div className="flex gap-3">
-            <button onClick={handleStartChat} disabled={startingChat}
-              className="flex-1 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 bg-slate-100 text-slate-700 active:scale-95 transition-all disabled:opacity-50">
-              {startingChat
-                ? <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin"/>
-                : <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Discuter</>
-              }
-            </button>
-
-            {!isGuest && currentUser?.uid !== product.sellerId && product.status !== 'sold' && (
+            {!isGuest && currentUser?.uid !== product.sellerId && (
               <button onClick={() => setShowOfferModal(true)}
-                className="flex-1 py-5 rounded-[2rem] font-black text-[12px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                className="flex-1 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 💰 Offre
               </button>
             )}

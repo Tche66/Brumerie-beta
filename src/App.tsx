@@ -907,6 +907,7 @@ useEffect(() => {
         {activePage === 'cart' && (
           <CartPage
             onBack={goBack}
+            onNavigateToOrders={() => { navigate('order-status'); }}
             onBuyClick={(cartItems, sellerId) => {
               const first = cartItems[0];
               if (!first) return;
