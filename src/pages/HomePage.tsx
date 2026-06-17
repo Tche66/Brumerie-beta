@@ -1009,6 +1009,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                         onStartChat={onOpenChatWithSeller}
                         onBuyClick={onBuyClick}
                         onOfferClick={onOfferClick}
+                        onAddToCart={(p) => addToCart(p)}
                       />
                     );
                   })}

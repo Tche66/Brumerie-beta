@@ -47,6 +47,7 @@ export function ProductCardFeed({
   const [currentImg, setCurrentImg] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [cartAdded, setCartAdded] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
@@ -250,17 +251,23 @@ export function ProductCardFeed({
           <button onClick={e => {
               e.stopPropagation();
               if (!currentUser) { onGuestAction?.(); return; }
-              if (onAddToCart) { onAddToCart(product); }
+              onAddToCart?.(product);
+              setCartAdded(true);
+              setTimeout(() => setCartAdded(false), 2000);
             }}
             className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
           >
-            <div className="w-11 h-11 bg-orange-500 rounded-full flex items-center justify-center shadow-lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-              </svg>
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors ${cartAdded ? 'bg-green-500' : 'bg-orange-500'}`}>
+              {cartAdded ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                </svg>
+              )}
             </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">Panier</span>
+            <span className="text-[9px] font-black text-white drop-shadow-md">{cartAdded ? 'Ajouté !' : 'Panier'}</span>
           </button>
 
           {/* Bookmark */}
@@ -280,17 +287,6 @@ export function ProductCardFeed({
             )}
           </button>
 
-          {/* Partager */}
-          <button onClick={handleShare}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
-          >
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-            </div>
-          </button>
         </div>
 
         {/* ── Badges en bas à gauche de l'image ── */}
