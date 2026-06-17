@@ -10,7 +10,11 @@ self.addEventListener('activate', e => e.waitUntil(
 ));
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => caches.match(event.request))
+      .then(r => r || new Response('', { status: 503, statusText: 'Offline' }))
+  );
 });
 
 // ── Mapping type → channel Android + icône + action ──────────
