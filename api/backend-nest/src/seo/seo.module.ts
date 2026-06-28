@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SeoController } from './seo.controller';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   controllers: [SeoController],

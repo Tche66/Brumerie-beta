@@ -3,7 +3,7 @@
 // Sert du HTML avec les meta tags corrects pour chaque produit/vendeur
 import { Controller, Get, Param, Res, Req } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller()
 export class SeoController {
