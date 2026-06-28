@@ -7,6 +7,7 @@ import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
 import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS, getNeighborhoodsForCity } from '@/types';
 import { subscribeAppConfig } from '@/services/appConfigService';
+import { generateListing } from '@/services/brumeIaService';
 
 interface SellPageProps {
   onClose: () => void;
@@ -53,6 +54,11 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const [selectedCities, setSelectedCities] = useState<string[]>(
     userProfile?.neighborhood ? [userProfile.neighborhood] : []
   );
+
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiUsed, setAiUsed] = useState(false);
+  const [aiScore, setAiScore] = useState<number | null>(null);
+  const [aiTips, setAiTips] = useState<string[]>([]);
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -417,6 +423,86 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
         {step === 1 && (
           <div className="space-y-6 animate-fade-up">
             <h3 className="text-2xl font-black text-slate-900">Informations</h3>
+
+            {/* ═══ BRUME IA — Génération automatique ═══ */}
+            {!aiUsed && imagePreviews.length > 0 && (
+              <button
+                onClick={async () => {
+                  setAiLoading(true);
+                  setError('');
+                  try {
+                    const result = await generateListing({
+                      imageUrl: imagePreviews[0],
+                      rawText: title || undefined,
+                      sellerNeighborhood: userProfile?.neighborhood || selectedCities[0],
+                    });
+                    setTitle(result.title);
+                    setDescription(result.description);
+                    setCategory(result.category);
+                    setPrice(result.suggestedPrice.toString());
+                    if (result.condition) setCondition(result.condition);
+                    setAiScore(result.sellScore);
+                    setAiTips(result.tips || []);
+                    setAiUsed(true);
+                  } catch (e: any) {
+                    setError('Brume IA indisponible. Remplis manuellement.');
+                  } finally {
+                    setAiLoading(false);
+                  }
+                }}
+                disabled={aiLoading}
+                className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-[0.98] transition-all relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #16A34A 0%, #065F46 50%, #0F172A 100%)', color: 'white' }}
+              >
+                {aiLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                    Brume IA analyse...
+                  </>
+                ) : (
+                  <>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+                      <path d="M9 22h6"/>
+                    </svg>
+                    Remplir avec Brume IA
+                  </>
+                )}
+                <span className="absolute top-2 right-3 text-[8px] font-bold text-white/60 uppercase tracking-widest">Nouveau</span>
+              </button>
+            )}
+
+            {/* Score Brume IA */}
+            {aiUsed && aiScore !== null && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round">
+                      <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+                    </svg>
+                    <span className="text-[11px] font-black text-green-800 uppercase tracking-wide">Score Brume IA</span>
+                  </div>
+                  <span className="text-[18px] font-black text-green-700">{aiScore}/100</span>
+                </div>
+                <div className="w-full h-2 bg-green-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-600 rounded-full transition-all" style={{ width: `${aiScore}%` }}/>
+                </div>
+                {aiTips.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {aiTips.map((tip, i) => (
+                      <p key={i} className="text-[10px] text-green-700 font-medium flex items-start gap-1.5">
+                        <span className="text-green-500 mt-0.5">•</span> {tip}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => { setAiUsed(false); setAiScore(null); setAiTips([]); }}
+                  className="mt-3 text-[9px] font-bold text-green-600 underline">
+                  Regénérer avec Brume IA
+                </button>
+              </div>
+            )}
+
             <div>
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Titre de l'annonce</label>
               <input type="text" placeholder="ex: iPhone 13 Pro Max" value={title} onChange={e => setTitle(e.target.value)}

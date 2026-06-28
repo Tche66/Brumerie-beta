@@ -13,6 +13,7 @@ import { BoostsModule } from './boosts/boosts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MigrationModule } from './migration/migration.module';
 import { SeoModule } from './seo/seo.module';
+import { BrumeIaModule } from './brume-ia/brume-ia.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { SeoModule } from './seo/seo.module';
     DashboardModule,
     MigrationModule,
     SeoModule,
+    BrumeIaModule,
   ],
 })
 export class AppModule {}

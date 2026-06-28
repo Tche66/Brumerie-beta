@@ -61,6 +61,7 @@ import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
 import { CartPage } from '@/pages/CartPage';
 import { getCartCount } from '@/services/cartService';
+import { BrumeAssistant } from '@/components/BrumeAssistant';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
@@ -968,6 +969,17 @@ useEffect(() => {
       {showNeighborhoodModal && (
         <GoogleNeighborhoodModal onDone={() => setShowNeighborhoodModal(false)} />
       )}
+
+      {/* Brume IA — Assistant flottant */}
+      <BrumeAssistant onAction={(action) => {
+        if (action.type === 'search' && action.payload?.query) {
+          navigate('discover');
+        } else if (action.type === 'create_listing') {
+          navigate('sell');
+        } else if (action.type === 'navigate' && action.payload?.page) {
+          navigate(action.payload.page as any);
+        }
+      }} />
 
       {/* OfferModal depuis une Story */}
       {storyOfferProduct && currentUser && userProfile && (
