@@ -111,7 +111,7 @@ export class BrumeIaService {
     maxTokens?: number;
   }): Promise<string> {
     const { system, messages, maxTokens = 1500 } = params;
-    const model = 'us.anthropic.claude-sonnet-4-20250514-v1:0';
+    const model = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6-v1';
 
     if (this.useProvider === 'bedrock' && this.bedrock) {
       const body = JSON.stringify({

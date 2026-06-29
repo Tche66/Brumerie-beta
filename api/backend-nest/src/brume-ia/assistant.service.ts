@@ -42,7 +42,7 @@ export class AssistantService {
   }
 
   private async callClaude(system: string, messages: { role: 'user' | 'assistant'; content: string }[]): Promise<string> {
-    const model = 'us.anthropic.claude-sonnet-4-20250514-v1:0';
+    const model = process.env.BEDROCK_MODEL_ID || 'us.anthropic.claude-sonnet-4-6-v1';
 
     if (this.useProvider === 'bedrock' && this.bedrock) {
       const body = JSON.stringify({
