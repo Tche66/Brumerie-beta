@@ -48,6 +48,7 @@ export function ProductCardFeed({
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [cartAdded, setCartAdded] = useState(false);
+  const [shared, setShared] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
@@ -113,12 +114,15 @@ export function ProductCardFeed({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}?product=${product.id}`;
+    if ('vibrate' in navigator) navigator.vibrate(10);
+    const url = `${window.location.origin}/p/${product.id}`;
     if (navigator.share) {
-      navigator.share({ title: product.title, text: `${product.title} — ${product.price.toLocaleString('fr-FR')} FCFA`, url }).catch(() => {});
+      navigator.share({ title: product.title, text: `${product.title} — ${product.price.toLocaleString('fr-FR')} FCFA sur Brumerie`, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url).catch(() => {});
     }
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -227,16 +231,16 @@ export function ProductCardFeed({
 
         {/* ── Actions latérales droites — style TikTok ── */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4">
-          {/* Like */}
+          {/* Like — Pouce */}
           <button onClick={handleLike} disabled={likeLoading}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform disabled:opacity-60"
+            className={`flex flex-col items-center gap-0.5 transition-all disabled:opacity-60 ${isLiked ? 'animate-[thumbPop_0.4s_ease]' : 'active:scale-90'}`}
           >
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-              <svg width="22" height="22" viewBox="0 0 24 24"
-                fill={isLiked ? '#EF4444' : 'none'}
-                stroke={isLiked ? '#EF4444' : 'white'}
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 ${isLiked ? 'bg-blue-500 border-blue-400 scale-110' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24"
+                fill={isLiked ? 'white' : 'none'}
+                stroke={isLiked ? 'white' : 'white'}
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
               </svg>
             </div>
             {likeCount > 0 && <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount}</span>}
@@ -262,11 +266,12 @@ export function ProductCardFeed({
           <button onClick={e => {
               e.stopPropagation();
               if (!currentUser) { onGuestAction?.(); return; }
+              if ('vibrate' in navigator) navigator.vibrate(15);
               onAddToCart?.(product);
               setCartAdded(true);
               setTimeout(() => setCartAdded(false), 2000);
             }}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+            className={`flex flex-col items-center gap-0.5 transition-all ${cartAdded ? 'animate-[cartBounce_0.5s_ease]' : 'active:scale-90'}`}
           >
             <div className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors ${cartAdded ? 'bg-green-500' : 'bg-orange-500'}`}>
               {cartAdded ? (
@@ -281,20 +286,19 @@ export function ProductCardFeed({
             <span className="text-[9px] font-black text-white drop-shadow-md">{cartAdded ? 'Ajouté !' : 'Panier'}</span>
           </button>
 
-          {/* Bookmark */}
-          <button onClick={handleBookmark}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          {/* Partager */}
+          <button onClick={handleShare}
+            className={`flex flex-col items-center gap-0.5 transition-all ${shared ? 'animate-[sharePop_0.5s_ease]' : 'active:scale-90'}`}
           >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center border border-white/30 ${saved ? 'bg-blue-500' : 'bg-white/20 backdrop-blur-md'}`}>
+            <div className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 ${shared ? 'bg-green-500 border-green-400' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
               <svg width="20" height="20" viewBox="0 0 24 24"
-                fill={saved ? 'white' : 'none'}
+                fill="none"
                 stroke="white"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
               </svg>
             </div>
-            {((product as any).bookmarkCount || 0) > 0 && (
-              <span className="text-[11px] font-black text-white drop-shadow-md">{(product as any).bookmarkCount}</span>
+            <span className="text-[9px] font-black text-white drop-shadow-md">{shared ? 'Copié !' : 'Partager'}</span>
             )}
           </button>
 

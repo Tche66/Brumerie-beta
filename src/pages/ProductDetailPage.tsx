@@ -559,18 +559,18 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </div>
         )}
 
-        {/* ── Actions latérales droites — style TikTok ── */}
+        {/* ── Actions latérales droites ── */}
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-10">
-          {/* Like */}
+          {/* Like — Pouce */}
           <button onClick={handleLike} disabled={likeLoading}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform disabled:opacity-60"
+            className={`flex flex-col items-center gap-0.5 transition-all disabled:opacity-60 ${isLiked ? 'animate-[thumbPop_0.4s_ease]' : 'active:scale-90'}`}
           >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isLiked ? 'bg-red-500/80 backdrop-blur-md' : 'bg-white/20 backdrop-blur-md'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${isLiked ? 'bg-blue-500 border-blue-400 scale-110' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
               <svg width="22" height="22" viewBox="0 0 24 24"
                 fill={isLiked ? 'white' : 'none'}
                 stroke="white"
                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
               </svg>
             </div>
             <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount > 0 ? likeCount : ''}</span>
@@ -588,47 +588,39 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <span className="text-[9px] font-black text-white drop-shadow-md">Offre</span>
           </button>
 
-          {/* Bookmark */}
-          <button onClick={handleBookmark}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
+          {/* Panier */}
+          <button onClick={() => {
+              if (isGuest) { onGuestAction?.('cart'); return; }
+              addToCart(product);
+              setAddedToCart(true);
+              setTimeout(() => setAddedToCart(false), 2500);
+            }}
+            className={`flex flex-col items-center gap-0.5 transition-all ${addedToCart ? 'animate-[cartBounce_0.5s_ease]' : 'active:scale-90'}`}
           >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isBookmarked ? 'bg-blue-500' : 'bg-white/20 backdrop-blur-md'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24"
-                fill={isBookmarked ? 'white' : 'none'}
-                stroke="white"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-              </svg>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 ${addedToCart ? 'bg-green-500' : 'bg-orange-500'}`}>
+              {addedToCart ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                </svg>
+              )}
             </div>
-            {((product as any).bookmarkCount || 0) > 0 && (
-              <span className="text-[11px] font-black text-white drop-shadow-md">{(product as any).bookmarkCount}</span>
-            )}
+            <span className="text-[9px] font-black text-white drop-shadow-md">{addedToCart ? 'Ajouté' : 'Panier'}</span>
           </button>
 
-
-          {/* Wishlist */}
-          {!isGuest && currentUser && (
-            <button
-              onClick={async () => {
-                if (!currentUser) return;
-                try {
-                  if (isInWishlist) {
-                    await removeFromWishlist(currentUser.uid, product.id);
-                    setIsInWishlist(false);
-                  } else {
-                    await addToWishlist(currentUser.uid, product.id);
-                    setIsInWishlist(true);
-                  }
-                  await refreshUserProfile();
-                } catch {}
-              }}
-              className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
-            >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center border border-white/30 ${isInWishlist ? 'bg-amber-400' : 'bg-white/20 backdrop-blur-md'}`}>
-                <span className="text-[18px]">{isInWishlist ? '✨' : '☆'}</span>
-              </div>
-            </button>
-          )}
+          {/* Partager */}
+          <button onClick={handleShare}
+            className={`flex flex-col items-center gap-0.5 transition-all ${copySuccess ? 'animate-[sharePop_0.5s_ease]' : 'active:scale-90'}`}
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${copySuccess ? 'bg-green-500 border-green-400' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <span className="text-[9px] font-black text-white drop-shadow-md">{copySuccess ? 'Copié !' : 'Partager'}</span>
+          </button>
         </div>
 
         {/* ── Badges status en bas à gauche ── */}
