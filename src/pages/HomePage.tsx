@@ -318,78 +318,49 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       {/* Stories — barre horizontale comme Instagram */}
       <StoriesBar onSellerClick={onOpenChatWithSeller ? (sellerId) => onOpenChatWithSeller(sellerId, '') : undefined} onOpenChatWithSeller={onOpenChatWithSeller} onOrderFromStory={onOrderFromStory} onOfferFromStory={onOfferFromStory} />
 
-      {/* ── ONGLETS FEED SOCIAL ── */}
-      {!isGuest && userProfile && (
-        <div className="px-5 pt-4 pb-0 flex gap-1 border-b border-slate-100 overflow-x-auto scrollbar-none bg-white sticky top-[56px] z-30">
-          {([
-            { id: 'all',      label: `${userProfile?.city || 'Abidjan'}`, icon: '🏪' },
-            { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
-            { id: 'trending', label: 'Tendances',    icon: '🔥' },
-          ] as { id: FeedTab; label: string; icon: string }[]).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFeedTab(tab.id)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-black uppercase tracking-wider transition-all border-b-2 -mb-px ${
-                feedTab === tab.id
-                  ? 'border-green-600 text-green-700'
-                  : 'border-transparent text-slate-400'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-              {tab.id === 'forYou' && (userProfile?.followingSellers?.length ?? 0) > 0 && (
-                <span className="bg-green-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                  {userProfile.followingSellers!.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ── CENTRE DE CONTRÔLE — Bouton + Onglets compacts ── */}
+      <div className="px-4 pt-3 pb-2 flex items-center gap-2 bg-white sticky top-[56px] z-30 border-b border-slate-50">
+        {/* Onglets feed */}
+        {!isGuest && userProfile && (
+          <div className="flex gap-1 flex-1 overflow-x-auto scrollbar-none">
+            {([
+              { id: 'all',      label: `${userProfile?.city || 'Abidjan'}`, icon: '🏪' },
+              { id: 'forYou',   label: 'Pour toi',     icon: '✨' },
+              { id: 'trending', label: 'Tendances',    icon: '🔥' },
+            ] as { id: FeedTab; label: string; icon: string }[]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setFeedTab(tab.id)}
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                  feedTab === tab.id
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-50 text-slate-400'
+                }`}
+              >
+                <span className="text-[12px]">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {/* Barre de filtres rapides */}
-      <div className="px-5 pt-3 pb-1 flex items-center gap-2 overflow-x-auto scrollbar-none bg-white sticky top-[97px] z-20 border-b border-slate-50 shadow-sm">
+        {/* Bouton Centre de Contrôle */}
         <button onClick={() => setShowFilters(true)}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl border-2 font-bold text-[11px] transition-all active:scale-95"
+          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all relative"
           style={{
-            borderColor: Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) ? '#16A34A' : '#E2E8F0',
-            background:  Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) ? '#F0FDF4' : '#F8FAFC',
-            color:       Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) ? '#16A34A' : '#64748B',
+            background: Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) ? '#16A34A' : '#F1F5F9',
           }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke={Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) ? 'white' : '#64748B'}
+            strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
-          Filtres
           {Object.entries(filters).filter(([k,v]) => v !== (DEFAULT_FILTERS as any)[k]).length > 0 && (
-            <span className="bg-green-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
               {Object.entries(filters).filter(([k,v]) => v !== (DEFAULT_FILTERS as any)[k]).length}
             </span>
           )}
         </button>
-
-        {/* Pill tri actif */}
-        {filters.sortBy !== 'recent' && (
-          <span className="flex-shrink-0 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-full">
-            {filters.sortBy === 'price_asc' ? '💰 Prix ↑' : filters.sortBy === 'price_desc' ? '💎 Prix ↓' : '🔥 Promos'}
-          </span>
-        )}
-        {(filters.priceMin || filters.priceMax) && (
-          <span className="flex-shrink-0 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-full">
-            {filters.priceMin && filters.priceMax ? `${Number(filters.priceMin)/1000}K–${Number(filters.priceMax)/1000}K FCFA`
-              : filters.priceMin ? `+${Number(filters.priceMin)/1000}K FCFA` : `-${Number(filters.priceMax)/1000}K FCFA`}
-          </span>
-        )}
-        {filters.condition !== 'all' && (
-          <span className="flex-shrink-0 bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-full">
-            {filters.condition === 'new' ? '🟢 Neuf' : filters.condition === 'like_new' ? '🔵 Comme neuf' : '🟡 Occasion'}
-          </span>
-        )}
-        {Object.values(filters).some((v, i) => v !== Object.values(DEFAULT_FILTERS)[i]) && (
-          <button onClick={() => setFilters(DEFAULT_FILTERS)}
-            className="flex-shrink-0 text-[10px] font-black text-red-400 px-3 py-1.5 rounded-full bg-red-50 active:scale-95">
-            ✕ Reset
-          </button>
-        )}
       </div>
 
       {/* Bouton alerte de recherche — affiché quand il y a un terme de recherche */}
@@ -480,214 +451,21 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         customNeighborhoods={appConfig.customNeighborhoods || []}
       />
 
-      {/* Ancrage local — vendeurs dans le même quartier */}
+      {/* Ancrage local — vendeurs dans le même quartier (compact) */}
       {!searchTerm && userProfile?.neighborhood && neighborhoodSellerCount > 0 && (
         <button
           onClick={() => setFilters(f => ({ ...f, neighborhood: userProfile.neighborhood }))}
-          className="mx-5 mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl w-[calc(100%-2.5rem)] active:scale-[0.98] transition-all"
-          style={{ background: 'linear-gradient(135deg, #F0FDF4, #DCFCE7)', border: '1.5px solid #BBF7D0' }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: '#16A34A22' }}>
-            <span style={{ fontSize: 18 }}>📍</span>
-          </div>
+          className="mx-4 mt-3 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl w-[calc(100%-2rem)] active:scale-[0.98] transition-all bg-green-50 border border-green-100">
+          <span className="text-[14px]">📍</span>
           <div className="flex-1 text-left">
-            <p className="font-black text-slate-900 text-[12px] leading-tight">
-              {neighborhoodSellerCount} vendeur{neighborhoodSellerCount > 1 ? 's' : ''} actif{neighborhoodSellerCount > 1 ? 's' : ''} à {userProfile.neighborhood}
-            </p>
-            <p className="text-[10px] font-bold text-green-700 mt-0.5">
-              Appuie pour voir leurs articles →
+            <p className="font-bold text-green-800 text-[11px]">
+              {neighborhoodSellerCount} vendeur{neighborhoodSellerCount > 1 ? 's' : ''} à {userProfile.neighborhood}
             </p>
           </div>
         </button>
       )}
 
-      {/* Hero */}
-      {!searchTerm && (
-        <div className="px-5 pt-6 animate-fade-in">
-          <div className="rounded-[3rem] overflow-hidden relative shadow-2xl shadow-green-100"
-            style={{ background: 'linear-gradient(135deg, #16A34A 0%, #115E2E 100%)' }}>
-            {/* Bannière image admin — si active remplace le fond vert */}
-            {heroBannerUrl ? (
-              <div className="relative">
-                <img src={heroBannerUrl} alt="Bannière Brumerie" className="w-full object-cover" style={{ maxHeight: 220 }} />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%)' }} />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-white font-black text-[11px] uppercase tracking-[0.2em] mb-1">🇨🇮 Abidjan · En direct</p>
-                  {heroText && <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '1.6rem' }}>{heroText}</h2>}
-                  <p className="text-white/80 text-[11px] font-bold mt-2 uppercase tracking-[0.1em]">{products.length} pépites dénichées</p>
-                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} productCount={products.length} />
-                </div>
-              </div>
-            ) : (
-              <div className="p-8">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-bold text-white uppercase tracking-[0.2em]">
-                      🇨🇮 Abidjan · En direct
-                    </span>
-                  </div>
-                  {heroText && (
-                    <h2 className="text-white font-black leading-tight tracking-tight" style={{ fontSize: '2rem' }}>
-                      {heroText}
-                    </h2>
-                  )}
-                  <p className="text-green-50 text-[11px] font-bold mt-3 uppercase tracking-[0.1em] opacity-80">
-                    {products.length} pépites dénichées
-                  </p>
-                  <HeroBadges onNavigateToVerification={onNavigateToVerification} onNavigateToChat={onNavigateToChat} isGuest={isGuest} onGuestAction={onGuestAction} productCount={products.length} />
-                </div>
-                <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
-                <div className="absolute right-6 top-6 opacity-40 select-none pointer-events-none">
-                  <span style={{ fontSize: '52px', lineHeight: 1 }}>🇨🇮</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ── TRUST BAR — Réassurance acheteur/vendeur ── */}
-      {!searchTerm && (
-        <div className="flex gap-3 overflow-x-auto px-5 pt-5 pb-1 scrollbar-hide">
-          {[
-            { icon: '🛡️', title: 'Achat protégé', sub: 'Signalement en 1 clic' },
-            { icon: '✅', title: 'Vendeurs vérifiés', sub: 'Identité contrôlée' },
-            { icon: '📦', title: 'Livraison locale', sub: 'Dans ton quartier' },
-            { icon: '💬', title: 'Chat direct', sub: 'Répond en quelques min' },
-            { icon: '💰', title: 'Mobile Money', sub: 'Wave · Orange · MTN' },
-          ].map(item => (
-            <div key={item.title} className="flex-shrink-0 flex items-center gap-2.5 bg-white border border-slate-100 rounded-2xl px-4 py-3 shadow-sm">
-              <span className="text-lg">{item.icon}</span>
-              <div>
-                <p className="text-[10px] font-black text-slate-900 whitespace-nowrap">{item.title}</p>
-                <p className="text-[9px] font-bold text-slate-400 whitespace-nowrap">{item.sub}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Catégories */}
-      <div className="mt-8">
-        <div className="px-6 mb-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Catégories</h3>
-        </div>
-        <div className="flex gap-3 overflow-x-auto px-5 pb-4 scrollbar-hide">
-          {ALL_CATEGORIES.map((cat) => {
-            const isActive = filters.category === cat.id;
-            return (
-              <button key={cat.id} onClick={() => setFilters(f => ({ ...f, category: cat.id }))}
-                className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-[11px] font-bold transition-all ${isActive ? 'bg-slate-900 text-white shadow-lg -translate-y-0.5' : 'bg-slate-50 text-slate-500'}`}>
-                {cat.icon && <span>{cat.icon}</span>}
-                <span className="uppercase tracking-wider">{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Vendeurs suggérés */}
-      {suggestedSellers.length > 0 && (
-        <div className="mt-6">
-          <div className="px-6 mb-3">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Vendeurs à découvrir</h3>
-          </div>
-          <div className="flex gap-3 overflow-x-auto px-5 pb-4 scrollbar-hide">
-            {suggestedSellers.map((s) => (
-              <button key={s.id} onClick={() => onSellerClick?.(s.id)}
-                className="flex-shrink-0 flex flex-col items-center w-[100px] p-3 rounded-2xl bg-slate-50 hover:bg-green-50 transition-all">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-200 mb-2 shadow-sm">
-                  {s.photoURL
-                    ? <img src={s.photoURL} alt="" className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center text-slate-400 font-black text-lg">{s.name?.charAt(0)}</div>
-                  }
-                </div>
-                <p className="text-[10px] font-bold text-slate-700 truncate w-full text-center">{s.name?.split(' ')[0]}</p>
-                {s.isVerified && <span className="text-[8px] text-green-600 font-bold mt-0.5">Vérifié</span>}
-                {!s.isVerified && s.neighborhood && <span className="text-[8px] text-slate-400 font-medium mt-0.5">{s.neighborhood}</span>}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Quartiers */}
-      <div className="mt-2">
-        <div className="flex items-center justify-between px-6 mb-3">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">À proximité</h3>
-          {filters.neighborhood !== 'all' && (
-            <button onClick={() => setFilters(f => ({ ...f, neighborhood: 'all' }))} className="text-[9px] font-bold text-green-600 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full">
-              Effacer
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2 overflow-x-auto px-5 pb-3 scrollbar-hide">
-          <button onClick={() => { setFilters(f => ({ ...f, neighborhood: 'all' })); setSearchAllCities(false); }}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${!searchAllCities && filters.neighborhood === 'all' ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
-            {userCity}
-          </button>
-          <button onClick={() => { setSearchAllCities(true); setFilters(f => ({ ...f, neighborhood: 'all' })); }}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${searchAllCities ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
-            🇨🇮 Toute la CI
-          </button>
-          {ALL_NEIGHBORHOODS.map((n) => (
-            <button key={n} onClick={() => setFilters(f => ({ ...f, neighborhood: n }))}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${filters.neighborhood === n ? 'border-green-600 bg-green-50 text-green-700 shadow-md' : 'border-slate-50 bg-slate-50 text-slate-400'}`}>
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── BANNIÈRE ADDRESS-WEB ── Canal de pub permanent ── */}
-      {!searchTerm && (
-        <div className="mx-4 mt-4 mb-2 rounded-[1.8rem] overflow-hidden shadow-lg"
-          style={{ background: 'linear-gradient(135deg,#0EA5E9,#0369A1)' }}>
-          <div className="p-4 flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl">
-              📍
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-black text-[11px] leading-tight">
-                Tu as une adresse numérique ?
-              </p>
-              <p className="text-white/75 text-[9px] font-medium mt-0.5 leading-tight">
-                Address-Web : reçois des livraisons n'importe où en Afrique sans adresse postale
-              </p>
-            </div>
-            <a href="https://addressweb.brumerie.com" target="_blank" rel="noopener noreferrer"
-              className="flex-shrink-0 bg-white text-sky-700 font-black text-[8px] uppercase tracking-widest px-3 py-2 rounded-xl active:scale-90 transition-all">
-              Essayer →
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* ── CTA VENDRE — Conversion vendeur en contexte ── */}
-      {!searchTerm && !userProfile?.role?.includes('seller') && (
-        <div className="mx-5 mt-4">
-          <div className="rounded-[2rem] overflow-hidden relative"
-            style={{ background: 'linear-gradient(135deg, #1A1A18 0%, #2d2d2a 100%)' }}>
-            <div className="px-5 py-4 flex items-center gap-4">
-              <div className="flex-1">
-                <p className="text-[9px] font-black text-amber-400 uppercase tracking-[0.2em] mb-1">💡 Vendeurs d'Abidjan</p>
-                <p className="text-white font-black text-[14px] leading-tight">Ta boutique en ligne<br/>gratuite t'attend.</p>
-                <p className="text-slate-400 text-[10px] mt-1">Vends. Sois payé. Livre. Tout en un.</p>
-              </div>
-              <div className="flex-shrink-0">
-                <button
-                  onClick={() => isGuest ? onGuestAction?.('switch-to-seller') : onSwitchToSeller?.()}
-                  className="bg-green-500 rounded-2xl px-4 py-3 flex items-center gap-1.5 shadow-lg shadow-green-900/30 active:scale-95 transition-all">
-                  <span className="text-white font-black text-[11px] uppercase tracking-wide">Commencer</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
 
             {/* ── GRILLE PRODUITS — conditionnelle par onglet ── */}
