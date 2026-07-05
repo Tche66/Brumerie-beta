@@ -59,6 +59,7 @@ import { updatePresence } from '@/services/shopFeaturesService';
 import { addRecentlyViewed } from '@/services/userService';
 import { DelivererProfilePage } from '@/pages/DelivererProfilePage';
 import { DelivererDashboardPage } from '@/pages/DelivererDashboardPage';
+import { DeliverersListPage } from '@/pages/DeliverersListPage';
 import { CartPage } from '@/pages/CartPage';
 import { getCartCount } from '@/services/cartService';
 import { BrumeAssistant } from '@/components/BrumeAssistant';
@@ -69,7 +70,7 @@ type Page =
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions' | 'trust'
-  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover' | 'cart';
+  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover' | 'cart' | 'deliverers-list';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {
@@ -895,6 +896,13 @@ useEffect(() => {
           <DelivererProfilePage
             delivererId={selectedDelivererId}
             onBack={goBack}
+          />
+        )}
+        {activePage === 'deliverers-list' && (
+          <DeliverersListPage
+            onBack={goBack}
+            onDelivererClick={(id) => { setSelectedDelivererId(id); navigate('deliverer-profile'); }}
+            onContact={async (id, name) => { await handleOpenChatWithSeller(id, name, id, 'Contact livreur'); }}
           />
         )}
         {activePage === 'deliverer-dashboard' && (

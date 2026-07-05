@@ -113,6 +113,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [sellerSearchLoading, setSellerSearchLoading] = useState(false);
   const [sellerSearchTerm, setSellerSearchTerm] = useState('');
   const [suggestedSellers, setSuggestedSellers] = useState<any[]>([]);
+  const [showSellerPrompt, setShowSellerPrompt] = useState(false);
 
   // Catégories et quartiers enrichis avec les custom (ajoutés via Suggestions)
   const ALL_CATEGORIES = [
@@ -127,6 +128,18 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   ];
 
   useEffect(() => { setHomeMeta(); }, []);
+
+  // Popup "Devenir vendeur" pour les acheteurs — s'affiche 1 fois par session après 5s
+  useEffect(() => {
+    if (!currentUser || !userProfile || userProfile.role !== 'buyer' || isGuest) return;
+    const key = `seller_prompt_${currentUser.uid}`;
+    if (sessionStorage.getItem(key)) return;
+    const timer = setTimeout(() => {
+      setShowSellerPrompt(true);
+      sessionStorage.setItem(key, '1');
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [currentUser?.uid, userProfile?.role]);
 
   // Écouter les produits boostés
   useEffect(() => {
@@ -450,6 +463,36 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
         customCategories={appConfig.customCategories || []}
         customNeighborhoods={appConfig.customNeighborhoods || []}
       />
+
+      {/* ── Popup Devenir Vendeur — acheteurs uniquement, 1x par session ── */}
+      {showSellerPrompt && (
+        <div className="fixed inset-0 z-[150] flex items-end justify-center p-4" onClick={() => setShowSellerPrompt(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] p-6 shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-5" />
+            <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/>
+              </svg>
+            </div>
+            <h3 className="text-center text-[16px] font-black text-slate-900 uppercase tracking-tight">Tu veux vendre aussi ?</h3>
+            <p className="text-center text-[12px] text-slate-500 mt-2 leading-relaxed">
+              Ouvre ta boutique gratuite sur Brumerie. Publie tes articles, reçois des offres et sois payé directement.
+            </p>
+            <div className="flex flex-col gap-3 mt-6">
+              <button onClick={() => { setShowSellerPrompt(false); onSwitchToSeller?.(); }}
+                className="w-full py-4 rounded-2xl bg-green-600 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-green-200">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                Passer en mode Vendeur
+              </button>
+              <button onClick={() => setShowSellerPrompt(false)}
+                className="w-full py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                Peut-être plus tard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Ancrage local — vendeurs dans le même quartier (compact) */}
       {!searchTerm && userProfile?.neighborhood && neighborhoodSellerCount > 0 && (
