@@ -37,15 +37,21 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
 
   async function loadDeliverers() {
     try {
-      const q = query(
-        collection(db, 'users'),
-        where('role', '==', 'livreur'),
-      );
-      const snap = await getDocs(q);
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as DelivererInfo[];
+      // Chercher par rôle livreur
+      const q1 = query(collection(db, 'users'), where('role', '==', 'livreur'));
+      const snap1 = await getDocs(q1);
+      let list = snap1.docs.map(d => ({ id: d.id, ...d.data() })) as DelivererInfo[];
+
+      // Aussi chercher ceux qui ont accepté les CGU livreur (même si rôle changé)
+      if (list.length === 0) {
+        const q2 = query(collection(db, 'users'), where('deliveryCGUAccepted', '==', true));
+        const snap2 = await getDocs(q2);
+        list = snap2.docs.map(d => ({ id: d.id, ...d.data() })) as DelivererInfo[];
+      }
+
       list.sort((a, b) => {
-        const aActive = a.lastActiveAt?.seconds || 0;
-        const bActive = b.lastActiveAt?.seconds || 0;
+        const aActive = (a.lastActiveAt as any)?.seconds || 0;
+        const bActive = (b.lastActiveAt as any)?.seconds || 0;
         return bActive - aActive;
       });
       setDeliverers(list);
@@ -102,8 +108,14 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
         ) : filteredDeliverers.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
             <div className="text-4xl mb-3">🚚</div>
-            <p className="text-[13px] font-black text-slate-700">Aucun livreur disponible</p>
-            <p className="text-[10px] text-slate-400 mt-1">Reviens bientôt !</p>
+            <p className="text-[13px] font-black text-slate-700">Aucun livreur pour le moment</p>
+            <p className="text-[10px] text-slate-400 mt-2 px-6 leading-relaxed">
+              Les livreurs Brumerie livrent dans ton quartier. Sois le premier à rejoindre l'équipe !
+            </p>
+            <button onClick={onBack}
+              className="mt-5 px-6 py-3 bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg shadow-orange-200">
+              Devenir livreur
+            </button>
           </div>
         ) : (
           filteredDeliverers.map(d => (

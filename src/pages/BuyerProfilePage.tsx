@@ -324,15 +324,20 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const TABS: { id: Tab; icon: React.ReactNode; label: string; count: number }[] = [
     { id: 'favorites', icon: Icons.heart(),  label: 'Favoris',  count: bookmarkIds.size },
     { id: 'purchases', icon: Icons.bag(),    label: 'Achats',   count: orders.length },
+    { id: 'following', icon: Icons.bell(),   label: 'Suivis',   count: ((userProfile as any).followingSellers || []).length },
+  ];
+
+  const MORE_TABS: { id: Tab; icon: React.ReactNode; label: string; count: number }[] = [
     { id: 'wishlist',  icon: Icons.star(),   label: 'Wishlist', count: wishlistProducts.length },
-    { id: 'following', icon: Icons.bell(),   label: 'Je suis',  count: ((userProfile as any).followingSellers || []).length },
     { id: 'cashback',  icon: Icons.gift(),   label: 'Points',   count: pts },
     { id: 'recent',    icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
         </svg>
-      ), label: 'Vu récemment', count: recentlyViewed.length },
+      ), label: 'Récent', count: recentlyViewed.length },
   ];
+
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
 
   return (
     <div className="min-h-screen pb-28" style={{ background: CREAM }}>
@@ -397,28 +402,33 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
         </div>
       </div>
 
-      {/* ══ ONGLETS ═══════════════════════════════════════════════════ */}
-      <div className="bg-white sticky top-0 z-30 border-b border-slate-100 shadow-sm mt-4">
-        <div className="flex overflow-x-auto px-2 py-1" style={{ scrollbarWidth: 'none' }}>
-          {TABS.map(t => (
+      {/* ══ ONGLETS — Principaux + Plus ═══════════════════════════════ */}
+      <div className="bg-white sticky top-0 z-30 border-b border-slate-100 mt-4">
+        <div className="flex items-center px-3 py-2 gap-1">
+          {[...TABS, ...(showMoreTabs ? MORE_TABS : [])].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-shrink-0 flex flex-col items-center gap-1 px-3.5 pt-2.5 pb-2 relative min-w-[54px] transition-colors ${
-                tab === t.id ? 'text-slate-900' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${
+                tab === t.id ? 'bg-slate-900 text-white' : 'text-slate-400'
               }`}>
-              {tab === t.id && (
-                <div className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-slate-900"/>
-              )}
-              <div className="w-5 h-5 flex items-center justify-center">{t.icon}</div>
-              <span className="text-[7.5px] font-black uppercase tracking-widest leading-none">{t.label}</span>
-              {t.count > 0 && (
-                <span className={`absolute top-1 right-1.5 text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center ${
-                  tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {t.count > 99 ? '+' : t.count}
+              <div className="w-4 h-4 flex items-center justify-center">{t.icon}</div>
+              {t.label}
+              {t.count > 0 && tab !== t.id && (
+                <span className="text-[8px] font-black bg-slate-100 text-slate-500 w-4 h-4 rounded-full flex items-center justify-center">
+                  {t.count > 99 ? '∞' : t.count}
                 </span>
               )}
             </button>
           ))}
+          {/* Bouton Plus / Moins */}
+          <button onClick={() => setShowMoreTabs(!showMoreTabs)}
+            className="flex-shrink-0 w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center active:scale-90 transition-all border border-slate-100">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
+              {showMoreTabs
+                ? <><line x1="5" y1="12" x2="19" y2="12"/></>
+                : <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
+              }
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -821,18 +831,19 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
           }}
         />
 
-        {/* ══ BOUTONS BAS DE PAGE ════════════════════════════════════ */}
-        <button onClick={() => onNavigate?.('edit-profile')}
-          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all bg-white border-2 border-slate-200 text-slate-700">
-          {Icons.edit()}
-          Modifier mon profil
-        </button>
-
-        <button onClick={() => onNavigate?.('switch-to-seller')}
-          className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 active:scale-95 transition-all bg-slate-900 shadow-lg">
-          {Icons.store()}
-          Passer en mode Vendeur
-        </button>
+        {/* ══ ACTIONS RAPIDES ════════════════════════════════════ */}
+        <div className="flex gap-3">
+          <button onClick={() => onNavigate?.('edit-profile')}
+            className="flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all bg-white border border-slate-200 text-slate-600">
+            {Icons.edit()}
+            Modifier
+          </button>
+          <button onClick={() => onNavigate?.('switch-to-seller')}
+            className="flex-1 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-white flex items-center justify-center gap-2 active:scale-95 transition-all bg-green-600">
+            {Icons.store()}
+            Vendre
+          </button>
+        </div>
       </div>
     </div>
   );
