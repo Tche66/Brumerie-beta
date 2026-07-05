@@ -206,15 +206,15 @@ export function ProductCardFeed({
               <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="md"/>
             </span>
           )}
-          {/* Bouton Suivre — vraie action follow */}
+          {/* Bouton Suivre — juste après le badge */}
           {currentUser?.uid !== product.sellerId && (
             <button
               onClick={handleFollow}
               disabled={followLoading}
-              className={`ml-auto text-[10px] font-black px-3.5 py-1.5 rounded-full active:scale-90 transition-all shadow-lg flex-shrink-0 disabled:opacity-50 ${
+              className={`text-[10px] font-black px-3 py-1.5 rounded-full active:scale-90 transition-all flex-shrink-0 disabled:opacity-50 ${
                 isFollowing
                   ? 'bg-white/20 backdrop-blur-md text-white border border-white/40'
-                  : 'bg-green-500 text-white'
+                  : 'bg-green-500 text-white shadow-lg'
               }`}
             >
               {followLoading ? '...' : isFollowing ? 'Suivi ✓' : 'Suivre'}
