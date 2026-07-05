@@ -299,7 +299,6 @@ export function ProductCardFeed({
               </svg>
             </div>
             <span className="text-[9px] font-black text-white drop-shadow-md">{shared ? 'Copié !' : 'Partager'}</span>
-            )}
           </button>
 
         </div>
