@@ -120,3 +120,88 @@ export async function getAssistantSuggestions(role: 'buyer' | 'seller'): Promise
   const data = await res.json();
   return data.data || [];
 }
+
+// ═══ SELLER SCORE ═══
+
+export interface SellerScoreResult {
+  score: number;
+  grade: 'S' | 'A' | 'B' | 'C' | 'D';
+  strengths: string[];
+  weaknesses: string[];
+  recommendation: string;
+  predictedMonthlySales: number;
+  improvementActions: { action: string; impact: string }[];
+}
+
+export async function getSellerScore(sellerId: string): Promise<SellerScoreResult> {
+  const res = await fetch(`${API_BASE}/ai/seller-score/${sellerId}`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Brume IA indisponible');
+  return data.data;
+}
+
+// ═══ FRAUD DETECTION ═══
+
+export interface FraudCheckResult {
+  riskLevel: 'safe' | 'suspicious' | 'high_risk';
+  riskScore: number;
+  flags: { type: string; severity: string; detail: string }[];
+  recommendation: string;
+  shouldBlock: boolean;
+}
+
+export async function checkFraud(params: {
+  type: 'product' | 'user';
+  productTitle?: string;
+  productDescription?: string;
+  productPrice?: number;
+  productCategory?: string;
+  productImages?: string[];
+  userName?: string;
+  userProductCount?: number;
+  userAge?: number;
+  userReportCount?: number;
+  userOrderCancelRate?: number;
+}): Promise<FraudCheckResult> {
+  return apiCall<FraudCheckResult>('fraud-check', params);
+}
+
+// ═══ DATA LOOP ═══
+
+export interface DataLoopStats {
+  totalInteractions: number;
+  conversionRate: number;
+  topCategories: { category: string; count: number; conversionRate: number }[];
+  modelAccuracy: number;
+  improvementSinceStart: number;
+}
+
+export async function trackInteraction(params: {
+  userId: string;
+  type: string;
+  input: any;
+  output: any;
+  productId?: string;
+  category?: string;
+}): Promise<void> {
+  await apiCall('track', params);
+}
+
+export async function markConversion(interactionId: string): Promise<void> {
+  await fetch(`${API_BASE}/ai/track/${interactionId}/conversion`, { method: 'PATCH' });
+}
+
+export async function markFeedback(interactionId: string, feedback: string, wasHelpful: boolean): Promise<void> {
+  await fetch(`${API_BASE}/ai/track/${interactionId}/feedback`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feedback, wasHelpful }),
+  });
+}
+
+export async function getDataLoopStats(): Promise<DataLoopStats> {
+  const res = await fetch(`${API_BASE}/ai/data-loop/stats`);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Brume IA indisponible');
+  return data.data;
+}

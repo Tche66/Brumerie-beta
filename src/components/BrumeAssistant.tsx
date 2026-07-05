@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { chatWithAssistant, getAssistantSuggestions } from '@/services/brumeIaService';
+import { chatWithAssistant, getAssistantSuggestions, trackInteraction } from '@/services/brumeIaService';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -53,6 +53,14 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
         action: response.action,
       };
       setMessages(prev => [...prev, aiMsg]);
+
+      // Data Loop — track chaque interaction assistant
+      trackInteraction({
+        userId: currentUser.uid,
+        type: 'assistant-chat',
+        input: { message: text.trim() },
+        output: { response: response.message, action: response.action?.type },
+      }).catch(() => {});
 
       if (response.action && response.action.type !== 'none' && onAction) {
         onAction(response.action);

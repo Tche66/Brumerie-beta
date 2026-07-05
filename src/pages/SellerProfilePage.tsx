@@ -12,6 +12,7 @@ import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
 import { useAuth } from '@/contexts/AuthContext';
 import { BruIcons } from '@/components/BruIcons';
+import { getSellerScore, SellerScoreResult } from '@/services/brumeIaService';
 
 // ── QR Code ────────────────────────────────────────────────────
 function ShopQRImage({ url }: { url: string }) {
@@ -91,6 +92,7 @@ export function SellerProfilePage({
   const [reposts, setReposts]             = useState<any[]>([]);
   const [totalLikes, setTotalLikes]       = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [aiScore, setAiScore] = useState<SellerScoreResult | null>(null);
 
   const profileUrl = `https://www.brumerie.com/vendeur/${sellerId}`;
 
@@ -112,6 +114,8 @@ export function SellerProfilePage({
       if (sellerData?.followingSellers) {
         setFollowingCount((sellerData.followingSellers as string[]).length);
       }
+      // Charger le AI Seller Score
+      getSellerScore(sellerId).then(setAiScore).catch(() => {});
     })();
   }, [sellerId]);
 
@@ -407,6 +411,33 @@ export function SellerProfilePage({
               )}
             </div>
           </div>
+
+          {/* ══════════════════════════════════════════
+              BRUME IA — AI SELLER SCORE
+          ══════════════════════════════════════════ */}
+          {aiScore && (
+            <div className="mx-4 mt-3">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 p-4 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: aiScore.grade === 'S' ? '#059669' : aiScore.grade === 'A' ? '#10B981' : aiScore.grade === 'B' ? '#F59E0B' : aiScore.grade === 'C' ? '#F97316' : '#EF4444' }}>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-white leading-none">{aiScore.grade}</p>
+                    <p className="text-[7px] font-bold text-white/80">{aiScore.score}</p>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-700 bg-green-100 px-1.5 py-0.5 rounded">Brume IA</span>
+                    <span className="text-[8px] font-bold text-slate-400">Score vendeur</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-700 leading-tight">{aiScore.recommendation}</p>
+                  <div className="mt-1.5 h-1.5 bg-white rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${aiScore.score}%`, background: aiScore.score >= 70 ? '#10B981' : aiScore.score >= 40 ? '#F59E0B' : '#EF4444' }}/>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ══════════════════════════════════════════
               SECTION 3 — CONTACT & INFOS BOUTIQUE

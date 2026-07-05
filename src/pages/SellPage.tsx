@@ -7,7 +7,7 @@ import { ConditionSelector, Condition } from '@/components/ConditionBadge';
 import { compressImage } from '@/utils/helpers';
 import { CATEGORIES, NEIGHBORHOODS, PLAN_LIMITS, getNeighborhoodsForCity } from '@/types';
 import { subscribeAppConfig } from '@/services/appConfigService';
-import { generateListing } from '@/services/brumeIaService';
+import { generateListing, checkFraud, trackInteraction } from '@/services/brumeIaService';
 
 interface SellPageProps {
   onClose: () => void;
@@ -229,6 +229,23 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
           await notifyFollowersNewProduct(userProfile.id, userProfile.name || '', title.trim(), newProductId);
         }
       } catch {}
+      // Brume IA — Fraud check + Data Loop tracking (arrière-plan, ne bloque pas)
+      checkFraud({
+        type: 'product',
+        productTitle: title.trim(),
+        productDescription: description.trim(),
+        productPrice: parseFloat(price),
+        productCategory: category,
+        productImages: imagePreviews,
+      }).catch(() => {});
+      trackInteraction({
+        userId: userProfile.id,
+        type: 'generate-listing',
+        input: { title: title.trim(), category, price },
+        output: { productId: newProductId, aiUsed },
+        productId: typeof newProductId === 'string' ? newProductId : undefined,
+        category,
+      }).catch(() => {});
       setSuccess(true);
       playSuccessSound();
       setTimeout(() => onSuccess(), 2000);

@@ -629,3 +629,22 @@ model DeadLetterQueue {
 
   @@map("dead_letter_queue")
 }
+
+model AiInteraction {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  input       Json
+  output      Json
+  productId   String?
+  category    String?
+  feedback    String?
+  wasHelpful  Boolean?
+  conversionHappened Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, type])
+  @@index([type, createdAt])
+  @@index([category, type])
+  @@map("ai_interactions")
+}

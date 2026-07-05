@@ -10,6 +10,7 @@ import { BoostModal } from '@/components/BoostModal';
 import { CountdownBadge } from '@/components/CountdownBadge';
 import { subscribeBoostedProductIds, getSellerBoosts } from '@/services/boostService';
 import { BruIcons } from '@/components/BruIcons';
+import { getSellerScore, getDataLoopStats, SellerScoreResult, DataLoopStats } from '@/services/brumeIaService';
 
 // ── SVG Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -78,6 +79,9 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [pendingOffers, setPendingOffers] = useState<any[]>([]);
   const [respondingOffer, setRespondingOffer] = useState<string | null>(null);
   const [boostProduct, setBoostProduct] = useState<Product | null>(null);
+  const [sellerScore, setSellerScore] = useState<SellerScoreResult | null>(null);
+  const [scoreLoading, setScoreLoading] = useState(false);
+  const [dataLoop, setDataLoop] = useState<DataLoopStats | null>(null);
   const [actionProduct, setActionProduct] = useState<Product | null>(null);
   const [confirmDeleteProduct, setConfirmDeleteProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState(false);
@@ -90,6 +94,19 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const isSimple = tier === 'simple';
   const limits   = PLAN_LIMITS[tier];
 
+
+  // Charger Seller Score IA + Data Loop stats
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    setScoreLoading(true);
+    getSellerScore(currentUser.uid)
+      .then(setSellerScore)
+      .catch(() => {})
+      .finally(() => setScoreLoading(false));
+    getDataLoopStats()
+      .then(setDataLoop)
+      .catch(() => {});
+  }, [currentUser?.uid]);
 
   // Charger boosts actifs du vendeur (pour afficher countdown)
   useEffect(() => {
@@ -387,6 +404,92 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                     </>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ═══ BRUME IA — Seller Score ═══ */}
+            {(sellerScore || scoreLoading) && (
+              <div className="rounded-3xl p-5 border border-green-100 shadow-sm relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg,#F0FDF4,#DCFCE7)' }}>
+                <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-green-200/30"/>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-green-600 rounded-xl flex items-center justify-center text-white text-[10px] font-black">IA</div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-green-700">Brume IA · Score vendeur</p>
+                </div>
+                {scoreLoading ? (
+                  <div className="flex items-center gap-2 py-4">
+                    <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"/>
+                    <p className="text-[10px] text-green-700 font-bold">Analyse en cours...</p>
+                  </div>
+                ) : sellerScore && (
+                  <>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: sellerScore.grade === 'S' ? '#059669' : sellerScore.grade === 'A' ? '#10B981' : sellerScore.grade === 'B' ? '#F59E0B' : '#EF4444' }}>
+                        <div className="text-center">
+                          <p className="font-black text-2xl text-white leading-none">{sellerScore.grade}</p>
+                          <p className="text-[8px] font-bold text-white/70">{sellerScore.score}/100</p>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-[11px] text-slate-800">{sellerScore.recommendation}</p>
+                        <p className="text-[9px] text-green-700 font-bold mt-1">
+                          ~{sellerScore.predictedMonthlySales} ventes/mois prédites
+                        </p>
+                        <div className="mt-2 h-2 bg-white rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all"
+                            style={{ width: `${sellerScore.score}%`, background: 'linear-gradient(90deg,#10B981,#059669)' }}/>
+                        </div>
+                      </div>
+                    </div>
+                    {sellerScore.improvementActions.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[8px] font-black uppercase text-green-800/60 tracking-widest">Actions recommandées</p>
+                        {sellerScore.improvementActions.slice(0, 3).map((a, i) => (
+                          <div key={i} className="flex items-center gap-2 bg-white/60 rounded-xl px-3 py-2">
+                            <span className="text-[10px]">{a.impact === 'fort' ? '🚀' : a.impact === 'moyen' ? '📈' : '💡'}</span>
+                            <p className="text-[9px] font-bold text-slate-700 flex-1">{a.action}</p>
+                            <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded-lg ${
+                              a.impact === 'fort' ? 'bg-green-200 text-green-800' : a.impact === 'moyen' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'
+                            }`}>{a.impact}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ═══ BRUME IA — Data Flywheel ═══ */}
+            {dataLoop && dataLoop.totalInteractions > 0 && (
+              <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-violet-600 rounded-xl flex items-center justify-center text-white text-[10px] font-black">∞</div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">IA Data Flywheel</p>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="text-center">
+                    <p className="font-black text-lg text-violet-700">{dataLoop.totalInteractions}</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase">Interactions</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-green-600">{dataLoop.conversionRate}%</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase">Conversion</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-black text-lg text-amber-600">{dataLoop.modelAccuracy}%</p>
+                    <p className="text-[7px] font-bold text-slate-400 uppercase">Précision IA</p>
+                  </div>
+                </div>
+                {dataLoop.improvementSinceStart > 0 && (
+                  <div className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
+                    <span className="text-[10px]">📈</span>
+                    <p className="text-[9px] font-bold text-green-700">
+                      +{dataLoop.improvementSinceStart}% de précision depuis le lancement — l'IA s'améliore à chaque utilisation
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
