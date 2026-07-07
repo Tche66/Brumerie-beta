@@ -984,8 +984,13 @@ useEffect(() => {
           navigate('discover');
         } else if (action.type === 'create_listing') {
           navigate('sell');
+        } else if (action.type === 'show_products' && action.payload?.query) {
+          navigate('discover');
         } else if (action.type === 'navigate' && action.payload?.page) {
-          navigate(action.payload.page as any);
+          navigate(action.payload.page as any, {
+            productId: action.payload.productId,
+            sellerId: action.payload.sellerId,
+          });
         }
       }} />
 

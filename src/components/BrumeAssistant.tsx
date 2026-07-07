@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { chatWithAssistant, getAssistantSuggestions, trackInteraction, ProductCard } from '@/services/brumeIaService';
-import { useNavigate } from 'react-router-dom';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,7 +12,6 @@ interface Message {
 
 export function BrumeAssistant({ onAction }: { onAction?: (action: { type: string; payload?: any }) => void }) {
   const { currentUser, userProfile } = useAuth();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -180,7 +178,7 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                         {msg.products.map((product) => (
                           <button
                             key={product.id}
-                            onClick={() => { navigate(`/product/${product.id}`); setOpen(false); }}
+                            onClick={() => { onAction?.({ type: 'navigate', payload: { page: 'product-detail', productId: product.id } }); setOpen(false); }}
                             className="flex-shrink-0 w-[140px] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm active:scale-95 transition-all text-left"
                           >
                             <div className="relative w-full h-[100px] bg-slate-100">
