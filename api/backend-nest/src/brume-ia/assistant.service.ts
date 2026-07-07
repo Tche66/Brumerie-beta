@@ -7,11 +7,27 @@ export interface AssistantMessage {
   content: string;
 }
 
+export interface ProductCard {
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  condition: string;
+  neighborhood: string;
+  sellerName: string;
+  sellerId: string;
+  sellerAvatar?: string;
+  isVerified?: boolean;
+  flashSale?: boolean;
+  originalPrice?: number;
+}
+
 export interface AssistantResponse {
   message: string;
   suggestions?: string[];
+  products?: ProductCard[];
   action?: {
-    type: 'navigate' | 'search' | 'create_listing' | 'contact_seller' | 'make_offer' | 'none';
+    type: 'navigate' | 'search' | 'create_listing' | 'contact_seller' | 'make_offer' | 'show_products' | 'none';
     payload?: any;
   };
 }
@@ -82,6 +98,7 @@ POUR LES ACHETEURS :
 4. Si tu ne sais pas → oriente vers le support
 5. Parle TOUJOURS en français sauf si l'utilisateur écrit en anglais
 6. Si hors Brumerie → "Je suis Brume IA, je t'aide uniquement avec Brumerie"
+7. Si l'utilisateur cherche un produit ou demande des recommandations → utilise l'action "show_products" avec les filtres
 
 ═══ FORMAT DE RÉPONSE ═══
 Réponds UNIQUEMENT en JSON valide :
@@ -89,10 +106,24 @@ Réponds UNIQUEMENT en JSON valide :
   "message": "ta réponse texte",
   "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"],
   "action": {
-    "type": "navigate|search|create_listing|contact_seller|make_offer|none",
+    "type": "navigate|search|create_listing|contact_seller|make_offer|show_products|none",
     "payload": { ... }
   }
-}`;
+}
+
+Pour "show_products" → payload doit contenir les filtres de recherche :
+{
+  "type": "show_products",
+  "payload": {
+    "query": "mot clé optionnel",
+    "category": "phones|fashion|thrift|shoes|beauty|accessories|electronics|food|babies|furniture|vehicles|services",
+    "neighborhood": "quartier optionnel",
+    "priceMin": number ou null,
+    "priceMax": number ou null,
+    "condition": "new|like_new|second_hand ou null"
+  }
+}
+UTILISE "show_products" dès que l'utilisateur cherche, demande, ou veut voir des produits. C'est ta SUPER FONCTION — elle affiche de vrais produits du catalogue Brumerie directement dans le chat !`;
 
     const msgs: { role: 'user' | 'assistant'; content: string }[] = [];
 
@@ -121,16 +152,102 @@ Réponds UNIQUEMENT en JSON valide :
 
     try {
       const parsed = JSON.parse(jsonMatch[0]);
-      return {
+      const response: AssistantResponse = {
         message: parsed.message || text,
         suggestions: parsed.suggestions || [],
         action: parsed.action || { type: 'none' },
       };
+
+      if (parsed.action?.type === 'show_products' && parsed.action.payload) {
+        const products = await this.searchProducts({
+          query: parsed.action.payload.query || undefined,
+          category: parsed.action.payload.category || undefined,
+          neighborhood: parsed.action.payload.neighborhood || undefined,
+          priceMin: parsed.action.payload.priceMin || undefined,
+          priceMax: parsed.action.payload.priceMax || undefined,
+          condition: parsed.action.payload.condition || undefined,
+          limit: 5,
+        });
+        response.products = products;
+      }
+
+      return response;
     } catch {
       return {
         message: text,
         suggestions: [],
       };
+    }
+  }
+
+  async searchProducts(params: {
+    category?: string;
+    query?: string;
+    neighborhood?: string;
+    priceMin?: number;
+    priceMax?: number;
+    condition?: string;
+    limit?: number;
+  }): Promise<ProductCard[]> {
+    try {
+      const where: any = { status: 'active' };
+
+      if (params.category) where.category = params.category;
+      if (params.neighborhood) where.neighborhood = { contains: params.neighborhood, mode: 'insensitive' };
+      if (params.condition) where.condition = params.condition;
+      if (params.priceMin || params.priceMax) {
+        where.price = {};
+        if (params.priceMin) where.price.gte = params.priceMin;
+        if (params.priceMax) where.price.lte = params.priceMax;
+      }
+      if (params.query) {
+        where.OR = [
+          { title: { contains: params.query, mode: 'insensitive' } },
+          { description: { contains: params.query, mode: 'insensitive' } },
+          { tags: { has: params.query.toLowerCase() } },
+        ];
+      }
+
+      const products = await this.prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          images: true,
+          condition: true,
+          neighborhood: true,
+          flashSaleActive: true,
+          originalPrice: true,
+          seller: {
+            select: {
+              firebaseUid: true,
+              name: true,
+              photoURL: true,
+              isVerified: true,
+            },
+          },
+        },
+        orderBy: [{ viewCount: 'desc' }, { createdAt: 'desc' }],
+        take: params.limit || 5,
+      });
+
+      return products.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        image: p.images?.[0] || '',
+        condition: p.condition || 'second_hand',
+        neighborhood: p.neighborhood || 'Abidjan',
+        sellerName: p.seller?.name || 'Vendeur',
+        sellerId: p.seller?.firebaseUid || '',
+        sellerAvatar: p.seller?.photoURL || '',
+        isVerified: p.seller?.isVerified || false,
+        flashSale: p.flashSaleActive || false,
+        originalPrice: p.originalPrice || undefined,
+      }));
+    } catch {
+      return [];
     }
   }
 

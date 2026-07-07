@@ -25,11 +25,27 @@ export interface PriceIntelligenceResult {
   strategy: string;
 }
 
+export interface ProductCard {
+  id: string;
+  title: string;
+  price: number;
+  image: string;
+  condition: string;
+  neighborhood: string;
+  sellerName: string;
+  sellerId: string;
+  sellerAvatar?: string;
+  isVerified?: boolean;
+  flashSale?: boolean;
+  originalPrice?: number;
+}
+
 export interface AssistantResponse {
   message: string;
   suggestions?: string[];
+  products?: ProductCard[];
   action?: {
-    type: 'navigate' | 'search' | 'create_listing' | 'contact_seller' | 'make_offer' | 'none';
+    type: 'navigate' | 'search' | 'create_listing' | 'contact_seller' | 'make_offer' | 'show_products' | 'none';
     payload?: any;
   };
 }

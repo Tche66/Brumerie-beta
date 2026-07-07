@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { chatWithAssistant, getAssistantSuggestions, trackInteraction } from '@/services/brumeIaService';
+import { chatWithAssistant, getAssistantSuggestions, trackInteraction, ProductCard } from '@/services/brumeIaService';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   suggestions?: string[];
+  products?: ProductCard[];
   action?: { type: string; payload?: any };
 }
 
 export function BrumeAssistant({ onAction }: { onAction?: (action: { type: string; payload?: any }) => void }) {
   const { currentUser, userProfile } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -50,6 +53,7 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
         role: 'assistant',
         content: response.message,
         suggestions: response.suggestions,
+        products: response.products,
         action: response.action,
       };
       setMessages(prev => [...prev, aiMsg]);
@@ -148,7 +152,7 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
 
               {/* Chat messages */}
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                     msg.role === 'user'
                       ? 'bg-green-600 text-white rounded-br-sm'
@@ -168,6 +172,57 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                       </div>
                     )}
                   </div>
+
+                  {/* Product cards */}
+                  {msg.products && msg.products.length > 0 && (
+                    <div className="w-full mt-2 overflow-x-auto">
+                      <div className="flex gap-2 pb-2" style={{ minWidth: 'max-content' }}>
+                        {msg.products.map((product) => (
+                          <button
+                            key={product.id}
+                            onClick={() => { navigate(`/product/${product.id}`); setOpen(false); }}
+                            className="flex-shrink-0 w-[140px] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm active:scale-95 transition-all text-left"
+                          >
+                            <div className="relative w-full h-[100px] bg-slate-100">
+                              {product.image ? (
+                                <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+                                  </svg>
+                                </div>
+                              )}
+                              {product.flashSale && (
+                                <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 text-white text-[7px] font-black rounded-md">FLASH</span>
+                              )}
+                              {product.isVerified && (
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                </span>
+                              )}
+                            </div>
+                            <div className="p-2">
+                              <p className="text-[10px] font-bold text-slate-800 truncate">{product.title}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <span className="text-[11px] font-black text-green-600">{product.price.toLocaleString()} F</span>
+                                {product.flashSale && product.originalPrice && (
+                                  <span className="text-[8px] text-slate-400 line-through">{product.originalPrice.toLocaleString()}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <div className="w-3 h-3 rounded-full bg-slate-200 overflow-hidden">
+                                  {product.sellerAvatar && <img src={product.sellerAvatar} className="w-full h-full object-cover" />}
+                                </div>
+                                <span className="text-[8px] text-slate-500 truncate">{product.sellerName}</span>
+                              </div>
+                              <span className="text-[7px] text-slate-400 mt-0.5 block">{product.neighborhood}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
