@@ -30,22 +30,35 @@ export class GeminiProvider implements LlmProvider {
       },
     };
 
-    const url = `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`;
+    const models = [this.model, 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+    const tried = new Set<string>();
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    for (const model of models) {
+      if (tried.has(model)) continue;
+      tried.add(model);
 
-    if (!response.ok) {
+      const url = `${this.baseUrl}/models/${model}:generateContent?key=${this.apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return this.cleanResponse(raw);
+      }
+
+      const status = response.status;
+      if (status === 404 || status === 400) continue;
+
       const error = await response.text();
-      throw new Error(`Gemini API error (${response.status}): ${error}`);
+      throw new Error(`Gemini API error (${status}): ${error}`);
     }
 
-    const data = await response.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return this.cleanResponse(raw);
+    throw new Error('Gemini: aucun modèle disponible');
   }
 
   private cleanResponse(text: string): string {
