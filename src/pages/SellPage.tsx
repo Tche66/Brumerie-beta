@@ -441,24 +441,25 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
           <div className="space-y-6 animate-fade-up">
             <h3 className="text-2xl font-black text-slate-900">Informations</h3>
 
-            {/* ═══ BRUME IA — Génération automatique ═══ */}
-            {!aiUsed && imagePreviews.length > 0 && (
+            <div>
+              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Titre de l'annonce</label>
+              <input type="text" placeholder="ex: iPhone 13 Pro Max 128Go" value={title} onChange={e => setTitle(e.target.value)}
+                className="w-full px-5 py-5 bg-slate-50 rounded-2xl text-sm border-2 border-transparent focus:border-green-600 focus:bg-white outline-none transition-all" />
+            </div>
+
+            {/* ═══ BRUME IA — Optimiser depuis le titre ═══ */}
+            {!aiUsed && (
               <button
                 onClick={async () => {
+                  if (!title.trim()) {
+                    setError('Écris un titre pour que Brume IA optimise ton annonce.');
+                    return;
+                  }
                   setAiLoading(true);
                   setError('');
                   try {
-                    let imageBase64: string | undefined;
-                    if (images[0]) {
-                      const reader = new FileReader();
-                      imageBase64 = await new Promise<string>((resolve) => {
-                        reader.onloadend = () => resolve(reader.result as string);
-                        reader.readAsDataURL(images[0]);
-                      });
-                    }
                     const result = await generateListing({
-                      imageBase64,
-                      rawText: title || undefined,
+                      rawText: title + (description ? '. ' + description : ''),
                       sellerNeighborhood: userProfile?.neighborhood || selectedCities[0],
                     });
                     setTitle(result.title);
@@ -475,25 +476,23 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                     setAiLoading(false);
                   }
                 }}
-                disabled={aiLoading}
-                className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-[0.98] transition-all relative overflow-hidden"
+                disabled={aiLoading || !title.trim()}
+                className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all relative overflow-hidden disabled:opacity-30"
                 style={{ background: 'linear-gradient(135deg, #16A34A 0%, #065F46 50%, #0F172A 100%)', color: 'white' }}
               >
                 {aiLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                    Brume IA analyse...
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                    Brume IA optimise...
                   </>
                 ) : (
                   <>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
                       <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
-                      <path d="M9 22h6"/>
                     </svg>
-                    Remplir avec Brume IA
+                    Optimiser avec Brume IA
                   </>
                 )}
-                <span className="absolute top-2 right-3 text-[8px] font-bold text-white/60 uppercase tracking-widest">Nouveau</span>
               </button>
             )}
 
@@ -527,12 +526,6 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                 </button>
               </div>
             )}
-
-            <div>
-              <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Titre de l'annonce</label>
-              <input type="text" placeholder="ex: iPhone 13 Pro Max" value={title} onChange={e => setTitle(e.target.value)}
-                className="w-full px-5 py-5 bg-slate-50 rounded-2xl text-sm border-2 border-transparent focus:border-green-600 focus:bg-white outline-none transition-all" />
-            </div>
             <div>
               <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest ml-1 block mb-2">Prix (FCFA)</label>
               <input type="number" placeholder="0" value={price} onChange={e => setPrice(e.target.value)}
