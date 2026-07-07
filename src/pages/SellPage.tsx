@@ -448,8 +448,16 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                   setAiLoading(true);
                   setError('');
                   try {
+                    let imageBase64: string | undefined;
+                    if (images[0]) {
+                      const reader = new FileReader();
+                      imageBase64 = await new Promise<string>((resolve) => {
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(images[0]);
+                      });
+                    }
                     const result = await generateListing({
-                      imageUrl: imagePreviews[0],
+                      imageBase64,
                       rawText: title || undefined,
                       sellerNeighborhood: userProfile?.neighborhood || selectedCities[0],
                     });

@@ -15,7 +15,7 @@ export class BrumeIaController {
   // Le vendeur envoie une photo + texte brut → Brume IA retourne une annonce complète
   @Post('generate-listing')
   async generateListing(
-    @Body() body: { imageUrl?: string; rawText?: string; sellerNeighborhood?: string },
+    @Body() body: { imageUrl?: string; imageBase64?: string; rawText?: string; sellerNeighborhood?: string },
   ) {
     try {
       const result = await this.brumeIa.generateListing(body);

@@ -63,6 +63,7 @@ async function apiCall<T>(endpoint: string, body?: any): Promise<T> {
 
 export async function generateListing(params: {
   imageUrl?: string;
+  imageBase64?: string;
   rawText?: string;
   sellerNeighborhood?: string;
 }): Promise<GenerateListingResult> {

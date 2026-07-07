@@ -82,13 +82,23 @@ export class GeminiProvider implements LlmProvider {
         if (block.type === 'text') {
           return { text: block.text };
         }
-        if (block.type === 'image' && block.source?.url) {
-          return {
-            fileData: {
-              mimeType: 'image/jpeg',
-              fileUri: block.source.url,
-            },
-          };
+        if (block.type === 'image' && block.source) {
+          if (block.source.type === 'base64' && block.source.data) {
+            return {
+              inlineData: {
+                mimeType: block.source.mediaType || 'image/jpeg',
+                data: block.source.data,
+              },
+            };
+          }
+          if (block.source.type === 'url' && block.source.url) {
+            return {
+              fileData: {
+                mimeType: 'image/jpeg',
+                fileUri: block.source.url,
+              },
+            };
+          }
         }
         return { text: '' };
       });

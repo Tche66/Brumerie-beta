@@ -110,15 +110,45 @@ export class BrumeIaService {
     private llm: LlmService,
   ) {}
 
+  private async getLearnedContext(type: string, category?: string): Promise<string> {
+    try {
+      const where: any = {
+        type,
+        OR: [{ wasHelpful: true }, { conversionHappened: true }],
+      };
+      if (category) where.category = category;
+
+      const successfulInteractions = await this.prisma.aiInteraction.findMany({
+        where,
+        select: { input: true, output: true, category: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      });
+
+      if (successfulInteractions.length === 0) return '';
+
+      const examples = successfulInteractions.map((i: any) => {
+        const input = typeof i.input === 'string' ? i.input : JSON.stringify(i.input);
+        const output = typeof i.output === 'string' ? i.output : JSON.stringify(i.output);
+        return `[${i.category || 'general'}] Input: ${input.slice(0, 100)} → Output validé par l'utilisateur`;
+      }).join('\n');
+
+      return `\n\nDonnées d'apprentissage (interactions réussies passées) :\n${examples}\nUtilise ces données pour mieux calibrer tes réponses.`;
+    } catch {
+      return '';
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // 1. PRODUCT AI — Génération d'annonce depuis photo + texte
   // ═══════════════════════════════════════════════════════════════
   async generateListing(params: {
     imageUrl?: string;
+    imageBase64?: string;
     rawText?: string;
     sellerNeighborhood?: string;
   }): Promise<GenerateListingResult> {
-    const { imageUrl, rawText, sellerNeighborhood } = params;
+    const { imageUrl, imageBase64, rawText, sellerNeighborhood } = params;
 
     const systemPrompt = `Tu es Brume IA, l'assistant intelligent de Brumerie — la première plateforme de social commerce en Côte d'Ivoire.
 
@@ -154,9 +184,20 @@ Règles :
 - sellScore réaliste basé sur le prix et la demande locale
 - tips concrets et actionnables`;
 
+    const learnedContext = await this.getLearnedContext('generate-listing');
+    const finalSystem = systemPrompt + learnedContext;
+
     const content: any[] = [];
 
-    if (imageUrl) {
+    if (imageBase64) {
+      const match = imageBase64.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) {
+        content.push({
+          type: 'image',
+          source: { type: 'base64', data: match[2], mediaType: match[1] },
+        });
+      }
+    } else if (imageUrl && !imageUrl.startsWith('blob:')) {
       content.push({
         type: 'image',
         source: { type: 'url', url: imageUrl },
@@ -167,11 +208,13 @@ Règles :
       type: 'text',
       text: rawText
         ? `Voici ce que le vendeur a écrit : "${rawText}". Génère une annonce optimisée.`
-        : 'Analyse cette image et génère une annonce optimisée pour la vendre sur Brumerie.',
+        : content.length > 0
+          ? 'Analyse cette image et génère une annonce optimisée pour la vendre sur Brumerie.'
+          : 'Génère une annonce exemple optimisée pour vendre un produit populaire sur Brumerie.',
     });
 
     const text = await this.llm.call({
-      system: systemPrompt,
+      system: finalSystem,
       messages: [{ role: 'user', content }],
       maxTokens: 1500,
     });
@@ -209,9 +252,11 @@ Règles :
       ? Math.round(similarProducts.reduce((s, p) => s + (p.price || 0), 0) / similarProducts.length)
       : (MARKET_CONTEXT.priceRanges as any)[params.category]?.avg || 10000;
 
+    const learnedPricing = await this.getLearnedContext('price-intelligence', params.category);
+
     const text = await this.llm.call({
       system: `Tu es Brume IA, expert en pricing pour le marché ivoirien.
-Devise : FCFA. Réponds en JSON uniquement.
+Devise : FCFA. Réponds en JSON uniquement.${learnedPricing}
 Données marché : ${similarProducts.length} produits similaires, prix moyen ${avgPrice} FCFA.
 Structure : { "suggestedPrice": number, "priceMin": number, "priceMax": number, "sellProbability": {"2j": number, "7j": number, "14j": number}, "competitorCount": number, "demandLevel": "faible|moyen|fort|très fort", "strategy": "conseil pricing" }`,
       messages: [{
