@@ -461,35 +461,103 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               </div>
             )}
 
-            {/* ═══ BRUME IA — Data Flywheel ═══ */}
-            {dataLoop && dataLoop.totalInteractions > 0 && (
-              <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 bg-violet-600 rounded-xl flex items-center justify-center text-white text-[10px] font-black">∞</div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">IA Data Flywheel</p>
+            {/* ═══ BRUME IA — Data Flywheel (Métriques visuelles) ═══ */}
+            {dataLoop && (
+              <div className="rounded-3xl p-5 border border-violet-100 shadow-sm relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)' }}>
+                <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-violet-200/20"/>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-200">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-violet-700">IA Data Flywheel</p>
+                      <p className="text-[8px] text-violet-500 font-bold">L'IA apprend de chaque interaction</p>
+                    </div>
+                  </div>
+                  {dataLoop.improvementSinceStart > 0 && (
+                    <span className="px-2 py-1 bg-green-500 text-white text-[8px] font-black rounded-lg">
+                      +{dataLoop.improvementSinceStart}%
+                    </span>
+                  )}
                 </div>
-                <div className="grid grid-cols-3 gap-3 mb-3">
-                  <div className="text-center">
-                    <p className="font-black text-lg text-violet-700">{dataLoop.totalInteractions}</p>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase">Interactions</p>
+
+                {/* Métriques principales */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-white/70 rounded-2xl p-3 text-center backdrop-blur-sm">
+                    <p className="font-black text-xl text-violet-700">{dataLoop.totalInteractions}</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase mt-0.5">Interactions</p>
                   </div>
-                  <div className="text-center">
-                    <p className="font-black text-lg text-green-600">{dataLoop.conversionRate}%</p>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase">Conversion</p>
+                  <div className="bg-white/70 rounded-2xl p-3 text-center backdrop-blur-sm">
+                    <p className="font-black text-xl text-green-600">{dataLoop.conversionRate}%</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase mt-0.5">Conversion</p>
                   </div>
-                  <div className="text-center">
-                    <p className="font-black text-lg text-amber-600">{dataLoop.modelAccuracy}%</p>
-                    <p className="text-[7px] font-bold text-slate-400 uppercase">Précision IA</p>
+                  <div className="bg-white/70 rounded-2xl p-3 text-center backdrop-blur-sm">
+                    <p className="font-black text-xl text-amber-600">{dataLoop.modelAccuracy}%</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase mt-0.5">Précision</p>
                   </div>
                 </div>
-                {dataLoop.improvementSinceStart > 0 && (
-                  <div className="flex items-center gap-2 bg-green-50 rounded-xl px-3 py-2">
-                    <span className="text-[10px]">📈</span>
-                    <p className="text-[9px] font-bold text-green-700">
-                      +{dataLoop.improvementSinceStart}% de précision depuis le lancement — l'IA s'améliore à chaque utilisation
-                    </p>
+
+                {/* Barre de progression IA */}
+                <div className="bg-white/60 rounded-2xl p-3 mb-3 backdrop-blur-sm">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[8px] font-black text-slate-600 uppercase">Niveau d'intelligence</p>
+                    <p className="text-[9px] font-black text-violet-700">{dataLoop.modelAccuracy}%</p>
+                  </div>
+                  <div className="h-3 bg-violet-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all relative"
+                      style={{ width: `${dataLoop.modelAccuracy}%`, background: 'linear-gradient(90deg, #7C3AED, #A78BFA, #7C3AED)' }}>
+                      <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full"/>
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[7px] text-slate-400">Débutant</span>
+                    <span className="text-[7px] text-slate-400">Expert</span>
+                  </div>
+                </div>
+
+                {/* Top catégories */}
+                {dataLoop.topCategories && dataLoop.topCategories.length > 0 && (
+                  <div className="bg-white/60 rounded-2xl p-3 backdrop-blur-sm">
+                    <p className="text-[8px] font-black text-slate-600 uppercase mb-2">Top catégories IA</p>
+                    <div className="space-y-2">
+                      {dataLoop.topCategories.slice(0, 3).map((cat, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-violet-700 w-4">{i + 1}.</span>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[9px] font-bold text-slate-700 capitalize">{cat.category}</span>
+                              <span className="text-[8px] font-black text-green-600">{cat.conversionRate}%</span>
+                            </div>
+                            <div className="h-1.5 bg-violet-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-violet-500 rounded-full" style={{ width: `${Math.min(cat.conversionRate * 2, 100)}%` }}/>
+                            </div>
+                          </div>
+                          <span className="text-[7px] text-slate-400 w-8 text-right">{cat.count}x</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
+
+                {/* Footer message */}
+                <div className="flex items-center gap-2 mt-3 bg-white/50 rounded-xl px-3 py-2.5">
+                  <div className="w-5 h-5 bg-violet-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="white" stroke="none">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                  </div>
+                  <p className="text-[9px] font-bold text-violet-800">
+                    {dataLoop.totalInteractions > 50
+                      ? 'Intelligence avancée — prédictions calibrées sur vos données réelles'
+                      : dataLoop.totalInteractions > 10
+                        ? 'En apprentissage — chaque vente améliore les recommandations'
+                        : 'Phase initiale — utilisez Brume IA pour entraîner le modèle'}
+                  </p>
+                </div>
               </div>
             )}
 
