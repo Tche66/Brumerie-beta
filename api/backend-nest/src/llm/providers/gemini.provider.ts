@@ -8,7 +8,7 @@ export class GeminiProvider implements LlmProvider {
 
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || '';
-    this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+    this.model = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
   }
 
@@ -30,7 +30,7 @@ export class GeminiProvider implements LlmProvider {
       },
     };
 
-    const models = [this.model, 'gemini-2.5-flash', 'gemini-2.0-flash'];
+    const models = [this.model, 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
     const tried = new Set<string>();
 
     for (const model of models) {
