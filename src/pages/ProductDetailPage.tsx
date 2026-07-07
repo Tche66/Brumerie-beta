@@ -3,7 +3,7 @@ import { ConditionBadge } from '@/components/ConditionBadge';
 import React, { useState, useRef, useEffect } from 'react';
 import { Product, CATEGORIES, Review } from '@/types';
 import { formatPrice, formatRelativeDate } from '@/utils/helpers';
-import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments } from '@/services/productService';
+import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments, deleteProduct, updateProductStatus } from '@/services/productService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { searchAllUsers } from '@/services/userService';
 import { repostProduct, getRepostsForProduct } from '@/services/shopFeaturesService';
@@ -462,6 +462,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const isNew = new Date().getTime() - createdAtDate.getTime() < 48 * 60 * 60 * 1000;
   const isSelf = currentUser?.uid === product.sellerId;
   const [showBoost, setShowBoost] = useState(false);
+  const [showOwnerMenu, setShowOwnerMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [markingSold, setMarkingSold] = useState(false);
 
   // Helper livraison (évite regex/template literals imbriqués dans JSX)
   const getDeliveryLink = () => {
@@ -1390,10 +1394,24 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {product.status === 'sold' ? (
           <div className="w-full py-5 rounded-2xl bg-slate-100 text-slate-300 font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center">VENDU</div>
         ) : isSelf ? (
-          <button onClick={() => setShowBoost(true)}
-            className="w-full py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-100">
-            ⚡ Booster cet article
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => onBack()}
+              className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier
+            </button>
+            <button onClick={() => setShowBoost(true)}
+              className="flex-1 py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-blue-100">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Boost
+            </button>
+            <button onClick={() => setShowOwnerMenu(true)}
+              className="w-12 py-4 rounded-2xl bg-slate-100 flex items-center justify-center active:scale-95 transition-all">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+                <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+              </svg>
+            </button>
+          </div>
         ) : (
           <>
           <div className="flex gap-3">
@@ -1513,6 +1531,111 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         </div>
       )}
 
+
+      {/* ── MENU ACTIONS PROPRIETAIRE ── */}
+      {showOwnerMenu && (
+        <div className="fixed inset-0 z-[300] flex items-end justify-center" style={{ maxWidth: 480, margin: '0 auto' }}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowOwnerMenu(false)} />
+          <div className="relative w-full bg-white rounded-t-[2rem] p-5 pb-8 animate-slide-up">
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
+            <h3 className="text-[13px] font-black text-slate-900 mb-4">Gérer mon article</h3>
+            <div className="space-y-2">
+              <button onClick={() => { setShowOwnerMenu(false); onBack(); }}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[12px] font-black text-slate-800">Modifier l'annonce</p>
+                  <p className="text-[9px] text-slate-400">Changer titre, prix, photos...</p>
+                </div>
+              </button>
+
+              <button onClick={async () => {
+                  setShowOwnerMenu(false);
+                  setMarkingSold(true);
+                  try {
+                    await updateProductStatus(product.id, 'sold');
+                    onBack();
+                  } catch {} finally { setMarkingSold(false); }
+                }}
+                disabled={markingSold}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[12px] font-black text-slate-800">{markingSold ? 'En cours...' : 'Marquer comme vendu'}</p>
+                  <p className="text-[9px] text-slate-400">L'article ne sera plus visible</p>
+                </div>
+              </button>
+
+              <button onClick={() => setShowBoost(true)}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[12px] font-black text-slate-800">Booster l'article</p>
+                  <p className="text-[9px] text-slate-400">Plus de visibilité pendant 7 jours</p>
+                </div>
+              </button>
+
+              <button onClick={() => { setShowOwnerMenu(false); setShowDeleteConfirm(true); }}
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-red-50 active:bg-red-100 transition-all">
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </div>
+                <div className="text-left">
+                  <p className="text-[12px] font-black text-red-600">Supprimer l'annonce</p>
+                  <p className="text-[9px] text-red-400">Action irréversible</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL CONFIRMATION SUPPRESSION ── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center px-6" style={{ maxWidth: 480, margin: '0 auto' }}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="relative bg-white rounded-3xl p-6 w-full max-w-[340px] shadow-2xl">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round">
+                <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+            </div>
+            <h3 className="text-[15px] font-black text-slate-900 text-center mb-2">Supprimer cette annonce ?</h3>
+            <p className="text-[11px] text-slate-500 text-center mb-1 font-bold">"{product.title}"</p>
+            <p className="text-[10px] text-slate-400 text-center mb-6">Cette action est irréversible. L'annonce sera définitivement supprimée.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all">
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteProduct(product.id, product.sellerId);
+                    setShowDeleteConfirm(false);
+                    onBack();
+                  } catch (e: any) {
+                    alert('Erreur: ' + (e.message || 'Impossible de supprimer'));
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                {deleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Boost Modal */}
       {showBoost && (
