@@ -63,10 +63,11 @@ import { DeliverersListPage } from '@/pages/DeliverersListPage';
 import { CartPage } from '@/pages/CartPage';
 import { getCartCount } from '@/services/cartService';
 import { BrumeAssistant } from '@/components/BrumeAssistant';
+import { BrumeIAPage } from '@/pages/BrumeIAPage';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
-  | 'product-detail' | 'seller-profile' | 'chat'
+  | 'product-detail' | 'seller-profile' | 'chat' | 'brume-ia'
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions' | 'trust'
@@ -159,7 +160,6 @@ function AppShell() {
   const [pendingDashboard, setPendingDashboard]   = useState(0); // commandes actives + offres en attente (vendeur)
   const [activeMissions, setActiveMissions]       = useState(0); // missions actives (livreur)
   const [showExitConfirm, setShowExitConfirm]     = useState(false);
-  const [brumeIaOpen, setBrumeIaOpen]             = useState(false);
   const [cartCount, setCartCount]                 = useState(() => getCartCount());
   const exitConfirmTimer                          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevNotifsRef                             = useRef<Set<string>>(new Set());
@@ -744,7 +744,7 @@ useEffect(() => {
         {activePage === 'messages' && (
           <ConversationsListPage
             onOpenConversation={handleOpenConversation}
-            onOpenBrumeIA={() => setBrumeIaOpen(true)}
+            onOpenBrumeIA={() => navigate('brume-ia')}
             onOpenConversationById={async (convId) => {
               // Chercher la conv dans la liste ou naviguer directement
               const { getDoc, doc } = await import('firebase/firestore');
@@ -776,6 +776,19 @@ useEffect(() => {
               setOrderFlowProduct(productForOrder);
               setAcceptedOfferPrice(price);
               navigate('order-flow');
+            }}
+          />
+        )}
+        {activePage === 'brume-ia' && (
+          <BrumeIAPage
+            onBack={goBack}
+            onAction={(action) => {
+              if (action.type === 'navigate' && action.payload?.page) {
+                navigate(action.payload.page as any, {
+                  productId: action.payload.productId,
+                  sellerId: action.payload.sellerId,
+                });
+              }
             }}
           />
         )}
@@ -980,25 +993,15 @@ useEffect(() => {
         <GoogleNeighborhoodModal onDone={() => setShowNeighborhoodModal(false)} />
       )}
 
-      {/* Brume IA — Assistant flottant */}
-      <BrumeAssistant
-        forceOpen={brumeIaOpen}
-        onAction={(action) => {
-          setBrumeIaOpen(false);
-          if (action.type === 'search' && action.payload?.query) {
-            navigate('discover');
-          } else if (action.type === 'create_listing') {
-            navigate('sell');
-          } else if (action.type === 'show_products' && action.payload?.query) {
-            navigate('discover');
-          } else if (action.type === 'navigate' && action.payload?.page) {
-            navigate(action.payload.page as any, {
-              productId: action.payload.productId,
-              sellerId: action.payload.sellerId,
-            });
-          }
-        }}
-      />
+      {/* Brume IA — Bouton flottant */}
+      <BrumeAssistant onAction={(action) => {
+        if (action.type === 'navigate' && action.payload?.page) {
+          navigate(action.payload.page as any, {
+            productId: action.payload.productId,
+            sellerId: action.payload.sellerId,
+          });
+        }
+      }} />
 
       {/* OfferModal depuis une Story */}
       {storyOfferProduct && currentUser && userProfile && (
