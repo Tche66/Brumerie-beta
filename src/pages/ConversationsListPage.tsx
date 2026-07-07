@@ -8,6 +8,7 @@ import { CreateGroupModal } from '@/components/CreateGroupModal';
 interface ConversationsListPageProps {
   onOpenConversation: (conv: Conversation) => void;
   onOpenConversationById?: (convId: string) => void;
+  onOpenBrumeIA?: () => void;
 }
 
 function timeAgo(ts: any): string {
@@ -20,7 +21,7 @@ function timeAgo(ts: any): string {
   return `${Math.floor(diff / 86400)}j`;
 }
 
-export function ConversationsListPage({ onOpenConversation, onOpenConversationById }: ConversationsListPageProps) {
+export function ConversationsListPage({ onOpenConversation, onOpenConversationById, onOpenBrumeIA }: ConversationsListPageProps) {
   const { currentUser } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +106,25 @@ export function ConversationsListPage({ onOpenConversation, onOpenConversationBy
           ))}
         </div>
       </div>
+
+      {/* Brume IA — épinglé en haut */}
+      <button onClick={onOpenBrumeIA}
+        className="w-full flex items-center gap-4 px-5 py-4 border-b border-slate-50 active:bg-green-50 transition-all">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-green-200 flex-shrink-0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+            <path d="M9 22h6"/>
+          </svg>
+        </div>
+        <div className="flex-1 text-left">
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] font-black text-slate-900">Brume IA</span>
+            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[7px] font-black rounded-md uppercase">IA</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Assistant intelligent — pose-moi n'importe quelle question</p>
+        </div>
+        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"/>
+      </button>
 
       {/* Liste */}
       {loading ? (

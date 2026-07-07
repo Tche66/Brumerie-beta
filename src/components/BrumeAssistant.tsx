@@ -5,19 +5,44 @@ import { chatWithAssistant, getAssistantSuggestions, trackInteraction, ProductCa
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  imageUrl?: string;
   suggestions?: string[];
   products?: ProductCard[];
   action?: { type: string; payload?: any };
 }
 
-export function BrumeAssistant({ onAction }: { onAction?: (action: { type: string; payload?: any }) => void }) {
+const STORAGE_KEY = 'brume-ia-history';
+const HIDDEN_KEY = 'brume-ia-hidden';
+
+function loadHistory(): Message[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveHistory(messages: Message[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+  } catch {}
+}
+
+export function BrumeAssistant({ onAction, forceOpen }: { onAction?: (action: { type: string; payload?: any }) => void; forceOpen?: boolean }) {
   const { currentUser, userProfile } = useAuth();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [hidden, setHidden] = useState(() => localStorage.getItem(HIDDEN_KEY) === 'true');
+  const [messages, setMessages] = useState<Message[]>(loadHistory);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [quickSuggestions, setQuickSuggestions] = useState<string[]>([]);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   useEffect(() => {
     if (open && messages.length === 0 && userProfile) {
@@ -27,14 +52,44 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, loading]);
+
+  useEffect(() => {
+    saveHistory(messages);
   }, [messages]);
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || !currentUser || !userProfile || loading) return;
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    e.target.value = '';
+  };
 
-    const userMsg: Message = { role: 'user', content: text.trim() };
+  const removeImage = () => {
+    setImagePreview(null);
+    setImageFile(null);
+  };
+
+  const sendMessage = async (text: string) => {
+    if ((!text.trim() && !imageFile) || !currentUser || !userProfile || loading) return;
+
+    let userImageUrl: string | undefined;
+    let messageText = text.trim();
+
+    if (imageFile) {
+      const reader = new FileReader();
+      userImageUrl = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(imageFile);
+      });
+      if (!messageText) messageText = "Analyse cette image";
+    }
+
+    const userMsg: Message = { role: 'user', content: messageText, imageUrl: userImageUrl ? imagePreview! : undefined };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
+    removeImage();
     setLoading(true);
 
     try {
@@ -43,8 +98,9 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
         userRole: userProfile.role as any,
         userName: userProfile.name || '',
         userNeighborhood: (userProfile as any).neighborhood,
-        message: text.trim(),
+        message: messageText + (userImageUrl ? ' [image jointe]' : ''),
         history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+        context: userImageUrl ? { currentPage: 'image-analysis' } : undefined,
       });
 
       const aiMsg: Message = {
@@ -56,11 +112,10 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
       };
       setMessages(prev => [...prev, aiMsg]);
 
-      // Data Loop — track chaque interaction assistant
       trackInteraction({
         userId: currentUser.uid,
         type: 'assistant-chat',
-        input: { message: text.trim() },
+        input: { message: messageText, hasImage: !!userImageUrl },
         output: { response: response.message, action: response.action?.type },
       }).catch(() => {});
 
@@ -77,32 +132,59 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
     }
   };
 
+  const startNewConversation = () => {
+    setMessages([]);
+    localStorage.removeItem(STORAGE_KEY);
+    if (userProfile) {
+      getAssistantSuggestions(userProfile.role as any).then(setQuickSuggestions).catch(() => {});
+    }
+  };
+
+  const toggleHidden = () => {
+    const newHidden = !hidden;
+    setHidden(newHidden);
+    localStorage.setItem(HIDDEN_KEY, String(newHidden));
+    if (newHidden) setOpen(false);
+  };
+
   if (!currentUser) return null;
 
   return (
     <>
       {/* Bouton flottant */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-24 right-4 z-[100] w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-700 shadow-2xl shadow-green-500/30 flex items-center justify-center active:scale-90 transition-all group"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
-            <path d="M9 22h6"/><path d="M10 18v4"/><path d="M14 18v4"/>
-          </svg>
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-white animate-pulse"/>
-        </button>
+      {!open && !hidden && (
+        <div className="fixed bottom-24 right-4 z-[100] flex flex-col items-end gap-2">
+          <button
+            onClick={toggleHidden}
+            className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center active:scale-90 transition-all opacity-60"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="3" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-700 shadow-2xl shadow-green-500/30 flex items-center justify-center active:scale-90 transition-all"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+              <path d="M9 22h6"/>
+            </svg>
+            {messages.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full border-2 border-white text-[8px] font-bold text-white flex items-center justify-center">
+                {messages.filter(m => m.role === 'assistant').length}
+              </span>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Modal chat */}
       {open && (
         <div className="fixed inset-0 z-[200] flex flex-col" style={{ maxWidth: 480, margin: '0 auto' }}>
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
-          {/* Chat panel */}
-          <div className="relative mt-auto bg-white rounded-t-[2rem] shadow-2xl flex flex-col" style={{ maxHeight: '85vh' }}>
+          <div className="relative mt-auto bg-white rounded-t-[2rem] shadow-2xl flex flex-col" style={{ maxHeight: '88vh' }}>
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-green-200">
@@ -114,16 +196,22 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                 <h3 className="text-[14px] font-black text-slate-900">Brume IA</h3>
                 <p className="text-[10px] text-green-600 font-bold">En ligne · Prêt à t'aider</p>
               </div>
+              <button onClick={startNewConversation} title="Nouvelle conversation"
+                className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all mr-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
               <button onClick={() => setOpen(false)}
                 className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="6 9 12 15 18 9"/>
                 </svg>
               </button>
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ minHeight: 200, maxHeight: '60vh' }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ minHeight: 200, maxHeight: '62vh' }}>
               {/* Welcome */}
               {messages.length === 0 && (
                 <div className="text-center py-6">
@@ -134,9 +222,8 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                     </svg>
                   </div>
                   <p className="text-[13px] font-bold text-slate-700">Salut {userProfile?.name?.split(' ')[0] || ''} !</p>
-                  <p className="text-[11px] text-slate-400 mt-1">Comment je peux t'aider aujourd'hui ?</p>
+                  <p className="text-[11px] text-slate-400 mt-1">Envoie-moi du texte ou une image, je t'aide !</p>
 
-                  {/* Quick suggestions */}
                   <div className="flex flex-wrap gap-2 justify-center mt-4">
                     {quickSuggestions.slice(0, 4).map((s, i) => (
                       <button key={i} onClick={() => sendMessage(s)}
@@ -156,6 +243,12 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                       ? 'bg-green-600 text-white rounded-br-sm'
                       : 'bg-slate-100 text-slate-800 rounded-bl-sm'
                   }`}>
+                    {/* Image dans le message user */}
+                    {msg.imageUrl && (
+                      <div className="mb-2 rounded-xl overflow-hidden">
+                        <img src={msg.imageUrl} alt="" className="w-full max-h-[150px] object-cover rounded-xl" />
+                      </div>
+                    )}
                     <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
 
                     {/* Suggestions */}
@@ -194,27 +287,11 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                               {product.flashSale && (
                                 <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 text-white text-[7px] font-black rounded-md">FLASH</span>
                               )}
-                              {product.isVerified && (
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                                </span>
-                              )}
                             </div>
                             <div className="p-2">
                               <p className="text-[10px] font-bold text-slate-800 truncate">{product.title}</p>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <span className="text-[11px] font-black text-green-600">{product.price.toLocaleString()} F</span>
-                                {product.flashSale && product.originalPrice && (
-                                  <span className="text-[8px] text-slate-400 line-through">{product.originalPrice.toLocaleString()}</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <div className="w-3 h-3 rounded-full bg-slate-200 overflow-hidden">
-                                  {product.sellerAvatar && <img src={product.sellerAvatar} className="w-full h-full object-cover" />}
-                                </div>
-                                <span className="text-[8px] text-slate-500 truncate">{product.sellerName}</span>
-                              </div>
-                              <span className="text-[7px] text-slate-400 mt-0.5 block">{product.neighborhood}</span>
+                              <span className="text-[11px] font-black text-green-600">{product.price.toLocaleString()} F</span>
+                              <span className="text-[7px] text-slate-400 block">{product.neighborhood}</span>
                             </div>
                           </button>
                         ))}
@@ -239,15 +316,41 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
               )}
             </div>
 
+            {/* Image preview */}
+            {imagePreview && (
+              <div className="px-4 py-2 border-t border-slate-100 bg-slate-50">
+                <div className="relative inline-block">
+                  <img src={imagePreview} alt="" className="w-16 h-16 rounded-xl object-cover border-2 border-green-300" />
+                  <button onClick={removeImage}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="3" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="px-4 py-3 border-t border-slate-100 bg-white rounded-b-[2rem]">
               <div className="flex items-end gap-2">
+                {/* Image button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all flex-shrink-0"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="m21 15-5-5L5 21"/>
+                  </svg>
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+
                 <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
                   <textarea
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-                    placeholder="Pose ta question à Brume IA..."
+                    placeholder="Message ou image..."
                     rows={1}
                     className="w-full px-4 py-3 bg-transparent text-[13px] text-slate-800 placeholder:text-slate-400 outline-none resize-none"
                     style={{ maxHeight: 100 }}
@@ -255,15 +358,14 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                 </div>
                 <button
                   onClick={() => sendMessage(input)}
-                  disabled={!input.trim() || loading}
-                  className="w-11 h-11 rounded-xl bg-green-600 flex items-center justify-center active:scale-90 transition-all disabled:opacity-40 disabled:scale-100 shadow-lg shadow-green-200"
+                  disabled={(!input.trim() && !imageFile) || loading}
+                  className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center active:scale-90 transition-all disabled:opacity-40 disabled:scale-100 shadow-lg shadow-green-200 flex-shrink-0"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white" stroke="none">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                   </svg>
                 </button>
               </div>
-              <p className="text-[8px] text-slate-300 text-center mt-2 font-bold">Brume IA · Propulsé par l'intelligence artificielle</p>
             </div>
           </div>
         </div>

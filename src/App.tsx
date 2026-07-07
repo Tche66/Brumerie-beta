@@ -159,6 +159,7 @@ function AppShell() {
   const [pendingDashboard, setPendingDashboard]   = useState(0); // commandes actives + offres en attente (vendeur)
   const [activeMissions, setActiveMissions]       = useState(0); // missions actives (livreur)
   const [showExitConfirm, setShowExitConfirm]     = useState(false);
+  const [brumeIaOpen, setBrumeIaOpen]             = useState(false);
   const [cartCount, setCartCount]                 = useState(() => getCartCount());
   const exitConfirmTimer                          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevNotifsRef                             = useRef<Set<string>>(new Set());
@@ -743,6 +744,7 @@ useEffect(() => {
         {activePage === 'messages' && (
           <ConversationsListPage
             onOpenConversation={handleOpenConversation}
+            onOpenBrumeIA={() => setBrumeIaOpen(true)}
             onOpenConversationById={async (convId) => {
               // Chercher la conv dans la liste ou naviguer directement
               const { getDoc, doc } = await import('firebase/firestore');
@@ -979,20 +981,24 @@ useEffect(() => {
       )}
 
       {/* Brume IA — Assistant flottant */}
-      <BrumeAssistant onAction={(action) => {
-        if (action.type === 'search' && action.payload?.query) {
-          navigate('discover');
-        } else if (action.type === 'create_listing') {
-          navigate('sell');
-        } else if (action.type === 'show_products' && action.payload?.query) {
-          navigate('discover');
-        } else if (action.type === 'navigate' && action.payload?.page) {
-          navigate(action.payload.page as any, {
-            productId: action.payload.productId,
-            sellerId: action.payload.sellerId,
-          });
-        }
-      }} />
+      <BrumeAssistant
+        forceOpen={brumeIaOpen}
+        onAction={(action) => {
+          setBrumeIaOpen(false);
+          if (action.type === 'search' && action.payload?.query) {
+            navigate('discover');
+          } else if (action.type === 'create_listing') {
+            navigate('sell');
+          } else if (action.type === 'show_products' && action.payload?.query) {
+            navigate('discover');
+          } else if (action.type === 'navigate' && action.payload?.page) {
+            navigate(action.payload.page as any, {
+              productId: action.payload.productId,
+              sellerId: action.payload.sellerId,
+            });
+          }
+        }}
+      />
 
       {/* OfferModal depuis une Story */}
       {storyOfferProduct && currentUser && userProfile && (
