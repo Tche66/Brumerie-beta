@@ -1,12 +1,14 @@
 import { Controller, Post, Body, Get, Query, Param, Patch } from '@nestjs/common';
 import { BrumeIaService } from './brume-ia.service';
 import { AssistantService, AssistantMessage } from './assistant.service';
+import { LlmService } from '../llm/llm.service';
 
 @Controller('ai')
 export class BrumeIaController {
   constructor(
     private readonly brumeIa: BrumeIaService,
     private readonly assistant: AssistantService,
+    private readonly llm: LlmService,
   ) {}
 
   // POST /ai/generate-listing
@@ -235,8 +237,12 @@ export class BrumeIaController {
   status() {
     return {
       name: 'Brume IA',
-      version: '2.0.0',
+      version: '3.0.0',
       status: 'active',
+      provider: {
+        active: this.llm.getActiveProviderName(),
+        available: this.llm.getAvailableProviders(),
+      },
       features: [
         'generate-listing',
         'price-intelligence',

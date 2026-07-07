@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import Anthropic from '@anthropic-ai/sdk';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { LlmService } from '../llm/llm.service';
 
-// Données marché local pour le contexte IA
 const MARKET_CONTEXT = {
   currency: 'FCFA',
   country: 'Côte d\'Ivoire',
@@ -43,17 +41,17 @@ export interface GenerateListingResult {
   priceMax: number;
   condition: 'new' | 'like_new' | 'second_hand';
   tags: string[];
-  sellScore: number; // 0-100 probabilité de vente
-  sellTimeEstimate: string; // "2-3 jours"
-  tips: string[]; // conseils pour mieux vendre
-  bestPublishTime: string; // "18h-20h"
+  sellScore: number;
+  sellTimeEstimate: string;
+  tips: string[];
+  bestPublishTime: string;
 }
 
 export interface PriceIntelligenceResult {
   suggestedPrice: number;
   priceMin: number;
   priceMax: number;
-  sellProbability: Record<string, number>; // "2j": 85, "7j": 95, "14j": 99
+  sellProbability: Record<string, number>;
   competitorCount: number;
   demandLevel: 'faible' | 'moyen' | 'fort' | 'très fort';
   strategy: string;
@@ -67,7 +65,7 @@ export interface NegotiationResult {
 }
 
 export interface SellerScoreResult {
-  score: number; // 0-100
+  score: number;
   grade: 'S' | 'A' | 'B' | 'C' | 'D';
   strengths: string[];
   weaknesses: string[];
@@ -78,7 +76,7 @@ export interface SellerScoreResult {
 
 export interface FraudCheckResult {
   riskLevel: 'safe' | 'suspicious' | 'high_risk';
-  riskScore: number; // 0-100
+  riskScore: number;
   flags: { type: string; severity: string; detail: string }[];
   recommendation: string;
   shouldBlock: boolean;
@@ -107,71 +105,10 @@ export interface BuyerSearchResult {
 
 @Injectable()
 export class BrumeIaService {
-  private anthropic: Anthropic | null = null;
-  private bedrock: BedrockRuntimeClient | null = null;
-  private useProvider: 'bedrock' | 'anthropic';
-
-  constructor(private prisma: PrismaService) {
-    // Priorité : Bedrock si AWS configuré, sinon Anthropic direct
-    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-      this.useProvider = 'bedrock';
-      this.bedrock = new BedrockRuntimeClient({
-        region: process.env.AWS_REGION || 'us-east-1',
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        },
-      });
-    } else {
-      this.useProvider = 'anthropic';
-      this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY || '',
-      });
-    }
-  }
-
-  // Appel unifié — fonctionne avec Bedrock OU Anthropic direct
-  private async callClaude(params: {
-    system: string;
-    messages: { role: 'user' | 'assistant'; content: any }[];
-    maxTokens?: number;
-  }): Promise<string> {
-    const { system, messages, maxTokens = 1500 } = params;
-    const model = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-sonnet-4-6-v1:0';
-
-    if (this.useProvider === 'bedrock' && this.bedrock) {
-      const body = JSON.stringify({
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: maxTokens,
-        system,
-        messages,
-      });
-
-      const command = new InvokeModelCommand({
-        modelId: model,
-        contentType: 'application/json',
-        accept: 'application/json',
-        body: new TextEncoder().encode(body),
-      });
-
-      const response = await this.bedrock.send(command);
-      const result = JSON.parse(new TextDecoder().decode(response.body));
-      return result.content?.[0]?.text || '';
-    }
-
-    // Fallback Anthropic direct
-    if (this.anthropic) {
-      const response = await this.anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
-        system,
-        messages,
-      });
-      return response.content[0].type === 'text' ? response.content[0].text : '';
-    }
-
-    throw new Error('Brume IA: aucun provider configuré (AWS_ACCESS_KEY_ID ou ANTHROPIC_API_KEY requis)');
-  }
+  constructor(
+    private prisma: PrismaService,
+    private llm: LlmService,
+  ) {}
 
   // ═══════════════════════════════════════════════════════════════
   // 1. PRODUCT AI — Génération d'annonce depuis photo + texte
@@ -233,7 +170,7 @@ Règles :
         : 'Analyse cette image et génère une annonce optimisée pour la vendre sur Brumerie.',
     });
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: systemPrompt,
       messages: [{ role: 'user', content }],
       maxTokens: 1500,
@@ -255,7 +192,6 @@ Règles :
     sellerPrice?: number;
     neighborhood?: string;
   }): Promise<PriceIntelligenceResult> {
-    // Chercher produits similaires dans la DB
     let similarProducts: any[] = [];
     try {
       similarProducts = await this.prisma.product.findMany({
@@ -273,7 +209,7 @@ Règles :
       ? Math.round(similarProducts.reduce((s, p) => s + (p.price || 0), 0) / similarProducts.length)
       : (MARKET_CONTEXT.priceRanges as any)[params.category]?.avg || 10000;
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA, expert en pricing pour le marché ivoirien.
 Devise : FCFA. Réponds en JSON uniquement.
 Données marché : ${similarProducts.length} produits similaires, prix moyen ${avgPrice} FCFA.
@@ -304,7 +240,7 @@ Structure : { "suggestedPrice": number, "priceMin": number, "priceMax": number, 
   }): Promise<NegotiationResult> {
     const { productTitle, productPrice, offerPrice, minAcceptablePrice, buyerMessage, previousOffers } = params;
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA, agent de négociation pour un vendeur sur Brumerie (Côte d'Ivoire).
 
 Règles :
@@ -337,7 +273,7 @@ Que faire ?`,
   // 4. BUYER AI SEARCH — Recherche en langage naturel
   // ═══════════════════════════════════════════════════════════════
   async intelligentSearch(query: string): Promise<BuyerSearchResult> {
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA, assistant achat sur Brumerie (marketplace Côte d'Ivoire).
 L'utilisateur cherche un produit en langage naturel. Traduis sa requête en filtres de recherche.
 Catégories : ${MARKET_CONTEXT.categories.join(', ')}
@@ -374,7 +310,7 @@ Réponds en JSON : { "query": "requête reformulée", "intent": "ce que l'utilis
     const conversionRate = viewCount > 0 ? ((contactCount / viewCount) * 100).toFixed(1) : '0';
     const engagementRate = viewCount > 0 ? (((likeCount + bookmarkCount) / viewCount) * 100).toFixed(1) : '0';
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA, analyste de performance pour Brumerie.
 Analyse les stats d'une annonce et donne des conseils concrets.
 Réponds en JSON : { "score": number 0-100, "diagnosis": "phrase courte expliquant la situation", "actions": ["action concrète 1", "action 2", "action 3"] }`,
@@ -446,7 +382,7 @@ Diagnostic et actions recommandées ?`,
     const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
     const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : 'N/A';
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA, évaluateur de vendeurs sur Brumerie (Côte d'Ivoire).
 Évalue ce vendeur et donne un score global + grade.
 Grades : S (top 5%), A (top 20%), B (moyen-haut), C (moyen), D (à améliorer)
@@ -509,7 +445,7 @@ Réponds en JSON : { "score": number 0-100, "grade": "S|A|B|C|D", "strengths": [
 - Taux d'annulation commandes : ${params.userOrderCancelRate}%`;
     }
 
-    const text = await this.callClaude({
+    const text = await this.llm.call({
       system: `Tu es Brume IA Fraud, système de détection de fraude pour Brumerie (marketplace Côte d'Ivoire).
 
 Signaux de fraude connus sur les marketplaces africaines :

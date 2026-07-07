@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
+import { LlmModule } from './llm/llm.module';
 import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
@@ -19,6 +20,7 @@ import { BrumeIaModule } from './brume-ia/brume-ia.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
     PrismaModule,
+    LlmModule,
     EventBusModule,
     UsersModule,
     ProductsModule,
