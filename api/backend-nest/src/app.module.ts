@@ -15,6 +15,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { MigrationModule } from './migration/migration.module';
 import { SeoModule } from './seo/seo.module';
 import { BrumeIaModule } from './brume-ia/brume-ia.module';
+import { EscrowModule } from './escrow/escrow.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { BrumeIaModule } from './brume-ia/brume-ia.module';
     MigrationModule,
     SeoModule,
     BrumeIaModule,
+    EscrowModule,
   ],
 })
 export class AppModule {}

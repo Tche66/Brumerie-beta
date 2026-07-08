@@ -43,6 +43,7 @@ enum ProductCondition {
 
 enum OrderStatus {
   initiated
+  payment_pending
   proof_sent
   confirmed
   ready
@@ -53,6 +54,7 @@ enum OrderStatus {
   cod_delivered
   disputed
   cancelled
+  refunded
 }
 
 enum DeliveryType {
@@ -647,4 +649,27 @@ model AiInteraction {
   @@index([type, createdAt])
   @@index([category, type])
   @@map("ai_interactions")
+}
+
+model EscrowTransaction {
+  id            String   @id
+  orderId       String
+  buyerId       String
+  amount        Int
+  currency      String   @default("XOF")
+  status        String   @default("pending")
+  paymentUrl    String?
+  paidAt        DateTime?
+  releasedAt    DateTime?
+  refundedAt    DateTime?
+  failReason    String?
+  refundReason  String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([buyerId, status])
+  @@index([status, createdAt])
+  @@map("escrow_transactions")
 }
