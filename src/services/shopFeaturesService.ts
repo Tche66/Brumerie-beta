@@ -423,6 +423,21 @@ export async function getRepostsForProduct(productId: string): Promise<Repost[]>
   return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
 }
 
+export async function getUserReposts(userId: string): Promise<Repost[]> {
+  const snap = await getDocs(query(
+    collection(db, 'reposts'),
+    where('reposterId', '==', userId),
+    orderBy('createdAt', 'desc'),
+    limit(50)
+  ));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
+}
+
+export async function deleteRepost(repostId: string): Promise<void> {
+  const { deleteDoc, doc: docRef } = await import('firebase/firestore');
+  await deleteDoc(docRef(db, 'reposts', repostId));
+}
+
 /**
  * Récupérer les reposts des vendeurs suivis — pour le feed "Pour toi"
  * followingIds = UIDs des personnes suivies

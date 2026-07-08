@@ -13,6 +13,7 @@ import {
   followSeller, unfollowSeller, getRedeemablePoints,
   CASHBACK_RATE, CASHBACK_REDEEM, CASHBACK_VALUE,
   formatLastSeen,
+  getUserReposts, deleteRepost,
 } from '@/services/shopFeaturesService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -24,7 +25,7 @@ interface BuyerProfilePageProps {
   onSellerClick?: (sellerId: string) => void;
 }
 
-type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback' | 'recent';
+type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback' | 'recent' | 'reposts';
 
 // ── Palette Brumerie — Dark premium ──────────────────────────────
 const G1  = '#0f172a';   // slate-900
@@ -245,6 +246,8 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const [suggestedSellers, setSuggestedSellers] = useState<any[]>([]);
   const [recentlyViewed, setRecentlyViewed]     = useState<Product[]>([]);
   const [loadingRecent, setLoadingRecent]       = useState(false);
+  const [reposts, setReposts]                   = useState<any[]>([]);
+  const [loadingReposts, setLoadingReposts]     = useState(false);
 
   const pts = (userProfile as any)?.loyaltyPoints || 0;
   const { redeemable, discount: cashbackDiscount } = getRedeemablePoints(pts);
@@ -266,6 +269,15 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
       .catch(() => {})
       .finally(() => setLoadingRecent(false));
   }, [JSON.stringify((userProfile as any)?.recentlyViewedIds)]);
+  useEffect(() => {
+    if (tab !== 'reposts' || !currentUser) return;
+    setLoadingReposts(true);
+    getUserReposts(currentUser.uid)
+      .then(setReposts)
+      .catch(() => {})
+      .finally(() => setLoadingReposts(false));
+  }, [tab, currentUser?.uid]);
+
   useEffect(() => {
     if (!currentUser) return;
     return subscribeOrdersAsBuyer(currentUser.uid, (ords) => { setOrders(ords); setLoadingOrders(false); });
@@ -328,6 +340,11 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   ];
 
   const MORE_TABS: { id: Tab; icon: React.ReactNode; label: string; count: number }[] = [
+    { id: 'reposts',   icon: (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+        </svg>
+      ), label: 'Partages', count: reposts.length },
     { id: 'wishlist',  icon: Icons.star(),   label: 'Wishlist', count: wishlistProducts.length },
     { id: 'cashback',  icon: Icons.gift(),   label: 'Points',   count: pts },
     { id: 'recent',    icon: (
@@ -337,7 +354,6 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
       ), label: 'Récent', count: recentlyViewed.length },
   ];
 
-  const [showMoreTabs, setShowMoreTabs] = useState(false);
 
   return (
     <div className="min-h-screen pb-28" style={{ background: CREAM }}>
@@ -402,33 +418,25 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
         </div>
       </div>
 
-      {/* ══ ONGLETS — Principaux + Plus ═══════════════════════════════ */}
+      {/* ══ ONGLETS — Scroll horizontal ═══════════════════════════════ */}
       <div className="bg-white sticky top-0 z-30 border-b border-slate-100 mt-4">
-        <div className="flex items-center px-3 py-2 gap-1">
-          {[...TABS, ...(showMoreTabs ? MORE_TABS : [])].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${
-                tab === t.id ? 'bg-slate-900 text-white' : 'text-slate-400'
-              }`}>
-              <div className="w-4 h-4 flex items-center justify-center">{t.icon}</div>
-              {t.label}
-              {t.count > 0 && tab !== t.id && (
-                <span className="text-[8px] font-black bg-slate-100 text-slate-500 w-4 h-4 rounded-full flex items-center justify-center">
-                  {t.count > 99 ? '∞' : t.count}
-                </span>
-              )}
-            </button>
-          ))}
-          {/* Bouton Plus / Moins */}
-          <button onClick={() => setShowMoreTabs(!showMoreTabs)}
-            className="flex-shrink-0 w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center active:scale-90 transition-all border border-slate-100">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
-              {showMoreTabs
-                ? <><line x1="5" y1="12" x2="19" y2="12"/></>
-                : <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>
-              }
-            </svg>
-          </button>
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center px-3 py-2 gap-1.5" style={{ minWidth: 'max-content' }}>
+            {[...TABS, ...MORE_TABS].map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap ${
+                  tab === t.id ? 'bg-slate-900 text-white' : 'text-slate-400 bg-slate-50'
+                }`}>
+                <div className="w-4 h-4 flex items-center justify-center">{t.icon}</div>
+                {t.label}
+                {t.count > 0 && tab !== t.id && (
+                  <span className="text-[8px] font-black bg-slate-200 text-slate-500 w-4 h-4 rounded-full flex items-center justify-center">
+                    {t.count > 99 ? '∞' : t.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -807,6 +815,93 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                     onBookmark={() => {}}
                     isBookmarked={bookmarkIds.has(product.id)}
                   />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── REPOSTS / PARTAGES ──────────────────────────────────── */}
+        {tab === 'reposts' && (
+          <div className="px-4 pb-8">
+            {loadingReposts ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-20 bg-slate-100 rounded-2xl animate-pulse"/>
+                ))}
+              </div>
+            ) : reposts.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+                <div className="text-4xl mb-3">🔄</div>
+                <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">
+                  Aucun partage
+                </p>
+                <p className="text-[10px] text-slate-300 mt-1">
+                  Les articles que tu repartages apparaissent ici
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {reposts.map((repost) => (
+                  <div key={repost.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <button
+                      onClick={() => {
+                        const fakeProduct = {
+                          id: repost.originalProductId,
+                          title: repost.originalProductTitle,
+                          images: [repost.originalProductImage],
+                          price: repost.originalProductPrice,
+                          sellerId: repost.originalSellerId,
+                          sellerName: repost.originalSellerName,
+                        } as any;
+                        onProductClick?.(fakeProduct);
+                      }}
+                      className="w-full flex items-center gap-3 p-3 active:bg-slate-50 transition-all text-left"
+                    >
+                      <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
+                        {repost.originalProductImage && (
+                          <img src={repost.originalProductImage} alt="" className="w-full h-full object-cover"/>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-slate-800 truncate">{repost.originalProductTitle}</p>
+                        <p className="text-[10px] font-black text-green-600">{repost.originalProductPrice?.toLocaleString()} FCFA</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">
+                          Vendeur : {repost.originalSellerName}
+                          {repost.comment && <span className="text-slate-500"> · "{repost.comment.slice(0, 30)}"</span>}
+                        </p>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round">
+                        <path d="M9 18l6-6-6-6"/>
+                      </svg>
+                    </button>
+                    <div className="flex border-t border-slate-50">
+                      <button
+                        onClick={() => {
+                          const fakeProduct = {
+                            id: repost.originalProductId,
+                            title: repost.originalProductTitle,
+                            images: [repost.originalProductImage],
+                            price: repost.originalProductPrice,
+                            sellerId: repost.originalSellerId,
+                            sellerName: repost.originalSellerName,
+                          } as any;
+                          onProductClick?.(fakeProduct);
+                        }}
+                        className="flex-1 py-2.5 text-[9px] font-black text-blue-600 uppercase tracking-widest text-center active:bg-blue-50 transition-all">
+                        Voir
+                      </button>
+                      <div className="w-px bg-slate-100"/>
+                      <button
+                        onClick={async () => {
+                          await deleteRepost(repost.id);
+                          setReposts(prev => prev.filter(r => r.id !== repost.id));
+                        }}
+                        className="flex-1 py-2.5 text-[9px] font-black text-red-500 uppercase tracking-widest text-center active:bg-red-50 transition-all">
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
