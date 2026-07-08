@@ -43,6 +43,23 @@
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
+    ,
+    {
+      "collectionGroup": "reposts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "reposterId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reposts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "originalProductId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
   ],
   "fieldOverrides": []
 }

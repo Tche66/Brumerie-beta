@@ -424,13 +424,22 @@ export async function getRepostsForProduct(productId: string): Promise<Repost[]>
 }
 
 export async function getUserReposts(userId: string): Promise<Repost[]> {
-  const snap = await getDocs(query(
-    collection(db, 'reposts'),
-    where('reposterId', '==', userId),
-    orderBy('createdAt', 'desc'),
-    limit(50)
-  ));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'reposts'),
+      where('reposterId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    ));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
+  } catch {
+    const snap = await getDocs(query(
+      collection(db, 'reposts'),
+      where('reposterId', '==', userId),
+      limit(50)
+    ));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Repost[];
+  }
 }
 
 export async function deleteRepost(repostId: string): Promise<void> {

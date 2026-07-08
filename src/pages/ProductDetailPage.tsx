@@ -6,7 +6,7 @@ import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments, deleteProduct, updateProductStatus } from '@/services/productService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { searchAllUsers } from '@/services/userService';
-import { repostProduct, getRepostsForProduct } from '@/services/shopFeaturesService';
+import { repostProduct, getRepostsForProduct, deleteRepost } from '@/services/shopFeaturesService';
 import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { addToWishlist, removeFromWishlist, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
@@ -1347,6 +1347,18 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                       {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
                     </p>
                   </div>
+                  {currentUser?.uid === r.reposterId && (
+                    <button
+                      onClick={async () => {
+                        await deleteRepost(r.id);
+                        setReposts(prev => prev.filter(rp => rp.id !== r.id));
+                      }}
+                      className="self-center w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center active:scale-90 transition-all flex-shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
