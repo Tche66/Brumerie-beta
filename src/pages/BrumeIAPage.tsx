@@ -318,8 +318,8 @@ export function BrumeIAPage({ onBack, onAction }: BrumeIAPageProps) {
         )}
       </div>
 
-      {/* Image preview */}
-      {imagePreview && (
+      {/* Image preview — masqué pour l'instant */}
+      {false && imagePreview && (
         <div className="px-4 py-2 border-t border-slate-100 bg-slate-50">
           <div className="relative inline-block">
             <img src={imagePreview} alt="" className="w-16 h-16 rounded-xl object-cover border-2 border-green-300" />
@@ -334,20 +334,12 @@ export function BrumeIAPage({ onBack, onAction }: BrumeIAPageProps) {
       {/* Input fixé en bas */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3 bg-white border-t border-slate-100" style={{ maxWidth: 480, margin: '0 auto' }}>
         <div className="flex items-end gap-2">
-          <button onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all flex-shrink-0">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2" strokeLinecap="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
-            </svg>
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-              placeholder="Message ou image..."
+              placeholder="Message..."
               rows={1}
               className="w-full px-4 py-3 bg-transparent text-[13px] text-slate-800 placeholder:text-slate-400 outline-none resize-none"
               style={{ maxHeight: 100 }}

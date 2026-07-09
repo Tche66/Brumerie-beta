@@ -4,6 +4,8 @@ import { chatWithAssistant, getAssistantSuggestions, trackInteraction, ProductCa
 import { getProductById } from '@/services/productService';
 
 const FLOAT_VISIBLE_KEY = 'brume-ia-float-visible';
+const CONVERSATIONS_KEY = 'brume-ia-conversations';
+const ACTIVE_CONV_KEY = 'brume-ia-active-conv';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,10 +14,26 @@ interface Message {
   products?: ProductCard[];
 }
 
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+}
+
+function loadConversations(): Conversation[] {
+  try { return JSON.parse(localStorage.getItem(CONVERSATIONS_KEY) || '[]'); } catch { return []; }
+}
+function saveConversations(convs: Conversation[]) {
+  localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(convs.slice(0, 20)));
+}
+
 export function BrumeAssistant({ onAction }: { onAction?: (action: { type: string; payload?: any }) => void }) {
   const { currentUser, userProfile } = useAuth();
   const [visible, setVisible] = useState(() => localStorage.getItem(FLOAT_VISIBLE_KEY) !== 'false');
   const [open, setOpen] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>(loadConversations);
+  const [activeConvId, setActiveConvId] = useState<string | null>(() => localStorage.getItem(ACTIVE_CONV_KEY));
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,6 +47,14 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
     return () => { window.removeEventListener('storage', handleStorage); clearInterval(interval); };
   }, []);
 
+  // Charger la conversation active au montage
+  useEffect(() => {
+    if (activeConvId) {
+      const conv = conversations.find(c => c.id === activeConvId);
+      if (conv) setMessages(conv.messages);
+    }
+  }, []);
+
   useEffect(() => {
     if (open && messages.length === 0 && userProfile) {
       getAssistantSuggestions(userProfile.role as any).then(setQuickSuggestions).catch(() => {});
@@ -38,6 +64,22 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Persister messages dans l'historique
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const convId = activeConvId || 'conv_' + Date.now();
+    if (!activeConvId) {
+      setActiveConvId(convId);
+      localStorage.setItem(ACTIVE_CONV_KEY, convId);
+    }
+    const title = messages.find(m => m.role === 'user')?.content.slice(0, 40) || 'Conversation';
+    const updated = conversations.filter(c => c.id !== convId);
+    const conv: Conversation = { id: convId, title, messages, createdAt: conversations.find(c => c.id === convId)?.createdAt || Date.now() };
+    const all = [conv, ...updated];
+    setConversations(all);
+    saveConversations(all);
+  }, [messages]);
 
   const handleProductClick = async (productId: string) => {
     try {
@@ -127,7 +169,12 @@ export function BrumeAssistant({ onAction }: { onAction?: (action: { type: strin
                 <p className="text-[12px] font-black text-slate-900">Brume IA</p>
                 <p className="text-[9px] text-green-600 font-bold">En ligne</p>
               </div>
-              <button onClick={() => { setMessages([]); }}
+              <button onClick={() => {
+                  const newId = 'conv_' + Date.now();
+                  setActiveConvId(newId);
+                  localStorage.setItem(ACTIVE_CONV_KEY, newId);
+                  setMessages([]);
+                }}
                 className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center active:scale-90 transition-all" title="Nouvelle conversation">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M12 5v14M5 12h14"/>
