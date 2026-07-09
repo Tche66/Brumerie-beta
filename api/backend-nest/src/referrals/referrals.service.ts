@@ -66,11 +66,13 @@ export class ReferralsService {
       data: updateData,
     });
 
-    // ── Si le nouveau est VENDEUR → créer aussi l'affiliation vendeur (20% commission 12 mois)
-    let affiliationType: 'buyer' | 'seller' = 'buyer';
+    // ── Affiliation vendeur — créée dès l'inscription si le PARRAIN est vendeur.
+    // Les 12 mois commencent maintenant. Que le filleul soit acheteur ou vendeur,
+    // l'affiliation est prête. Les gains ne se déclenchent que quand le filleul
+    // fait des ventes (peu importe quand il bascule en vendeur).
+    let affiliationCreated = false;
 
-    if (newUser.role === 'seller' && referrer.role === 'seller') {
-      affiliationType = 'seller';
+    if (referrer.role === 'seller') {
       const existingAffiliation = await this.prisma.vendorAffiliation.findUnique({
         where: { filleulId: newUserId },
       });
@@ -89,6 +91,7 @@ export class ReferralsService {
             dateFin,
           },
         });
+        affiliationCreated = true;
       }
     }
 
@@ -96,9 +99,9 @@ export class ReferralsService {
       success: true,
       referrerId: referrer.firebaseUid,
       referrerName: referrer.name,
-      affiliationType,
-      message: affiliationType === 'seller'
-        ? `Affiliation vendeur activée ! ${referrer.name} gagnera 20% de la commission sur tes ventes pendant 12 mois.`
+      affiliationCreated,
+      message: affiliationCreated
+        ? `Parrainage + Affiliation activés ! Si tu vends sur Brumerie, ${referrer.name} gagnera une part de commission pendant 12 mois.`
         : `Parrainage appliqué ! Ton parrain ${referrer.name} a été récompensé.`,
     };
   }
