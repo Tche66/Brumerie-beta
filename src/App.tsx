@@ -64,6 +64,7 @@ import { CartPage } from '@/pages/CartPage';
 import { getCartCount } from '@/services/cartService';
 import { BrumeAssistant } from '@/components/BrumeAssistant';
 import { BrumeIAPage } from '@/pages/BrumeIAPage';
+import { AffiliatePage } from '@/pages/AffiliatePage';
 
 type Page =
   | 'home' | 'profile' | 'sell' | 'messages'
@@ -71,7 +72,7 @@ type Page =
   | 'edit-profile' | 'verification' | 'support' | 'cgu'
   | 'settings' | 'privacy' | 'terms' | 'about' | 'notifications'
   | 'order-flow' | 'order-status' | 'shop-customize' | 'dashboard' | 'edit-product' | 'referral' | 'guide' | 'admin' | 'compta' | 'dettes' | 'marge' | 'carnet-clients' | 'catalogue' | 'rapport' | 'suggestions' | 'trust'
-  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover' | 'cart' | 'deliverers-list';
+  | 'become-deliverer' | 'deliverer-dashboard' | 'deliverer-profile' | 'discover' | 'cart' | 'deliverers-list' | 'affiliate';
 
 // ── AuthGate — composant dédié hors auth ──────────────────────
 function AuthGate() {
@@ -792,6 +793,7 @@ useEffect(() => {
             }}
           />
         )}
+        {activePage === 'affiliate' && <AffiliatePage onBack={goBack} />}
         {activePage === 'edit-profile' && <EditProfilePage onBack={goBack} onSaved={goBack} />}
         {activePage === 'settings' && <SettingsPage onBack={goBack} onNavigate={handleNavigate} role={role} />}
         {activePage === 'verification' && <VerificationPage onBack={goBack} />}

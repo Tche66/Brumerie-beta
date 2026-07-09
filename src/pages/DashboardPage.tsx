@@ -562,8 +562,8 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
             )}
 
             {/* Bloc Affiliation vendeur */}
-            {userProfile?.referralCode && (
-              <div className="rounded-3xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden"
+            {(
+              <button onClick={() => onNavigate?.('affiliate')} className="w-full text-left rounded-3xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden active:scale-[0.98] transition-all"
                 style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' }}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
@@ -589,7 +589,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                   </div>
                   <p className="text-[8px] text-slate-400 mt-2">Partage ce code à d'autres vendeurs. Tu gagneras 20% de la commission Brumerie sur leurs ventes pendant 12 mois.</p>
                 </div>
-              </div>
+              </button>
             )}
 
             {/* Commandes en cours */}
