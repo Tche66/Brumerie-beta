@@ -997,7 +997,10 @@ useEffect(() => {
 
       {/* Brume IA — Bouton flottant */}
       <BrumeAssistant onAction={(action) => {
-        if (action.type === 'navigate' && action.payload?.page) {
+        if (action.type === 'open-product' && action.payload?.product) {
+          setSelectedProduct(action.payload.product);
+          navigate('product-detail', { productId: action.payload.product.id });
+        } else if (action.type === 'navigate' && action.payload?.page) {
           navigate(action.payload.page as any, {
             productId: action.payload.productId,
             sellerId: action.payload.sellerId,
