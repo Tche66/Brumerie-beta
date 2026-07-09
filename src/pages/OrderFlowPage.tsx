@@ -7,6 +7,7 @@ import { uploadToCloudinary } from '@/utils/uploadImage';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
+import { initiateEscrowPayment } from '@/services/escrowService';
 import { getAppConfig, subscribeAppConfig } from '@/services/appConfigService';
 import { AWAddress } from '@/services/awService';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
@@ -22,8 +23,8 @@ interface OrderFlowPageProps {
   acceptedPrice?: number; // Prix négocié si offre acceptée
 }
 
-type Step = 'recap' | 'availability_check' | 'payment_details' | 'proof' | 'cod_confirm';
-type PaymentMode = 'mobile_money' | 'cash_on_delivery';
+type Step = 'recap' | 'availability_check' | 'payment_details' | 'proof' | 'cod_confirm' | 'escrow_redirect';
+type PaymentMode = 'mobile_money' | 'cash_on_delivery' | 'escrow';
 
 export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }: OrderFlowPageProps) {
   const { currentUser, userProfile } = useAuth();
@@ -183,6 +184,59 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
       setStep('cod_confirm');
     } catch (e: any) {
       console.error('[handleStartCOD]', e);
+      const msg = e?.message || e?.code || JSON.stringify(e);
+      setOrderError(`Erreur : ${msg}`);
+    } finally { setLoading(false); }
+  };
+
+  // ── Paiement sécurisé (Escrow CinetPay) ──
+  const handleStartEscrow = async () => {
+    if (!currentUser || !userProfile) {
+      setOrderError('Connecte-toi pour passer commande.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const deliveryFee = 0;
+      const escrowPaymentInfo: any = { method: 'escrow_cinetpay', phone: userProfile.phone || '', holderName: userProfile.name || '' };
+      const id = await createOrder({
+        buyerId: currentUser.uid,
+        buyerName: userProfile.name,
+        buyerPhoto: userProfile.photoURL,
+        sellerId: product.sellerId,
+        sellerName: product.sellerName,
+        sellerPhoto: product.sellerPhoto,
+        productId: product.id,
+        productTitle: product.title,
+        productImage: product.images?.[0] || '',
+        productPrice: effectivePrice,
+        deliveryFee,
+        paymentInfo: escrowPaymentInfo,
+        sellerPaymentMethods: sellerPayments,
+        sellerPhone: sellerPhone,
+        buyerPhone: userProfile.phone || '',
+        deliveryType,
+        sellerNeighborhood: product.neighborhood || '',
+        buyerNeighborhood: userProfile.neighborhood || '',
+        ...(awCode ? { buyerAWCode: awCode } : {}),
+        ...(awAddress?.repere ? { buyerAWRepere: awAddress.repere } : {}),
+        ...(awAddress?.latitude ? { buyerAWLatitude: awAddress.latitude } : {}),
+        ...(awAddress?.longitude ? { buyerAWLongitude: awAddress.longitude } : {}),
+      });
+      setOrderId(id);
+
+      // Initier le paiement CinetPay et rediriger
+      const escrowResult = await initiateEscrowPayment({
+        orderId: id,
+        amount: effectivePrice,
+        buyerPhone: userProfile.phone || '',
+        buyerName: userProfile.name || '',
+      });
+
+      // Rediriger vers la page de paiement CinetPay
+      window.location.href = escrowResult.paymentUrl;
+    } catch (e: any) {
+      console.error('[handleStartEscrow]', e);
       const msg = e?.message || e?.code || JSON.stringify(e);
       setOrderError(`Erreur : ${msg}`);
     } finally { setLoading(false); }
@@ -356,10 +410,6 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
             <button onClick={() => setPaymentMode('cash_on_delivery')}
               className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'cash_on_delivery' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
-              {/* Badge Recommandé */}
-              <div className="absolute -top-2 -right-1 bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                <BruIcons.Shield size={14}/> Recommandé
-              </div>
               <div className="text-2xl flex-shrink-0"></div>
               <div className="flex-1">
                 <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Payer à la livraison</p>
@@ -371,6 +421,32 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                 </div>
               )}
             </button>
+
+            {/* Paiement sécurisé — Escrow CinetPay */}
+            <button onClick={() => setPaymentMode('escrow')}
+              className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'escrow' ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`}>
+              <div className="absolute -top-2 -right-1 bg-green-600 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Sécurisé
+              </div>
+              <div className="text-2xl flex-shrink-0"></div>
+              <div className="flex-1">
+                <p className={`text-[12px] font-black ${paymentMode === 'escrow' ? 'text-green-800' : 'text-slate-700'}`}>Paiement sécurisé</p>
+                <p className="text-[10px] text-slate-400 font-medium">Ton argent est protégé jusqu'à réception du produit</p>
+              </div>
+              {paymentMode === 'escrow' && (
+                <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              )}
+            </button>
+            {paymentMode === 'escrow' && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-3 -mt-1">
+                <p className="text-[9px] text-green-700 font-bold leading-relaxed">
+                  Wave, Orange Money, MTN, Moov — ton argent reste bloqué tant que tu n'as pas confirmé la réception. Si problème → remboursement automatique.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -425,6 +501,24 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-orange-200 active:scale-95 transition-all disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
             Continuer → Vérifier la disponibilité
+          </button>
+        ) : paymentMode === 'escrow' ? (
+          <button
+            onClick={() => { setOrderError(''); handleStartEscrow(); }}
+            disabled={loading}
+            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                Redirection paiement...
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Payer en toute sécurité — {effectivePrice.toLocaleString()} F
+              </div>
+            )}
           </button>
         ) : (
           <button

@@ -561,6 +561,37 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               </div>
             )}
 
+            {/* Bloc Affiliation vendeur */}
+            {userProfile?.referralCode && (
+              <div className="rounded-3xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Affiliation vendeur</p>
+                    <p className="text-[8px] text-emerald-600 font-bold">20% de commission sur chaque vente de tes filleuls</p>
+                  </div>
+                </div>
+                <div className="bg-white/70 rounded-2xl p-3 backdrop-blur-sm">
+                  <p className="text-[9px] font-bold text-slate-600 mb-1">Ton code affiliation :</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-emerald-100 text-emerald-800 px-3 py-2 rounded-xl text-[13px] font-black tracking-widest">
+                      {userProfile.referralCode}
+                    </code>
+                    <button onClick={() => { navigator.clipboard.writeText(userProfile.referralCode || ''); }}
+                      className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase active:scale-95 transition-all">
+                      Copier
+                    </button>
+                  </div>
+                  <p className="text-[8px] text-slate-400 mt-2">Partage ce code à d'autres vendeurs. Tu gagneras 20% de la commission Brumerie sur leurs ventes pendant 12 mois.</p>
+                </div>
+              </div>
+            )}
+
             {/* Commandes en cours */}
             {activeOrders.length > 0 && (
               <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
