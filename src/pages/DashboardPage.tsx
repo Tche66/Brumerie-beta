@@ -40,7 +40,7 @@ interface DashboardPageProps {
   onNavigate?: (page: string) => void;
 }
 
-type Tab = 'stats' | 'articles' | 'commandes' | 'ventes' | 'offres';
+type Tab = 'stats' | 'articles' | 'commandes' | 'ventes' | 'offres' | 'filleuls';
 
 function StatusBadge({ status }: { status: OrderStatus }) {
   const map: Record<OrderStatus, { label: string; bg: string; color: string }> = {
@@ -159,6 +159,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
     { id: 'commandes', label: 'Commandes', badge: activeOrders.length },
     { id: 'offres',    label: 'Offres',    badge: pendingOffers.length },
     ...(!isSimple ? [{ id: 'ventes' as Tab, label: 'Ventes', badge: completedSales.length }] : []),
+    { id: 'filleuls',  label: 'Filleuls' },
   ];
 
   const fmt = (ts: any) => {
@@ -561,36 +562,6 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               </div>
             )}
 
-            {/* Bloc Affiliation vendeur */}
-            {(
-              <button onClick={() => onNavigate?.('affiliate')} className="w-full text-left rounded-3xl p-5 border border-emerald-100 shadow-sm relative overflow-hidden active:scale-[0.98] transition-all"
-                style={{ background: 'linear-gradient(135deg, #ECFDF5, #D1FAE5)' }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                      <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Affiliation vendeur</p>
-                    <p className="text-[8px] text-emerald-600 font-bold">20% de commission sur chaque vente de tes filleuls</p>
-                  </div>
-                </div>
-                <div className="bg-white/70 rounded-2xl p-3 backdrop-blur-sm">
-                  <p className="text-[9px] font-bold text-slate-600 mb-1">Ton code affiliation :</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-emerald-100 text-emerald-800 px-3 py-2 rounded-xl text-[13px] font-black tracking-widest">
-                      {userProfile.referralCode}
-                    </code>
-                    <button onClick={() => { navigator.clipboard.writeText(userProfile.referralCode || ''); }}
-                      className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase active:scale-95 transition-all">
-                      Copier
-                    </button>
-                  </div>
-                  <p className="text-[8px] text-slate-400 mt-2">Partage ce code à d'autres vendeurs. Tu gagneras 20% de la commission Brumerie sur leurs ventes pendant 12 mois.</p>
-                </div>
-              </button>
-            )}
 
             {/* Commandes en cours */}
             {activeOrders.length > 0 && (
@@ -995,6 +966,52 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
               </div>
             )}
           </>
+        )}
+
+        {/* ═══ ONGLET FILLEULS ═══════════════════════════════════════ */}
+        {activeTab === 'filleuls' && (
+          <div className="space-y-4">
+            <div className="rounded-3xl p-5 text-center relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, #065F46, #16A34A)' }}>
+              <div className="relative">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                    <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
+                  </svg>
+                </div>
+                <h3 className="text-white font-black text-[14px] mb-1">Programme Affiliation</h3>
+                <p className="text-white/70 text-[10px] font-medium">20% de commission sur les ventes de tes filleuls</p>
+              </div>
+            </div>
+
+            {userProfile?.referralCode ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Ton code</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-white text-emerald-800 px-3 py-2.5 rounded-xl text-[15px] font-black tracking-widest text-center border border-emerald-200">
+                    {userProfile.referralCode}
+                  </code>
+                  <button onClick={() => navigator.clipboard.writeText(userProfile.referralCode || '')}
+                    className="px-3 py-2.5 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase active:scale-95 transition-all">
+                    Copier
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => onNavigate?.('affiliate')}
+                className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-emerald-200">
+                Activer le programme d'affiliation
+              </button>
+            )}
+
+            <button onClick={() => onNavigate?.('affiliate')}
+              className="w-full py-4 rounded-2xl border-2 border-emerald-200 text-emerald-700 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
+              </svg>
+              Voir mes filleuls et gains
+            </button>
+          </div>
         )}
       </div>
 

@@ -370,6 +370,12 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             onClick={() => onNavigate('referral')}
           />
           <SettingItem
+            icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg>}
+            label="Affiliation vendeur"
+            sublabel="Gagne 20% sur les ventes de tes filleuls"
+            onClick={() => onNavigate('affiliate')}
+          />
+          <SettingItem
             icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>}
             label="Anti-Arnaque"
             sublabel="Signalement et liste noire"
