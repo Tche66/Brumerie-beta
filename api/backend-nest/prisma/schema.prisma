@@ -652,24 +652,28 @@ model AiInteraction {
 }
 
 model EscrowTransaction {
-  id            String   @id
-  orderId       String
-  buyerId       String
-  amount        Int
-  currency      String   @default("XOF")
-  status        String   @default("pending")
-  paymentUrl    String?
-  paidAt        DateTime?
-  releasedAt    DateTime?
-  refundedAt    DateTime?
-  failReason    String?
-  refundReason  String?
-  metadata      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id
+  orderId         String
+  buyerId         String
+  amount          Int
+  commission      Int       @default(0)
+  sellerReceives  Int       @default(0)
+  currency        String    @default("XOF")
+  status          String    @default("pending")
+  paymentUrl      String?
+  paidAt          DateTime?
+  releasedAt      DateTime?
+  refundedAt      DateTime?
+  autoReleaseAt   DateTime?
+  failReason      String?
+  refundReason    String?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([orderId])
   @@index([buyerId, status])
   @@index([status, createdAt])
+  @@index([status, autoReleaseAt])
   @@map("escrow_transactions")
 }

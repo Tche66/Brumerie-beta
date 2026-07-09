@@ -1,5 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+const BRUMERIE_FEE_PERCENT = 8;
+const AUTO_RELEASE_HOURS = 72;
 
 export interface InitPaymentParams {
   orderId: string;
@@ -44,12 +47,10 @@ export class EscrowService {
   private apiKey: string;
   private siteId: string;
   private baseUrl: string;
-  private secretKey: string;
 
   constructor(private prisma: PrismaService) {
     this.apiKey = process.env.CINETPAY_API_KEY || '';
     this.siteId = process.env.CINETPAY_SITE_ID || '';
-    this.secretKey = process.env.CINETPAY_SECRET_KEY || '';
     this.baseUrl = 'https://api-checkout.cinetpay.com/v2';
   }
 
@@ -57,6 +58,9 @@ export class EscrowService {
     return !!(this.apiKey && this.siteId);
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // INITIER UN PAIEMENT
+  // ═══════════════════════════════════════════════════════════════
   async initiatePayment(params: InitPaymentParams): Promise<InitPaymentResult> {
     const {
       orderId, buyerId, amount, currency = 'XOF',
@@ -65,6 +69,8 @@ export class EscrowService {
     } = params;
 
     const transactionId = `BRU-${orderId}-${Date.now()}`;
+    const commission = Math.round(amount * BRUMERIE_FEE_PERCENT / 100);
+    const sellerReceives = amount - commission;
 
     const body = {
       apikey: this.apiKey,
@@ -95,42 +101,54 @@ export class EscrowService {
       throw new Error(data.message || 'Erreur lors de l\'initialisation du paiement');
     }
 
-    // Enregistrer la transaction escrow
     await this.prisma.escrowTransaction.create({
       data: {
         id: transactionId,
         orderId,
         buyerId,
         amount,
+        commission,
+        sellerReceives,
         currency,
         status: 'pending',
         paymentUrl: data.data.payment_url,
+        autoReleaseAt: new Date(Date.now() + AUTO_RELEASE_HOURS * 60 * 60 * 1000),
         metadata: { paymentMethod, buyerPhone },
       },
     });
 
-    // Mettre à jour la commande
     await this.prisma.order.update({
       where: { id: orderId },
-      data: {
-        status: 'payment_pending',
-        paymentMethod: paymentMethod || 'cinetpay',
-      },
+      data: { status: 'payment_pending', paymentMethod: paymentMethod || 'cinetpay' },
     }).catch(() => {});
 
-    this.logger.log(`Escrow initiated: ${transactionId} for order ${orderId}, amount ${amount} ${currency}`);
+    this.logger.log(`Escrow initiated: ${transactionId}, total=${amount}, commission=${commission}, seller=${sellerReceives}`);
 
-    return {
-      transactionId,
-      paymentUrl: data.data.payment_url,
-      status: 'pending',
-    };
+    return { transactionId, paymentUrl: data.data.payment_url, status: 'pending' };
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // WEBHOOK CINETPAY — avec idempotence
+  // ═══════════════════════════════════════════════════════════════
   async handleWebhook(payload: WebhookPayload): Promise<void> {
     const transactionId = payload.cpm_trans_id;
 
-    // Vérifier le statut auprès de CinetPay
+    const escrow = await this.prisma.escrowTransaction.findUnique({
+      where: { id: transactionId },
+    });
+
+    if (!escrow) {
+      this.logger.warn(`Webhook for unknown transaction: ${transactionId}`);
+      return;
+    }
+
+    // Idempotence : si déjà traité, on ignore
+    if (escrow.status !== 'pending') {
+      this.logger.log(`Webhook duplicate ignored: ${transactionId} already ${escrow.status}`);
+      return;
+    }
+
+    // Vérifier le statut auprès de CinetPay (ne jamais faire confiance au payload seul)
     const verifyResponse = await fetch(`${this.baseUrl}/payment/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -144,15 +162,6 @@ export class EscrowService {
     const verifyData = await verifyResponse.json();
     const status = verifyData.data?.status;
 
-    const escrow = await this.prisma.escrowTransaction.findUnique({
-      where: { id: transactionId },
-    });
-
-    if (!escrow) {
-      this.logger.warn(`Webhook for unknown transaction: ${transactionId}`);
-      return;
-    }
-
     if (status === 'ACCEPTED') {
       await this.prisma.escrowTransaction.update({
         where: { id: transactionId },
@@ -164,7 +173,7 @@ export class EscrowService {
         data: { status: 'confirmed' },
       }).catch(() => {});
 
-      this.logger.log(`Payment confirmed & held in escrow: ${transactionId}`);
+      this.logger.log(`Payment held in escrow: ${transactionId}`);
     } else if (status === 'REFUSED' || status === 'ERROR') {
       await this.prisma.escrowTransaction.update({
         where: { id: transactionId },
@@ -178,9 +187,14 @@ export class EscrowService {
 
       this.logger.warn(`Payment failed: ${transactionId} - ${status}`);
     }
+    // Si status est 'PENDING' → on ne fait rien, on attend le prochain webhook
   }
 
-  async releaseFunds(orderId: string): Promise<void> {
+  // ═══════════════════════════════════════════════════════════════
+  // LIBÉRER LES FONDS — avec split commission
+  // Appelé par: acheteur confirme OU auto-release OU admin
+  // ═══════════════════════════════════════════════════════════════
+  async releaseFunds(orderId: string, callerRole: 'buyer' | 'system' | 'admin'): Promise<{ sellerReceives: number; commission: number }> {
     const escrow = await this.prisma.escrowTransaction.findFirst({
       where: { orderId, status: 'held' },
     });
@@ -189,23 +203,15 @@ export class EscrowService {
       throw new Error('Aucune transaction escrow en attente pour cette commande');
     }
 
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) throw new Error('Commande introuvable');
+    // Le vendeur ne peut JAMAIS appeler release
+    // (la vérification se fait dans le controller)
 
-    // Déclencher le transfert vers le vendeur via CinetPay
-    const transferBody = {
-      apikey: this.apiKey,
-      site_id: this.siteId,
-      transaction_id: `RELEASE-${escrow.id}-${Date.now()}`,
-      amount: escrow.amount,
-      currency: escrow.currency,
-      recipient_id: order.sellerId,
-      metadata: JSON.stringify({ orderId, escrowId: escrow.id }),
-    };
+    const { sellerReceives, commission } = escrow;
 
-    // Note: Le transfert réel dépend de l'API CinetPay Transfer
-    // Pour l'instant on marque comme released et le paiement
-    // sera effectué manuellement ou via l'API Transfer quand disponible
+    // TODO: Quand l'API CinetPay Transfer sera intégrée,
+    // faire le virement de `sellerReceives` au vendeur ici.
+    // La commission reste sur le compte Brumerie.
+
     await this.prisma.escrowTransaction.update({
       where: { id: escrow.id },
       data: { status: 'released', releasedAt: new Date() },
@@ -216,10 +222,15 @@ export class EscrowService {
       data: { status: 'delivered' },
     }).catch(() => {});
 
-    this.logger.log(`Funds released for order ${orderId}: ${escrow.amount} ${escrow.currency}`);
+    this.logger.log(`Funds released: order=${orderId}, seller=${sellerReceives} XOF, commission=${commission} XOF, by=${callerRole}`);
+
+    return { sellerReceives, commission };
   }
 
-  async refundBuyer(orderId: string, reason: string): Promise<void> {
+  // ═══════════════════════════════════════════════════════════════
+  // REMBOURSEMENT — total ou partiel
+  // ═══════════════════════════════════════════════════════════════
+  async refundBuyer(orderId: string, reason: string, partialAmount?: number): Promise<void> {
     const escrow = await this.prisma.escrowTransaction.findFirst({
       where: { orderId, status: 'held' },
     });
@@ -228,21 +239,147 @@ export class EscrowService {
       throw new Error('Aucune transaction escrow à rembourser');
     }
 
-    // CinetPay refund via API
-    // Pour l'instant on marque en refunded
+    const refundAmount = partialAmount || escrow.amount;
+
+    // TODO: Appel API CinetPay Refund quand disponible
+
+    const newStatus = refundAmount >= escrow.amount ? 'refunded' : 'partial_refund';
+
     await this.prisma.escrowTransaction.update({
       where: { id: escrow.id },
-      data: { status: 'refunded', refundReason: reason, refundedAt: new Date() },
+      data: { status: newStatus, refundReason: reason, refundedAt: new Date() },
     });
 
     await this.prisma.order.update({
       where: { id: orderId },
-      data: { status: 'cancelled' },
+      data: { status: 'refunded' },
     }).catch(() => {});
 
-    this.logger.log(`Refund processed for order ${orderId}: ${reason}`);
+    this.logger.log(`Refund (${newStatus}): order=${orderId}, amount=${refundAmount} XOF, reason=${reason}`);
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // OUVRIR UN LITIGE
+  // ═══════════════════════════════════════════════════════════════
+  async openDispute(orderId: string, reason: string, openedBy: string): Promise<void> {
+    const escrow = await this.prisma.escrowTransaction.findFirst({
+      where: { orderId, status: 'held' },
+    });
+
+    if (!escrow) {
+      throw new Error('Aucune transaction escrow pour ouvrir un litige');
+    }
+
+    await this.prisma.escrowTransaction.update({
+      where: { id: escrow.id },
+      data: { status: 'disputed' },
+    });
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'disputed' },
+    }).catch(() => {});
+
+    this.logger.warn(`Dispute opened: order=${orderId}, by=${openedBy}, reason=${reason}`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // AUTO-RELEASE — à appeler via cron toutes les heures
+  // Libère les fonds si l'acheteur ne confirme pas après 72h
+  // ═══════════════════════════════════════════════════════════════
+  async processAutoReleases(): Promise<number> {
+    const now = new Date();
+
+    const expiredEscrows = await this.prisma.escrowTransaction.findMany({
+      where: {
+        status: 'held',
+        autoReleaseAt: { lte: now },
+      },
+    });
+
+    let released = 0;
+    for (const escrow of expiredEscrows) {
+      try {
+        await this.releaseFunds(escrow.orderId, 'system');
+        released++;
+      } catch (e: any) {
+        this.logger.error(`Auto-release failed for ${escrow.orderId}: ${e.message}`);
+      }
+    }
+
+    if (released > 0) {
+      this.logger.log(`Auto-release: ${released} transactions libérées`);
+    }
+    return released;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // RECONCILIATION — vérifier les paiements pending bloqués
+  // ═══════════════════════════════════════════════════════════════
+  async reconcilePendingPayments(): Promise<number> {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const stalePayments = await this.prisma.escrowTransaction.findMany({
+      where: {
+        status: 'pending',
+        createdAt: { lte: oneHourAgo },
+      },
+    });
+
+    let reconciled = 0;
+    for (const escrow of stalePayments) {
+      try {
+        const verifyResponse = await fetch(`${this.baseUrl}/payment/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            apikey: this.apiKey,
+            site_id: this.siteId,
+            transaction_id: escrow.id,
+          }),
+        });
+
+        const data = await verifyResponse.json();
+        const status = data.data?.status;
+
+        if (status === 'ACCEPTED') {
+          await this.prisma.escrowTransaction.update({
+            where: { id: escrow.id },
+            data: { status: 'held', paidAt: new Date() },
+          });
+          await this.prisma.order.update({
+            where: { id: escrow.orderId },
+            data: { status: 'confirmed' },
+          }).catch(() => {});
+          reconciled++;
+          this.logger.log(`Reconciled: ${escrow.id} → held`);
+        } else if (status === 'REFUSED' || status === 'ERROR') {
+          await this.prisma.escrowTransaction.update({
+            where: { id: escrow.id },
+            data: { status: 'failed', failReason: 'reconciliation: ' + status },
+          });
+          reconciled++;
+        }
+        // Si toujours PENDING après 24h → marquer expired
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        if (status === 'PENDING' && escrow.createdAt < twentyFourHoursAgo) {
+          await this.prisma.escrowTransaction.update({
+            where: { id: escrow.id },
+            data: { status: 'expired' },
+          });
+          reconciled++;
+        }
+      } catch (e: any) {
+        this.logger.error(`Reconciliation failed for ${escrow.id}: ${e.message}`);
+      }
+    }
+
+    return reconciled;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // STATUS
+  // ═══════════════════════════════════════════════════════════════
   async getEscrowStatus(orderId: string) {
     const escrow = await this.prisma.escrowTransaction.findFirst({
       where: { orderId },
@@ -255,9 +392,12 @@ export class EscrowService {
       transactionId: escrow.id,
       status: escrow.status,
       amount: escrow.amount,
+      commission: escrow.commission,
+      sellerReceives: escrow.sellerReceives,
       currency: escrow.currency,
       paidAt: escrow.paidAt,
       releasedAt: escrow.releasedAt,
+      autoReleaseAt: escrow.autoReleaseAt,
     };
   }
 }

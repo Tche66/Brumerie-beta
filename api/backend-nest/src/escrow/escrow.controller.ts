@@ -1,16 +1,22 @@
-import { Controller, Post, Body, Get, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { EscrowService } from './escrow.service';
+import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('escrow')
 export class EscrowController {
-  constructor(private readonly escrow: EscrowService) {}
+  constructor(
+    private readonly escrow: EscrowService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  // POST /escrow/initiate — L'acheteur initie un paiement escrow
+  // POST /escrow/initiate — Acheteur initie un paiement
   @Post('initiate')
+  @UseGuards(FirebaseAuthGuard)
   async initiatePayment(
+    @Req() req: any,
     @Body() body: {
       orderId: string;
-      buyerId: string;
       amount: number;
       paymentMethod?: string;
       buyerPhone?: string;
@@ -19,16 +25,19 @@ export class EscrowController {
   ) {
     try {
       if (!this.escrow.isConfigured()) {
-        return { success: false, error: 'Paiement CinetPay non configuré. Contacte le support.' };
+        return { success: false, error: 'Paiement CinetPay non configuré.' };
       }
-      const result = await this.escrow.initiatePayment(body);
+      const result = await this.escrow.initiatePayment({
+        ...body,
+        buyerId: req.user.uid,
+      });
       return { success: true, data: result };
     } catch (e: any) {
       return { success: false, error: e.message || 'Erreur paiement' };
     }
   }
 
-  // POST /escrow/webhook — Callback CinetPay (ne pas protéger par auth)
+  // POST /escrow/webhook — Callback CinetPay (PAS protégé par auth)
   @Post('webhook')
   async webhook(@Body() payload: any) {
     try {
@@ -39,43 +48,122 @@ export class EscrowController {
     }
   }
 
-  // POST /escrow/release — Libérer les fonds au vendeur (après livraison confirmée)
-  @Post('release')
-  async releaseFunds(@Body() body: { orderId: string }) {
+  // POST /escrow/confirm-delivery — Acheteur confirme réception → libère fonds
+  @Post('confirm-delivery')
+  @UseGuards(FirebaseAuthGuard)
+  async confirmDelivery(@Req() req: any, @Body() body: { orderId: string }) {
     try {
-      await this.escrow.releaseFunds(body.orderId);
-      return { success: true, message: 'Fonds libérés au vendeur' };
+      const order = await this.prisma.order.findUnique({ where: { id: body.orderId } });
+      if (!order) return { success: false, error: 'Commande introuvable' };
+
+      // Seul l'acheteur peut confirmer la réception
+      if (order.buyerId !== req.user.uid) {
+        throw new ForbiddenException('Seul l\'acheteur peut confirmer la réception');
+      }
+
+      const result = await this.escrow.releaseFunds(body.orderId, 'buyer');
+      return { success: true, data: result };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
   }
 
-  // POST /escrow/refund — Rembourser l'acheteur (litige résolu en faveur acheteur)
-  @Post('refund')
-  async refundBuyer(@Body() body: { orderId: string; reason: string }) {
+  // POST /escrow/dispute — Acheteur ou vendeur ouvre un litige
+  @Post('dispute')
+  @UseGuards(FirebaseAuthGuard)
+  async dispute(@Req() req: any, @Body() body: { orderId: string; reason: string }) {
     try {
-      await this.escrow.refundBuyer(body.orderId, body.reason);
+      const order = await this.prisma.order.findUnique({ where: { id: body.orderId } });
+      if (!order) return { success: false, error: 'Commande introuvable' };
+
+      if (order.buyerId !== req.user.uid && order.sellerId !== req.user.uid) {
+        throw new ForbiddenException('Non autorisé');
+      }
+
+      await this.escrow.openDispute(body.orderId, body.reason, req.user.uid);
+      return { success: true, message: 'Litige ouvert' };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // POST /escrow/admin/release — Admin force la libération (litige tranché)
+  @Post('admin/release')
+  @UseGuards(FirebaseAuthGuard)
+  async adminRelease(@Req() req: any, @Body() body: { orderId: string }) {
+    try {
+      this.assertAdmin(req.user.uid);
+      const result = await this.escrow.releaseFunds(body.orderId, 'admin');
+      return { success: true, data: result };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // POST /escrow/admin/refund — Admin force un remboursement
+  @Post('admin/refund')
+  @UseGuards(FirebaseAuthGuard)
+  async adminRefund(@Req() req: any, @Body() body: { orderId: string; reason: string; partialAmount?: number }) {
+    try {
+      this.assertAdmin(req.user.uid);
+      await this.escrow.refundBuyer(body.orderId, body.reason, body.partialAmount);
       return { success: true, message: 'Remboursement effectué' };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
   }
 
-  // GET /escrow/status/:orderId — Vérifier le statut escrow d'une commande
+  private assertAdmin(uid: string) {
+    const adminUids = (process.env.ADMIN_UIDS || '').split(',').filter(Boolean);
+    if (!adminUids.includes(uid)) {
+      throw new ForbiddenException('Admin uniquement');
+    }
+  }
+
+  // GET /escrow/status/:orderId — Statut escrow (participants seulement)
   @Get('status/:orderId')
-  async getStatus(@Param('orderId') orderId: string) {
+  @UseGuards(FirebaseAuthGuard)
+  async getStatus(@Req() req: any, @Param('orderId') orderId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) return { success: false, error: 'Commande introuvable' };
+
+    if (order.buyerId !== req.user.uid && order.sellerId !== req.user.uid) {
+      throw new ForbiddenException('Non autorisé');
+    }
+
     const status = await this.escrow.getEscrowStatus(orderId);
-    if (!status) return { success: false, error: 'Aucune transaction escrow pour cette commande' };
+    if (!status) return { success: false, error: 'Aucune transaction escrow' };
     return { success: true, data: status };
   }
 
-  // GET /escrow/health — Vérifier que CinetPay est configuré
+  // POST /escrow/cron/auto-release — Appelé par un cron externe
+  @Post('cron/auto-release')
+  async cronAutoRelease(@Body() body: { secret?: string }) {
+    if (body.secret !== (process.env.CRON_SECRET || 'brumerie-cron-2026')) {
+      throw new ForbiddenException('Secret invalide');
+    }
+    const count = await this.escrow.processAutoReleases();
+    return { success: true, released: count };
+  }
+
+  // POST /escrow/cron/reconcile — Réconcilier les paiements perdus
+  @Post('cron/reconcile')
+  async cronReconcile(@Body() body: { secret?: string }) {
+    if (body.secret !== (process.env.CRON_SECRET || 'brumerie-cron-2026')) {
+      throw new ForbiddenException('Secret invalide');
+    }
+    const count = await this.escrow.reconcilePendingPayments();
+    return { success: true, reconciled: count };
+  }
+
+  // GET /escrow/health
   @Get('health')
   health() {
     return {
       configured: this.escrow.isConfigured(),
       provider: 'CinetPay',
       mode: process.env.CINETPAY_MODE || 'sandbox',
+      features: ['split-commission', 'auto-release-72h', 'idempotent-webhook', 'reconciliation', 'disputes'],
     };
   }
 }
