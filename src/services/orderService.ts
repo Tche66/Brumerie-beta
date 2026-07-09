@@ -470,6 +470,40 @@ export async function cancelDelivery(
   }
 }
 
+// ── Annuler une commande ─────────────────────────────────────────
+export async function cancelOrder(
+  orderId: string, cancelledBy: 'buyer' | 'seller', reason: string,
+): Promise<void> {
+  const snap = await getDoc(doc(ordersCol, orderId));
+  if (!snap.exists()) return;
+  const order = { id: snap.id, ...snap.data() } as any;
+
+  // On ne peut annuler que les commandes pas encore livrées
+  const nonCancellable = ['delivered', 'cancelled', 'cod_delivered'];
+  if (nonCancellable.includes(order.status)) {
+    throw new Error('Cette commande ne peut plus être annulée');
+  }
+
+  await updateDoc(doc(ordersCol, orderId), {
+    status: 'cancelled',
+    cancelledAt: serverTimestamp(),
+    cancelledBy,
+    cancelReason: reason,
+  });
+
+  ordersApi.updateStatus(orderId, 'cancelled').catch(() => {});
+
+  const cancellerName = cancelledBy === 'buyer' ? order.buyerName : order.sellerName;
+  const otherParty = cancelledBy === 'buyer' ? 'sellerId' : 'buyerId';
+
+  await createNotification(
+    order[otherParty], 'order',
+    '❌ Commande annulée',
+    `${cancellerName} a annulé la commande "${order.productTitle}". Motif : ${reason}`,
+    { orderId, productId: order.productId }
+  );
+}
+
 // ── Vérifier si vendeur bloqué ────────────────────────────────────
 export async function isSellerBlocked(sellerId: string): Promise<boolean> {
   const q = query(ordersCol, where('sellerId', '==', sellerId), where('sellerBlocked', '==', true), limit(1));

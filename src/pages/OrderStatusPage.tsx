@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import {
   subscribeToOrder, confirmPaymentReceived, submitProof,
-  confirmDelivery, openOrderDispute, getCountdown, cancelDelivery,
+  confirmDelivery, openOrderDispute, getCountdown, cancelDelivery, cancelOrder,
   subscribeOrdersAsBuyer, subscribeOrdersAsSeller, checkExpiredOrders,
   confirmCODReady, confirmCODDelivered,
   markReadyToDeliver, validateDeliveryCode,
@@ -426,7 +426,9 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
   const [showSellerQR, setShowSellerQR] = useState(false);      // Vendeur affiche son QR au livreur
   const [showBuyerScanner, setShowBuyerScanner] = useState(false); // Acheteur scanne QR livreur
   const [showCancelDelivery, setShowCancelDelivery] = useState(false); // Modal annulation livraison
+  const [showCancelOrder, setShowCancelOrder] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [cancellingOrder, setCancellingOrder] = useState(false);
 
 
   useEffect(() => {
@@ -474,26 +476,40 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
 
         {/* ── BOUTONS CONTACT — Chat intégré + Appel ── */}
         {isBuyer && !['delivered', 'cancelled'].includes(order.status) && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onOpenChatWithSeller?.(order.sellerId, order.sellerName, order.productId, order.productTitle)}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
-              style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Chat
-            </button>
-            <AppelButton order={order} orderId={orderId} />
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => onOpenChatWithSeller?.(order.sellerId, order.sellerName, order.productId, order.productTitle)}
+                className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Chat
+              </button>
+              <AppelButton order={order} orderId={orderId} />
+            </div>
+            {!['picked', 'ready'].includes(order.status) && (
+              <button onClick={() => setShowCancelOrder(true)}
+                className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                Annuler la commande
+              </button>
+            )}
           </div>
         )}
         {isSeller && !['delivered', 'cancelled'].includes(order.status) && (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="space-y-2">
             <button
               onClick={() => onOpenChatWithSeller?.(order.buyerId, order.buyerName, order.productId, order.productTitle)}
-              className="flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all"
               style={{ background: 'linear-gradient(135deg, #16A34A, #115E2E)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               Chat avec l'acheteur
             </button>
+            {!['picked', 'ready'].includes(order.status) && (
+              <button onClick={() => setShowCancelOrder(true)}
+                className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                Annuler la commande
+              </button>
+            )}
           </div>
         )}
 
@@ -1355,6 +1371,49 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 {(order as any).status === 'picked' ? 'Annuler et ouvrir un litige' : 'Annuler le livreur'}
               </button>
               <button onClick={() => { setShowCancelDelivery(false); setCancelReason(''); }}
+                className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
+                Retour
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal annulation commande */}
+      {showCancelOrder && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] flex items-end justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-5" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
+            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto"/>
+            <div className="text-center">
+              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <h3 className="font-black text-slate-900 text-[15px]">Annuler cette commande ?</h3>
+              <p className="text-[11px] text-slate-500 mt-1">L'autre partie sera notifiée de l'annulation.</p>
+            </div>
+            <textarea value={cancelReason} onChange={e => setCancelReason(e.target.value)}
+              placeholder="Motif de l'annulation..." rows={3}
+              className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-[13px] border-2 border-transparent focus:border-red-400 outline-none resize-none"/>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  if (!cancelReason.trim()) return;
+                  setCancellingOrder(true);
+                  try {
+                    await cancelOrder(orderId, isBuyer ? 'buyer' : 'seller', cancelReason);
+                    setShowCancelOrder(false);
+                    setCancelReason('');
+                  } catch (e: any) {
+                    alert(e.message || 'Erreur');
+                  } finally { setCancellingOrder(false); }
+                }}
+                disabled={!cancelReason.trim() || cancellingOrder}
+                className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white bg-red-500 shadow-lg active:scale-95 disabled:opacity-50 transition-all">
+                {cancellingOrder ? 'Annulation...' : 'Confirmer l\'annulation'}
+              </button>
+              <button onClick={() => { setShowCancelOrder(false); setCancelReason(''); }}
                 className="w-full py-3 text-slate-400 font-bold text-[11px] uppercase tracking-widest">
                 Retour
               </button>

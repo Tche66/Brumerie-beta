@@ -240,6 +240,9 @@ export async function updateProductStatus(productId: string, status: 'active' | 
 
 // -- Supprimer ------------------------------------------------------------
 export async function deleteProduct(productId: string, sellerId: string): Promise<void> {
+  // D'abord marquer comme supprimé (pour les listeners temps réel)
+  await updateDoc(doc(db, 'products', productId), { status: 'deleted' }).catch(() => {});
+  // Puis supprimer le document
   await deleteDoc(doc(db, 'products', productId));
   updateDoc(doc(db, 'users', sellerId), { productCount: increment(-1) }).catch(() => {});
   productsApi.delete(productId).catch(() => {});
