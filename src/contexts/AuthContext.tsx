@@ -239,13 +239,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         await loadUserProfile(user.uid);
         // Sync Firebase → Neon (silencieux, ne bloque pas l'UI)
+        // Ne pas envoyer displayName Google si le profil Brumerie a déjà un nom
         user.getIdToken().then(() => {
           usersApi.sync({
             firebaseUid: user.uid,
             email: user.email || '',
             name: user.displayName || '',
             photoURL: user.photoURL || undefined,
-          }).catch(() => {}); // silencieux si offline
+          }).catch(() => {});
         });
       }
       else setUserProfile(null);

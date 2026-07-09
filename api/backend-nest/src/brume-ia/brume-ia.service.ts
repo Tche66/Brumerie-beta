@@ -431,6 +431,9 @@ Diagnostic et actions recommandées ?`,
       system: `Tu es Brume IA, évaluateur de vendeurs sur Brumerie (Côte d'Ivoire).
 Évalue ce vendeur et donne un score global + grade.
 Grades : S (top 5%), A (top 20%), B (moyen-haut), C (moyen), D (à améliorer)
+
+RÈGLE CRITIQUE : Ne recommande JAMAIS une action déjà accomplie. Si le vendeur est "Vérifié : oui" → ne dis PAS "doit se faire vérifier". Si le vendeur a déjà des annonces → ne dis pas "publier des annonces". Base tes recommandations UNIQUEMENT sur ce qui manque réellement.
+
 Réponds en JSON : { "score": number 0-100, "grade": "S|A|B|C|D", "strengths": ["force 1", "force 2"], "weaknesses": ["faiblesse 1"], "recommendation": "phrase courte", "predictedMonthlySales": number, "improvementActions": [{"action": "...", "impact": "faible|moyen|fort"}] }`,
       messages: [{
         role: 'user',

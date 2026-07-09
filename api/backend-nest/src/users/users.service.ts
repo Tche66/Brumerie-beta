@@ -9,13 +9,19 @@ export class UsersService {
 
   // ── Sync Firebase → Neon (appelé à chaque login) ─────────────
   async upsertUser(dto: UpsertUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { firebaseUid: dto.firebaseUid },
+      select: { name: true, photoURL: true },
+    });
+
     return this.prisma.user.upsert({
       where: { firebaseUid: dto.firebaseUid },
       update: {
-        email:    dto.email,
-        name:     dto.name,
-        phone:    dto.phone,
-        photoURL: dto.photoURL,
+        email: dto.email,
+        phone: dto.phone,
+        // Ne jamais écraser le nom/photo si l'utilisateur en a déjà un custom
+        ...(existing?.name ? {} : { name: dto.name }),
+        ...(existing?.photoURL ? {} : { photoURL: dto.photoURL }),
       },
       create: {
         firebaseUid: dto.firebaseUid,
