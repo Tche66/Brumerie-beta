@@ -16,36 +16,34 @@ export class ReferralsService {
   constructor(private prisma: PrismaService) {}
 
   // ── Appliquer un parrainage à l'inscription ───────────────────
+  // Un seul code, deux comportements : acheteur → parrainage classique, vendeur → affiliation 12 mois
   async applyReferral(newUserId: string, referralCode: string) {
     if (!referralCode.trim()) throw new BadRequestException('Code invalide');
 
-    // Trouver le parrain via son code
     const referrer = await this.prisma.user.findUnique({
       where: { referralCode: referralCode.toUpperCase() },
     });
     if (!referrer) throw new NotFoundException('Code de parrainage introuvable');
     if (referrer.firebaseUid === newUserId) throw new BadRequestException('Vous ne pouvez pas vous parrainer vous-même');
 
-    // Vérifier que le filleul n'a pas déjà été parrainé
     const newUser = await this.prisma.user.findUnique({
       where: { firebaseUid: newUserId },
-      select: { referredById: true },
+      select: { referredById: true, role: true, name: true },
     });
     if (!newUser) throw new NotFoundException('Utilisateur introuvable');
     if (newUser.referredById) throw new BadRequestException('Parrainage déjà appliqué');
 
-    // Créer la relation de parrainage
+    // Créer la relation de parrainage (commune à tous les rôles)
     await this.prisma.referral.create({
       data: { ownerId: referrer.firebaseUid, referredId: newUserId },
     });
 
-    // Marquer le filleul comme parrainé
     await this.prisma.user.update({
       where: { firebaseUid: newUserId },
       data: { referredById: referrer.firebaseUid },
     });
 
-    // Calculer les récompenses du parrain
+    // Récompenses parrain (paliers)
     const newCount = referrer.referralCount + 1;
     const rewards = REFERRAL_REWARDS.filter(r => r.threshold <= newCount);
     const topReward = rewards[rewards.length - 1];
@@ -68,7 +66,41 @@ export class ReferralsService {
       data: updateData,
     });
 
-    return { success: true, referrerId: referrer.firebaseUid };
+    // ── Si le nouveau est VENDEUR → créer aussi l'affiliation vendeur (20% commission 12 mois)
+    let affiliationType: 'buyer' | 'seller' = 'buyer';
+
+    if (newUser.role === 'seller' && referrer.role === 'seller') {
+      affiliationType = 'seller';
+      const existingAffiliation = await this.prisma.vendorAffiliation.findUnique({
+        where: { filleulId: newUserId },
+      });
+
+      if (!existingAffiliation) {
+        const dateDebut = new Date();
+        const dateFin = new Date(dateDebut);
+        dateFin.setMonth(dateFin.getMonth() + 12);
+
+        await this.prisma.vendorAffiliation.create({
+          data: {
+            parrainId: referrer.firebaseUid,
+            filleulId: newUserId,
+            codeAffiliation: referralCode.toUpperCase(),
+            dateDebut,
+            dateFin,
+          },
+        });
+      }
+    }
+
+    return {
+      success: true,
+      referrerId: referrer.firebaseUid,
+      referrerName: referrer.name,
+      affiliationType,
+      message: affiliationType === 'seller'
+        ? `Affiliation vendeur activée ! ${referrer.name} gagnera 20% de la commission sur tes ventes pendant 12 mois.`
+        : `Parrainage appliqué ! Ton parrain ${referrer.name} a été récompensé.`,
+    };
   }
 
   // ── Stats de parrainage d'un user ─────────────────────────────
