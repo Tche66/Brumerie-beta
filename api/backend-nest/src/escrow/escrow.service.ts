@@ -1,5 +1,6 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AffiliateService } from '../affiliate/affiliate.service';
 
 const BRUMERIE_FEE_PERCENT = 8;
 const AUTO_RELEASE_HOURS = 72;
@@ -48,7 +49,10 @@ export class EscrowService {
   private siteId: string;
   private baseUrl: string;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => AffiliateService)) private affiliateService: AffiliateService,
+  ) {
     this.apiKey = process.env.CINETPAY_API_KEY || '';
     this.siteId = process.env.CINETPAY_SITE_ID || '';
     this.baseUrl = 'https://api-checkout.cinetpay.com/v2';
@@ -221,6 +225,14 @@ export class EscrowService {
       where: { id: orderId },
       data: { status: 'delivered' },
     }).catch(() => {});
+
+    // Hook affiliation : enregistrer le gain du parrain si le vendeur est filleul
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (order) {
+      this.affiliateService.recordEarning(order.sellerId, commission, escrow.id).catch((e) => {
+        this.logger.error(`Affiliate recordEarning failed: ${e.message}`);
+      });
+    }
 
     this.logger.log(`Funds released: order=${orderId}, seller=${sellerReceives} XOF, commission=${commission} XOF, by=${callerRole}`);
 

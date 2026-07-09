@@ -16,6 +16,7 @@ import { MigrationModule } from './migration/migration.module';
 import { SeoModule } from './seo/seo.module';
 import { BrumeIaModule } from './brume-ia/brume-ia.module';
 import { EscrowModule } from './escrow/escrow.module';
+import { AffiliateModule } from './affiliate/affiliate.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { EscrowModule } from './escrow/escrow.module';
     SeoModule,
     BrumeIaModule,
     EscrowModule,
+    AffiliateModule,
   ],
 })
 export class AppModule {}

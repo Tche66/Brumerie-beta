@@ -677,3 +677,38 @@ model EscrowTransaction {
   @@index([status, autoReleaseAt])
   @@map("escrow_transactions")
 }
+
+model VendorAffiliation {
+  id              String   @id @default(uuid())
+  parrainId       String
+  filleulId       String   @unique
+  codeAffiliation String?
+  dateDebut       DateTime @default(now())
+  dateFin         DateTime
+  actif           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  earnings        AffiliateEarning[]
+
+  @@index([parrainId])
+  @@index([filleulId])
+  @@map("vendor_affiliations")
+}
+
+model AffiliateEarning {
+  id                String   @id @default(uuid())
+  affiliationId     String
+  mois              String
+  montantCumuleBrut Int      @default(0)
+  montantDu         Int      @default(0)
+  statut            String   @default("pending")
+  paidAt            DateTime?
+  updatedAt         DateTime @updatedAt
+
+  affiliation       VendorAffiliation @relation(fields: [affiliationId], references: [id])
+
+  @@unique([affiliationId, mois])
+  @@index([statut])
+  @@index([mois])
+  @@map("affiliate_earnings")
+}
