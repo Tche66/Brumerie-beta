@@ -356,82 +356,97 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
 
 
   return (
-    <div className="min-h-screen pb-28" style={{ background: CREAM }}>
+    <div className="min-h-screen pb-28 bg-white">
 
-      {/* ══ HERO — dark immersif ════════════════════════════════════ */}
-      <div className="relative overflow-hidden bg-slate-900 rounded-b-[3rem]">
-        {/* Pattern subtil */}
-        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-        <div className="relative px-5 pt-14 pb-7">
-          {/* Paramètres */}
+      {/* ══ HEADER PROFIL — Style Instagram/Depop ════════════════════ */}
+      <div className="relative">
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 pt-12">
+          <h2 className="text-[14px] font-black text-slate-900">{userProfile.name}</h2>
           <button onClick={() => onNavigate?.('settings')}
-            className="absolute top-5 right-5 w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all"
-            style={{ color: 'rgba(255,255,255,0.7)' }}>
-            {Icons.settings()}
+            className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
           </button>
+        </div>
 
-          {/* Avatar centré + nom */}
-          <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl mb-3">
+        {/* Profil info */}
+        <div className="pt-24 px-4 pb-4">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-20 h-20 rounded-full overflow-hidden border-[3px] border-slate-200 flex-shrink-0">
               <img
                 src={userProfile.photoURL ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=1e293b&color=f59e0b&bold=true`}
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=f1f5f9&color=334155&bold=true`}
                 alt="" className="w-full h-full object-cover"
               />
             </div>
 
-            <h1 className="text-xl font-black text-white uppercase tracking-tight truncate max-w-[250px]">
-              {userProfile.name}
-            </h1>
+            {/* Stats inline */}
+            <div className="flex-1 flex items-center justify-around pt-2">
+              <div className="text-center">
+                <p className="text-[17px] font-black text-slate-900">{bookmarkIds.size}</p>
+                <p className="text-[9px] text-slate-500 font-bold">Favoris</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[17px] font-black text-slate-900">{completedOrders.length}</p>
+                <p className="text-[9px] text-slate-500 font-bold">Achats</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[17px] font-black text-slate-900">{((userProfile as any).followingSellers || []).length}</p>
+                <p className="text-[9px] text-slate-500 font-bold">Abonnements</p>
+              </div>
+            </div>
+          </div>
 
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap justify-center">
+          {/* Nom + bio */}
+          <div className="mt-3">
+            <p className="text-[13px] font-black text-slate-900">{userProfile.name}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {(userProfile as any).neighborhood && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
-                  <span className="text-amber-400">{Icons.pin()}</span>
+                <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   {(userProfile as any).neighborhood}
                 </span>
               )}
               {memberSince && (
-                <span className="text-[9px] font-bold uppercase tracking-widest text-white/35">
-                  Depuis {memberSince}
-                </span>
+                <span className="text-[10px] text-slate-400">Membre depuis {memberSince}</span>
               )}
             </div>
+            {(userProfile as any).bio && (
+              <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">{(userProfile as any).bio}</p>
+            )}
+          </div>
+
+          {/* Boutons d'action */}
+          <div className="flex gap-2 mt-3">
+            <button onClick={() => onNavigate?.('edit-profile')}
+              className="flex-1 py-2.5 rounded-xl bg-slate-100 text-[11px] font-black text-slate-700 uppercase tracking-wide active:scale-95 transition-all">
+              Modifier le profil
+            </button>
+            <button onClick={() => onNavigate?.('affiliate')}
+              className="flex-1 py-2.5 rounded-xl bg-slate-100 text-[11px] font-black text-slate-700 uppercase tracking-wide active:scale-95 transition-all">
+              Affiliation
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── Stats card ── */}
-      <div className="px-4 -mt-5 relative z-10">
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 grid grid-cols-3 gap-3">
-          {[
-            { val: bookmarkIds.size,       label: 'Favoris' },
-            { val: activeOrders.length,    label: 'En cours' },
-            { val: completedOrders.length, label: 'Achetés' },
-          ].map(s => (
-            <div key={s.label} className="text-center">
-              <p className="text-xl font-black text-slate-900">{s.val}</p>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ══ ONGLETS — Scroll horizontal ═══════════════════════════════ */}
-      <div className="bg-white sticky top-0 z-30 border-b border-slate-100 mt-4">
+      {/* ══ ONGLETS — style icônes comme Instagram ═══════════════════ */}
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center px-3 py-2 gap-1.5" style={{ minWidth: 'max-content' }}>
+          <div className="flex items-center" style={{ minWidth: 'max-content' }}>
             {[...TABS, ...MORE_TABS].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap ${
-                  tab === t.id ? 'bg-slate-900 text-white' : 'text-slate-400 bg-slate-50'
+                className={`flex-1 min-w-[60px] flex flex-col items-center gap-1 py-3 px-3 border-b-2 transition-all ${
+                  tab === t.id ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400'
                 }`}>
-                <div className="w-4 h-4 flex items-center justify-center">{t.icon}</div>
-                {t.label}
+                <div className="w-5 h-5 flex items-center justify-center">{t.icon}</div>
+                <span className="text-[8px] font-bold uppercase tracking-wide">{t.label}</span>
                 {t.count > 0 && tab !== t.id && (
-                  <span className="text-[8px] font-black bg-slate-200 text-slate-500 w-4 h-4 rounded-full flex items-center justify-center">
-                    {t.count > 99 ? '∞' : t.count}
+                  <span className="absolute -top-0.5 -right-0.5 text-[7px] font-black bg-green-500 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                    {t.count > 9 ? '9+' : t.count}
                   </span>
                 )}
               </button>
