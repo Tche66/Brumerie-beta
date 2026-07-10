@@ -211,11 +211,11 @@ export function SellerProfilePage({
       ) : seller ? (
         <>
           {/* ══════════════════════════════════════════
-              SECTION 1 — HERO DARK + IDENTITÉ
+              SECTION 1 — HERO BRUMERIE + IDENTITÉ
           ══════════════════════════════════════════ */}
-          <div className="relative bg-slate-900 rounded-b-[3rem] overflow-hidden">
-            {/* Pattern */}
-            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          <div className="relative rounded-b-[3rem] overflow-hidden" style={{ background: 'linear-gradient(160deg, #0F172A 0%, #065F46 50%, #16A34A 100%)' }}>
+            {/* Pattern feuille Brumerie */}
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }} />
 
             {/* Nav buttons */}
             <div className="relative z-10 flex items-center justify-between px-4 pt-5">
@@ -374,38 +374,38 @@ export function SellerProfilePage({
           </div>
 
           {/* ══════════════════════════════════════════
-              SECTION 2 — STATS (card flottante)
+              SECTION 2 — STATS INLINE
           ══════════════════════════════════════════ */}
           <div className="px-4 -mt-5 relative z-10">
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 grid grid-cols-3 gap-2">
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-4 grid grid-cols-4 gap-1">
+              <div className="text-center">
+                <p className="font-black text-[15px] text-slate-900">{activeProducts.length}</p>
+                <p className="text-[7px] font-bold text-slate-500 uppercase">Articles</p>
+              </div>
+              <div className="text-center">
+                <p className="font-black text-[15px] text-slate-900">{followersCount}</p>
+                <p className="text-[7px] font-bold text-slate-500 uppercase">Abonnés</p>
+              </div>
               {isSelf ? (
                 <>
                   <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{activeProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">En ligne</p>
+                    <p className="font-black text-[15px] text-slate-900">{totalViews}</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase">Vues</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{followersCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnés</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{soldProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Vendus</p>
+                    <p className="font-black text-[15px] text-green-600">{soldProducts.length}</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase">Vendus</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{activeProducts.length}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Publications</p>
+                    <p className="font-black text-[15px] text-slate-900">{followingCount}</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase">Suivis</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{followersCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnés</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-black text-lg text-slate-900">{followingCount}</p>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Abonnements</p>
+                    <p className="font-black text-[15px] text-amber-500">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</p>
+                    <p className="text-[7px] font-bold text-slate-500 uppercase">Note</p>
                   </div>
                 </>
               )}
@@ -521,28 +521,32 @@ export function SellerProfilePage({
               SECTION 5 — CATALOGUE
           ══════════════════════════════════════════ */}
           <div className="px-4 mt-4">
-            {/* Onglets */}
-            <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 mb-4">
-              {([
-                { id: 'actifs',    label: 'En ligne',  count: activeProducts.length },
-                { id: 'vendus',    label: 'Vendus',    count: soldProducts.length },
-                ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length }] : []),
-                ...((s?.shopCategories?.length ?? 0) > 0 ? [{ id: 'collections', label: 'Collections', count: s?.shopCategories?.length ?? 0 }] : []),
-                ...(reposts.length > 0 ? [{ id: 'reposts', label: 'Reposts', count: reposts.length }] : []),
-                ...(reviews.length > 0 ? [{ id: 'avis', label: 'Avis', count: reviewCount }] : []),
-              ] as { id: Tab; label: string; count: number }[]).map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                  className={`flex-1 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${
-                    tab === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
-                  }`}>
-                  {t.label}
-                  {t.count > 0 && (
-                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full ${
-                      tab === t.id ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-400'
-                    }`}>{t.count}</span>
-                  )}
-                </button>
-              ))}
+            {/* Onglets — pills scrollables */}
+            <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 mb-4">
+              <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
+                {([
+                  { id: 'actifs',    label: 'En ligne',  count: activeProducts.length },
+                  { id: 'vendus',    label: 'Vendus',    count: soldProducts.length },
+                  ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length }] : []),
+                  ...((s?.shopCategories?.length ?? 0) > 0 ? [{ id: 'collections', label: 'Collections', count: s?.shopCategories?.length ?? 0 }] : []),
+                  ...(reposts.length > 0 ? [{ id: 'reposts', label: 'Reposts', count: reposts.length }] : []),
+                  ...(reviews.length > 0 ? [{ id: 'avis', label: 'Avis', count: reviewCount }] : []),
+                ] as { id: Tab; label: string; count: number }[]).map(t => (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all whitespace-nowrap ${
+                      tab === t.id
+                        ? 'bg-slate-900 text-white shadow-lg'
+                        : 'bg-white text-slate-500 border border-slate-200'
+                    }`}>
+                    {t.label}
+                    {t.count > 0 && (
+                      <span className={`text-[7px] font-black min-w-[14px] h-[14px] rounded-full flex items-center justify-center ${
+                        tab === t.id ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}>{t.count}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Grille photos catalogue — style Depop/Instagram */}
