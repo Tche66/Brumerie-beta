@@ -355,54 +355,82 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   ];
 
 
-  return (
-    <div className="min-h-screen pb-28 bg-white">
+  const loyaltyLevel = pts >= 500 ? 'Gold' : pts >= 100 ? 'Silver' : 'Brumeur';
+  const loyaltyColor = pts >= 500 ? '#F59E0B' : pts >= 100 ? '#94A3B8' : '#16A34A';
 
-      {/* ══ HEADER PROFIL — Style Instagram/Depop ════════════════════ */}
-      <div className="relative">
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 pt-12">
-          <h2 className="text-[14px] font-black text-slate-900">{userProfile.name}</h2>
-          <button onClick={() => onNavigate?.('settings')}
-            className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
+  return (
+    <div className="min-h-screen pb-28 bg-slate-50">
+
+      {/* ══ HEADER PROFIL — Brumerie Style ═══════════════════════════ */}
+      <div className="relative bg-white rounded-b-[2rem] shadow-sm">
+        {/* Bannière verte signature Brumerie */}
+        <div className="h-20 rounded-b-[2rem] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}/>
+          {/* Top bar */}
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-11">
+            <div className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+              </svg>
+              <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Brumerie</span>
+            </div>
+            <button onClick={() => onNavigate?.('settings')}
+              className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-all border border-white/20">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Profil info */}
-        <div className="pt-24 px-4 pb-4">
-          <div className="flex items-start gap-4">
-            {/* Avatar */}
-            <div className="w-20 h-20 rounded-full overflow-hidden border-[3px] border-slate-200 flex-shrink-0">
-              <img
-                src={userProfile.photoURL ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=f1f5f9&color=334155&bold=true`}
-                alt="" className="w-full h-full object-cover"
-              />
+        <div className="px-4 pb-5">
+          <div className="flex items-end gap-4 -mt-10">
+            {/* Avatar avec ring vert */}
+            <div className="relative">
+              <div className="w-[76px] h-[76px] rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
+                <img
+                  src={userProfile.photoURL ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=065F46&color=fff&bold=true`}
+                  alt="" className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Badge niveau */}
+              <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[7px] font-black text-white shadow-lg"
+                style={{ background: loyaltyColor }}>
+                {loyaltyLevel}
+              </div>
             </div>
 
             {/* Stats inline */}
-            <div className="flex-1 flex items-center justify-around pt-2">
+            <div className="flex-1 flex items-center justify-around pb-1">
               <div className="text-center">
-                <p className="text-[17px] font-black text-slate-900">{bookmarkIds.size}</p>
-                <p className="text-[9px] text-slate-500 font-bold">Favoris</p>
+                <p className="text-[16px] font-black text-slate-900">{bookmarkIds.size}</p>
+                <p className="text-[8px] text-slate-500 font-bold uppercase">Favoris</p>
               </div>
               <div className="text-center">
-                <p className="text-[17px] font-black text-slate-900">{completedOrders.length}</p>
-                <p className="text-[9px] text-slate-500 font-bold">Achats</p>
+                <p className="text-[16px] font-black text-slate-900">{completedOrders.length}</p>
+                <p className="text-[8px] text-slate-500 font-bold uppercase">Achats</p>
               </div>
               <div className="text-center">
-                <p className="text-[17px] font-black text-slate-900">{((userProfile as any).followingSellers || []).length}</p>
-                <p className="text-[9px] text-slate-500 font-bold">Abonnements</p>
+                <p className="text-[16px] font-black text-slate-900">{((userProfile as any).followingSellers || []).length}</p>
+                <p className="text-[8px] text-slate-500 font-bold uppercase">Suivis</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[16px] font-black" style={{ color: loyaltyColor }}>{pts}</p>
+                <p className="text-[8px] text-slate-500 font-bold uppercase">Points</p>
               </div>
             </div>
           </div>
 
-          {/* Nom + bio */}
+          {/* Nom + infos */}
           <div className="mt-3">
-            <p className="text-[13px] font-black text-slate-900">{userProfile.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[14px] font-black text-slate-900">{userProfile.name}</p>
+              {(userProfile as any).isVerified && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#16A34A" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {(userProfile as any).neighborhood && (
                 <span className="text-[11px] text-slate-500 flex items-center gap-1">
@@ -411,42 +439,60 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                 </span>
               )}
               {memberSince && (
-                <span className="text-[10px] text-slate-400">Membre depuis {memberSince}</span>
+                <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                  {memberSince}
+                </span>
               )}
             </div>
             {(userProfile as any).bio && (
-              <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">{(userProfile as any).bio}</p>
+              <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">{(userProfile as any).bio}</p>
             )}
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-4">
             <button onClick={() => onNavigate?.('edit-profile')}
-              className="flex-1 py-2.5 rounded-xl bg-slate-100 text-[11px] font-black text-slate-700 uppercase tracking-wide active:scale-95 transition-all">
-              Modifier le profil
+              className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-[10px] font-black text-slate-700 uppercase tracking-widest active:scale-95 transition-all">
+              Modifier
             </button>
             <button onClick={() => onNavigate?.('affiliate')}
-              className="flex-1 py-2.5 rounded-xl bg-slate-100 text-[11px] font-black text-slate-700 uppercase tracking-wide active:scale-95 transition-all">
+              className="flex-1 py-2.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-green-200"
+              style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
               Affiliation
+            </button>
+            <button onClick={() => {
+                const text = `Rejoins Brumerie ! ${userProfile.referralCode ? 'Code: ' + userProfile.referralCode : ''} https://brumerie.com`;
+                navigator.share ? navigator.share({ title: 'Brumerie', text }) : navigator.clipboard.writeText(text);
+              }}
+              className="w-11 py-2.5 rounded-xl border-2 border-slate-200 flex items-center justify-center active:scale-95 transition-all">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
+              </svg>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ══ ONGLETS — style icônes comme Instagram ═══════════════════ */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
+      {/* ══ ONGLETS — Brumerie pills vertes ═══════════════════════════ */}
+      <div className="sticky top-0 z-30 bg-slate-50 pt-3 pb-2 px-3">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center" style={{ minWidth: 'max-content' }}>
+          <div className="flex items-center gap-2" style={{ minWidth: 'max-content' }}>
             {[...TABS, ...MORE_TABS].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 min-w-[60px] flex flex-col items-center gap-1 py-3 px-3 border-b-2 transition-all ${
-                  tab === t.id ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400'
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all whitespace-nowrap ${
+                  tab === t.id
+                    ? 'bg-slate-900 text-white shadow-lg'
+                    : 'bg-white text-slate-500 border border-slate-200'
                 }`}>
-                <div className="w-5 h-5 flex items-center justify-center">{t.icon}</div>
-                <span className="text-[8px] font-bold uppercase tracking-wide">{t.label}</span>
-                {t.count > 0 && tab !== t.id && (
-                  <span className="absolute -top-0.5 -right-0.5 text-[7px] font-black bg-green-500 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                    {t.count > 9 ? '9+' : t.count}
+                <div className="w-3.5 h-3.5 flex items-center justify-center">{t.icon}</div>
+                {t.label}
+                {t.count > 0 && (
+                  <span className={`text-[7px] font-black min-w-[14px] h-[14px] rounded-full flex items-center justify-center ${
+                    tab === t.id ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {t.count > 99 ? '99+' : t.count}
                   </span>
                 )}
               </button>
