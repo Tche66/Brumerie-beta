@@ -272,7 +272,7 @@
         background: linear-gradient(90deg, #16A34A, #10B981, #16A34A);
         background-size: 200% 100%;
         border-radius: 10px;
-        animation: fill-progress 2.5s ease-out forwards, shimmer 1.5s linear infinite;
+        animation: fill-progress 3s ease-out forwards, shimmer 1.5s linear infinite;
       }
       .loader-text {
         font-size: 9px;
@@ -310,6 +310,55 @@
       @keyframes dot-bounce {
         0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
         30% { transform: translateY(-3px); opacity: 1; }
+      }
+
+      /* Features défilantes */
+      .splash-features {
+        margin-top: 20px;
+        width: 220px;
+        overflow: hidden;
+        mask-image: linear-gradient(90deg, transparent 0%, black 15%, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 15%, black 85%, transparent 100%);
+        animation: text-enter 0.6s 0.8s cubic-bezier(0.4, 0, 0, 1) both;
+      }
+      .features-track {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        animation: scroll-features 8s linear infinite;
+      }
+      .features-track span {
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748B;
+        letter-spacing: 0.5px;
+      }
+      .features-track .dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #16A34A;
+        flex-shrink: 0;
+      }
+      @keyframes scroll-features {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+      }
+
+      /* Footer splash */
+      .splash-footer {
+        position: absolute;
+        bottom: 40px;
+        text-align: center;
+        animation: text-enter 0.5s 1.2s cubic-bezier(0.4, 0, 0, 1) both;
+      }
+      .splash-footer p {
+        font-size: 9px;
+        font-weight: 600;
+        color: #CBD5E1;
+        letter-spacing: 1px;
+        text-transform: uppercase;
       }
 
       /* Fade out */
@@ -350,12 +399,34 @@
           <h1>BRUMERIE</h1>
           <p class="tagline">Social Commerce</p>
         </div>
+        <!-- Features qui défilent -->
+        <div class="splash-features">
+          <div class="features-track">
+            <span>Achete local</span>
+            <span class="dot"></span>
+            <span>Vends facilement</span>
+            <span class="dot"></span>
+            <span>Paiement securise</span>
+            <span class="dot"></span>
+            <span>Livraison rapide</span>
+            <span class="dot"></span>
+            <span>IA intelligente</span>
+            <span class="dot"></span>
+            <span>Achete local</span>
+            <span class="dot"></span>
+            <span>Vends facilement</span>
+          </div>
+        </div>
       </div>
       <div class="splash-loader">
         <div class="loader-track">
           <div class="loader-fill"></div>
         </div>
         <p class="loader-text">Chargement<span class="loader-dots"><span></span><span></span><span></span></span></p>
+      </div>
+      <!-- Footer splash -->
+      <div class="splash-footer">
+        <p>Le premier social commerce de Cote d'Ivoire</p>
       </div>
     </div>
 
@@ -372,15 +443,27 @@
         });
       }
 
-      // Splash → fade out dès que React est monté OU après 4s max (fallback)
+      // Splash → visible minimum 3s, puis fade out quand React est prêt
+      var splashReady = false;
+      var splashMinTime = false;
       window.__hideSplash = function () {
-        var splash = document.getElementById('splash');
-        if (splash && !splash.classList.contains('fade-out')) {
-          splash.classList.add('fade-out');
+        splashReady = true;
+        if (splashMinTime) {
+          var splash = document.getElementById('splash');
+          if (splash && !splash.classList.contains('fade-out')) {
+            splash.classList.add('fade-out');
+          }
         }
       };
-      // Fallback : si React ne se monte jamais (crash), cacher après 4s
-      setTimeout(window.__hideSplash, 4000);
+      setTimeout(function () {
+        splashMinTime = true;
+        if (splashReady) window.__hideSplash();
+      }, 3000);
+      // Fallback : si React ne se monte jamais (crash), cacher après 6s
+      setTimeout(function () {
+        var splash = document.getElementById('splash');
+        if (splash) splash.classList.add('fade-out');
+      }, 6000);
     </script>
   </body>
 </html>
