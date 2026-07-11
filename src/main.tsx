@@ -1,8 +1,5 @@
 import React from "react";
-import { inject as injectAnalytics } from "@vercel/analytics";
-import { injectSpeedInsights } from "@vercel/speed-insights";
 import ReactDOM from "react-dom/client";
-import * as Sentry from "@sentry/react";
 import App from "./App";
 import "./index.css";
 
@@ -14,39 +11,30 @@ if (!localStorage.getItem('idb_cleaned_v1')) {
   localStorage.setItem('idb_cleaned_v1', '1');
 }
 
-// ── Vercel Analytics + Speed Insights ────────────────────────
-// Collecte visiteurs, pages vues et métriques de performance
-injectAnalytics();
-injectSpeedInsights();
-
-// ── Sentry : monitoring erreurs production ─────────────────────
-// Actif uniquement en production (pas en local dev)
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: import.meta.env.MODE, // "production" ou "development"
-    // Ne capture que 20% des sessions pour le suivi de performance (gratuit)
-    tracesSampleRate: 0.2,
-    // Ignore les erreurs réseau banales (offline, Firebase timeout)
-    ignoreErrors: [
-      "Failed to fetch",
-      "NetworkError",
-      "Load failed",
-      "Firebase: Error",
-      "ChunkLoadError",
-    ],
-    beforeSend(event) {
-      // Ne jamais envoyer en mode dev si DSN absent
-      if (!SENTRY_DSN) return null;
-      return event;
-    },
-  });
-}
-
+// Render en priorité — tout le reste est non-bloquant
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+
+// Cacher le splash dès que React est monté
+(window as any).__hideSplash?.();
+
+// ── Chargement différé : Analytics + Sentry (après le render) ──
+requestIdleCallback(() => {
+  import("@vercel/analytics").then(m => m.inject()).catch(() => {});
+  import("@vercel/speed-insights").then(m => m.injectSpeedInsights()).catch(() => {});
+
+  const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+  if (SENTRY_DSN) {
+    import("@sentry/react").then(Sentry => {
+      Sentry.init({
+        dsn: SENTRY_DSN,
+        environment: import.meta.env.MODE,
+        tracesSampleRate: 0.1,
+        ignoreErrors: ["Failed to fetch", "NetworkError", "Load failed", "Firebase: Error", "ChunkLoadError"],
+      });
+    }).catch(() => {});
+  }
+}, { timeout: 3000 });

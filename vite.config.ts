@@ -26,9 +26,14 @@ export default defineConfig(({ mode }) => {
           '@capacitor/status-bar',
           '@capacitor/push-notifications',
           '@capacitor/local-notifications',
-          // NE PAS externaliser @capacitor/core ni @capacitor-community/google-auth
-          // → ils doivent être bundlés dans l'APK
         ],
+        output: {
+          manualChunks: {
+            'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+            'vendor': ['react', 'react-dom'],
+            'sentry': ['@sentry/react'],
+          },
+        },
       },
     },
   };

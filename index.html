@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap" media="print" onload="this.media='all'">
     <link rel="icon" type="image/png" href="/assets/Logos/logo-app-icon.png" />
     <link rel="apple-touch-icon" href="/assets/Logos/logo-app-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -278,13 +278,15 @@
         });
       }
 
-      // Splash → fade out après 1.8s
-      window.addEventListener('load', function () {
-        setTimeout(function () {
-          var splash = document.getElementById('splash');
-          if (splash) splash.classList.add('fade-out');
-        }, 1800);
-      });
+      // Splash → fade out dès que React est monté OU après 4s max (fallback)
+      window.__hideSplash = function () {
+        var splash = document.getElementById('splash');
+        if (splash && !splash.classList.contains('fade-out')) {
+          splash.classList.add('fade-out');
+        }
+      };
+      // Fallback : si React ne se monte jamais (crash), cacher après 4s
+      setTimeout(window.__hideSplash, 4000);
     </script>
   </body>
 </html>
