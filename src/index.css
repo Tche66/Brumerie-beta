@@ -66,13 +66,19 @@ body {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   background: #fff;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+@media (max-width: 480px) {
+  #root {
+    max-width: 100%;
+  }
 }
 
 /* Desktop : cadre simulateur mobile + fond */

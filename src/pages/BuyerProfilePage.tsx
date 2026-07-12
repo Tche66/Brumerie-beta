@@ -364,24 +364,24 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
 
       {/* ══ HEADER PROFIL — Brumerie Style ═══════════════════════════ */}
       <div className="relative bg-white rounded-b-[2rem] shadow-sm">
-        {/* Bannière verte signature Brumerie */}
-        <div className="h-14 rounded-b-[2rem] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}/>
-          {/* Top bar */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-11">
-            <div className="flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
-              </svg>
-              <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Brumerie</span>
-            </div>
-            <button onClick={() => onNavigate?.('settings')}
-              className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-all border border-white/20">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-              </svg>
-            </button>
+        {/* Top bar fixe */}
+        <div className="flex items-center justify-between px-4 pt-12 pb-2">
+          <div className="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
+            </svg>
+            <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mon profil</span>
           </div>
+          <button onClick={() => onNavigate?.('settings')}
+            className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
+              <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+            </svg>
+          </button>
+        </div>
+        {/* Bannière verte signature Brumerie */}
+        <div className="h-10 mx-4 rounded-2xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}/>
         </div>
 
         {/* Profil info */}
