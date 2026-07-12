@@ -295,6 +295,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
                 <ProductCard key={p.id} product={p}
                   onClick={() => onProductClick(p)}
                   onBookmark={handleBookmark}
+                  onAddToCart={(prod) => addToCart(prod)}
                   isBookmarked={bookmarkIds.has(p.id)}
                 />
               ))}
@@ -310,6 +311,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
                 <ProductCard key={p.id} product={p}
                   onClick={() => onProductClick(p)}
                   onBookmark={handleBookmark}
+                  onAddToCart={(prod) => addToCart(prod)}
                   isBookmarked={bookmarkIds.has(p.id)}
                 />
               ))}
@@ -325,6 +327,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
                 <ProductCard key={p.id} product={p}
                   onClick={() => onProductClick(p)}
                   onBookmark={handleBookmark}
+                  onAddToCart={(prod) => addToCart(prod)}
                   isBookmarked={bookmarkIds.has(p.id)}
                 />
               ))}
