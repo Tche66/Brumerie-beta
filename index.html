@@ -240,12 +240,11 @@
         background-clip: text;
       }
       .brand-name .tagline {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        color: #16A34A;
-        margin-top: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: #475569;
+        margin-top: 10px;
       }
 
       /* Barre de chargement */
@@ -272,7 +271,7 @@
         background: linear-gradient(90deg, #16A34A, #10B981, #16A34A);
         background-size: 200% 100%;
         border-radius: 10px;
-        animation: fill-progress 3s ease-out forwards, shimmer 1.5s linear infinite;
+        animation: fill-progress 4.5s ease-out forwards, shimmer 1.5s linear infinite;
       }
       .loader-text {
         font-size: 9px;
@@ -354,11 +353,19 @@
         animation: text-enter 0.5s 1.2s cubic-bezier(0.4, 0, 0, 1) both;
       }
       .splash-footer p {
-        font-size: 9px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748B;
+        letter-spacing: 0.5px;
+        margin: 0;
+      }
+      .splash-footer .splash-flag {
+        font-size: 8px;
         font-weight: 600;
-        color: #CBD5E1;
-        letter-spacing: 1px;
+        color: #94A3B8;
+        letter-spacing: 1.5px;
         text-transform: uppercase;
+        margin-top: 4px;
       }
 
       /* Fade out */
@@ -397,24 +404,30 @@
         </div>
         <div class="brand-name">
           <h1>BRUMERIE</h1>
-          <p class="tagline">Social Commerce</p>
+          <p class="tagline">Ton marche, ton quartier, en ligne</p>
         </div>
         <!-- Features qui défilent -->
         <div class="splash-features">
           <div class="features-track">
-            <span>Achete local</span>
+            <span>Mode & Friperie</span>
             <span class="dot"></span>
-            <span>Vends facilement</span>
+            <span>High-Tech</span>
             <span class="dot"></span>
-            <span>Paiement securise</span>
+            <span>Beaute</span>
             <span class="dot"></span>
-            <span>Livraison rapide</span>
+            <span>Paiement Securise</span>
             <span class="dot"></span>
-            <span>IA intelligente</span>
+            <span>Livraison locale</span>
             <span class="dot"></span>
-            <span>Achete local</span>
+            <span>Nego & Offres</span>
             <span class="dot"></span>
-            <span>Vends facilement</span>
+            <span>IA Brume</span>
+            <span class="dot"></span>
+            <span>Mode & Friperie</span>
+            <span class="dot"></span>
+            <span>High-Tech</span>
+            <span class="dot"></span>
+            <span>Beaute</span>
           </div>
         </div>
       </div>
@@ -422,11 +435,12 @@
         <div class="loader-track">
           <div class="loader-fill"></div>
         </div>
-        <p class="loader-text">Chargement<span class="loader-dots"><span></span><span></span><span></span></span></p>
+        <p class="loader-text">Preparation de ton experience<span class="loader-dots"><span></span><span></span><span></span></span></p>
       </div>
       <!-- Footer splash -->
       <div class="splash-footer">
-        <p>Le premier social commerce de Cote d'Ivoire</p>
+        <p>Achete et vends pres de chez toi en Cote d'Ivoire</p>
+        <p class="splash-flag">Abidjan · Bouake · Yamoussoukro · San-Pedro</p>
       </div>
     </div>
 
@@ -458,12 +472,12 @@
       setTimeout(function () {
         splashMinTime = true;
         if (splashReady) window.__hideSplash();
-      }, 3000);
-      // Fallback : si React ne se monte jamais (crash), cacher après 6s
+      }, 5000);
+      // Fallback : si React ne se monte jamais (crash), cacher après 8s
       setTimeout(function () {
         var splash = document.getElementById('splash');
         if (splash) splash.classList.add('fade-out');
-      }, 6000);
+      }, 8000);
     </script>
   </body>
 </html>
