@@ -365,7 +365,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
       {/* ══ HEADER PROFIL — Brumerie Style ═══════════════════════════ */}
       <div className="relative bg-white rounded-b-[2rem] shadow-sm">
         {/* Bannière verte signature Brumerie */}
-        <div className="h-20 rounded-b-[2rem] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
+        <div className="h-14 rounded-b-[2rem] relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}/>
           {/* Top bar */}
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-11">
@@ -386,7 +386,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
 
         {/* Profil info */}
         <div className="px-4 pb-5">
-          <div className="flex items-end gap-4 -mt-10">
+          <div className="flex items-end gap-4 -mt-8">
             {/* Avatar avec ring vert */}
             <div className="relative">
               <div className="w-[76px] h-[76px] rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
