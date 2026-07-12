@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProductCard } from '@/components/ProductCard';
 import { getProducts } from '@/services/productService';
+import { addToCart } from '@/services/cartService';
 import { Product } from '@/types';
 
 interface BookmarksPageProps {
@@ -102,6 +103,7 @@ export function BookmarksPage({ onBack, onProductClick }: BookmarksPageProps) {
                 key={product.id}
                 product={product}
                 onClick={() => onProductClick(product)}
+                onAddToCart={(p) => addToCart(p)}
                 onBookmark={handleBookmark}
                 isBookmarked={true}
               />

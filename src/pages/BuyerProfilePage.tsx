@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductCard } from '@/components/ProductCard';
 import { removeBookmark } from '@/services/bookmarkService';
+import { addToCart } from '@/services/cartService';
 import { getProducts, getProductById } from '@/services/productService';
 import { subscribeOrdersAsBuyer } from '@/services/orderService';
 import { Product, Order } from '@/types';
@@ -517,6 +518,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
             <div className="grid grid-cols-2 gap-3">
               {bookmarkedProducts.map(p => (
                 <ProductCard key={p.id} product={p} onClick={() => onProductClick(p)}
+                  onAddToCart={(prod) => addToCart(prod)}
                   onBookmark={async (id) => {
                     if (!currentUser) return;
                     await removeBookmark(currentUser.uid, id);
@@ -630,6 +632,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                 {wishlistProducts.map(p => (
                   <div key={p.id} className="relative">
                     <ProductCard product={p} onClick={() => onProductClick(p)}
+                      onAddToCart={(prod) => addToCart(prod)}
                       bookmarkedIds={new Set((userProfile as any)?.wishlistIds || [])}/>
                     <button
                       onClick={async () => {
@@ -873,6 +876,7 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                     key={product.id}
                     product={product}
                     onClick={() => onProductClick?.(product)}
+                    onAddToCart={(prod) => addToCart(prod)}
                     onBookmark={() => {}}
                     isBookmarked={bookmarkIds.has(product.id)}
                   />

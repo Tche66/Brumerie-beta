@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getProducts } from '@/services/productService';
 import { ProductCard } from '@/components/ProductCard';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
+import { addToCart } from '@/services/cartService';
 import { Product, CATEGORIES, NEIGHBORHOODS } from '@/types';
 import { useAppConfig } from '@/hooks/useAppConfig';
 
@@ -186,6 +187,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
                   <ProductCard key={p.id} product={p}
                     onClick={() => onProductClick(p)}
                     onBookmark={handleBookmark}
+                    onAddToCart={(prod) => addToCart(prod)}
                     isBookmarked={bookmarkIds.has(p.id)}
                   />
                 ))}
@@ -207,6 +209,7 @@ export function DiscoverPage({ onProductClick, onSellerClick }: DiscoverPageProp
                   <ProductCard key={p.id} product={p}
                     onClick={() => onProductClick(p)}
                     onBookmark={handleBookmark}
+                    onAddToCart={(prod) => addToCart(prod)}
                     isBookmarked={bookmarkIds.has(p.id)}
                   />
                 ))}

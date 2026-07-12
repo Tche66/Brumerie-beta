@@ -1366,6 +1366,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   <ProductCard
                     product={p}
                     onClick={() => onProductClick?.(p)}
+                    onAddToCart={(prod) => addToCart(prod)}
                     onBookmark={() => {}}
                     isBookmarked={false}
                   />
