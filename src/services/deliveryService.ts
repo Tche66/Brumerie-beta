@@ -13,15 +13,28 @@ import { createNotification } from './notificationService';
 export async function getAvailableDeliverers(fromZone: string): Promise<User[]> {
   try {
     const deliverers = await deliveryApi.getAvailable(fromZone) as User[];
-    return deliverers;
+    if (deliverers && deliverers.length > 0) return deliverers;
+    throw new Error('fallback');
   } catch {
-    // Fallback Firestore si backend indisponible
+    // Fallback Firestore — chercher tous les livreurs disponibles
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'users'),
+        where('role', '==', 'livreur'),
+        where('deliveryAvailable', '==', true),
+      ));
+      if (snap.docs.length > 0) {
+        return snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
+      }
+    } catch {}
+    // Si l'index composite n'existe pas, fallback sans filtre deliveryAvailable
     const snap = await getDocs(query(
       collection(db, 'users'),
       where('role', '==', 'livreur'),
-      where('deliveryAvailable', '==', true),
     ));
-    return snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
+    return snap.docs
+      .map(d => ({ ...d.data(), id: d.id } as User))
+      .filter(u => (u as any).deliveryAvailable !== false);
   }
 }
 

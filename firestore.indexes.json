@@ -22,6 +22,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "role", "order": "ASCENDING" },
+        { "fieldPath": "deliveryAvailable", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "deliveryAvailable", "order": "ASCENDING" },
         { "fieldPath": "deliveryZones", "arrayConfig": "CONTAINS" }
       ]
