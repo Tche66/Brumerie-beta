@@ -9,15 +9,17 @@ interface ProductCardProps {
   product: Product;
   onClick: () => void;
   onBookmark?: (productId: string) => void;
+  onAddToCart?: (product: Product) => void;
   isBookmarked?: boolean;
   isBoosted?: boolean;
 }
 
-export function ProductCard({ product, onClick, onBookmark, isBookmarked = false, isBoosted = false }: ProductCardProps) {
+export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookmarked = false, isBoosted = false }: ProductCardProps) {
   const imgSrc = (product.images?.length ? product.images[0] : null) ||
     (product as any).imageUrl || null;
   const [imgLoaded, setImgLoaded] = useState(!imgSrc);
   const [saved, setSaved] = useState(isBookmarked);
+  const [addedCart, setAddedCart] = useState(false);
 
   React.useEffect(() => { setSaved(isBookmarked); }, [isBookmarked]);
 
@@ -119,12 +121,32 @@ export function ProductCard({ product, onClick, onBookmark, isBookmarked = false
           )}
         </div>
 
-        {/* Stock badge bottom right */}
-        {product.quantity && product.quantity > 1 && product.status !== 'sold' && (
+        {/* Bouton Panier — bottom right */}
+        {product.status !== 'sold' && onAddToCart && (
           <div className="absolute bottom-3 right-3">
-            <span className="bg-slate-900/85 backdrop-blur-sm text-white text-[9px] font-black px-2.5 py-1 rounded-xl shadow-lg">
-              {product.quantity} en stock
-            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if ('vibrate' in navigator) navigator.vibrate(15);
+                setAddedCart(true);
+                onAddToCart(product);
+                setTimeout(() => setAddedCart(false), 1500);
+              }}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${
+                addedCart ? 'bg-green-500' : 'bg-white/90 backdrop-blur-md border border-gray-100'
+              }`}
+              title="Ajouter au panier"
+            >
+              {addedCart ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                </svg>
+              )}
+            </button>
           </div>
         )}
 

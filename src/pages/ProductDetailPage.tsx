@@ -635,10 +635,25 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </span>
         </button>
 
-        {/* Vues */}
-        {!product.hideStats && liveViewCount > 0 && (
-          <span className="text-[11px] font-bold text-slate-400 ml-auto">{liveViewCount} vue{liveViewCount > 1 ? 's' : ''}</span>
-        )}
+        {/* Favoris */}
+        <button
+          onClick={async () => {
+            if (isGuest) { onGuestAction?.('bookmark'); return; }
+            if (!currentUser) return;
+            if (isBookmarked) { await removeBookmark(currentUser.uid, product.id); }
+            else { await addBookmark(currentUser.uid, product.id); }
+            setIsBookmarked(!isBookmarked);
+            await refreshUserProfile();
+          }}
+          className="flex items-center gap-1.5 active:scale-90 transition-transform ml-auto"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={isBookmarked ? '#16A34A' : 'none'} stroke={isBookmarked ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+          </svg>
+          <span className={`text-[12px] font-black ${isBookmarked ? 'text-green-600' : 'text-slate-500'}`}>
+            {isBookmarked ? 'Enregistre' : 'Enregistrer'}
+          </span>
+        </button>
       </div>
 
       {/* ── MODAL REPOST ── */}
@@ -774,7 +789,17 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {!isSelf && !isGuest && currentUser && product.status !== 'sold' && (
           <div className="mb-6 flex gap-2">
             <button
-              onClick={() => onStartChat ? onStartChat(product.sellerId + '_conv') : onBuyClick?.(product)}
+              onClick={async () => {
+                if (!currentUser || !userProfile) return;
+                try {
+                  const convId = await getOrCreateConversation(
+                    currentUser.uid, userProfile.name, userProfile.photoURL,
+                    product.sellerId, product.sellerName, product.sellerPhoto || '',
+                    product.id, product.title, product.images?.[0]
+                  );
+                  onStartChat?.(convId);
+                } catch {}
+              }}
               className="flex-1 py-4 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">

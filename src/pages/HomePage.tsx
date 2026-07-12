@@ -703,6 +703,7 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
                     <ProductCard key={product.id} product={product}
                       onClick={() => onProductClick(product)}
                       onBookmark={handleBookmark}
+                      onAddToCart={(p) => addToCart(p)}
                       isBookmarked={bookmarkIds.has(product.id)}
                       isBoosted={boostedIds.has(product.id)}
                     />
