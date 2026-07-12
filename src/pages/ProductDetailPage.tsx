@@ -71,6 +71,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [showTrustModal, setShowTrustModal] = useState(false);
   const [sellerRiskScore, setSellerRiskScore] = useState<TrustScore | null>(null);
   const [sellerDelivery, setSellerDelivery] = useState<{ name?: string; phone?: string } | null>(null);
+  const [sellerWhatsapp, setSellerWhatsapp] = useState<string>('');
   // Compteurs live — initialisés à -1 (chargement) pour éviter le flash
   const [liveViewCount, setLiveViewCount] = useState<number>(-1);
   const [liveContactCount, setLiveContactCount] = useState<number>(-1);
@@ -175,6 +176,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       if (data.managesDelivery && (data.deliveryPartnerName || data.deliveryPartnerPhone)) {
         setSellerDelivery({ name: data.deliveryPartnerName, phone: data.deliveryPartnerPhone });
       }
+      setSellerWhatsapp(data.shopWhatsapp || data.phone || '');
     }).catch(() => {});
   }, [product.sellerId]);
 
@@ -563,69 +565,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </div>
         )}
 
-        {/* ── Actions latérales droites ── */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 z-10">
-          {/* Like — Pouce */}
-          <button onClick={handleLike} disabled={likeLoading}
-            className={`flex flex-col items-center gap-0.5 transition-all disabled:opacity-60 ${isLiked ? 'animate-[thumbPop_0.4s_ease]' : 'active:scale-90'}`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${isLiked ? 'bg-blue-500 border-blue-400 scale-110' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
-              <svg width="22" height="22" viewBox="0 0 24 24"
-                fill={isLiked ? 'white' : 'none'}
-                stroke="white"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
-              </svg>
-            </div>
-            <span className="text-[11px] font-black text-white drop-shadow-md">{likeCount > 0 ? likeCount : ''}</span>
-          </button>
-
-          {/* Offre */}
-          <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } setShowOfferModal(true); }}
-            className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform"
-          >
-            <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-              </svg>
-            </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">Offre</span>
-          </button>
-
-          {/* Panier */}
-          <button onClick={() => {
-              if (isGuest) { onGuestAction?.('cart'); return; }
-              addToCart(product);
-              setAddedToCart(true);
-              setTimeout(() => setAddedToCart(false), 2500);
-            }}
-            className={`flex flex-col items-center gap-0.5 transition-all ${addedToCart ? 'animate-[cartBounce_0.5s_ease]' : 'active:scale-90'}`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 ${addedToCart ? 'bg-green-500' : 'bg-orange-500'}`}>
-              {addedToCart ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-                </svg>
-              )}
-            </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">{addedToCart ? 'Ajouté' : 'Panier'}</span>
-          </button>
-
-          {/* Partager */}
-          <button onClick={handleShare}
-            className={`flex flex-col items-center gap-0.5 transition-all ${copySuccess ? 'animate-[sharePop_0.5s_ease]' : 'active:scale-90'}`}
-          >
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${copySuccess ? 'bg-green-500 border-green-400' : 'bg-white/20 backdrop-blur-md border-white/30'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <span className="text-[9px] font-black text-white drop-shadow-md">{copySuccess ? 'Copié !' : 'Partager'}</span>
-          </button>
-        </div>
 
         {/* ── Badges status en bas à gauche ── */}
         <div className="absolute bottom-14 left-4 flex flex-col gap-2 z-10">
@@ -830,6 +769,33 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             </div>
           );
         })()}
+
+        {/* ── CONTACTER LE VENDEUR ── */}
+        {!isSelf && !isGuest && currentUser && product.status !== 'sold' && (
+          <div className="mb-6 flex gap-2">
+            <button
+              onClick={() => onStartChat ? onStartChat(product.sellerId + '_conv') : onBuyClick?.(product)}
+              className="flex-1 py-4 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+              Contacter le vendeur
+            </button>
+            {sellerWhatsapp && (
+              <a
+                href={`https://wa.me/${sellerWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour ! Je suis interesse par votre article "' + product.title + '" sur Brumerie.')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="w-14 py-4 rounded-2xl bg-green-500 flex items-center justify-center active:scale-95 transition-all shadow-lg shadow-green-200"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        )}
 
         {/* ── TAGS VENDEURS ── */}
         {product.taggedSellerNames && product.taggedSellerNames.length > 0 && (
