@@ -180,9 +180,9 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
     <div className="min-h-screen pb-24 bg-slate-50 font-sans">
 
       {/* ── Header ── */}
-      <div className="bg-white px-5 pt-6 pb-0 border-b border-slate-100 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 active:scale-90 transition-all text-slate-900 flex-shrink-0">
+      <div className="bg-white px-4 pt-12 pb-0 border-b border-slate-100 sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center gap-3 mb-3">
+          <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all text-slate-900 flex-shrink-0">
             {Icon.back}
           </button>
           <div className="flex-1 min-w-0 flex items-center gap-2.5">

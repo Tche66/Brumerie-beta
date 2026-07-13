@@ -185,16 +185,16 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
     <div className="min-h-screen bg-white pb-24 font-sans">
 
       {/* Header */}
-      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-40 px-6 py-5 border-b border-slate-100">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-40 px-4 pt-12 pb-3 border-b border-slate-100">
+        <div className="flex items-center gap-3 mb-3">
           <button onClick={onBack}
-            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-100 active:scale-90 transition-all">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-              <path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 active:scale-90 transition-all">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="font-black text-slate-900 text-base uppercase tracking-tight">Notifications</h1>
+            <h1 className="font-black text-slate-900 text-[15px] uppercase tracking-tight">Notifications</h1>
             {unreadTotal > 0 && (
               <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">
                 {unreadTotal} non lue{unreadTotal > 1 ? 's' : ''}

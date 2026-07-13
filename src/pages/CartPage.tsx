@@ -33,10 +33,10 @@ export function CartPage({ onBack, onBuyClick, onProductClick, onSellerClick, on
       <div className="min-h-screen bg-slate-50 pb-28">
         {/* Header */}
         <div className="sticky top-0 z-30 bg-white border-b border-slate-100">
-          <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center justify-between px-4 pt-12 pb-3">
             <div className="flex items-center gap-3">
               <button onClick={onBack} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
               <h1 className="text-[15px] font-black text-slate-900 uppercase tracking-tight">Mon Panier</h1>
             </div>
