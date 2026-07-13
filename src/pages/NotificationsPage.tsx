@@ -196,7 +196,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
           <div className="flex-1">
             <h1 className="font-black text-slate-900 text-[15px] uppercase tracking-tight">Notifications</h1>
             {unreadTotal > 0 && (
-              <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">
+              <p className="text-[9px] font-bold text-green-600 uppercase tracking-widest">
                 {unreadTotal} non lue{unreadTotal > 1 ? 's' : ''}
               </p>
             )}
@@ -225,7 +225,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
                 <span>{tab.label}</span>
                 {badge > 0 && (
                   <span className={`w-4 h-4 rounded-full text-[8px] font-black flex items-center justify-center ${
-                    isActive ? 'bg-white text-slate-900' : 'bg-blue-500 text-white'
+                    isActive ? 'bg-white text-slate-900' : 'bg-green-500 text-white'
                   }`}>
                     {badge > 9 ? '9+' : badge}
                   </span>
@@ -238,22 +238,22 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
 
       {/* Bannière activation push */}
       {!pushGranted && (
-        <div className="mx-6 mt-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-[2rem] p-5 border border-blue-100">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="mx-4 mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-200">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
             </div>
             <div className="flex-1">
-              <p className="font-black text-blue-900 text-[12px] uppercase tracking-tight mb-1">Activer les notifications</p>
-              <p className="text-blue-700 text-[10px] font-medium leading-relaxed mb-3">
-                Reçois une alerte dès qu'un message ou une commande arrive.
+              <p className="font-black text-slate-800 text-[11px] uppercase tracking-tight mb-1">Activer les notifications</p>
+              <p className="text-slate-500 text-[10px] font-medium leading-relaxed mb-2">
+                Sois alerté dès qu'un message ou une commande arrive.
               </p>
               <button onClick={handleEnablePush} disabled={requestingPush}
-                className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:opacity-50">
-                {requestingPush ? 'En cours...' : 'Activer maintenant'}
+                className="bg-green-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-green-200 active:scale-95 transition-all disabled:opacity-50">
+                {requestingPush ? 'En cours...' : 'Activer'}
               </button>
             </div>
           </div>
@@ -295,7 +295,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
           <div className="divide-y divide-slate-50">
             {filtered.map(notif => (
               <button key={notif.id} onClick={() => handleNotifClick(notif)}
-                className={`w-full flex items-start gap-4 px-6 py-4 text-left transition-all active:bg-slate-50 ${!notif.read ? 'bg-blue-50/40' : ''}`}>
+                className={`w-full flex items-start gap-4 px-6 py-4 text-left transition-all active:bg-slate-50 ${!notif.read ? 'bg-green-50/40' : ''}`}>
                 {/* Icône */}
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${BG[notif.type as string] || 'bg-slate-50'}`}>
                   {ICONS[notif.type as string] || ICONS.system}
@@ -314,7 +314,7 @@ export function NotificationsPage({ onBack, onOpenConversation, onOpenOrder }: N
                 </div>
                 {/* Point non-lu */}
                 {!notif.read && (
-                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />
+                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full flex-shrink-0 mt-1.5" />
                 )}
               </button>
             ))}
