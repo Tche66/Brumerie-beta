@@ -33,12 +33,12 @@ function Toast({ toast, onDismiss }: ToastProps) {
   }, [onDismiss, toast.id]);
 
   const colors: Record<string, { bg: string; icon: string; bar: string }> = {
-    message:  { bg: '#1D4ED8', icon: '#93C5FD', bar: '#3B82F6' },
-    reply:    { bg: '#1D4ED8', icon: '#93C5FD', bar: '#60A5FA' },
+    message:  { bg: '#065F46', icon: '#6EE7B7', bar: '#16A34A' },
+    reply:    { bg: '#065F46', icon: '#6EE7B7', bar: '#10B981' },
     favorite: { bg: '#115E2E', icon: '#86EFAC', bar: '#16A34A' },
-    follow:   { bg: '#7C3AED', icon: '#C4B5FD', bar: '#8B5CF6' },
-    commande: { bg: '#EA580C', icon: '#FDBA74', bar: '#F97316' },
-    system:   { bg: '#374151', icon: '#D1D5DB', bar: '#6B7280' },
+    follow:   { bg: '#065F46', icon: '#6EE7B7', bar: '#16A34A' },
+    commande: { bg: '#0F172A', icon: '#F59E0B', bar: '#F97316' },
+    system:   { bg: '#0F172A', icon: '#94A3B8', bar: '#64748B' },
   };
   const c = colors[toast.type] || colors.system;
 
