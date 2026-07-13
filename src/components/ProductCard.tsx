@@ -76,11 +76,18 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
           {product.condition && product.status !== 'sold' && (
             <ConditionBadge condition={product.condition} size="sm" />
           )}
-          {(product as any).promoPrice && (product as any).promoPrice < product.price && product.status !== 'sold' && (
-            <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
-              PROMO
-            </span>
-          )}
+          {(() => {
+            const p = product as any;
+            const nowMs = Date.now();
+            const toMs = (val: any): number => { if (!val) return 0; if (typeof val === 'number') return val; if (typeof val.toMillis === 'function') return val.toMillis(); if (val.seconds) return val.seconds * 1000; const d = new Date(val).getTime(); return isNaN(d) ? 0 : d; };
+            const promoStart = toMs(p.promoActiveFrom);
+            const promoEnd = toMs(p.promoActiveUntil);
+            const isActive = p.promoPrice && p.promoPrice < product.price
+              && (!promoStart || promoStart <= nowMs)
+              && (!promoEnd || promoEnd >= nowMs);
+            if (!isActive || product.status === 'sold') return null;
+            return <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">PROMO</span>;
+          })()}
           {(product as any).hasAcceptedOffer && product.status !== 'sold' && (
             <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
               🤝 Offre

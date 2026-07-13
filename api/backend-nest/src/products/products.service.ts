@@ -155,6 +155,22 @@ export class ProductsService {
     return { deleted: true };
   }
 
+  // ── Nettoyer les promos expirées ────────────────────────────────
+  async cleanExpiredPromos(): Promise<number> {
+    const now = new Date();
+    const result = await this.prisma.product.updateMany({
+      where: {
+        flashSaleActive: true,
+        promoActiveUntil: { lte: now },
+      },
+      data: {
+        flashSaleActive: false,
+        flashSaleScheduled: false,
+      },
+    });
+    return result.count;
+  }
+
   // ── Incrémenter les compteurs ─────────────────────────────────
   async incrementView(productId: string) {
     return this.prisma.product.update({

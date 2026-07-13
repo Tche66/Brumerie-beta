@@ -79,6 +79,16 @@ export class ProductsController {
     return this.productsService.deleteProduct(id, req.user.uid);
   }
 
+  // POST /products/cron/clean-promos — Désactiver les promos expirées
+  @Post('cron/clean-promos')
+  async cleanExpiredPromos(@Body() body: { secret?: string }) {
+    if (body.secret !== (process.env.CRON_SECRET || 'brumerie-cron-2026')) {
+      return { success: false, error: 'Secret invalide' };
+    }
+    const count = await this.productsService.cleanExpiredPromos();
+    return { success: true, cleaned: count };
+  }
+
   // PATCH /products/:id/view — incrémenter vues
   @Patch(':id/view')
   async incrementView(@Param('id') id: string) {
