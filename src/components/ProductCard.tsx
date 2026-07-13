@@ -76,6 +76,11 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
           {product.condition && product.status !== 'sold' && (
             <ConditionBadge condition={product.condition} size="sm" />
           )}
+          {(product as any).promoPrice && (product as any).promoPrice < product.price && product.status !== 'sold' && (
+            <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
+              PROMO
+            </span>
+          )}
           {(product as any).hasAcceptedOffer && product.status !== 'sold' && (
             <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
               🤝 Offre
@@ -179,18 +184,20 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
                 <p className={`price-brumerie text-[18px] ${isFlash ? 'text-red-600' : 'text-gray-900'}`}>
                   {displayedPrice.toLocaleString('fr-FR')}
                 </p>
-                <span className="text-[10px] font-bold text-slate-400 ml-0.5">FCFA</span>
+                <span className="text-[10px] font-bold text-slate-400 ml-0.5">F</span>
                 {pct > 0 && (
-                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-lg ${isFlash ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'}`}>-{pct}%</span>
+                  <span className="text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-md shadow-sm">-{pct}%</span>
                 )}
               </div>
               {crossed && crossed > displayedPrice && (
-                <p className="text-[9px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} FCFA</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} F</p>
+                </div>
               )}
               {isFlash && (
-                <p className="text-[9px] font-black text-white bg-gradient-to-r from-red-600 to-orange-500 px-2 py-0.5 rounded-lg mt-1 inline-flex items-center gap-1">
-                  🔥 {p.flashSaleLabel || 'VENTE FLASH'}
-                </p>
+                <div className="mt-1 inline-flex items-center gap-1 bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1 rounded-lg shadow-md">
+                  <span className="text-[9px] font-black text-white uppercase tracking-wide">{p.flashSaleLabel || 'VENTE FLASH'}</span>
+                </div>
               )}
             </>
           );

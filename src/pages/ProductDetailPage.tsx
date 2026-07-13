@@ -727,8 +727,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     </p>
                     {crossed && crossed > displayPrice && (
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400 line-through text-[15px] font-bold">{crossed.toLocaleString('fr-FR')}</span>
-                        <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-1 rounded-xl">-{pct}%</span>
+                        <span className="text-slate-400 line-through text-[15px] font-bold">{crossed.toLocaleString('fr-FR')} F</span>
+                        <span className="bg-red-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">-{pct}%</span>
                       </div>
                     )}
                   </>
