@@ -104,21 +104,18 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
         </div>
 
         {/* Bookmark button */}
-        <div className="absolute bottom-3 left-3 flex flex-col items-center gap-0.5">
+        <div className="absolute bottom-3 left-3">
           <button
             onClick={handleBookmark}
-            className={`bookmark-btn ${saved ? 'saved' : ''}`}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${
+              saved ? 'bg-green-500' : 'bg-white/90 backdrop-blur-md border border-gray-100'
+            }`}
             title={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? '#1D9BF0' : 'none'} stroke={saved ? '#1D9BF0' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? 'white' : 'none'} stroke={saved ? 'white' : '#334155'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
             </svg>
           </button>
-          {((product as any).bookmarkCount || 0) > 0 && (
-            <span className="text-[8px] font-black text-blue-600 bg-white/90 rounded-full px-1 py-0.5 leading-none shadow-sm">
-              ❤️{(product as any).bookmarkCount}
-            </span>
-          )}
         </div>
 
         {/* Bouton Panier — bottom right */}

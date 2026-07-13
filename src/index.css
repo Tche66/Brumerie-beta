@@ -252,27 +252,6 @@ body {
 }
 
 /* Bookmark button */
-.bookmark-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(0,0,0,0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-
-.bookmark-btn.saved {
-  background: #EFF6FF;
-  border-color: #BFDBFE;
-}
-
-.bookmark-btn:active { transform: scale(0.88); }
 
 /* Settings gear in profile */
 .settings-gear-btn {
