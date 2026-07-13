@@ -793,12 +793,18 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 if (!currentUser || !userProfile) return;
                 try {
                   const convId = await getOrCreateConversation(
-                    currentUser.uid, userProfile.name, userProfile.photoURL,
-                    product.sellerId, product.sellerName, product.sellerPhoto || '',
-                    product.id, product.title, product.images?.[0]
+                    currentUser.uid,
+                    product.sellerId,
+                    { id: product.id, title: product.title, price: product.price, image: product.images?.[0] || '', neighborhood: product.neighborhood || '' },
+                    userProfile.name || '',
+                    product.sellerName || '',
+                    userProfile.photoURL || '',
+                    product.sellerPhoto || '',
                   );
-                  onStartChat?.(convId);
-                } catch {}
+                  if (convId) onStartChat?.(convId);
+                } catch (e) {
+                  console.error('[Contacter vendeur]', e);
+                }
               }}
               className="flex-1 py-4 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
             >
