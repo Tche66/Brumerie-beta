@@ -24,7 +24,7 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
   const [neighborhood, setNeighborhood]     = useState('');
   const [customHood, setCustomHood]         = useState(false);
   const [whatsapp, setWhatsapp]             = useState('');
-  const [referralCode, setReferralCode]     = useState('');
+  const [referralCode, setReferralCode]     = useState(() => localStorage.getItem('brumerie_ref_code') || '');
   const [referralStatus, setReferralStatus] = useState<'idle'|'ok'|'err'>('idle');
   const [loading, setLoading]               = useState(false);
 
@@ -61,6 +61,7 @@ export function GoogleNeighborhoodModal({ onDone }: Props) {
       if (referralCode.trim()) {
         const ok = await applyReferral(currentUser.uid, referralCode.trim().toUpperCase());
         setReferralStatus(ok ? 'ok' : 'err');
+        if (ok) localStorage.removeItem('brumerie_ref_code');
         if (!ok) await new Promise(r => setTimeout(r, 1500));
       }
 

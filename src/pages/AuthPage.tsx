@@ -38,9 +38,9 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   const [countdown, setCountdown] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Lire ?ref= dans l'URL
+  // Lire ?ref= dans l'URL ou localStorage (pré-sauvé à l'arrivée)
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref');
+    const ref = new URLSearchParams(window.location.search).get('ref') || localStorage.getItem('brumerie_ref_code');
     if (ref) { setReferralCode(ref.toUpperCase()); setShowReferral(true); }
   }, []);
 

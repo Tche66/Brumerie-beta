@@ -449,6 +449,13 @@
     <script type="module" src="/src/main.tsx"></script>
 
     <script>
+      // Capturer le code parrainage dès l'arrivée (avant React)
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var ref = params.get('ref');
+        if (ref) localStorage.setItem('brumerie_ref_code', ref.toUpperCase());
+      })();
+
       // Service Worker PWA
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
