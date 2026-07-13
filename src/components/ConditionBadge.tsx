@@ -4,9 +4,9 @@ import React from 'react';
 export type Condition = 'new' | 'like_new' | 'second_hand';
 
 export const CONDITIONS: { id: Condition; label: string; short: string; color: string; bg: string; dot: string }[] = [
-  { id: 'new',         label: 'Neuf',         short: 'Neuf',        color: '#166534', bg: '#DCFCE7', dot: '#16A34A' },
-  { id: 'like_new',    label: 'Comme neuf',   short: 'Comme neuf',  color: '#1D4ED8', bg: '#DBEAFE', dot: '#3B82F6' },
-  { id: 'second_hand', label: 'Seconde main', short: 'Occasion',    color: '#92400E', bg: '#FEF3C7', dot: '#F59E0B' },
+  { id: 'new',         label: 'Neuf',         short: 'Neuf',        color: '#FFFFFF', bg: '#16A34A', dot: '#86EFAC' },
+  { id: 'like_new',    label: 'Comme neuf',   short: 'Comme neuf',  color: '#FFFFFF', bg: '#0F172A', dot: '#94A3B8' },
+  { id: 'second_hand', label: 'Seconde main', short: 'Occasion',    color: '#FFFFFF', bg: '#D97706', dot: '#FDE68A' },
 ];
 
 export function ConditionBadge({ condition, size = 'sm' }: { condition: Condition; size?: 'sm' | 'md' }) {
@@ -16,7 +16,7 @@ export function ConditionBadge({ condition, size = 'sm' }: { condition: Conditio
   return (
     <span
       style={{ background: c.bg, color: c.color }}
-      className={`inline-flex items-center gap-1 font-black rounded-full uppercase tracking-wider flex-shrink-0 ${isSmall ? 'text-[8px] px-2 py-0.5' : 'text-[10px] px-3 py-1'}`}>
+      className={`inline-flex items-center gap-1.5 font-black rounded-lg uppercase tracking-wider flex-shrink-0 shadow-md ${isSmall ? 'text-[9px] px-2.5 py-1' : 'text-[10px] px-3 py-1.5'}`}>
       <span style={{ width: isSmall ? 5 : 6, height: isSmall ? 5 : 6, borderRadius: '50%', background: c.dot, flexShrink: 0, display: 'inline-block' }} />
       {isSmall ? c.short : c.label}
     </span>
