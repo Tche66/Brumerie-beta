@@ -489,7 +489,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             </div>
             {!['picked', 'ready'].includes(order.status) && (
               <button onClick={() => setShowCancelOrder(true)}
-                className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                className="w-full py-3.5 rounded-2xl bg-red-50 border-2 border-red-200 text-red-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 Annuler la commande
               </button>
             )}
@@ -506,7 +507,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
             </button>
             {!['picked', 'ready'].includes(order.status) && (
               <button onClick={() => setShowCancelOrder(true)}
-                className="w-full py-3 rounded-2xl border-2 border-red-200 text-red-500 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                className="w-full py-3.5 rounded-2xl bg-red-50 border-2 border-red-200 text-red-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 Annuler la commande
               </button>
             )}

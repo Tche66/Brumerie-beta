@@ -240,11 +240,16 @@ export async function updateProductStatus(productId: string, status: 'active' | 
 
 // -- Supprimer ------------------------------------------------------------
 export async function deleteProduct(productId: string, sellerId: string): Promise<void> {
-  // D'abord marquer comme supprimé (pour les listeners temps réel)
-  await updateDoc(doc(db, 'products', productId), { status: 'deleted' }).catch(() => {});
-  // Puis supprimer le document
-  await deleteDoc(doc(db, 'products', productId));
+  // Supprimer de Firestore (source de vérité)
+  try {
+    await deleteDoc(doc(db, 'products', productId));
+  } catch (e: any) {
+    // Si deleteDoc échoue (règles), essayer de marquer comme supprimé
+    await updateDoc(doc(db, 'products', productId), { status: 'deleted' });
+  }
+  // Décrémenter le compteur vendeur
   updateDoc(doc(db, 'users', sellerId), { productCount: increment(-1) }).catch(() => {});
+  // Sync backend (non-bloquant)
   productsApi.delete(productId).catch(() => {});
 }
 
