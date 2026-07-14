@@ -81,7 +81,7 @@ export async function submitTrustReport(
         where('reportedId', '==', report.reportedId),
       ));
       if (!existing.empty) return { success: false, error: 'Tu as déjà signalé cet utilisateur.' };
-    } catch {}
+    } catch (e) { console.warn('[Trust] Duplicate check failed:', e); }
 
     const cleanReport: Record<string, any> = {
       reporterId:   report.reporterId,

@@ -26,7 +26,7 @@ export async function getAvailableDeliverers(fromZone: string): Promise<User[]> 
       if (snap.docs.length > 0) {
         return snap.docs.map(d => ({ ...d.data(), id: d.id } as User));
       }
-    } catch {}
+    } catch (e) { console.warn('[Deliverers] Firestore indexed query failed, using fallback:', e); }
     // Si l'index composite n'existe pas, fallback sans filtre deliveryAvailable
     const snap = await getDocs(query(
       collection(db, 'users'),
