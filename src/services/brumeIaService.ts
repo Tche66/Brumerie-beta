@@ -50,10 +50,21 @@ export interface AssistantResponse {
   };
 }
 
+async function getToken(): Promise<string> {
+  const { getAuth } = await import('firebase/auth');
+  const user = getAuth().currentUser;
+  if (!user) return '';
+  return user.getIdToken();
+}
+
 async function apiCall<T>(endpoint: string, body?: any): Promise<T> {
+  const token = await getToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/ai/${endpoint}`, {
     method: body ? 'POST' : 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json();

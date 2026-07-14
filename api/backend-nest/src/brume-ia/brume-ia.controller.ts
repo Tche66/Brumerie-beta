@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Get, Query, Param, Patch } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, Param, Patch, UseGuards } from '@nestjs/common';
 import { BrumeIaService } from './brume-ia.service';
 import { AssistantService, AssistantMessage } from './assistant.service';
 import { LlmService } from '../llm/llm.service';
+import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard';
 
 @Controller('ai')
 export class BrumeIaController {
@@ -12,8 +13,8 @@ export class BrumeIaController {
   ) {}
 
   // POST /ai/generate-listing
-  // Le vendeur envoie une photo + texte brut → Brume IA retourne une annonce complète
   @Post('generate-listing')
+  @UseGuards(FirebaseAuthGuard)
   async generateListing(
     @Body() body: { imageUrl?: string; imageBase64?: string; rawText?: string; sellerNeighborhood?: string },
   ) {
@@ -26,8 +27,8 @@ export class BrumeIaController {
   }
 
   // POST /ai/price-intelligence
-  // Analyse prix marché pour un produit
   @Post('price-intelligence')
+  @UseGuards(FirebaseAuthGuard)
   async priceIntelligence(
     @Body() body: { title: string; category: string; condition: string; sellerPrice?: number; neighborhood?: string },
   ) {
@@ -40,8 +41,8 @@ export class BrumeIaController {
   }
 
   // POST /ai/negotiate
-  // Agent de négociation automatique
   @Post('negotiate')
+  @UseGuards(FirebaseAuthGuard)
   async negotiate(
     @Body() body: {
       productTitle: string;
@@ -61,8 +62,8 @@ export class BrumeIaController {
   }
 
   // GET /ai/search?q=...
-  // Recherche intelligente en langage naturel
   @Get('search')
+  @UseGuards(FirebaseAuthGuard)
   async intelligentSearch(@Query('q') query: string) {
     if (!query || query.trim().length < 2) {
       return { success: false, error: 'Requête trop courte' };
@@ -76,8 +77,8 @@ export class BrumeIaController {
   }
 
   // POST /ai/analyze-performance
-  // Diagnostic de performance d'une annonce
   @Post('analyze-performance')
+  @UseGuards(FirebaseAuthGuard)
   async analyzePerformance(
     @Body() body: {
       title: string; price: number; viewCount: number;
@@ -94,8 +95,8 @@ export class BrumeIaController {
   }
 
   // POST /ai/assistant
-  // Chat avec Brume IA — assistant intelligent contextuel
   @Post('assistant')
+  @UseGuards(FirebaseAuthGuard)
   async assistantChat(
     @Body() body: {
       userId: string;
@@ -134,8 +135,8 @@ export class BrumeIaController {
   }
 
   // GET /ai/seller-score/:sellerId
-  // Score IA du vendeur basé sur toute son activité
   @Get('seller-score/:sellerId')
+  @UseGuards(FirebaseAuthGuard)
   async sellerScore(@Param('sellerId') sellerId: string) {
     if (!sellerId) return { success: false, error: 'sellerId requis' };
     try {
@@ -147,8 +148,8 @@ export class BrumeIaController {
   }
 
   // POST /ai/fraud-check
-  // Détection de fraude sur une annonce ou un profil
   @Post('fraud-check')
+  @UseGuards(FirebaseAuthGuard)
   async fraudCheck(
     @Body() body: {
       type: 'product' | 'user';
@@ -175,6 +176,7 @@ export class BrumeIaController {
   // POST /ai/track
   // Enregistre une interaction IA (data loop)
   @Post('track')
+  @UseGuards(FirebaseAuthGuard)
   async trackInteraction(
     @Body() body: {
       userId: string;
@@ -194,8 +196,8 @@ export class BrumeIaController {
   }
 
   // PATCH /ai/track/:id/conversion
-  // Marque une interaction comme ayant mené à une conversion (vente)
   @Patch('track/:id/conversion')
+  @UseGuards(FirebaseAuthGuard)
   async markConversion(@Param('id') id: string) {
     try {
       await this.brumeIa.markConversion(id);
@@ -206,8 +208,8 @@ export class BrumeIaController {
   }
 
   // PATCH /ai/track/:id/feedback
-  // L'utilisateur donne son avis sur une recommandation IA
   @Patch('track/:id/feedback')
+  @UseGuards(FirebaseAuthGuard)
   async markFeedback(
     @Param('id') id: string,
     @Body() body: { feedback: string; wasHelpful: boolean },
