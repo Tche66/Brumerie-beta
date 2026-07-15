@@ -663,18 +663,24 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
           <Countdown deadline={(order as any).autoDisputeAt} label="Il vous reste"/>
         )}
 
-        {/* Stepper — 2 étapes COD, 4 étapes paiement mobile */}
+        {/* Stepper — COD / Escrow / Mobile Money */}
         <div className="space-y-3">
           {(order.isCOD ? [
-            { label: 'Commande confirmée',        done: true },
-            { label: '🚚 En cours de livraison',     done: ['cod_confirmed','picked','delivered'].includes(order.status) },
-            { label: 'Reçu & payé',               done: order.status === 'delivered' },
+            { label: 'Commande confirmee',        done: true },
+            { label: 'En cours de livraison',     done: ['cod_confirmed','picked','delivered'].includes(order.status) },
+            { label: 'Recu & paye',               done: order.status === 'delivered' },
+          ] : (order as any).paymentInfo?.method === 'escrow_cinetpay' ? [
+            { label: 'Paiement securise',         done: ['confirmed','ready','picked','delivered'].includes(order.status) },
+            { label: 'Argent sequestre',          done: ['confirmed','ready','picked','delivered'].includes(order.status) },
+            { label: 'Colis pret',                done: ['ready','picked','delivered'].includes(order.status) },
+            { label: 'En route',                  done: ['picked','delivered'].includes(order.status) },
+            { label: 'Livre — fonds liberes',     done: order.status === 'delivered' },
           ] : [
-            { label: 'Commande initiée',              done: true },
-            { label: 'Preuve envoyée',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
-            { label: 'Paiement confirmé', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
+            { label: 'Commande initiee',              done: true },
+            { label: 'Preuve envoyee',   done: ['proof_sent','confirmed','ready','picked','delivered','disputed'].includes(order.status) },
+            { label: 'Paiement confirme', done: ['confirmed','ready','picked','delivered'].includes(order.status) },
             { label: 'En route',          done: ['ready','picked','delivered'].includes(order.status) },
-            { label: 'Livré',             done: order.status === 'delivered' },
+            { label: 'Livre',             done: order.status === 'delivered' },
           ]).map((s, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-green-500' : 'bg-slate-100'}`}>
@@ -988,6 +994,26 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
               className="w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest text-orange-600 bg-orange-50 border border-orange-100 active:scale-95 transition-all">
               Signaler un problème
             </button>
+          </div>
+        )}
+
+        {/* ── ACHETEUR — Escrow : paiement en cours de vérification ── */}
+        {isBuyer && order.status === 'payment_pending' && (
+          <div className="space-y-3 pt-2">
+            <div className="bg-green-50 rounded-2xl p-4 border border-green-200">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center animate-pulse">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-green-800 uppercase">Paiement en cours de verification</p>
+                  <p className="text-[10px] text-green-700 font-medium">CinetPay verifie ton paiement. Ca prend quelques secondes.</p>
+                </div>
+              </div>
+              <p className="text-[9px] text-green-600 font-bold">Ton argent sera sequestre jusqu'a ce que tu confirmes la reception du produit.</p>
+            </div>
           </div>
         )}
 

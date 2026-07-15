@@ -302,11 +302,18 @@ export async function validateDeliveryCode(
     reviewsUnlocked: true,
   }).catch(() => {});
 
+  // Libérer les fonds escrow si paiement sécurisé
+  if ((order as any).paymentMethod === 'escrow_cinetpay' || (order as any).paymentInfo?.method === 'escrow_cinetpay') {
+    import('./escrowService').then(({ confirmDelivery }) => {
+      confirmDelivery(orderId).catch((e) => console.warn('[Escrow] Release failed:', e));
+    }).catch(() => {});
+  }
+
   await notifyBoth({
     sellerId: order.sellerId,
     sellerMsg: {
       title: '✅ Livraison confirmée !',
-      body: order.buyerName + ' a confirmé la réception de "' + order.productTitle + '". Transaction terminée ✓',
+      body: order.buyerName + ' a confirmé la réception de "' + order.productTitle + '". Fonds libérés ✓',
       convData: { orderId, productId: order.productId },
     },
     buyerId: order.buyerId,
