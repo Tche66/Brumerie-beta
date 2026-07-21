@@ -124,6 +124,15 @@ export function setProductMeta(product: {
   });
 }
 
+export function setGuideMeta() {
+  updateMeta({
+    title: "Guide Brumerie — Comment acheter et vendre en ligne en Côte d'Ivoire",
+    description: "Guide complet Brumerie : apprenez à acheter, vendre, publier des annonces, payer par Mobile Money (Wave, Orange Money, MTN, Moov) et devenir vendeur vérifié sur le premier social commerce de Côte d'Ivoire.",
+    url: `${BASE_URL}/guide`,
+    type: 'website',
+  });
+}
+
 export function setSellerMeta(seller: {
   name: string;
   bio?: string;

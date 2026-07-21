@@ -1,6 +1,7 @@
 // src/pages/GuidePage.tsx — Guide complet Brumerie (Mode acheteur, vendeur simple, vendeur vérifié)
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAppConfig } from '@/services/appConfigService';
+import { setGuideMeta } from '@/utils/seo';
 
 interface GuidePageProps { onBack: () => void; }
 
@@ -63,6 +64,8 @@ export function GuidePage({ onBack }: GuidePageProps) {
   const [section, setSection] = useState<SectionId>('intro');
   const config = getAppConfig();
   const ytLink = config.youtubeChannel || 'https://youtube.com/@brumerie';
+
+  useEffect(() => { setGuideMeta(); }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-24">
