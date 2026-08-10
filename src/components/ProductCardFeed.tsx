@@ -164,7 +164,7 @@ export function ProductCardFeed({
   const isNew = safeTs(product.createdAt) > Date.now() - 48 * 60 * 60 * 1000;
 
   return (
-    <div className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm">
+    <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden border border-gray-100 dark:border-slate-700">
 
       {/* ── Zone image immersive avec overlays ── */}
       <div
@@ -199,7 +199,7 @@ export function ProductCardFeed({
             onClick={e => { e.stopPropagation(); if (product.sellerId) onSellerClick?.(product.sellerId); }}
             className="flex items-center gap-1.5 active:opacity-70 transition-all min-w-0"
           >
-            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[100px]">{product.sellerName}</span>
+            <span className="text-[13px] font-semibold text-white drop-shadow-md truncate max-w-[100px]">{product.sellerName}</span>
           </button>
           {(product.sellerVerified || product.sellerPremium) && (
             <span className="flex-shrink-0 drop-shadow-lg">
@@ -211,13 +211,13 @@ export function ProductCardFeed({
             <button
               onClick={handleFollow}
               disabled={followLoading}
-              className={`text-[10px] font-black px-3 py-1.5 rounded-full active:scale-90 transition-all flex-shrink-0 disabled:opacity-50 ${
+              className={`text-[10px] font-semibold px-3 py-1.5 rounded-full active:scale-95 transition-all flex-shrink-0 disabled:opacity-50 ${
                 isFollowing
                   ? 'bg-white/20 backdrop-blur-md text-white border border-white/40'
-                  : 'bg-green-500 text-white shadow-lg'
+                  : 'bg-emerald-600 text-white'
               }`}
             >
-              {followLoading ? '...' : isFollowing ? 'Suivi ✓' : 'Suivre'}
+              {followLoading ? '...' : isFollowing ? 'Suivi' : 'Suivre'}
             </button>
           )}
         </div>
@@ -303,15 +303,15 @@ export function ProductCardFeed({
 
         </div>
 
-        {/* ── Badges en bas à gauche de l'image ── */}
-        <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
-          {isNew && <span className="bg-green-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-md">Nouveau</span>}
-          {product.status === 'sold' && <span className="bg-gray-900/90 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter">Vendu</span>}
+        {/* Badges en bas à gauche de l'image */}
+        <div className="absolute bottom-14 left-3 flex flex-col gap-1.5">
+          {isNew && <span className="bg-emerald-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Nouveau</span>}
+          {product.status === 'sold' && <span className="bg-gray-900/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Vendu</span>}
           {(p as any).hasAcceptedOffer && product.status !== 'sold' && (
-            <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter">🤝 Offre</span>
+            <span className="bg-amber-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Offre</span>
           )}
           {isBoosted && (
-            <span className="bg-amber-500 text-white text-[8px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-md">⚡ Sponsorisé</span>
+            <span className="bg-amber-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Sponsorise</span>
           )}
         </div>
 
@@ -367,7 +367,7 @@ export function ProductCardFeed({
       {/* ── Infos produit en bas ── */}
       <div className="px-4 py-4 cursor-pointer" onClick={onClick}>
         {/* Titre */}
-        <h3 className="text-[16px] font-black text-gray-900 leading-tight line-clamp-2">
+        <h3 className="text-[15px] font-semibold text-gray-900 dark:text-white leading-tight line-clamp-2">
           {product.title}
         </h3>
 
@@ -378,37 +378,37 @@ export function ProductCardFeed({
           </p>
         )}
 
-        {/* Tags catégorie */}
+        {/* Tags */}
         <div className="flex items-center gap-2 mt-2.5 flex-wrap">
           {product.category && (
-            <span className="text-[10px] font-bold text-green-700 border border-green-200 bg-green-50 px-2.5 py-1 rounded-full">
-              #{product.category}
+            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
+              {product.category}
             </span>
           )}
           {product.neighborhood && (
-            <span className="text-[10px] font-bold text-slate-500 border border-slate-200 bg-slate-50 px-2.5 py-1 rounded-full">
-              📍 {product.neighborhood}
+            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+              {product.neighborhood}
             </span>
           )}
-          {product.sellerManagesDelivery && (
-            <span className="text-[10px] font-bold text-purple-700 border border-purple-200 bg-purple-50 px-2.5 py-1 rounded-full">
-              📦 Livraison
+          {(product as any).sellerManagesDelivery && (
+            <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-md">
+              Livraison
             </span>
           )}
         </div>
 
         {/* Prix */}
         <div className="flex items-baseline gap-2 mt-3">
-          <span className={`text-[22px] font-black ${isFlashSale ? 'text-red-600' : 'text-gray-900'}`}>{displayPrice.toLocaleString('fr-FR')}</span>
-          <span className="text-[12px] font-bold text-slate-400">FCFA</span>
+          <span className={`text-xl font-bold ${isFlashSale ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>{displayPrice.toLocaleString('fr-FR')}</span>
+          <span className="text-xs font-medium text-gray-400">FCFA</span>
           {pct > 0 && (
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isFlashSale ? 'bg-red-600 text-white' : 'bg-red-100 text-red-600'}`}>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${isFlashSale ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600'}`}>
               -{pct}%
             </span>
           )}
         </div>
         {crossedPrice && crossedPrice > displayPrice && (
-          <p className="text-[11px] text-slate-400 line-through font-bold">{crossedPrice.toLocaleString('fr-FR')} FCFA</p>
+          <p className="text-xs text-gray-400 line-through">{crossedPrice.toLocaleString('fr-FR')} FCFA</p>
         )}
 
         {/* Stats sociales */}
@@ -423,7 +423,7 @@ export function ProductCardFeed({
           </div>
         )}
 
-        {/* ── Boutons CTA en bas ── */}
+        {/* CTA */}
         <div className="flex items-center gap-3 mt-4">
           <button
             onClick={e => {
@@ -435,11 +435,8 @@ export function ProductCardFeed({
                 onClick();
               }
             }}
-            className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-green-500 text-green-600 rounded-full font-black text-[12px] active:scale-95 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-emerald-500 text-emerald-600 rounded-lg font-semibold text-sm active:scale-[0.98] transition-transform"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-            </svg>
             Discuter
           </button>
           <button
@@ -448,11 +445,8 @@ export function ProductCardFeed({
               if (!currentUser) { onGuestAction?.(); return; }
               if (onBuyClick) { onBuyClick(product); } else { onClick(); }
             }}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-black text-[12px] active:scale-95 transition-all shadow-lg"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold text-sm active:scale-[0.98] transition-transform"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
-            </svg>
             Acheter
           </button>
         </div>

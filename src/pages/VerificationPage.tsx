@@ -1,5 +1,6 @@
 // src/pages/VerificationPage.tsx — v3 : matrice badges correcte + Premium actif
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getGlobalSettings } from '@/services/adminService';
 import { SUPPORT_WHATSAPP } from '@/types';
@@ -65,7 +66,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     const config = getAppConfig();
     const waNum  = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
     const msg    = 'Bonjour Brumerie ! Je viens de payer le Badge Premium ('
-      + effectivePremiumPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement.\n\nNom :'
+      + effectivePremiumPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement en photo.\n\nNom :'
       + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\nApp :' + userProfile.uid;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
@@ -104,26 +105,26 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
   ];
 
   return (
-    <div className="min-h-screen pb-20 font-sans" style={{ background: '#F0F4FF' }}>
+    <div className="min-h-screen pb-20 font-sans bg-gray-50 dark:bg-slate-900">
 
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 px-5 py-5 flex items-center gap-4 border-b border-slate-100">
-        <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 active:scale-90 transition-all">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700 active:scale-[0.98] transition-all">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div>
-          <h1 className="font-black text-sm uppercase tracking-widest text-slate-900">Badges & Plans</h1>
-          <p className="text-[9px] text-slate-400 font-bold mt-0.5">Choisissez votre niveau de visibilité sur Brumerie</p>
+          <h1 className="font-semibold text-sm text-slate-900">Badges & Plans</h1>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">Choisissez votre niveau de visibilité sur Brumerie</p>
         </div>
       </div>
 
       <div className="px-4 pt-6 space-y-4">
 
         {/* ── CARTE SIMPLE ── */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1"><BruIcons.Unlock size={14}/> Simple</p>
-          <p className="text-4xl font-black text-slate-300 mb-1">0 <span className="text-xl">FCFA</span></p>
-          <p className="text-[10px] text-slate-400 mb-5">Pour tester l'application</p>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+          <p className="text-xs font-medium text-slate-400 mb-1"><BruIcons.Unlock size={14}/> Simple</p>
+          <p className="text-4xl font-semibold text-slate-300 mb-1">0 <span className="text-xl">FCFA</span></p>
+          <p className="text-xs text-slate-400 mb-5">Pour tester l'application</p>
           <div className="space-y-3">
             {FEATURES_SIMPLE.map((f, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -132,40 +133,40 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
               </div>
             ))}
           </div>
-          <div className="mt-6 bg-slate-100 rounded-2xl py-4 text-center">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <div className="mt-6 bg-slate-100 rounded-lg py-4 text-center">
+            <p className="text-xs font-medium text-slate-400">
               {tier === 'simple' ? '— Plan actuel —' : 'Plan de base'}
             </p>
           </div>
         </div>
 
         {/* ── CARTE VÉRIFIÉ ── */}
-        <div className="rounded-3xl overflow-visible relative"
+        <div className="rounded-xl overflow-visible relative"
           style={{ boxShadow: tier === 'simple' ? '0 20px 60px rgba(29,155,240,0.25)' : 'none', border: '2px solid #1D9BF0' }}>
 
           {tier === 'simple' && (
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg whitespace-nowrap">
-                <BruIcons.Flame size={14}/> RECOMMANDÉ POUR VOUS !
+              <div className="bg-amber-400 text-slate-900 text-xs font-medium px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap">
+                <BruIcons.Flame size={14}/> Recommandé pour vous !
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-3xl p-6 pt-8">
-            <p className="font-black uppercase tracking-widest mb-2" style={{ color: '#1D9BF0' }}>🔵 Vérifié</p>
+          <div className="bg-white rounded-xl p-6 pt-8">
+            <p className="font-semibold mb-2" style={{ color: '#1D9BF0' }}>🔵 Vérifié</p>
 
             <div className="flex items-baseline gap-3 mb-1">
               {verificationPromoPrice && (
                 <p className="text-slate-300 line-through text-lg font-bold">{verificationPrice.toLocaleString('fr-FR')}</p>
               )}
-              <p className="text-5xl font-black text-slate-900">
+              <p className="text-5xl font-semibold text-slate-900">
                 {effectiveVerifiedPrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span>
               </p>
               {verificationPromoPrice && (
-                <span className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">PROMO</span>
+                <span className="bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">PROMO</span>
               )}
             </div>
-            <p className="text-[10px] text-slate-400 mb-5">Visibilité accrue · Identité contrôlée · /mois</p>
+            <p className="text-xs text-slate-400 mb-5">Visibilité accrue · Identité contrôlée · /mois</p>
 
             <div className="space-y-3">
               {FEATURES_VERIFIED.map((f, i) => (
@@ -178,38 +179,36 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
             <div className="mt-6 space-y-3">
               {tier === 'verified' ? (
-                <div className="rounded-2xl py-4 text-center" style={{ background: '#EFF6FF' }}>
-                  <p className="font-black text-[11px] uppercase tracking-widest" style={{ color: '#1D9BF0' }}>✓ Badge actif</p>
+                <div className="rounded-lg py-4 text-center" style={{ background: '#EFF6FF' }}>
+                  <p className="text-xs font-medium" style={{ color: '#1D9BF0' }}>✓ Badge actif</p>
                 </div>
               ) : tier === 'premium' ? (
-                <div className="rounded-2xl py-4 text-center bg-slate-50">
-                  <p className="font-black text-[11px] text-slate-400 uppercase tracking-widest">Inclus dans Premium ✓</p>
+                <div className="rounded-lg py-4 text-center bg-gray-50 dark:bg-slate-900">
+                  <p className="text-xs font-medium text-slate-400">Inclus dans Premium ✓</p>
                 </div>
               ) : (
                 <>
                   {sent ? (
                     <div className="space-y-3">
-                      <div className="rounded-2xl py-4 px-4 text-center bg-green-50 border-2 border-green-200">
-                        <p className="text-green-800 font-black text-[12px]"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
-                        <p className="text-green-600 text-[10px] mt-1 font-bold">Envoie ta preuve de paiement ci-dessous</p>
+                      <div className="rounded-lg py-4 px-4 text-center bg-green-50 border-2 border-green-200">
+                        <p className="text-green-800 font-semibold text-[12px]"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
+                        <p className="text-green-600 text-xs mt-1 font-medium">Envoie ta preuve de paiement ci-dessous</p>
                       </div>
                       <button onClick={handleSendProof}
-                        className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white active:scale-[0.98] transition-all"
-                        style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)' }}>
+                        className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all">
                         <BruIcons.Camera size={14}/> Envoyer ma preuve de paiement
                       </button>
-                      <button onClick={() => setSent(false)} className="w-full py-3 rounded-2xl font-bold text-[11px] text-slate-400 bg-slate-50">
+                      <button onClick={() => setSent(false)} className="w-full py-3 rounded-lg font-bold text-[11px] text-slate-400 bg-gray-50 dark:bg-slate-900">
                         ← Recommencer
                       </button>
                     </div>
                   ) : (
                     <button onClick={handleActivate}
-                      className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white active:scale-[0.98] transition-all"
-                      style={{ background: 'linear-gradient(135deg,#1B5E20,#16A34A)', boxShadow: '0 10px 30px rgba(22,163,74,0.4)' }}>
+                      className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all shadow-sm">
                       <BruIcons.Credit size={14}/> PAYER {effectiveVerifiedPrice.toLocaleString('fr-FR')} FCFA
                     </button>
                   )}
-                  <p className="text-center text-amber-500 font-black text-[10px]">✨ Cadeau : +30 jours gratuits !</p>
+                  <p className="text-center text-amber-500 font-semibold text-xs">✨ Cadeau : +30 jours gratuits !</p>
                 </>
               )}
             </div>
@@ -217,37 +216,36 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
         </div>
 
         {/* ── CARTE PREMIUM ── */}
-        <div className="rounded-3xl p-6 pb-8 relative overflow-visible"
+        <div className="rounded-xl p-6 pb-8 relative overflow-visible"
           style={{
             background: '#0F0F0F',
             border: tier === 'premium' ? '2px solid #F59E0B' : '2px solid rgba(245,158,11,0.2)',
-            boxShadow: tier !== 'premium' ? '0 20px 60px rgba(245,158,11,0.15)' : '0 20px 60px rgba(245,158,11,0.4)',
+            boxShadow: tier !== 'premium' ? '0 8px 24px rgba(245,158,11,0.10)' : '0 8px 24px rgba(245,158,11,0.20)',
           }}>
 
           {tier !== 'premium' && tier !== 'simple' && (
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg whitespace-nowrap"
-                style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', color: '#1a1a1a' }}>
-                ⭐ PASSE AU NIVEAU SUPÉRIEUR
+              <div className="text-xs font-medium px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap bg-amber-500 text-slate-900">
+                ⭐ Passe au niveau supérieur
               </div>
             </div>
           )}
 
           <div className="pt-2">
-            <p className="font-black uppercase tracking-widest mb-2" style={{ color: '#F59E0B' }}>⭐ Premium</p>
+            <p className="font-semibold mb-2" style={{ color: '#F59E0B' }}>⭐ Premium</p>
 
             <div className="flex items-baseline gap-3 mb-1">
               {premiumPromoPrice && (
                 <p className="line-through text-lg font-bold" style={{ color: '#78716C' }}>{premiumPrice.toLocaleString('fr-FR')}</p>
               )}
-              <p className="text-5xl font-black text-white">
+              <p className="text-5xl font-semibold text-white">
                 {effectivePremiumPrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span>
               </p>
               {premiumPromoPrice && (
-                <span className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">PROMO</span>
+                <span className="bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">PROMO</span>
               )}
             </div>
-            <p className="text-[10px] mb-5" style={{ color: '#78716C' }}>L'élite du e-commerce local · /mois</p>
+            <p className="text-xs mb-5" style={{ color: '#78716C' }}>L'élite du e-commerce local · /mois</p>
 
             <div className="space-y-3">
               {FEATURES_PREMIUM.map((f, i) => (
@@ -260,32 +258,30 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
             <div className="mt-6 space-y-3">
               {tier === 'premium' ? (
-                <div className="rounded-2xl py-4 text-center"
+                <div className="rounded-lg py-4 text-center"
                   style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                  <p className="font-black text-[11px] uppercase tracking-widest" style={{ color: '#F59E0B' }}>⭐ Badge Premium actif</p>
+                  <p className="text-xs font-medium" style={{ color: '#F59E0B' }}>⭐ Badge Premium actif</p>
                 </div>
               ) : (
                 <>
                   {sentPremium ? (
                     <div className="space-y-3">
-                      <div className="rounded-2xl py-4 px-4 text-center bg-amber-900/30 border border-amber-600/40">
-                        <p className="font-black text-[12px] text-amber-400"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
-                        <p className="text-amber-300/70 text-[10px] mt-1 font-bold">Envoie ta preuve ci-dessous</p>
+                      <div className="rounded-lg py-4 px-4 text-center bg-amber-900/30 border border-amber-600/40">
+                        <p className="font-semibold text-xs text-amber-400"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
+                        <p className="text-amber-300/70 text-xs mt-1 font-medium">Envoie ta preuve ci-dessous</p>
                       </div>
                       <button onClick={handleSendProofPremium}
-                        className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] active:scale-[0.98] transition-all"
-                        style={{ background: 'linear-gradient(135deg,#25D366,#128C7E)', color: 'white' }}>
+                        className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all">
                         <BruIcons.Camera size={14}/> Envoyer ma preuve de paiement
                       </button>
                       <button onClick={() => setSentPremium(false)}
-                        className="w-full py-3 rounded-2xl font-bold text-[11px] bg-white/10 text-white/50">
+                        className="w-full py-3 rounded-lg font-bold text-[11px] bg-white/10 text-white/50">
                         ← Recommencer
                       </button>
                     </div>
                   ) : (
                     <button onClick={handleActivatePremium}
-                      className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] active:scale-[0.98] transition-all"
-                      style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', color: '#1a1a1a', boxShadow: '0 10px 30px rgba(245,158,11,0.4)' }}>
+                      className="w-full py-4 rounded-lg bg-amber-500 hover:bg-amber-600 font-medium text-xs text-slate-900 active:scale-[0.98] transition-all shadow-sm">
                       ⭐ PAYER {effectivePremiumPrice.toLocaleString('fr-FR')} FCFA
                     </button>
                   )}

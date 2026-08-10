@@ -8,19 +8,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#16A34A',      // vert Brumerie
-        secondary: '#22C55E',    // vert clair
-        accent: '#BBF7D0',       // vert très clair
-        dark: '#0F0F0F',
+        primary: '#059669',
+        secondary: '#10B981',
+        accent: '#D1FAE5',
+        dark: '#111827',
         surface: '#FFFFFF',
       },
       fontFamily: {
-        syne: ['Syne', 'sans-serif'],
-        dm: ['DM Sans', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
       },
       boxShadow: {
-        'card': '0 2px 20px rgba(0,0,0,0.06)',
-        'green': '0 4px 20px rgba(22, 163, 74, 0.30)',
+        'card': '0 1px 3px rgba(0,0,0,0.08)',
+        'card-hover': '0 4px 12px rgba(0,0,0,0.1)',
+        'green': '0 4px 14px rgba(5, 150, 105, 0.25)',
+      },
+      borderRadius: {
+        'card': '12px',
       },
     },
   },

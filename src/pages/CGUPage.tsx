@@ -1,6 +1,7 @@
 // src/pages/CGUPage.tsx — Conditions Générales d'Utilisation
 // Conformes au droit ivoirien · Marketplace C2C · Version Bêta MVP
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronDown } from 'lucide-react';
 
 interface CGUPageProps { onBack: () => void; }
 
@@ -9,20 +10,17 @@ const DATE_MAJ = '29 mars 2026';
 function Section({ num, title, children }: { num: string; title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-slate-100 rounded-2xl overflow-hidden mb-3">
+    <div className="border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden mb-3">
       <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white active:bg-slate-50 transition-colors">
+        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white dark:bg-slate-800 active:bg-slate-50 transition-colors">
         <div className="flex items-center gap-3 pr-4">
-          <span className="w-7 h-7 rounded-xl bg-green-100 text-green-700 text-[10px] font-black flex items-center justify-center flex-shrink-0">{num}</span>
-          <span className="font-black text-[12px] uppercase tracking-tight text-slate-800">{title}</span>
+          <span className="w-7 h-7 rounded-md bg-emerald-100 text-emerald-700 text-xs font-semibold flex items-center justify-center flex-shrink-0">{num}</span>
+          <span className="font-medium text-sm text-slate-800">{title}</span>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}>
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
+        <ChevronDown size={14} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }} />
       </button>
       {open && (
-        <div className="px-5 pb-5 bg-white border-t border-slate-50">
+        <div className="px-5 pb-5 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
           <div className="text-[12px] text-slate-600 leading-relaxed space-y-3 pt-3">{children}</div>
         </div>
       )}
@@ -33,30 +31,29 @@ function Section({ num, title, children }: { num: string; title: string; childre
 export function CGUPage({ onBack }: CGUPageProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="sticky top-0 bg-white border-b border-slate-100 z-50 px-4 py-4 flex items-center gap-3 shadow-sm">
-        <button onClick={onBack} className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-20">
+      <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 z-50 px-4 py-4 flex items-center gap-3 shadow-sm">
+        <button onClick={onBack} className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-all">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div>
-          <h1 className="font-black text-slate-900 text-[14px] uppercase tracking-tight">Conditions d'utilisation</h1>
-          <p className="text-[10px] text-slate-400">CGU · CGV · Marketplace C2C</p>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Conditions d'utilisation</h1>
+          <p className="text-xs text-gray-500">CGU · CGV · Marketplace C2C</p>
         </div>
       </div>
       <div className="px-4 py-5 max-w-2xl mx-auto">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 flex items-start gap-3">
-          <span className="text-xl">🧪</span>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5 flex items-start gap-3">
           <div>
-            <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest mb-1">Version Bêta — Plateforme en test</p>
+            <p className="text-xs font-semibold text-amber-800 mb-1">Version Bêta — Plateforme en test</p>
             <p className="text-[11px] text-amber-700 leading-snug">Brumerie est actuellement en phase de test technique (MVP). Les présentes conditions régissent l'utilisation de la plateforme durant cette période.</p>
           </div>
         </div>
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-5">
-          <p className="text-[11px] font-black text-green-700 uppercase tracking-widest mb-2">Brumerie · Abidjan, Côte d'Ivoire 🇨🇮</p>
+        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl p-5 mb-5">
+          <p className="text-xs font-semibold text-emerald-700 mb-2">Brumerie · Abidjan, Côte d'Ivoire 🇨🇮</p>
           <p className="text-[12px] text-slate-600 leading-relaxed mb-3">
             Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Brumerie accessible sur <span className="font-bold text-slate-800">brumerie.com</span>. En utilisant Brumerie, vous acceptez sans réserve les présentes conditions.
           </p>
-          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
             <p className="text-[10px] text-slate-400">Mise à jour : {DATE_MAJ}</p>
             <p className="text-[10px] text-slate-400">Droit applicable : Loi ivoirienne</p>
           </div>
@@ -127,7 +124,7 @@ export function CGUPage({ onBack }: CGUPageProps) {
           </div>
         </Section>
 
-        <div className="bg-slate-900 rounded-2xl p-5 text-center mt-6">
+        <div className="bg-slate-900 rounded-xl p-5 text-center mt-6">
           <p className="text-white font-black text-[13px] uppercase tracking-wide mb-1">Brumerie · Abidjan 🇨🇮</p>
           <p className="text-slate-400 text-[11px] mb-1">Marketplace C2C · Commerce local</p>
           <p className="text-slate-500 text-[10px]">© {new Date().getFullYear()} Brumerie. Tous droits réservés.</p>

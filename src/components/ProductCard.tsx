@@ -1,9 +1,8 @@
-// src/components/ProductCard.tsx
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
 import React, { useState } from 'react';
 import { Product } from '@/types';
-import { formatPrice } from '@/utils/helpers';
+import { Bookmark, ShoppingBag, MapPin, Home, Truck, Check } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -43,33 +42,33 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-[2rem] overflow-hidden cursor-pointer active:scale-[0.97] transition-all duration-200 border border-gray-100 shadow-sm hover:shadow-md"
+      className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform duration-150 border border-gray-100 dark:border-slate-700"
     >
-      {/* Image Container */}
-      <div className="relative aspect-[4/5] bg-gray-50 overflow-hidden">
+      {/* Image */}
+      <div className="relative aspect-[4/5] bg-gray-100 dark:bg-slate-700 overflow-hidden">
         {!imgLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse" />}
         <img
           src={imgSrc || 'https://via.placeholder.com/400x500?text=Brumerie'}
           alt={product.title}
-          className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-cover ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setImgLoaded(true)}
           onError={() => setImgLoaded(true)}
         />
 
-        {/* Status badges top left */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+        {/* Status badges */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
           {isBoosted && (
-            <span className="bg-amber-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg uppercase tracking-tighter flex items-center gap-1">
-              ⚡ Sponsorisé
+            <span className="bg-amber-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
+              Sponsorise
             </span>
           )}
           {isNew && !isBoosted && (
-            <span className="bg-green-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg uppercase tracking-tighter">
+            <span className="bg-emerald-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
               Nouveau
             </span>
           )}
           {product.status === 'sold' && (
-            <span className="bg-gray-900/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter">
+            <span className="bg-gray-900/80 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
               Vendu
             </span>
           )}
@@ -86,53 +85,44 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
               && (!promoStart || promoStart <= nowMs)
               && (!promoEnd || promoEnd >= nowMs);
             if (!isActive || product.status === 'sold') return null;
-            return <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">PROMO</span>;
+            return <span className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">Promo</span>;
           })()}
           {(product as any).hasAcceptedOffer && product.status !== 'sold' && (
-            <span className="bg-amber-500 text-white text-[8px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
-              🤝 Offre
+            <span className="bg-amber-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
+              Offre
             </span>
           )}
         </div>
 
-        {/* Business badges top right */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-          {product.sellerHasPhysicalShop && (
-            <div className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center shadow-sm border border-gray-100" title="Boutique physique">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                <polyline points="9,22 9,12 15,12 15,22"/>
-              </svg>
+        {/* Business icons top right */}
+        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
+          {(product as any).sellerHasPhysicalShop && (
+            <div className="w-7 h-7 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center" title="Boutique physique">
+              <Home size={14} className="text-emerald-600" />
             </div>
           )}
-          {product.sellerManagesDelivery && (
-            <div className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center shadow-sm border border-gray-100" title="Livraison disponible">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="5.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
-                <path d="M8 17.5h7M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-              </svg>
+          {(product as any).sellerManagesDelivery && (
+            <div className="w-7 h-7 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center" title="Livraison disponible">
+              <Truck size={14} className="text-emerald-600" />
             </div>
           )}
         </div>
 
-        {/* Bookmark button */}
-        <div className="absolute bottom-3 left-3">
+        {/* Bookmark */}
+        <div className="absolute bottom-2.5 left-2.5">
           <button
             onClick={handleBookmark}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${
-              saved ? 'bg-green-500' : 'bg-white/90 backdrop-blur-md border border-gray-100'
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+              saved ? 'bg-emerald-600' : 'bg-white/90 backdrop-blur-sm'
             }`}
-            title={saved ? "Retirer des favoris" : "Ajouter aux favoris"}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={saved ? 'white' : 'none'} stroke={saved ? 'white' : '#334155'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
+            <Bookmark size={14} className={saved ? 'text-white fill-white' : 'text-gray-700'} />
           </button>
         </div>
 
-        {/* Bouton Panier — bottom right */}
+        {/* Cart */}
         {product.status !== 'sold' && onAddToCart && (
-          <div className="absolute bottom-3 right-3">
+          <div className="absolute bottom-2.5 right-2.5">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -142,27 +132,22 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
                 onAddToCart(product);
                 setTimeout(() => setAddedCart(false), 1500);
               }}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-all active:scale-90 ${
-                addedCart ? 'bg-green-500' : 'bg-white/90 backdrop-blur-md border border-gray-100'
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90 ${
+                addedCart ? 'bg-emerald-600' : 'bg-white/90 backdrop-blur-sm'
               }`}
-              title="Ajouter au panier"
             >
               {addedCart ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <Check size={14} className="text-white" />
               ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-                </svg>
+                <ShoppingBag size={14} className="text-gray-700" />
               )}
             </button>
           </div>
         )}
-
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-3">
         {/* Prix */}
         {(() => {
           const p = product as any;
@@ -187,23 +172,20 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
 
           return (
             <>
-              <div className="flex items-baseline gap-1.5 flex-wrap">
-                <p className={`price-brumerie text-[18px] ${isFlash ? 'text-red-600' : 'text-gray-900'}`}>
-                  {displayedPrice.toLocaleString('fr-FR')}
+              <div className="flex items-baseline gap-1.5">
+                <p className={`price-brumerie text-base ${isFlash ? 'text-red-600' : 'text-gray-900 dark:text-white'}`}>
+                  {displayedPrice.toLocaleString('fr-FR')} F
                 </p>
-                <span className="text-[10px] font-bold text-slate-400 ml-0.5">F</span>
                 {pct > 0 && (
-                  <span className="text-[9px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-md shadow-sm">-{pct}%</span>
+                  <span className="text-[10px] font-semibold bg-red-50 text-red-600 px-1.5 py-0.5 rounded">-{pct}%</span>
                 )}
               </div>
               {crossed && crossed > displayedPrice && (
-                <div className="flex items-center gap-2">
-                  <p className="text-[10px] text-slate-400 line-through font-bold">{crossed.toLocaleString('fr-FR')} F</p>
-                </div>
+                <p className="text-xs text-gray-400 line-through mt-0.5">{crossed.toLocaleString('fr-FR')} F</p>
               )}
               {isFlash && (
-                <div className="mt-1 inline-flex items-center gap-1 bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1 rounded-lg shadow-md">
-                  <span className="text-[9px] font-black text-white uppercase tracking-wide">{p.flashSaleLabel || 'VENTE FLASH'}</span>
+                <div className="mt-1.5 inline-flex items-center gap-1 bg-red-500 px-2 py-0.5 rounded-md">
+                  <span className="text-[10px] font-semibold text-white">{p.flashSaleLabel || 'Vente flash'}</span>
                 </div>
               )}
             </>
@@ -211,24 +193,24 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
         })()}
 
         {/* Titre */}
-        <h3 className="text-[11px] font-bold text-gray-500 mt-1 line-clamp-1 uppercase tracking-tight">
+        <h3 className="text-[13px] font-medium text-gray-700 dark:text-gray-300 mt-1.5 line-clamp-1">
           {product.title}
         </h3>
 
         {/* Vendeur & Quartier */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-          <div className="flex items-center gap-2 max-w-[65%]">
-            <div className="w-6 h-6 rounded-lg overflow-hidden bg-green-50 flex-shrink-0 border border-gray-100">
+        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 max-w-[60%]">
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
               {product.sellerPhoto ? (
                 <img src={product.sellerPhoto} alt={product.sellerName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-green-600 text-[10px] font-black uppercase">
+                <div className="w-full h-full flex items-center justify-center text-emerald-600 text-[9px] font-semibold">
                   {product.sellerName?.charAt(0)}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-1 min-w-0 flex-1">
-              <span className="text-[10px] font-black text-gray-800 truncate flex-shrink min-w-0">{product.sellerName}</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{product.sellerName}</span>
               {(product.sellerVerified || product.sellerPremium) && (
                 <VerifiedTag
                   tier={product.sellerPremium ? 'premium' : 'verified'}
@@ -238,20 +220,18 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
             </div>
           </div>
 
-          <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg">
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{product.neighborhood}</span>
+          <div className="flex items-center gap-1 text-gray-400">
+            <MapPin size={10} />
+            <span className="text-[11px] font-medium">{product.neighborhood}</span>
           </div>
         </div>
 
-        {/* ── Livraison ── */}
-        {product.sellerManagesDelivery && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-[8px] font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg">
-              📦 Livraison dispo
+        {/* Livraison */}
+        {(product as any).sellerManagesDelivery && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <Truck size={11} className="text-emerald-600" />
+            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+              Livraison disponible
             </span>
           </div>
         )}

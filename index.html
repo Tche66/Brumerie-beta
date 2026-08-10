@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" media="print" onload="this.media='all'">
     <link rel="icon" type="image/png" href="/assets/Logos/logo-app-icon.png" />
     <link rel="apple-touch-icon" href="/assets/Logos/logo-app-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -143,20 +143,11 @@
         overflow: hidden;
       }
 
-      /* Fond animé — particules vertes */
       #splash::before {
         content: '';
         position: absolute;
         inset: 0;
-        background:
-          radial-gradient(circle at 20% 80%, rgba(22,163,74,0.06) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(5,95,70,0.05) 0%, transparent 50%);
-        animation: bg-shift 4s ease-in-out infinite alternate;
-      }
-
-      @keyframes bg-shift {
-        from { opacity: 0.6; transform: scale(1); }
-        to { opacity: 1; transform: scale(1.1); }
+        background: #FFFFFF;
       }
 
       .splash-content {
@@ -167,44 +158,27 @@
         align-items: center;
       }
 
-      /* Logo avec ring animé */
       .logo-wrap {
         position: relative;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
       }
       .logo-ring {
-        position: absolute;
-        inset: -12px;
-        border-radius: 50%;
-        border: 2px solid transparent;
-        border-top-color: #16A34A;
-        border-right-color: #16A34A;
-        animation: spin-ring 1.5s linear infinite;
+        display: none;
       }
       .logo-ring-outer {
-        position: absolute;
-        inset: -20px;
-        border-radius: 50%;
-        border: 1px solid transparent;
-        border-bottom-color: rgba(22,163,74,0.3);
-        border-left-color: rgba(22,163,74,0.3);
-        animation: spin-ring 2.5s linear infinite reverse;
+        display: none;
       }
       .logo-glow {
-        position: absolute;
-        inset: -30px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(22,163,74,0.15) 0%, transparent 70%);
-        animation: pulse-glow 2s ease-in-out infinite;
+        display: none;
       }
       #splash img {
-        width: 80px;
-        height: 80px;
+        width: 64px;
+        height: 64px;
         object-fit: contain;
         position: relative;
         z-index: 2;
-        border-radius: 20px;
-        animation: logo-enter 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border-radius: 16px;
+        animation: logo-enter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
       }
 
       @keyframes spin-ring {
@@ -229,23 +203,20 @@
         to { transform: translateY(0); opacity: 1; }
       }
       .brand-name h1 {
-        font-family: system-ui, -apple-system, sans-serif;
-        font-weight: 900;
-        font-size: 36px;
-        letter-spacing: -1.5px;
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 28px;
+        letter-spacing: -0.5px;
         margin: 0;
         line-height: 1;
-        background: linear-gradient(135deg, #0F172A 0%, #065F46 50%, #16A34A 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: #064E3B;
       }
       .brand-name .tagline {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        color: #475569;
-        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0;
+        color: #6B7280;
+        margin-top: 8px;
       }
 
       /* Barre de chargement */
@@ -480,12 +451,11 @@
       setTimeout(function () {
         splashMinTime = true;
         if (splashReady) window.__hideSplash();
-      }, 5000);
-      // Fallback : si React ne se monte jamais (crash), cacher après 8s
+      }, 2000);
       setTimeout(function () {
         var splash = document.getElementById('splash');
         if (splash) splash.classList.add('fade-out');
-      }, 8000);
+      }, 5000);
     </script>
   </body>
 </html>

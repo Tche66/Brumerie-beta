@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
 
@@ -99,22 +100,20 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
       <div className="sticky top-0 z-40 bg-white border-b border-slate-100">
         <div className="flex items-center gap-3 px-4 py-3 pt-14">
           <button onClick={onBack}
-            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
+            className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-[0.98] transition-all">
+            <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
-          <h1 className="text-[16px] font-black text-slate-900">Programme Affiliation</h1>
+          <h1 className="text-lg font-semibold text-slate-900">Programme Affiliation</h1>
         </div>
 
         {hasCode && (
           <div className="flex px-4 pb-2 gap-2">
             <button onClick={() => setTab('programme')}
-              className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'programme' ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500'}`}>
+              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all ${tab === 'programme' ? 'bg-emerald-600 text-white' : 'bg-gray-50 dark:bg-slate-900 text-slate-500'}`}>
               Programme
             </button>
             <button onClick={() => setTab('filleuls')}
-              className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'filleuls' ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500'}`}>
+              className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all ${tab === 'filleuls' ? 'bg-emerald-600 text-white' : 'bg-gray-50 dark:bg-slate-900 text-slate-500'}`}>
               Mes Filleuls
             </button>
           </div>
@@ -125,16 +124,15 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
       {tab === 'programme' && (
         <div className="px-4 py-6 space-y-5">
           {/* Hero */}
-          <div className="rounded-3xl p-6 text-center relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #065F46, #16A34A)' }}>
+          <div className="rounded-xl p-6 text-center relative overflow-hidden bg-emerald-700">
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }}/>
             <div className="relative">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
                   <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
                 </svg>
               </div>
-              <h2 className="text-white font-black text-[18px] mb-2">Gagne de l'argent en recrutant des vendeurs</h2>
+              <h2 className="text-white font-semibold text-lg mb-2">Gagne de l'argent en recrutant des vendeurs</h2>
               <p className="text-white/80 text-[12px] font-medium">
                 Invite des vendeurs sur Brumerie et gagne 20% de la commission sur chacune de leurs ventes pendant 12 mois.
               </p>
@@ -143,18 +141,18 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
 
           {/* Avantages */}
           <div className="space-y-3">
-            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Comment ca marche</h3>
+            <h3 className="text-xs font-medium text-slate-400">Comment ca marche</h3>
             {[
               { icon: '1', title: 'Partage ton code', desc: 'Envoie ton code unique a des vendeurs potentiels' },
               { icon: '2', title: 'Ils s\'inscrivent', desc: 'Le vendeur entre ton code lors de son inscription' },
               { icon: '3', title: 'Tu gagnes', desc: '20% de la commission Brumerie sur chaque vente de ton filleul' },
             ].map((step, i) => (
-              <div key={i} className="flex items-start gap-4 bg-slate-50 rounded-2xl p-4">
-                <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-[12px] flex-shrink-0">
+              <div key={i} className="flex items-start gap-4 bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+                <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-semibold text-[12px] flex-shrink-0">
                   {step.icon}
                 </div>
                 <div>
-                  <p className="text-[12px] font-black text-slate-800">{step.title}</p>
+                  <p className="text-[12px] font-semibold text-slate-800">{step.title}</p>
                   <p className="text-[10px] text-slate-500 font-medium">{step.desc}</p>
                 </div>
               </div>
@@ -162,8 +160,8 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
           </div>
 
           {/* Conditions */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <h3 className="text-[11px] font-black text-amber-800 uppercase tracking-widest mb-2">Conditions</h3>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="text-xs font-medium text-amber-800 mb-2">Conditions</h3>
             <ul className="space-y-1.5">
               {[
                 'Commission : 20% de la commission Brumerie (8%) sur les ventes du filleul',
@@ -182,7 +180,7 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
           {/* Activation / Code */}
           {!hasCode ? (
             <div className="space-y-3">
-              <label className="flex items-start gap-3 bg-slate-50 rounded-2xl p-4 cursor-pointer active:bg-slate-100 transition-all">
+              <label className="flex items-start gap-3 bg-gray-50 dark:bg-slate-900 rounded-lg p-4 cursor-pointer active:bg-slate-100 transition-all">
                 <input type="checkbox" checked={acceptedConditions} onChange={e => setAcceptedConditions(e.target.checked)}
                   className="mt-0.5 w-5 h-5 rounded-lg accent-emerald-600"/>
                 <span className="text-[11px] font-bold text-slate-700">
@@ -191,26 +189,25 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
               </label>
               <button onClick={activateAffiliate}
                 disabled={!acceptedConditions || activating}
-                className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white active:scale-95 transition-all disabled:opacity-40 shadow-xl shadow-emerald-200"
-                style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
+                className="w-full py-5 rounded-lg bg-emerald-600 font-medium text-sm text-white active:scale-[0.98] transition-all disabled:opacity-40 shadow-sm shadow-emerald-200">
                 {activating ? 'Activation...' : 'Activer mon programme d\'affiliation'}
               </button>
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5">
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-2">Ton code affiliation</p>
+              <div className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-5">
+                <p className="text-xs font-medium text-emerald-600 mb-2">Ton code affiliation</p>
                 <div className="flex items-center gap-2 mb-3">
-                  <code className="flex-1 bg-white text-emerald-800 px-4 py-3 rounded-xl text-[18px] font-black tracking-widest text-center border border-emerald-200">
+                  <code className="flex-1 bg-white text-emerald-800 px-4 py-3 rounded-xl text-[18px] font-semibold tracking-widest text-center border border-emerald-200">
                     {code}
                   </code>
                   <button onClick={copyCode}
-                    className={`px-4 py-3 rounded-xl font-black text-[10px] uppercase transition-all active:scale-95 ${copied ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    className={`px-4 py-3 rounded-xl font-medium text-sm transition-all active:scale-[0.98] ${copied ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                     {copied ? 'Copie !' : 'Copier'}
                   </button>
                 </div>
                 <button onClick={shareAffiliate}
-                  className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-200">
+                  className="w-full py-4 rounded-lg bg-emerald-600 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-sm shadow-emerald-200">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
                     <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                     <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
@@ -222,13 +219,13 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
               {/* Stats rapides */}
               {dashboard && (
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white rounded-2xl p-4 border border-slate-100 text-center">
-                    <p className="text-[20px] font-black text-emerald-600">{dashboard.totalThisMonth.toLocaleString()}</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">FCFA ce mois</p>
+                  <div className="bg-white rounded-lg p-4 border border-slate-100 text-center">
+                    <p className="text-[20px] font-semibold text-emerald-600">{dashboard.totalThisMonth.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-slate-400">FCFA ce mois</p>
                   </div>
-                  <div className="bg-white rounded-2xl p-4 border border-slate-100 text-center">
-                    <p className="text-[20px] font-black text-slate-800">{dashboard.filleuls.length}</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase">Filleuls actifs</p>
+                  <div className="bg-white rounded-lg p-4 border border-slate-100 text-center">
+                    <p className="text-[20px] font-semibold text-slate-800">{dashboard.filleuls.length}</p>
+                    <p className="text-xs font-medium text-slate-400">Filleuls actifs</p>
                   </div>
                 </div>
               )}
@@ -246,59 +243,59 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
             </div>
           ) : !dashboard || dashboard.filleuls.length === 0 ? (
             <div className="text-center py-16">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round">
                   <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/>
                 </svg>
               </div>
-              <p className="text-[13px] font-black text-slate-700">Aucun filleul pour l'instant</p>
+              <p className="text-[13px] font-semibold text-slate-700">Aucun filleul pour l'instant</p>
               <p className="text-[11px] text-slate-400 mt-1">Partage ton code pour recruter tes premiers vendeurs</p>
               <button onClick={() => setTab('programme')}
-                className="mt-4 px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest active:scale-95 transition-all">
+                className="mt-4 px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium text-sm active:scale-[0.98] transition-all">
                 Voir mon code
               </button>
             </div>
           ) : (
             <>
               {/* Recap gains */}
-              <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+              <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <p className="text-[16px] font-black text-emerald-700">{dashboard.totalThisMonth.toLocaleString()}</p>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase">Ce mois</p>
+                    <p className="text-[16px] font-semibold text-emerald-700">{dashboard.totalThisMonth.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-slate-500">Ce mois</p>
                   </div>
                   <div>
-                    <p className="text-[16px] font-black text-slate-800">{dashboard.totalEarnedAllTime.toLocaleString()}</p>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase">Total gagne</p>
+                    <p className="text-[16px] font-semibold text-slate-800">{dashboard.totalEarnedAllTime.toLocaleString()}</p>
+                    <p className="text-xs font-medium text-slate-500">Total gagne</p>
                   </div>
                   <div>
-                    <p className="text-[16px] font-black text-violet-700">{dashboard.filleuls.filter(f => f.actif).length}</p>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase">Actifs</p>
+                    <p className="text-[16px] font-semibold text-violet-700">{dashboard.filleuls.filter(f => f.actif).length}</p>
+                    <p className="text-xs font-medium text-slate-500">Actifs</p>
                   </div>
                 </div>
               </div>
 
               {/* Liste filleuls */}
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tes filleuls ({dashboard.filleuls.length})</h3>
+              <h3 className="text-xs font-medium text-slate-400">Tes filleuls ({dashboard.filleuls.length})</h3>
               <div className="space-y-2">
                 {dashboard.filleuls.map((filleul) => (
-                  <div key={filleul.id} className="bg-white rounded-2xl border border-slate-100 p-4 flex items-center gap-3">
+                  <div key={filleul.id} className="bg-white rounded-lg border border-slate-100 p-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-slate-200 overflow-hidden flex-shrink-0">
                       {filleul.photo ? (
                         <img src={filleul.photo} alt="" className="w-full h-full object-cover"/>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[12px]">
+                        <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-[12px]">
                           {filleul.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-[12px] font-black text-slate-800 truncate">{filleul.name}</p>
+                        <p className="text-[12px] font-semibold text-slate-800 truncate">{filleul.name}</p>
                         {filleul.actif ? (
-                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[7px] font-black rounded-md">ACTIF</span>
+                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[7px] font-semibold rounded-md">ACTIF</span>
                         ) : (
-                          <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[7px] font-black rounded-md">EXPIRE</span>
+                          <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[7px] font-semibold rounded-md">EXPIRE</span>
                         )}
                       </div>
                       <p className="text-[9px] text-slate-400 font-medium">
@@ -306,7 +303,7 @@ export function AffiliatePage({ onBack }: AffiliatePageProps) {
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-[13px] font-black text-emerald-600">{filleul.gainMoisCourant.toLocaleString()}</p>
+                      <p className="text-[13px] font-semibold text-emerald-600">{filleul.gainMoisCourant.toLocaleString()}</p>
                       <p className="text-[7px] text-slate-400 font-bold">FCFA/mois</p>
                     </div>
                   </div>

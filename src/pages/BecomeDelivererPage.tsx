@@ -1,6 +1,7 @@
 // src/pages/BecomeDelivererPage.tsx
 // Inscription livreur partenaire — 5 étapes + CGU + auto-redirect si déjà inscrit
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { NEIGHBORHOODS, getNeighborhoodsForCity } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppConfig } from '@/hooks/useAppConfig';
@@ -121,22 +122,22 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
     (!needsLicense || hasLicense === true);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col font-sans">
       <div className="flex items-center gap-4 px-5 pt-14 pb-4">
         <button
           onClick={() => stepIdx <= 1 ? onBack() : setStep(STEPS[stepIdx - 1])}
-          className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-95 transition-all">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div className="flex-1">
-          <h1 className="font-black text-slate-900 text-lg uppercase tracking-tight">Devenir Livreur</h1>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Etape {stepIdx}/{STEPS.length - 1}</p>
+          <h1 className="font-semibold text-slate-900 dark:text-slate-100 text-lg">Devenir Livreur</h1>
+          <p className="text-xs text-slate-400 font-medium">Etape {stepIdx}/{STEPS.length - 1}</p>
         </div>
       </div>
 
-      <div className="mx-5 mb-6 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500"
-          style={{ width: progress + '%', background: 'linear-gradient(90deg,#115E2E,#16A34A)' }}/>
+      <div className="mx-5 mb-6 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+          style={{ width: progress + '%' }}/>
       </div>
 
       <div className="flex-1 px-5 pb-36 overflow-y-auto">
@@ -145,74 +146,74 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
           <div className="flex flex-col gap-5">
             <div className="text-center mb-2">
               <div className="text-4xl mb-2">👤</div>
-              <h2 className="font-black text-slate-900 text-lg">Ton profil livreur</h2>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-lg">Ton profil livreur</h2>
             </div>
 
             <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nom de ton service *</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-2">Nom de ton service *</label>
               <input value={name} onChange={e => setName(e.target.value)}
                 placeholder="Ex: Kouassi Express..."
-                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold focus:border-green-600 outline-none"/>
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none"/>
             </div>
 
             <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ton age *</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-2">Ton age *</label>
               <input type="number" value={age} onChange={e => setAge(e.target.value)}
                 min={18} max={70} placeholder="Ex: 25"
-                className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-bold focus:border-green-600 outline-none"/>
+                className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none"/>
               {age !== '' && Number(age) < 18 && (
-                <p className="text-red-500 text-[10px] font-bold mt-1">Minimum 18 ans requis</p>
+                <p className="text-red-500 text-xs font-medium mt-1">Minimum 18 ans requis</p>
               )}
             </div>
 
             <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tu es *</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-2">Tu es *</label>
               <div className="flex flex-col gap-2">
                 {STATUSES.map(s => (
                   <button key={s.id} onClick={() => setStatus(s.id)}
-                    className={'w-full text-left px-4 py-3 rounded-2xl border-2 transition-all active:scale-[0.98] ' +
-                      (status === s.id ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50')}>
-                    <p className={'font-black text-[12px] ' + (status === s.id ? 'text-green-800' : 'text-slate-800')}>{s.label}</p>
-                    <p className="text-[10px] text-slate-400">{s.sub}</p>
+                    className={'w-full text-left px-4 py-3 rounded-lg border transition-all active:scale-[0.98] ' +
+                      (status === s.id ? 'border-green-600 bg-green-50 dark:bg-green-900/20' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800')}>
+                    <p className={'font-medium text-sm ' + (status === s.id ? 'text-green-800 dark:text-green-400' : 'text-slate-800 dark:text-slate-200')}>{s.label}</p>
+                    <p className="text-xs text-slate-400">{s.sub}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Moyen de transport *</label>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-2">Moyen de transport *</label>
               <div className="grid grid-cols-2 gap-2">
                 {VEHICLES.map(v => (
                   <button key={v.id} onClick={() => toggleVehicle(v.id as VehicleType)}
-                    className={'py-4 px-3 rounded-2xl border-2 text-center transition-all active:scale-95 ' +
-                      (vehicles.includes(v.id as VehicleType) ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50')}>
+                    className={'py-4 px-3 rounded-lg border text-center transition-all active:scale-95 ' +
+                      (vehicles.includes(v.id as VehicleType) ? 'border-green-600 bg-green-50 dark:bg-green-900/20' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800')}>
                     <div className="text-2xl mb-1">{v.icon}</div>
-                    <p className={'text-[11px] font-black ' + (vehicles.includes(v.id as VehicleType) ? 'text-green-800' : 'text-slate-700')}>{v.label}</p>
-                    {v.needsLicense && <p className="text-[9px] text-slate-400 mt-0.5">Permis requis</p>}
+                    <p className={'font-medium text-sm ' + (vehicles.includes(v.id as VehicleType) ? 'text-green-800 dark:text-green-400' : 'text-slate-700 dark:text-slate-200')}>{v.label}</p>
+                    {v.needsLicense && <p className="text-xs text-slate-400 mt-0.5">Permis requis</p>}
                   </button>
                 ))}
               </div>
             </div>
 
             {needsLicense && (
-              <div className="bg-amber-50 rounded-2xl p-4">
-                <label className="text-[9px] font-black text-amber-700 uppercase tracking-widest block mb-3">
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
+                <label className="text-xs font-medium text-amber-700 dark:text-amber-400 block mb-3">
                   As-tu un permis de conduire valide ? *
                 </label>
                 <div className="flex gap-3">
                   <button onClick={() => setHasLicense(true)}
-                    className={'flex-1 py-3 rounded-xl border-2 font-black text-[12px] transition-all ' +
-                      (hasLicense === true ? 'border-green-600 bg-green-600 text-white' : 'border-slate-200 bg-white text-slate-700')}>
+                    className={'flex-1 py-3 rounded-lg border font-medium text-sm transition-all ' +
+                      (hasLicense === true ? 'border-green-600 bg-green-600 text-white' : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200')}>
                     Oui
                   </button>
                   <button onClick={() => setHasLicense(false)}
-                    className={'flex-1 py-3 rounded-xl border-2 font-black text-[12px] transition-all ' +
-                      (hasLicense === false ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-200 bg-white text-slate-700')}>
+                    className={'flex-1 py-3 rounded-lg border font-medium text-sm transition-all ' +
+                      (hasLicense === false ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-600' : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200')}>
                     Non
                   </button>
                 </div>
                 {hasLicense === false && (
-                  <p className="text-red-600 text-[10px] font-bold mt-2">
+                  <p className="text-red-600 text-xs font-medium mt-2">
                     Un permis valide est obligatoire pour ce vehicule.
                   </p>
                 )}
@@ -225,11 +226,11 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
           <div className="flex flex-col gap-4">
             <div className="text-center mb-2">
               <div className="text-4xl mb-2">📍</div>
-              <h2 className="font-black text-slate-900 text-lg mb-1">Zones couvertes</h2>
-              <p className="text-slate-500 text-[11px]">
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-1">Zones couvertes</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">
                 {isDeliveryCompany ? 'Toutes les villes que ton service couvre (illimité)' : 'Maximum 2 quartiers'}
               </p>
-              <p className="text-green-600 font-black text-[12px] mt-1">
+              <p className="text-green-600 font-semibold text-sm mt-1">
                 {zones.length}{!isDeliveryCompany && '/2'} zone{zones.length > 1 ? 's' : ''} sélectionnée{zones.length > 1 ? 's' : ''}
               </p>
             </div>
@@ -240,7 +241,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                 placeholder="🔍 Rechercher une ville..."
                 value={zoneSearch}
                 onChange={e => setZoneSearch(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 rounded-2xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm border border-transparent focus:border-green-500 outline-none"
               />
             )}
             {/* Zones sélectionnées en haut */}
@@ -248,7 +249,7 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
               <div className="flex flex-wrap gap-2">
                 {zones.map(z => (
                   <button key={z} onClick={() => toggleZone(z)}
-                    className="flex items-center gap-1.5 bg-green-600 text-white rounded-xl px-3 py-1.5 text-[10px] font-black active:scale-95 transition-all">
+                    className="flex items-center gap-1.5 bg-green-600 text-white rounded-lg px-3 py-1.5 text-xs font-medium active:scale-95 transition-all">
                     {z} <span className="opacity-70">✕</span>
                   </button>
                 ))}
@@ -262,10 +263,10 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                   const disabled = !sel && !isDeliveryCompany && zones.length >= 2;
                   return (
                     <button key={n} onClick={() => !disabled && toggleZone(n)}
-                      className={'py-4 px-3 rounded-2xl border-2 text-[11px] font-bold transition-all ' +
-                        (sel ? 'bg-green-600 border-green-600 text-white shadow-lg'
-                          : disabled ? 'bg-slate-50 border-slate-100 text-slate-300'
-                          : 'bg-white border-slate-200 text-slate-700 active:scale-95')}>
+                      className={'py-4 px-3 rounded-lg border text-sm font-medium transition-all ' +
+                        (sel ? 'bg-green-600 border-green-600 text-white'
+                          : disabled ? 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-300 dark:text-slate-600'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 active:scale-95')}>
                       {n}
                     </button>
                   );
@@ -278,25 +279,25 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
           <div className="flex flex-col gap-4">
             <div className="text-center mb-2">
               <div className="text-4xl mb-2">💰</div>
-              <h2 className="font-black text-slate-900 text-lg mb-1">Tes tarifs</h2>
-              <p className="text-slate-500 text-[11px]">Prix par trajet en FCFA</p>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-1">Tes tarifs</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Prix par trajet en FCFA</p>
             </div>
             {rates.map((rate, i) => (
-              <div key={i} className="bg-slate-50 rounded-2xl p-4 flex flex-col gap-3">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tarif {i + 1}</p>
+              <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 flex flex-col gap-3">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Tarif {i + 1}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 block mb-1">De</label>
+                    <label className="text-xs font-medium text-slate-400 block mb-1">De</label>
                     <select value={rate.fromZone} onChange={e => updateRate(i, 'fromZone', e.target.value)}
-                      className="w-full px-3 py-3 bg-white border-2 border-slate-200 rounded-xl text-[11px] font-bold focus:border-green-600 outline-none">
+                      className="w-full px-3 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none">
                       <option value="">Choisir</option>
                       {allNeighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] font-bold text-slate-400 block mb-1">Vers</label>
+                    <label className="text-xs font-medium text-slate-400 block mb-1">Vers</label>
                     <select value={rate.toZone} onChange={e => updateRate(i, 'toZone', e.target.value)}
-                      className="w-full px-3 py-3 bg-white border-2 border-slate-200 rounded-xl text-[11px] font-bold focus:border-green-600 outline-none">
+                      className="w-full px-3 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none">
                       <option value="">Choisir</option>
                       <option value="same">Meme quartier</option>
                       {allNeighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
@@ -304,20 +305,20 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[9px] font-bold text-slate-400 block mb-1">Prix (FCFA)</label>
+                  <label className="text-xs font-medium text-slate-400 block mb-1">Prix (FCFA)</label>
                   <input type="number" value={rate.price} min={200} step={100}
                     onChange={e => updateRate(i, 'price', Number(e.target.value))}
-                    className="w-full px-4 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-black focus:border-green-600 outline-none"/>
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none"/>
                 </div>
                 {rates.length > 1 && (
                   <button onClick={() => setRates(rates.filter((_, j) => j !== i))}
-                    className="text-[10px] font-bold text-red-400 self-end">Supprimer</button>
+                    className="text-xs font-medium text-red-400 self-end">Supprimer</button>
                 )}
               </div>
             ))}
             {rates.length < 6 && (
               <button onClick={() => setRates([...rates, { fromZone: zones[0] || '', toZone: '', price: 500 }])}
-                className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-[11px] font-bold text-slate-400">
+                className="w-full py-4 border border-dashed border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-400">
                 + Ajouter un tarif
               </button>
             )}
@@ -328,26 +329,26 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
           <div className="flex flex-col gap-4">
             <div className="text-center mb-2">
               <div className="text-4xl mb-2">✍️</div>
-              <h2 className="font-black text-slate-900 text-lg mb-1">Presente ton service</h2>
-              <p className="text-slate-500 text-[11px]">Les clients verront ce texte</p>
+              <h2 className="font-semibold text-slate-900 dark:text-slate-100 text-lg mb-1">Presente ton service</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Les clients verront ce texte</p>
             </div>
             <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3}
               placeholder="Ex: Livraison rapide en moto. Disponible 7j/7 de 7h a 21h. Serieux et ponctuel"
-              className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-sm font-medium focus:border-green-600 outline-none resize-none leading-relaxed"/>
+              className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium focus:border-green-600 outline-none resize-none leading-relaxed"/>
 
-            <div className="bg-green-50 rounded-2xl p-4 space-y-2">
-              <p className="text-[9px] font-black text-green-700 uppercase tracking-widest">Resume</p>
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 space-y-2">
+              <p className="text-xs font-medium text-green-700 dark:text-green-400">Resume</p>
               <div className="flex items-center gap-2">
                 <span className="text-xl">{vehicles.map(v => VEHICLES.find(x => x.id === v)?.icon).join(' ')}</span>
-                <p className="font-black text-slate-900 text-[13px]">{name}</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{name}</p>
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {STATUSES.find(s => s.id === status)?.label} · {age} ans
                 {needsLicense ? (hasLicense ? ' · Permis OK' : ' · Sans permis') : ''}
               </p>
-              <p className="text-[11px] text-green-700 font-bold">📍 {zones.join(' · ')}</p>
+              <p className="text-sm text-green-700 dark:text-green-400 font-medium">📍 {zones.join(' · ')}</p>
               {rates.filter(r => r.fromZone && r.toZone).map((r, i) => (
-                <p key={i} className="text-[11px] text-slate-600">
+                <p key={i} className="text-sm text-slate-600 dark:text-slate-300">
                   {r.fromZone} → {r.toZone === 'same' ? 'meme quartier' : r.toZone} : {r.price.toLocaleString('fr-FR')} FCFA
                 </p>
               ))}
@@ -356,34 +357,30 @@ export function BecomeDelivererPage({ onBack, onDone }: Props) {
         )}
       </div>
 
-      <div className="fixed bottom-0 bg-white border-t border-slate-100 px-5 py-4"
+      <div className="fixed bottom-0 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 px-5 py-4"
         style={{ maxWidth: 480, width: '100%', left: '50%', transform: 'translateX(-50%)' }}>
         {step === 'identity' && (
           <button onClick={() => setStep('zones')} disabled={!canProceedIdentity}
-            className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.2em] text-white disabled:opacity-30 shadow-xl active:scale-[0.98] transition-all"
-            style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+            className="w-full py-4 rounded-xl bg-emerald-600 font-medium text-sm text-white disabled:opacity-30 active:scale-[0.98] transition-all">
             Continuer →
           </button>
         )}
         {step === 'zones' && (
           <button onClick={() => setStep('rates')} disabled={zones.length === 0}
-            className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.2em] text-white disabled:opacity-30 shadow-xl active:scale-[0.98] transition-all"
-            style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+            className="w-full py-4 rounded-xl bg-emerald-600 font-medium text-sm text-white disabled:opacity-30 active:scale-[0.98] transition-all">
             Continuer →
           </button>
         )}
         {step === 'rates' && (
           <button onClick={() => setStep('bio')}
             disabled={rates.filter(r => r.fromZone && r.toZone && r.price > 0).length === 0}
-            className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.2em] text-white disabled:opacity-30 shadow-xl active:scale-[0.98] transition-all"
-            style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+            className="w-full py-4 rounded-xl bg-emerald-600 font-medium text-sm text-white disabled:opacity-30 active:scale-[0.98] transition-all">
             Continuer →
           </button>
         )}
         {step === 'bio' && (
           <button onClick={handleSubmit} disabled={loading}
-            className="w-full py-5 rounded-[2.5rem] font-black text-[13px] uppercase tracking-[0.2em] text-white disabled:opacity-40 shadow-xl active:scale-[0.98] transition-all"
-            style={{ background: 'linear-gradient(135deg,#115E2E,#16A34A)' }}>
+            className="w-full py-4 rounded-xl bg-emerald-600 font-medium text-sm text-white disabled:opacity-40 active:scale-[0.98] transition-all">
             {loading
               ? <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/>

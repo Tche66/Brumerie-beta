@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { formatLastSeen } from '@/services/shopFeaturesService';
+import { ChevronLeft } from 'lucide-react';
 
 interface DelivererInfo {
   id: string;
@@ -68,16 +69,16 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-28">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-100 shadow-sm">
         <div className="flex items-center gap-3 px-4 py-4">
-          <button onClick={onBack} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <button onClick={onBack} className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-95 transition-all">
+            <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
           <div>
-            <h1 className="text-[15px] font-black text-slate-900 uppercase tracking-tight">Livreurs Brumerie</h1>
-            <p className="text-[10px] text-slate-400 font-bold">{filteredDeliverers.length} livreur{filteredDeliverers.length > 1 ? 's' : ''} disponible{filteredDeliverers.length > 1 ? 's' : ''}</p>
+            <h1 className="text-[15px] font-semibold text-slate-900">Livreurs Brumerie</h1>
+            <p className="text-xs font-medium text-slate-400">{filteredDeliverers.length} livreur{filteredDeliverers.length > 1 ? 's' : ''} disponible{filteredDeliverers.length > 1 ? 's' : ''}</p>
           </div>
         </div>
 
@@ -88,7 +89,7 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
             { id: 'verified', label: 'Vérifiés' },
           ] as const).map(f => (
             <button key={f.id} onClick={() => setFilter(f.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`flex-shrink-0 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
                 filter === f.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500'
               }`}>
               {f.label}
@@ -102,30 +103,30 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
         {loading ? (
           <div className="space-y-3">
             {[1,2,3,4].map(i => (
-              <div key={i} className="h-24 bg-white rounded-2xl animate-pulse border border-slate-100" />
+              <div key={i} className="h-24 bg-white rounded-lg animate-pulse border border-slate-100" />
             ))}
           </div>
         ) : filteredDeliverers.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+          <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="text-4xl mb-3">🚚</div>
-            <p className="text-[13px] font-black text-slate-700">Aucun livreur pour le moment</p>
-            <p className="text-[10px] text-slate-400 mt-2 px-6 leading-relaxed">
+            <p className="text-[13px] font-semibold text-slate-700">Aucun livreur pour le moment</p>
+            <p className="text-xs font-medium text-slate-400 mt-2 px-6 leading-relaxed">
               Les livreurs Brumerie livrent dans ton quartier. Sois le premier à rejoindre l'équipe !
             </p>
             <button onClick={onBack}
-              className="mt-5 px-6 py-3 bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl active:scale-95 transition-all shadow-lg shadow-orange-200">
+              className="mt-5 px-6 py-3 bg-orange-500 text-white font-medium text-sm rounded-lg active:scale-[0.98] transition-all shadow-sm">
               Devenir livreur
             </button>
           </div>
         ) : (
           filteredDeliverers.map(d => (
             <div key={d.id}
-              className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm active:scale-[0.98] transition-all"
+              className="bg-white rounded-xl p-4 border border-slate-100 active:scale-[0.98] transition-all"
             >
               <div className="flex items-start gap-3">
                 {/* Avatar */}
                 <button onClick={() => onDelivererClick?.(d.id)} className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200">
+                  <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 border-2 border-slate-200">
                     {d.photoURL ? (
                       <img src={d.photoURL} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -141,7 +142,7 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => onDelivererClick?.(d.id)} className="font-black text-[13px] text-slate-900 truncate">
+                    <button onClick={() => onDelivererClick?.(d.id)} className="font-semibold text-[13px] text-slate-900 truncate">
                       {d.name}
                     </button>
                     {d.isVerified && (
@@ -155,13 +156,13 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                   {/* Zones & véhicule */}
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {d.neighborhood && (
-                      <span className="text-[9px] font-bold text-slate-400 flex items-center gap-0.5">
+                      <span className="text-xs font-medium text-slate-400 flex items-center gap-0.5">
                         <svg width="8" height="8" viewBox="0 0 24 24" fill="#94A3B8"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
                         {d.neighborhood}
                       </span>
                     )}
                     {d.vehicleType && (
-                      <span className="text-[9px] font-bold text-slate-400">
+                      <span className="text-xs font-medium text-slate-400">
                         {d.vehicleType === 'moto' ? '🏍️' : d.vehicleType === 'voiture' ? '🚗' : '🚶'} {d.vehicleType}
                       </span>
                     )}
@@ -170,13 +171,13 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                   {/* Stats */}
                   <div className="flex items-center gap-3 mt-2">
                     {(d.rating ?? 0) > 0 && (
-                      <span className="text-[10px] font-bold text-amber-600 flex items-center gap-0.5">
+                      <span className="text-xs font-medium text-amber-600 flex items-center gap-0.5">
                         ⭐ {d.rating?.toFixed(1)}
                         {(d.reviewCount ?? 0) > 0 && <span className="text-slate-400">({d.reviewCount})</span>}
                       </span>
                     )}
                     {(d.completedDeliveries ?? 0) > 0 && (
-                      <span className="text-[10px] font-bold text-slate-400">
+                      <span className="text-xs font-medium text-slate-400">
                         📦 {d.completedDeliveries} livraisons
                       </span>
                     )}
@@ -191,12 +192,12 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                   {d.deliveryZones && d.deliveryZones.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {d.deliveryZones.slice(0, 4).map(zone => (
-                        <span key={zone} className="text-[8px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                        <span key={zone} className="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
                           {zone}
                         </span>
                       ))}
                       {d.deliveryZones.length > 4 && (
-                        <span className="text-[8px] font-bold text-slate-400">+{d.deliveryZones.length - 4}</span>
+                        <span className="text-xs font-medium text-slate-400">+{d.deliveryZones.length - 4}</span>
                       )}
                     </div>
                   )}
@@ -205,11 +206,11 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                 {/* Actions */}
                 <div className="flex flex-col gap-2 flex-shrink-0">
                   <button onClick={() => onDelivererClick?.(d.id)}
-                    className="px-3 py-2 rounded-xl bg-slate-100 text-[9px] font-black text-slate-700 uppercase tracking-wider active:scale-95 transition-all">
+                    className="px-3 py-2 rounded-xl bg-slate-100 font-medium text-sm text-slate-700 active:scale-[0.98] transition-all">
                     Profil
                   </button>
                   <button onClick={() => onContact?.(d.id, d.name)}
-                    className="px-3 py-2 rounded-xl bg-green-600 text-[9px] font-black text-white uppercase tracking-wider active:scale-95 transition-all shadow-sm">
+                    className="px-3 py-2 rounded-xl bg-green-600 font-medium text-sm text-white active:scale-[0.98] transition-all">
                     Contacter
                   </button>
                 </div>

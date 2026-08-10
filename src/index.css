@@ -1,24 +1,24 @@
-/* index.css - Brumerie MVP V2 — Design System Officiel */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+/* index.css - Brumerie V3 — Design System Pro */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --green-brumerie: #16A34A;
-  --green-dark: #115E2E;
-  --green-light: #22C55E;
-  --slate-900: #0F172A;
-  --slate-600: #475569;
-  --slate-400: #94A3B8;
-  --slate-100: #F1F5F9;
+  --green-brumerie: #059669;
+  --green-dark: #064E3B;
+  --green-light: #10B981;
+  --slate-900: #111827;
+  --slate-600: #4B5563;
+  --slate-400: #9CA3AF;
+  --slate-100: #F3F4F6;
   --surface: #FFFFFF;
-  --blue-verify: #1D9BF0;
+  --blue-verify: #2563EB;
 
-  --font-price: 'Syne', sans-serif;
+  --font-price: 'Plus Jakarta Sans', sans-serif;
   --font-title: 'Plus Jakarta Sans', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
 }
 
 * {
@@ -59,9 +59,9 @@ body {
 /* ── #root : architecture v14 — scroll sur body, fixed par rapport au viewport ── */
 .price-brumerie {
   font-family: var(--font-price) !important;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -216,16 +216,16 @@ body {
 .trust-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 100px;
-  padding: 6px 12px;
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0.05em;
+  gap: 5px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0;
 }
 
 /* Report button */

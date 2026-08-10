@@ -1,6 +1,7 @@
 // src/pages/SuggestionsPage.tsx — Suggestions quartiers et catégories
 // Les utilisateurs ajoutent des villes/quartiers et catégories manquantes
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/config/firebase';
 import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -71,29 +72,23 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-24 font-sans">
 
       {/* HEADER */}
-      <div className="bg-white sticky top-0 z-50 px-4 py-4 flex items-center gap-3 border-b border-slate-100 shadow-sm">
-        <button onClick={onBack}
-          className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 active:scale-90 transition-all">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-            <path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+      <div className="bg-white dark:bg-slate-800 sticky top-0 z-50 px-4 py-4 flex items-center gap-3 border-b border-gray-100 dark:border-slate-700">
+        <button onClick={onBack} className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-95 transition-transform">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
-        <div className="flex-1">
-          <h1 className="font-black text-[14px] uppercase tracking-tight text-slate-900">📍 Suggérer un contenu</h1>
-          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Aide à améliorer Brumerie</p>
-        </div>
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Suggestions</h1>
       </div>
 
       <div className="px-4 pt-4 space-y-4">
 
         {/* Info */}
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex gap-3">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex gap-3">
           <span className="text-2xl flex-shrink-0">💡</span>
           <div>
-            <p className="font-black text-green-800 text-[12px] mb-1">Tu ne trouves pas ton quartier ou ta catégorie ?</p>
+            <p className="font-semibold text-green-800 text-[12px] mb-1">Tu ne trouves pas ton quartier ou ta catégorie ?</p>
             <p className="text-[11px] text-green-700 leading-snug">
               Ajoute-le ici. Ta suggestion sera immédiatement disponible pour toi et tous les vendeurs Brumerie.
             </p>
@@ -101,13 +96,13 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
         </div>
 
         {/* Onglets */}
-        <div className="flex gap-1 bg-slate-100 rounded-2xl p-1">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
           <button onClick={() => setTab('quartier')}
-            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${tab === 'quartier' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+            className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'quartier' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}>
             📍 Quartier / Ville
           </button>
           <button onClick={() => setTab('categorie')}
-            className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all ${tab === 'categorie' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+            className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === 'categorie' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}>
             🏷️ Catégorie
           </button>
         </div>
@@ -116,37 +111,37 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
         {tab === 'quartier' && (
           <div className="space-y-4">
             {/* Saisie */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Ajouter un quartier ou une ville</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">Ajouter un quartier ou une ville</p>
               <div className="flex gap-2">
                 <input value={newNeighborhood}
                   onChange={e => setNewNeighborhood(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddNeighborhood()}
                   placeholder="Ex: Grand-Bassam, Divo, Riviera 4..."
-                  className="flex-1 px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-green-400 transition-all"/>
+                  className="flex-1 px-4 py-3.5 rounded-lg border-2 border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-[13px] outline-none focus:border-green-400 transition-all"/>
                 <button onClick={handleAddNeighborhood}
                   disabled={saving || !newNeighborhood.trim()}
-                  className="px-4 py-3.5 rounded-xl bg-green-600 text-white font-black text-[11px] uppercase active:scale-95 disabled:opacity-40 transition-all shadow-lg shadow-green-200 flex-shrink-0">
+                  className="px-4 py-3.5 rounded-lg bg-emerald-600 text-white font-medium text-sm active:scale-95 disabled:opacity-40 transition-all flex-shrink-0">
                   {saving ? '...' : '+ Ajouter'}
                 </button>
               </div>
               {saved === 'exists' && (
-                <p className="text-[10px] text-amber-600 font-bold mt-2">⚠️ Ce quartier existe déjà dans Brumerie</p>
+                <p className="text-[10px] text-amber-600 font-medium mt-2">⚠️ Ce quartier existe déjà dans Brumerie</p>
               )}
               {saved === 'neighborhood' && (
-                <p className="text-[10px] text-green-600 font-bold mt-2">✅ Quartier ajouté ! Disponible immédiatement.</p>
+                <p className="text-[10px] text-green-600 font-medium mt-2">✅ Quartier ajouté ! Disponible immédiatement.</p>
               )}
             </div>
 
             {/* Suggestions ajoutées par la communauté */}
             {customNeighborhoods.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
                   Ajoutés par la communauté ({customNeighborhoods.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {customNeighborhoods.map(n => (
-                    <span key={n} className="text-[10px] font-black bg-green-100 text-green-700 px-3 py-1.5 rounded-full">
+                    <span key={n} className="text-[10px] font-semibold bg-green-100 text-green-700 px-3 py-1.5 rounded-full">
                       📍 {n}
                     </span>
                   ))}
@@ -155,13 +150,13 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
             )}
 
             {/* Quartiers Abidjan existants */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
                 Déjà disponibles sur Brumerie ({Object.values(CITY_NEIGHBORHOODS).flat().length} quartiers · {CITIES.length} villes)
               </p>
               <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
                 {[...CITIES, ...Object.values(CITY_NEIGHBORHOODS).flat()].map(n => (
-                  <span key={n} className="text-[9px] font-bold bg-slate-50 text-slate-500 px-2.5 py-1 rounded-full">
+                  <span key={n} className="text-[9px] font-medium bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full">
                     {n}
                   </span>
                 ))}
@@ -174,37 +169,37 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
         {tab === 'categorie' && (
           <div className="space-y-4">
             {/* Saisie */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Ajouter une catégorie</p>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">Ajouter une catégorie</p>
               <div className="flex gap-2">
                 <input value={newCategory}
                   onChange={e => setNewCategory(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
                   placeholder="Ex: Pagnes, Voitures, Immobilier..."
-                  className="flex-1 px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-green-400 transition-all"/>
+                  className="flex-1 px-4 py-3.5 rounded-lg border-2 border-slate-100 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-[13px] outline-none focus:border-green-400 transition-all"/>
                 <button onClick={handleAddCategory}
                   disabled={saving || !newCategory.trim()}
-                  className="px-4 py-3.5 rounded-xl bg-green-600 text-white font-black text-[11px] uppercase active:scale-95 disabled:opacity-40 transition-all shadow-lg shadow-green-200 flex-shrink-0">
+                  className="px-4 py-3.5 rounded-lg bg-emerald-600 text-white font-medium text-sm active:scale-95 disabled:opacity-40 transition-all flex-shrink-0">
                   {saving ? '...' : '+ Ajouter'}
                 </button>
               </div>
               {saved === 'exists' && (
-                <p className="text-[10px] text-amber-600 font-bold mt-2">⚠️ Cette catégorie existe déjà dans Brumerie</p>
+                <p className="text-[10px] text-amber-600 font-medium mt-2">⚠️ Cette catégorie existe déjà dans Brumerie</p>
               )}
               {saved === 'category' && (
-                <p className="text-[10px] text-green-600 font-bold mt-2">✅ Catégorie ajoutée ! Disponible immédiatement.</p>
+                <p className="text-[10px] text-green-600 font-medium mt-2">✅ Catégorie ajoutée ! Disponible immédiatement.</p>
               )}
             </div>
 
             {/* Catégories ajoutées */}
             {customCategories.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
                   Ajoutées par la communauté ({customCategories.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {customCategories.map(c => (
-                    <span key={c} className="text-[10px] font-black bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full">
+                    <span key={c} className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full">
                       🏷️ {c}
                     </span>
                   ))}
@@ -213,13 +208,13 @@ export function SuggestionsPage({ onBack }: SuggestionsPageProps) {
             )}
 
             {/* Catégories existantes */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
                 Déjà disponibles ({CATEGORIES.length})
               </p>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map(cat => (
-                  <span key={cat.id} className="text-[10px] font-bold bg-slate-50 text-slate-600 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
+                  <span key={cat.id} className="text-[10px] font-medium bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-400 px-2.5 py-1.5 rounded-full flex items-center gap-1.5">
                     <span>{cat.icon}</span>{cat.label}
                   </span>
                 ))}

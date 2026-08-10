@@ -1,5 +1,6 @@
 // src/pages/GuidePage.tsx — Guide complet Brumerie (Mode acheteur, vendeur simple, vendeur vérifié)
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { getAppConfig } from '@/services/appConfigService';
 import { setGuideMeta } from '@/utils/seo';
 
@@ -22,12 +23,12 @@ const NAV: { id: SectionId; icon: string; label: string }[] = [
 
 function Block({ icon, title, children }: { icon?: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3">
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm space-y-3">
       <div className="flex items-center gap-3">
         {icon && <span className="text-2xl">{icon}</span>}
-        <h3 className="font-black text-slate-900 text-[14px] leading-tight">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{title}</h3>
       </div>
-      <div className="space-y-2 text-[12px] text-slate-600 font-medium leading-relaxed">
+      <div className="space-y-2 text-[12px] text-gray-600 dark:text-gray-300 font-medium leading-relaxed">
         {children}
       </div>
     </div>
@@ -37,8 +38,7 @@ function Block({ icon, title, children }: { icon?: string; title: string; childr
 function Step({ n, text }: { n: number; text: string }) {
   return (
     <div className="flex gap-3 items-start">
-      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-black text-white mt-0.5"
-        style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>{n}</div>
+      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-medium text-white mt-0.5 bg-emerald-600">{n}</div>
       <p className="flex-1">{text}</p>
     </div>
   );
@@ -53,7 +53,7 @@ function Tip({ text, color = 'green' }: { text: string; color?: 'green' | 'orang
   };
   const s = styles[color];
   return (
-    <div className="rounded-2xl px-4 py-3 flex gap-2 text-[11px] font-bold"
+    <div className="rounded-lg px-4 py-3 flex gap-2 font-medium text-xs"
       style={{ background: s.bg, border: `1.5px solid ${s.border}`, color: s.text }}>
       <span>{s.icon}</span><span>{text}</span>
     </div>
@@ -68,29 +68,28 @@ export function GuidePage({ onBack }: GuidePageProps) {
   useEffect(() => { setGuideMeta(); }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-24">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 font-sans pb-24">
       {/* Header */}
-      <div className="bg-white/95 backdrop-blur-md sticky top-0 z-50 px-5 py-5 flex items-center gap-4 border-b border-slate-100">
-        <button onClick={onBack} className="w-11 h-11 bg-slate-50 rounded-2xl flex items-center justify-center active:scale-90 transition-all">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <div className="bg-white dark:bg-slate-800 sticky top-0 z-50 px-4 py-4 flex items-center gap-3 border-b border-gray-100 dark:border-slate-700">
+        <button onClick={onBack} className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-95 transition-transform">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div>
-          <h1 className="font-black text-slate-900 text-[15px] uppercase tracking-tight">Guide Brumerie</h1>
-          <p className="text-[10px] text-slate-400 font-bold">Tout ce qu'il faut savoir</p>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Guide Brumerie</h1>
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Tout ce qu'il faut savoir</p>
         </div>
         <a href={ytLink} target="_blank" rel="noopener noreferrer"
-          className="ml-auto flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-2xl px-3 py-2 active:scale-95 transition-all">
+          className="ml-auto flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2 active:scale-95 transition-transform">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="#DC2626"><path d="M23 7s-.3-2-1.2-2.7c-1.1-1.2-2.4-1.2-3-1.3C16.2 3 12 3 12 3s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.7c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.4 12 21.5 12 21.5s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.7 1.2-2.7 1.2-2.7s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l6.6 3.6-6.6 3.5z"/></svg>
-          <span className="text-[10px] font-black text-red-600 uppercase tracking-wide">Tutoriels</span>
+          <span className="text-xs font-medium text-red-600">Tutoriels</span>
         </a>
       </div>
 
       {/* Nav horizontale */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide bg-white border-b border-slate-100">
+      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700">
         {NAV.map(n => (
           <button key={n.id} onClick={() => setSection(n.id)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-2xl font-black text-[10px] uppercase tracking-wide transition-all ${section === n.id ? 'text-white shadow-lg' : 'text-slate-500 bg-slate-50'}`}
-            style={section === n.id ? { background: 'linear-gradient(135deg,#16A34A,#115E2E)' } : {}}>
+            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-xs transition-all ${section === n.id ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-700'}`}>
             <span>{n.icon}</span><span>{n.label}</span>
           </button>
         ))}
@@ -372,11 +371,11 @@ export function GuidePage({ onBack }: GuidePageProps) {
           <Block icon="🎥" title="Chaîne YouTube — Tutoriels vidéo">
             <p>Regarde nos tutoriels vidéo pour apprendre à utiliser Brumerie pas à pas.</p>
             <a href={ytLink} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mt-2 active:scale-95 transition-all">
+              className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mt-2 active:scale-95 transition-transform">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="#DC2626"><path d="M23 7s-.3-2-1.2-2.7c-1.1-1.2-2.4-1.2-3-1.3C16.2 3 12 3 12 3s-4.2 0-6.8.1c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.7c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.4 12 21.5 12 21.5s4.2 0 6.8-.2c.6-.1 1.9-.1 3-1.3.9-.7 1.2-2.7 1.2-2.7s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l6.6 3.6-6.6 3.5z"/></svg>
               <div>
-                <p className="font-black text-red-700 text-[12px]">Brumerie sur YouTube</p>
-                <p className="text-red-500 text-[10px] font-bold truncate">{ytLink}</p>
+                <p className="font-semibold text-red-700 text-xs">Brumerie sur YouTube</p>
+                <p className="text-red-500 text-xs font-medium truncate">{ytLink}</p>
               </div>
             </a>
           </Block>

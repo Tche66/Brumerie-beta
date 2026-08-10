@@ -16,11 +16,11 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses = 'font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-  
+
   const variantClasses = {
-    primary: 'bg-primary hover:bg-purple-700 text-white',
-    secondary: 'bg-secondary hover:bg-pink-600 text-white',
-    outline: 'border-2 border-primary text-primary hover:bg-primary hover:text-white',
+    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-800',
+    outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50',
     danger: 'bg-red-500 hover:bg-red-600 text-white',
   };
 

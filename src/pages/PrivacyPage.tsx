@@ -1,6 +1,7 @@
 // src/pages/PrivacyPage.tsx — Politique de Confidentialité + Mentions Légales
 // Conforme Loi n°2013-450 (Protection des données personnelles, CI) · ARTCI
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronDown } from 'lucide-react';
 
 interface PrivacyPageProps {
   onBack: () => void;
@@ -20,20 +21,17 @@ function Section({ num, title, color = 'blue', children }: {
     amber:  'bg-amber-100 text-amber-700',
   };
   return (
-    <div className="border border-slate-100 rounded-2xl overflow-hidden mb-3">
+    <div className="border border-gray-100 dark:border-slate-700 rounded-xl overflow-hidden mb-3">
       <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white active:bg-slate-50 transition-colors">
+        className="w-full flex items-center justify-between px-5 py-4 text-left bg-white dark:bg-slate-800 active:bg-gray-50 dark:active:bg-slate-700 transition-colors">
         <div className="flex items-center gap-3 pr-4">
-          <span className={`w-7 h-7 rounded-xl text-[10px] font-black flex items-center justify-center flex-shrink-0 ${colors[color]}`}>{num}</span>
-          <span className="font-black text-[12px] uppercase tracking-tight text-slate-800">{title}</span>
+          <span className={`w-6 h-6 rounded-md text-xs font-semibold flex items-center justify-center flex-shrink-0 ${colors[color]}`}>{num}</span>
+          <span className="font-medium text-sm text-slate-800">{title}</span>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}>
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
+        <ChevronDown size={14} className="text-gray-400" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
       </button>
       {open && (
-        <div className="px-5 pb-5 bg-white border-t border-slate-50">
+        <div className="px-5 pb-5 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700">
           <div className="text-[12px] text-slate-600 leading-relaxed space-y-3 pt-3">{children}</div>
         </div>
       )}
@@ -45,24 +43,24 @@ export function PrivacyPage({ onBack, isTerms }: PrivacyPageProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-20">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-slate-100 z-50 px-4 py-4 flex items-center gap-3 shadow-sm">
-        <button onClick={onBack} className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 z-50 px-4 py-4 flex items-center gap-3 shadow-sm">
+        <button onClick={onBack} className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 flex items-center justify-center active:scale-95 transition-all">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div>
-          <h1 className="font-black text-slate-900 text-[14px] uppercase tracking-tight">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
             {isTerms ? "Conditions d'utilisation" : "Politique de Confidentialité"}
           </h1>
-          <p className="text-[10px] text-slate-400">Loi n°2013-450 · ARTCI · Côte d'Ivoire</p>
+          <p className="text-xs text-gray-500">Loi n°2013-450 · ARTCI · Côte d'Ivoire</p>
         </div>
       </div>
 
       <div className="px-4 py-5 max-w-2xl mx-auto">
 
         {/* Intro */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-5 mb-5">
+        <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl p-5 mb-5">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-2xl">🔒</span>
             <div>

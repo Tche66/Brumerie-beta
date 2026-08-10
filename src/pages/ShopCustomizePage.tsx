@@ -1,6 +1,7 @@
 // src/pages/ShopCustomizePage.tsx — Boutique Pro v2
 // Collections · Vente flash · Lien personnalisé · Magasin physique
 import React, { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/services/userService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
@@ -135,26 +136,26 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
   // ── Garde Premium ─────────────────────────────────────────
   if (!userProfile?.isPremium) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 pb-24">
-        <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mb-5 text-4xl"
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center px-6 pb-24">
+        <div className="w-20 h-20 rounded-xl flex items-center justify-center mb-5 text-4xl"
           style={{ background: 'linear-gradient(135deg,#1a1a1a,#0F0F0F)' }}>
           ⭐
         </div>
-        <h2 className="font-black text-[22px] text-slate-900 text-center mb-2">Fonctionnalité Premium</h2>
+        <h2 className="font-semibold text-[22px] text-slate-900 text-center mb-2">Fonctionnalité Premium</h2>
         <p className="text-[13px] text-slate-500 text-center leading-relaxed mb-6 max-w-xs">
           La personnalisation de boutique (bannière, couleur, slogan, vente flash) est réservée aux vendeurs <strong>Premium</strong>.
         </p>
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 w-full max-w-xs mb-6">
-          <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-3">⭐ Inclus dans Premium</p>
+        <div className="bg-white rounded-lg p-5 border border-slate-100 w-full max-w-xs mb-6">
+          <p className="text-xs font-medium text-amber-600 mb-3">Inclus dans Premium</p>
           {['🎨 Bannière et couleur de boutique','✨ Slogan personnalisé','🔥 Vente flash','📍 Adresse boutique physique','📒 Journal de dettes'].map(f => (
             <div key={f} className="flex items-center gap-2 py-1.5">
-              <span className="text-green-500 font-black text-[10px]">✓</span>
+              <span className="text-green-500 font-semibold text-[10px]">✓</span>
               <p className="text-[11px] text-slate-700">{f}</p>
             </div>
           ))}
         </div>
         <button onClick={onBack}
-          className="w-full max-w-xs py-4 rounded-[2rem] bg-slate-100 text-slate-600 font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all">
+          className="w-full max-w-xs py-4 rounded-xl bg-slate-100 text-slate-600 font-semibold text-[12px] active:scale-95 transition-all">
           ← Retour
         </button>
       </div>
@@ -162,49 +163,47 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-28 font-sans">
 
       {/* HEADER */}
       <div className="bg-white sticky top-0 z-50 px-4 py-4 flex items-center gap-3 border-b border-slate-100 shadow-sm">
         <button onClick={onBack}
-          className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center active:scale-90">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-            <path d="M15 18l-6-6 6-6" stroke="#0F0F0F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          className="w-10 h-10 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center active:scale-95">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
         <div className="flex-1">
-          <h1 className="font-black text-slate-900 text-[14px] uppercase tracking-tight">🏪 Ma Boutique</h1>
+          <h1 className="font-semibold text-slate-900 text-[14px]">Ma Boutique</h1>
           <p className="text-[9px] text-green-600 font-bold">{shopUrl}</p>
         </div>
       </div>
 
       {/* APERÇU BOUTIQUE */}
-      <div className="mx-4 mt-4 rounded-3xl overflow-hidden shadow-lg border border-slate-100 mb-4">
+      <div className="mx-4 mt-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 mb-4">
         <div className="relative h-24 flex items-center justify-center overflow-hidden"
           style={{ background: bannerPreview ? undefined : themeColor }}>
           {bannerPreview
             ? <img src={bannerPreview} alt="" className="w-full h-full object-cover"/>
-            : <p className="text-white/30 text-[9px] font-black uppercase tracking-widest">Aperçu bannière</p>}
+            : <p className="text-white/30 text-xs font-medium">Aperçu bannière</p>}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"/>
           {flashActive && flashLabel && !flashExpired && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-black px-2 py-1 rounded-full uppercase animate-pulse">
+            <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] font-semibold px-2 py-1 rounded-full animate-pulse">
               ⚡ {flashLabel}
             </div>
           )}
         </div>
         <div className="bg-white px-4 py-3 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl overflow-hidden border-3 border-white shadow-md -mt-6 flex-shrink-0"
+          <div className="w-12 h-12 rounded-lg overflow-hidden border-3 border-white shadow-sm -mt-6 flex-shrink-0"
             style={{ borderColor: themeColor, borderWidth: 3 }}>
             {userProfile?.photoURL
               ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center text-white font-black text-lg"
+              : <div className="w-full h-full flex items-center justify-center text-white font-semibold text-lg"
                   style={{ background: themeColor }}>
                   {userProfile?.name?.charAt(0)?.toUpperCase()}
                 </div>
             }
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-black text-slate-900 text-[13px]">{userProfile?.name}</p>
+            <p className="font-semibold text-slate-900 text-[13px]">{userProfile?.name}</p>
             {slogan
               ? <p className="text-[10px] font-bold truncate" style={{ color: themeColor }}>{slogan}</p>
               : <p className="text-[9px] text-slate-300 italic">Ton slogan ici...</p>
@@ -212,7 +211,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
             {categories.length > 0 && (
               <div className="flex gap-1 mt-1 overflow-x-auto">
                 {categories.slice(0, 3).map(cat => (
-                  <span key={cat} className="text-[7px] font-black px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
+                  <span key={cat} className="text-[7px] font-semibold px-1.5 py-0.5 rounded-full text-white flex-shrink-0"
                     style={{ background: themeColor + 'CC' }}>
                     {cat}
                   </span>
@@ -226,10 +225,10 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
 
       {/* ONGLETS */}
       <div className="px-4 mb-4">
-        <div className="flex gap-1 bg-slate-100 rounded-2xl p-1">
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wide transition-all ${tab === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${tab === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>
               {t.emoji}
             </button>
           ))}
@@ -245,26 +244,26 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
         {tab === 'identite' && (
           <>
             {/* Lien personnalisé */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">🔗 Ton lien boutique</p>
-              <div className="flex items-center bg-slate-50 rounded-xl border-2 border-slate-100 focus-within:border-green-400 overflow-hidden transition-all">
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+              <p className="text-xs font-medium text-slate-400 mb-3">Ton lien boutique</p>
+              <div className="flex items-center bg-slate-50 rounded-lg border-2 border-slate-100 focus-within:border-emerald-500 overflow-hidden transition-all">
                 <span className="text-[10px] font-bold text-slate-400 pl-3 pr-1 flex-shrink-0">brumerie.com/</span>
                 <input value={username}
                   onChange={e => setUsername(slugify(e.target.value))}
                   placeholder="ma-boutique"
-                  className="flex-1 py-3 pr-3 bg-transparent text-[13px] font-black text-slate-900 outline-none"/>
+                  className="flex-1 py-3 pr-3 bg-transparent text-[13px] font-semibold text-slate-900 outline-none"/>
               </div>
               <p className="text-[9px] text-slate-400 mt-1">Mets ce lien dans ta bio Instagram, statut WhatsApp, partout 👆</p>
             </div>
 
             {/* Couleur thème */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">🎨 Couleur de ta marque</p>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+              <p className="text-xs font-medium text-slate-400 mb-3">Couleur de ta marque</p>
               <div className="grid grid-cols-5 gap-3">
                 {THEME_COLORS.map(c => (
                   <button key={c.value} onClick={() => setThemeColor(c.value)}
-                    className="flex flex-col items-center gap-1.5 active:scale-90 transition-all">
-                    <div className="w-11 h-11 rounded-2xl shadow-sm transition-all flex items-center justify-center"
+                    className="flex flex-col items-center gap-1.5 active:scale-95 transition-all">
+                    <div className="w-11 h-11 rounded-lg shadow-sm transition-all flex items-center justify-center"
                       style={{
                         background: c.value,
                         boxShadow: themeColor === c.value ? `0 0 0 2px white, 0 0 0 4px ${c.value}` : undefined,
@@ -280,25 +279,25 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
             </div>
 
             {/* Slogan + Bio */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">📝 Textes</p>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm space-y-3">
+              <p className="text-xs font-medium text-slate-400">Textes</p>
               <div>
                 <p className="text-[9px] font-bold text-slate-500 mb-1.5">Slogan (60 car. max)</p>
                 <input value={slogan} onChange={e => setSlogan(e.target.value)} maxLength={60}
                   placeholder="Ex: La mode à prix imbattable à Abidjan 🔥"
-                  className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-green-400"/>
+                  className="w-full px-4 py-3.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-emerald-500"/>
               </div>
               <div>
                 <p className="text-[9px] font-bold text-slate-500 mb-1.5">Description boutique</p>
                 <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} maxLength={200}
                   placeholder="Présente ta boutique, ce que tu vends, ton quartier..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-green-400 resize-none"/>
+                  className="w-full px-4 py-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-emerald-500 resize-none"/>
               </div>
             </div>
 
             {/* Réseaux sociaux */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">📱 Tes réseaux sociaux</p>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm space-y-3">
+              <p className="text-xs font-medium text-slate-400">Tes réseaux sociaux</p>
               {[
                 { icon: '📸', label: 'Instagram', value: instagram, set: setInstagram, ph: '@ta_boutique' },
                 { icon: '🎵', label: 'TikTok',    value: tiktok,    set: setTiktok,    ph: '@ta_boutique' },
@@ -308,27 +307,27 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
                   <span className="text-xl flex-shrink-0">{f.icon}</span>
                   <input value={f.value} onChange={e => f.set(e.target.value)}
                     placeholder={f.ph}
-                    className="flex-1 px-3 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-green-400"/>
+                    className="flex-1 px-3 py-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-emerald-500"/>
                 </div>
               ))}
             </div>
 
             {/* Bannière */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">🖼️ Photo de bannière</p>
-              <label className={`block w-full rounded-2xl border-2 border-dashed overflow-hidden cursor-pointer ${bannerPreview ? 'border-green-400' : 'border-slate-200'}`}>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+              <p className="text-xs font-medium text-slate-400 mb-3">Photo de bannière</p>
+              <label className={`block w-full rounded-lg border-2 border-dashed overflow-hidden cursor-pointer ${bannerPreview ? 'border-green-400' : 'border-slate-200'}`}>
                 {bannerPreview
                   ? <img src={bannerPreview} alt="" className="w-full h-24 object-cover"/>
                   : <div className="flex flex-col items-center justify-center py-8 gap-2">
                       <span className="text-3xl">🖼️</span>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Ajouter une bannière</p>
+                      <p className="text-xs font-medium text-slate-400">Ajouter une bannière</p>
                     </div>
                 }
                 <input type="file" accept="image/*" className="hidden" onChange={handleBannerChange}/>
               </label>
               {bannerPreview && (
                 <button onClick={() => { setBannerPreview(''); setBannerFile(null); }}
-                  className="text-[9px] text-red-400 font-bold uppercase mt-2 block">
+                  className="text-[9px] text-red-400 font-bold mt-2 block">
                   Supprimer la bannière
                 </button>
               )}
@@ -339,14 +338,14 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
         {/* ══ CATALOGUE / COLLECTIONS ══ */}
         {tab === 'catalogue' && (
           <>
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Collections sélectionnées</p>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+              <p className="text-xs font-medium text-slate-400 mb-1">Collections sélectionnées</p>
               <p className="text-[10px] text-slate-400 mb-3">Apparaissent comme filtres dans ta boutique</p>
               {categories.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {categories.map(cat => (
                     <button key={cat} onClick={() => toggleCategory(cat)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-[10px] uppercase text-white active:scale-95 transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-medium text-xs text-white active:scale-95 transition-all"
                       style={{ background: themeColor }}>
                       {cat}
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
@@ -356,11 +355,11 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
                   ))}
                 </div>
               )}
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2">Suggestions</p>
+              <p className="text-xs font-medium text-slate-400 mb-2">Suggestions</p>
               <div className="flex flex-wrap gap-2">
                 {DEFAULT_CATEGORIES.filter(c => !categories.includes(c)).map(cat => (
                   <button key={cat} onClick={() => toggleCategory(cat)}
-                    className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] uppercase active:scale-95 transition-all">
+                    className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 font-medium text-xs active:scale-95 transition-all">
                     + {cat}
                   </button>
                 ))}
@@ -368,15 +367,15 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
             </div>
 
             {/* Catégorie personnalisée */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Créer une collection personnalisée</p>
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+              <p className="text-xs font-medium text-slate-400 mb-3">Créer une collection personnalisée</p>
               <div className="flex gap-2">
                 <input value={customCat} onChange={e => setCustomCat(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addCustomCat()}
                   placeholder="Ex: Wax exclusif, Robes de soirée..."
-                  className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-green-400"/>
+                  className="flex-1 px-4 py-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-[12px] outline-none focus:border-emerald-500"/>
                 <button onClick={addCustomCat} disabled={!customCat.trim()}
-                  className="px-4 py-3 rounded-xl bg-green-600 text-white font-black text-[10px] uppercase active:scale-95 disabled:opacity-40">
+                  className="px-4 py-3 rounded-lg bg-emerald-600 text-white font-medium text-xs active:scale-95 disabled:opacity-40">
                   + Ajouter
                 </button>
               </div>
@@ -386,7 +385,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
             </div>
 
             {/* Info */}
-            <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex gap-3">
+            <div className="bg-green-50 border border-green-100 rounded-lg p-4 flex gap-3">
               <span className="text-xl flex-shrink-0">💡</span>
               <p className="text-[11px] text-green-700 leading-snug">
                 Les collections permettent à tes clients de filtrer facilement tes articles — exactement comme les rayons d'un magasin. Un client qui cherche des "Pagnes" trouve directement sans scroller.
@@ -399,10 +398,10 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
         {tab === 'flash' && (
           <>
             {/* Toggle */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="font-black text-slate-900 text-[14px]">⚡ Activer une vente flash</p>
+                  <p className="font-semibold text-slate-900 text-[14px]">Activer une vente flash</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Affiche une bannière urgente sur ta boutique</p>
                 </div>
                 <button onClick={() => setFlashActive(v => !v)}
@@ -414,30 +413,30 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
               {flashActive && (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                   <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Message de la vente flash</p>
+                    <p className="text-xs font-medium text-slate-500 mb-1.5">Message de la vente flash</p>
                     <input value={flashLabel} onChange={e => setFlashLabel(e.target.value)} maxLength={50}
                       placeholder="Ex: SOLDES -30% ce weekend seulement 🔥"
-                      className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400"/>
+                      className="w-full px-4 py-3.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400"/>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">
+                    <p className="text-xs font-medium text-slate-500 mb-1.5">
                       Date et heure de fin
                     </p>
                     <input type="datetime-local" value={flashExpiry}
                       min={new Date().toISOString().slice(0, 16)}
                       onChange={e => setFlashExpiry(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400"/>
+                      className="w-full px-4 py-3.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-red-400"/>
                   </div>
                   {flashExpiry && !flashExpired && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                      <p className="text-[11px] font-black text-red-700 animate-pulse">
-                        ⚡ La vente flash sera visible jusqu'au {new Date(flashExpiry).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                      <p className="text-[11px] font-semibold text-red-700 animate-pulse">
+                        La vente flash sera visible jusqu'au {new Date(flashExpiry).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   )}
                   {flashExpired && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-                      <p className="text-[11px] font-black text-amber-700">⚠️ Cette vente flash est expirée. Change la date ou désactive.</p>
+                      <p className="text-[11px] font-semibold text-amber-700">Cette vente flash est expirée. Change la date ou désactive.</p>
                     </div>
                   )}
                 </div>
@@ -446,16 +445,16 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
 
             {/* Aperçu vente flash */}
             {flashActive && flashLabel && !flashExpired && (
-              <div className="rounded-2xl p-4 border-2 border-red-300 bg-red-50">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Aperçu sur ta boutique</p>
+              <div className="rounded-lg p-4 border-2 border-red-300 bg-red-50">
+                <p className="text-xs font-medium text-slate-400 mb-2">Aperçu sur ta boutique</p>
                 <div className="bg-red-500 rounded-xl px-4 py-2.5 flex items-center gap-2">
                   <span className="text-white text-lg">⚡</span>
-                  <p className="font-black text-white text-[12px]">{flashLabel}</p>
+                  <p className="font-semibold text-white text-[12px]">{flashLabel}</p>
                 </div>
               </div>
             )}
 
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+            <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 flex gap-3">
               <span className="text-xl flex-shrink-0">💡</span>
               <p className="text-[11px] text-amber-700 leading-snug">
                 Les ventes flash créent de l'urgence. En Afrique de l'Ouest, les promotions à durée limitée génèrent jusqu'à 3× plus de contacts que les annonces normales.
@@ -467,10 +466,10 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
         {/* ══ MAGASIN PHYSIQUE ══ */}
         {tab === 'magasin' && (
           <>
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="font-black text-slate-900 text-[14px]">🏠 J'ai un magasin physique</p>
+                  <p className="font-semibold text-slate-900 text-[14px]">J'ai un magasin physique</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">Affiche tes infos boutique aux clients</p>
                 </div>
                 <button onClick={() => setHasPhysical(v => !v)}
@@ -482,23 +481,23 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
               {hasPhysical && (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                   <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Adresse / Localisation</p>
+                    <p className="text-xs font-medium text-slate-500 mb-1.5">Adresse / Localisation</p>
                     <input value={shopAddress} onChange={e => setShopAddress(e.target.value)}
                       placeholder="Ex: Marché de Yopougon, rangée 3, stand 47"
-                      className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-green-400"/>
+                      className="w-full px-4 py-3.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-[13px] outline-none focus:border-emerald-500"/>
                   </div>
 
                   {/* Horaires */}
                   <div>
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Horaires d'ouverture</p>
+                    <p className="text-xs font-medium text-slate-500 mb-3">Horaires d'ouverture</p>
                     <div className="space-y-2">
                       {DAYS.map(day => (
                         <div key={day} className="flex items-center gap-3">
-                          <p className="text-[10px] font-black text-slate-600 w-20 capitalize flex-shrink-0">{day}</p>
+                          <p className="text-[10px] font-semibold text-slate-600 w-20 capitalize flex-shrink-0">{day}</p>
                           <input value={hours[day] || ''}
                             onChange={e => setHours(h => ({ ...h, [day]: e.target.value }))}
                             placeholder="Ex: 8h-18h ou Fermé"
-                            className="flex-1 px-3 py-2.5 rounded-xl border-2 border-slate-100 bg-slate-50 text-[11px] outline-none focus:border-green-400"/>
+                            className="flex-1 px-3 py-2.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-[11px] outline-none focus:border-emerald-500"/>
                         </div>
                       ))}
                     </div>
@@ -508,11 +507,11 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
                         const h: Partial<Record<Day, string>> = {};
                         DAYS.forEach(d => { h[d] = d === 'dimanche' ? 'Fermé' : '8h-18h'; });
                         setHours(h);
-                      }} className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold text-[9px] uppercase active:scale-95">
+                      }} className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-600 font-bold text-[9px] active:scale-95">
                         Standard 8h-18h
                       </button>
                       <button onClick={() => setHours({})}
-                        className="flex-1 py-2 rounded-xl bg-slate-100 text-slate-500 font-bold text-[9px] uppercase active:scale-95">
+                        className="flex-1 py-2 rounded-lg bg-slate-100 text-slate-500 font-bold text-[9px] active:scale-95">
                         Effacer tout
                       </button>
                     </div>
@@ -522,8 +521,8 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
             </div>
 
             {hasPhysical && shopAddress && (
-              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Aperçu sur ta boutique</p>
+              <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
+                <p className="text-xs font-medium text-slate-400 mb-3">Aperçu sur ta boutique</p>
                 <div className="bg-slate-50 rounded-xl p-3 space-y-2">
                   <div className="flex items-start gap-2">
                     <span>📍</span>
@@ -539,7 +538,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
               </div>
             )}
 
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex gap-3">
               <span className="text-xl flex-shrink-0">💡</span>
               <p className="text-[11px] text-blue-700 leading-snug">
                 Afficher ton magasin physique rassure les clients et augmente les visites. Les vendeurs avec boutique physique visible reçoivent 2× plus de contacts.
@@ -550,7 +549,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
 
         {/* ERREUR */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-3">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-[11px] font-bold text-red-600">{error}</p>
           </div>
         )}
@@ -559,12 +558,11 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
       {/* CTA FIXE */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
         <button onClick={handleSave} disabled={loading}
-          className="w-full py-4 rounded-2xl font-black uppercase tracking-widest text-[12px] text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-xl"
-          style={{ background: `linear-gradient(135deg, ${themeColor}dd, ${themeColor})`, boxShadow: `0 12px 30px ${themeColor}40` }}>
+          className="w-full py-4 rounded-lg bg-emerald-600 font-semibold text-[12px] text-white transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm">
           {loading
             ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Enregistrement...</span>
-            : saved ? '✅ Boutique sauvegardée !'
-            : '💾 Sauvegarder ma boutique'
+            : saved ? 'Boutique sauvegardée !'
+            : 'Sauvegarder ma boutique'
           }
         </button>
       </div>

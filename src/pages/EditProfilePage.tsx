@@ -1,5 +1,6 @@
 // src/pages/EditProfilePage.tsx — Sprint 5 : paiement + livraison vendeur, simplifié acheteur
 import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, Camera } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -17,7 +18,7 @@ interface EditProfilePageProps { onBack: () => void; onSaved: () => void; }
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button onClick={() => onChange(!value)}
-      className={`w-14 h-7 rounded-full transition-all relative ${value ? 'bg-green-600 shadow-lg shadow-green-100' : 'bg-slate-200'}`}>
+      className={`w-14 h-7 rounded-full transition-all relative ${value ? 'bg-emerald-600' : 'bg-slate-200'}`}>
       <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all ${value ? 'right-1' : 'left-1'}`} />
     </button>
   );
@@ -221,13 +222,13 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
   const currentAvatar = photoPreview || userProfile?.photoURL;
 
   return (
-    <div className="min-h-screen bg-white pb-20 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-20 font-sans">
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-5 flex items-center justify-between border-b border-slate-50">
-        <button onClick={onBack} className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 active:scale-90 transition-all border border-slate-100">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <button onClick={onBack} className="w-12 h-12 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700 active:scale-95 transition-all border border-slate-100">
+          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
         </button>
-        <h1 className="font-bold text-[11px] uppercase tracking-[0.2em] text-slate-900">Mon Profil</h1>
+        <h1 className="font-semibold text-sm text-slate-900">Mon Profil</h1>
         <div className="w-12"/>
       </div>
 
@@ -236,17 +237,17 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
         {/* Avatar */}
         <div className="flex flex-col items-center">
           <div className="relative">
-            <div className="w-28 h-28 rounded-[2.5rem] overflow-hidden bg-slate-50 border-4 border-white shadow-2xl">
+            <div className="w-28 h-28 rounded-xl overflow-hidden bg-slate-50 border-4 border-white shadow-sm">
               {currentAvatar
                 ? <img src={currentAvatar} alt="Profil" className="w-full h-full object-cover"/>
                 : <div className="w-full h-full flex items-center justify-center bg-green-50">
-                    <span className="text-green-600 text-4xl font-black">{name.charAt(0).toUpperCase()}</span>
+                    <span className="text-green-600 text-4xl font-semibold">{name.charAt(0).toUpperCase()}</span>
                   </div>
               }
             </div>
             <button onClick={() => fileRef.current?.click()}
-              className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl active:scale-90 transition-all border-4 border-white">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>
+              className="absolute -bottom-2 -right-2 w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-sm active:scale-95 transition-all border-4 border-white">
+              <Camera size={16} className="text-white" />
             </button>
           </div>
           <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden"/>
@@ -254,36 +255,36 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
         {/* Identité */}
         <div className="space-y-3">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Identité</p>
-          <div className="bg-slate-50 rounded-3xl p-5 space-y-4 border border-slate-100">
+          <p className="text-xs font-semibold text-slate-400 ml-1">Identité</p>
+          <div className="bg-slate-50 rounded-xl p-5 space-y-4 border border-slate-100">
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">{isSeller ? 'Nom du Business / Prénom' : 'Ton prénom'}</label>
+              <label className="text-xs font-semibold text-slate-400 block mb-2">{isSeller ? 'Nom du Business / Prénom' : 'Ton prénom'}</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)}
                 placeholder={isSeller ? 'Ex: Boutique de Marie' : 'Ex: Koffi'}
-                className="w-full px-5 py-4 bg-white rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-green-500 outline-none"/>
+                className="w-full px-5 py-4 bg-white rounded-lg text-sm font-bold shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none"/>
             </div>
 
             {/* ── Numéro WhatsApp ── */}
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Numéro WhatsApp</label>
+              <label className="text-xs font-semibold text-slate-400 block mb-2">Numéro WhatsApp</label>
               <div className="flex gap-2">
-                <div className="flex items-center px-4 py-4 bg-slate-100 rounded-2xl text-sm font-bold text-slate-500 whitespace-nowrap">
+                <div className="flex items-center px-4 py-4 bg-slate-100 rounded-lg text-sm font-bold text-slate-500 whitespace-nowrap">
                   🇨🇮 +225
                 </div>
                 <input type="tel" value={phone.replace(/^\+225/, '').replace(/^225/, '')}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="05 00 00 00 00"
-                  className="flex-1 px-5 py-4 bg-white rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-green-500 outline-none" />
+                  className="flex-1 px-5 py-4 bg-white rounded-lg text-sm font-bold shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
             </div>
 
             {/* ── Email — lecture seule (modifier dans Paramètres > Sécurité) ── */}
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Adresse email</label>
-              <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-5 py-4 border border-slate-100">
+              <label className="text-xs font-semibold text-slate-400 block mb-2">Adresse email</label>
+              <div className="flex items-center gap-3 bg-slate-50 rounded-lg px-5 py-4 border border-slate-100">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                 <p className="flex-1 text-sm font-bold text-slate-500 truncate">{currentUser?.email}</p>
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Paramètres</span>
+                <span className="text-xs font-semibold text-slate-400">Paramètres</span>
               </div>
               <p className="text-[10px] text-slate-400 font-bold mt-1.5 ml-1">
                 Pour modifier ton email, va dans Paramètres → Sécurité.
@@ -292,7 +293,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
             {/* Ville */}
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ville</label>
+              <label className="text-xs font-semibold text-slate-400 block mb-2">Ville</label>
               <div className="flex gap-2 flex-wrap">
                 {CITIES.map(c => (
                   <button key={c} onClick={() => { setCity(c); setNeighborhood(''); }}
@@ -305,7 +306,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
             {/* Quartier */}
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Quartier à {city}</label>
+              <label className="text-xs font-semibold text-slate-400 block mb-2">Quartier à {city}</label>
               {!isCustomNeighborhood ? (
                 <div className="grid grid-cols-2 gap-2">
                   {getNeighborhoodsForCity(city).slice(0, 5).map(n => (
@@ -323,7 +324,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                 <div className="relative">
                   <input type="text" placeholder="Nom de ton quartier..." value={neighborhood}
                     onChange={e => setNeighborhood(e.target.value)} autoFocus
-                    className="w-full px-5 py-4 bg-white border-2 border-green-500 rounded-2xl text-sm font-bold outline-none"/>
+                    className="w-full px-5 py-4 bg-white border-2 border-green-500 rounded-lg text-sm font-bold outline-none"/>
                   <button onClick={() => { setIsCustomNeighborhood(false); setNeighborhood(userProfile?.neighborhood || ''); }}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full">
                     Annuler
@@ -339,11 +340,11 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
           {/* Bio */}
           <div className="space-y-3">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bio / Description</p>
+            <p className="text-xs font-semibold text-slate-400 ml-1">Bio / Description</p>
             <textarea value={bio} onChange={e => setBio(e.target.value)}
               placeholder="Décris ton activité, tes spécialités, ce qui te différencie..."
               rows={3}
-              className="w-full px-5 py-4 bg-slate-50 rounded-3xl text-sm font-medium border border-slate-100 focus:ring-2 focus:ring-green-500 outline-none resize-none"/>
+              className="w-full px-5 py-4 bg-slate-50 rounded-xl text-sm font-medium border border-slate-100 focus:ring-2 focus:ring-emerald-500 outline-none resize-none"/>
             <p className="text-[9px] text-slate-400 ml-1">{bio.length}/200 caractères</p>
           </div>
 
@@ -374,10 +375,10 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                   />
                 </div>
 
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liens réseaux sociaux</p>
-                <span className="text-[8px] font-black px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1D9BF0' }}>Vérifié</span>
+                <p className="text-xs font-semibold text-slate-400">Liens réseaux sociaux</p>
+                <span className="text-[8px] font-semibold px-2 py-0.5 rounded-full" style={{ background: '#EFF6FF', color: '#1D9BF0' }}>Vérifié</span>
               </div>
-              <div className="bg-slate-50 rounded-3xl p-4 space-y-3 border border-slate-100">
+              <div className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-100">
                 {([
                   { key: 'instagram'  as const, label: 'Instagram',   placeholder: '@moncompte ou lien',      logo: '/assets/social/instagram.jpg'  },
                   { key: 'tiktok'    as const, label: 'TikTok',     placeholder: '@moncompte ou lien',      logo: '/assets/social/tiktok.jpg'     },
@@ -385,12 +386,12 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                   { key: 'twitter'   as const, label: 'X (Twitter)', placeholder: '@moncompte',              logo: '/assets/social/twitter.jpg'    },
                   { key: 'addressweb' as const, label: 'Address-Web', placeholder: 'Code AW-ABJ-84321 ou lien', logo: '/assets/social/addressweb.png' },
                 ] as { key: keyof typeof socialLinks; label: string; placeholder: string; logo: string }[]).map(({ key, label, placeholder, logo }) => (
-                  <div key={key} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 border border-slate-100">
+                  <div key={key} className="flex items-center gap-3 bg-white rounded-lg px-4 py-3 border border-slate-100">
                     <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                       <img src={logo} alt={label} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{label}</p>
+                      <p className="text-xs font-semibold text-slate-400 mb-1">{label}</p>
                       <input
                         value={socialLinks[key]}
                         onChange={e => setSocialLinks(prev => ({ ...prev, [key]: e.target.value }))}
@@ -406,15 +407,15 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
           {/* Options boutique + livraison */}
           <div className="space-y-3">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Options vendeur</p>
-            <div className="bg-slate-50 rounded-3xl p-5 space-y-5 border border-slate-100">
+            <p className="text-xs font-semibold text-slate-400 ml-1">Options vendeur</p>
+            <div className="bg-slate-50 rounded-xl p-5 space-y-5 border border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
                   </div>
                   <div>
-                    <p className="text-[12px] font-black text-slate-900">Boutique physique</p>
+                    <p className="text-[12px] font-semibold text-slate-900">Boutique physique</p>
                     <p className="text-[9px] text-slate-400 font-medium">Local pour recevoir clients</p>
                   </div>
                 </div>
@@ -427,7 +428,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="M8 17.5h7M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
                   </div>
                   <div>
-                    <p className="text-[12px] font-black text-slate-900">Livraison</p>
+                    <p className="text-[12px] font-semibold text-slate-900">Livraison</p>
                     <p className="text-[9px] text-slate-400 font-medium">Je gère l'expédition</p>
                   </div>
                 </div>
@@ -436,7 +437,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
               {/* Info livraison — message simple, pas de détails livreur ici */}
               {managesDelivery && (
-                <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
                   <p className="text-[10px] font-bold text-green-700">
                     💡 Le prix de livraison sera fixé directement par le livreur lors de l'assignation de ta commande.
                   </p>
@@ -447,15 +448,15 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
 
           {/* Moyens de paiement */}
           <div className="space-y-3">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Moyens de paiement</p>
+            <p className="text-xs font-semibold text-slate-400 ml-1">Moyens de paiement</p>
             <div className="space-y-3">
               {paymentMethods.map((pm, idx) => {
                 const m = MOBILE_PAYMENT_METHODS.find(x => x.id === pm.method);
                 return (
-                  <div key={idx} className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
+                  <div key={idx} className="flex items-center gap-3 bg-slate-50 rounded-lg px-4 py-3 border border-slate-100">
                     {m && <PaymentLogo logo={m.logo} name={m.name} color={m.color} size={36} />}
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-slate-900 text-[11px]">{m?.name}</p>
+                      <p className="font-semibold text-slate-900 text-[11px]">{m?.name}</p>
                       <p className="text-slate-500 text-[10px] font-bold truncate">
                         {pm.phone} · {pm.holderName}
                         {(pm as any).waveLink && <span className="text-blue-500 ml-1">· Lien Wave ✓</span>}
@@ -470,37 +471,37 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               })}
               {!addingPM ? (
                 <button onClick={() => setAddingPM(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-green-50 border-2 border-dashed border-green-200 rounded-2xl py-4 text-green-700 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                  className="w-full flex items-center justify-center gap-2 bg-green-50 border-2 border-dashed border-green-200 rounded-lg py-4 text-green-700 font-medium text-sm active:scale-[0.98] transition-all">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   Ajouter un moyen de paiement
                 </button>
               ) : (
-                <div className="bg-slate-50 rounded-2xl p-4 space-y-3 border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nouveau moyen</p>
+                <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-100">
+                  <p className="text-xs font-semibold text-slate-400">Nouveau moyen</p>
                   <div className="grid grid-cols-2 gap-2">
                     {MOBILE_PAYMENT_METHODS.map(m => (
                       <button key={m.id} onClick={() => setNewPM(p => ({ ...p, method: m.id }))}
                         className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${newPM.method === m.id ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white'}`}>
                         <PaymentLogo logo={m.logo} name={m.name} color={m.color} size={28} />
-                        <span className="text-[10px] font-black text-slate-700">{m.name.split(' ')[0]}</span>
+                        <span className="text-[10px] font-semibold text-slate-700">{m.name.split(' ')[0]}</span>
                       </button>
                     ))}
                   </div>
                   <input value={newPM.phone} onChange={e => setNewPM(p => ({ ...p, phone: e.target.value }))}
                     placeholder="Numéro mobile (ex: 0700000000)" type="tel"
-                    className="w-full px-4 py-3 bg-white rounded-xl text-[12px] font-mono border-2 border-transparent focus:border-green-500 outline-none"/>
+                    className="w-full px-4 py-3 bg-white rounded-lg text-[12px] font-mono border-2 border-transparent focus:border-emerald-500 outline-none"/>
                   <input value={newPM.holderName} onChange={e => setNewPM(p => ({ ...p, holderName: e.target.value }))}
                     placeholder="Nom du titulaire"
-                    className="w-full px-4 py-3 bg-white rounded-xl text-[12px] border-2 border-transparent focus:border-green-500 outline-none"/>
+                    className="w-full px-4 py-3 bg-white rounded-lg text-[12px] border-2 border-transparent focus:border-emerald-500 outline-none"/>
                   {newPM.method === 'wave' && (
                     <input value={newPM.waveLink} onChange={e => setNewPM(p => ({ ...p, waveLink: e.target.value }))}
                       placeholder="Lien Wave (optionnel) — wave.com/send?..."
-                      className="w-full px-4 py-3 bg-white rounded-xl text-[11px] border-2 border-transparent focus:border-blue-400 outline-none"/>
+                      className="w-full px-4 py-3 bg-white rounded-lg text-[11px] border-2 border-transparent focus:border-blue-400 outline-none"/>
                   )}
                   <div className="flex gap-2">
-                    <button onClick={() => setAddingPM(false)} className="flex-1 py-3 rounded-xl bg-white border border-slate-200 text-slate-500 font-black text-[10px] uppercase">Annuler</button>
+                    <button onClick={() => setAddingPM(false)} className="flex-1 py-3 rounded-lg bg-white border border-slate-200 text-slate-500 font-medium text-sm">Annuler</button>
                     <button onClick={handleAddPM} disabled={!newPM.phone.trim() || !newPM.holderName.trim()}
-                      className="flex-1 py-3 rounded-xl bg-green-600 text-white font-black text-[10px] uppercase disabled:opacity-40 active:scale-95 transition-all">
+                      className="flex-1 py-3 rounded-lg bg-emerald-600 text-white font-medium text-sm disabled:opacity-40 active:scale-[0.98] transition-all">
                       Ajouter
                     </button>
                   </div>
@@ -511,14 +512,13 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
         </>)}
 
         {error && (
-          <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+          <div className="bg-red-50 p-4 rounded-lg border border-red-100">
             <p className="text-red-600 text-xs font-bold text-center">{error}</p>
           </div>
         )}
 
         <button onClick={handleSave} disabled={loading}
-          className="w-full py-6 rounded-[2.5rem] font-bold uppercase tracking-[0.2em] text-[12px] transition-all shadow-2xl active:scale-[0.98] disabled:opacity-50 text-white"
-          style={{ background: 'linear-gradient(135deg, #115E2E, #16A34A)', boxShadow: '0 20px 40px rgba(22,163,74,0.3)' }}>
+          className="w-full py-6 rounded-xl bg-emerald-600 font-medium text-sm transition-all active:scale-[0.98] disabled:opacity-50 text-white">
           {loading ? (
             <div className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>

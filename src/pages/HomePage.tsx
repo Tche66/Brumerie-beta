@@ -49,27 +49,18 @@ interface HeroBadgesProps {
 }
 
 const HeroBadges = ({ onNavigateToVerification, onNavigateToChat, isGuest, onGuestAction, productCount = 0 }: HeroBadgesProps) => (
-  <div className="flex gap-2 mt-5 flex-wrap">
+  <div className="flex gap-2 mt-4 flex-wrap">
     <button
       onClick={() => isGuest ? onGuestAction?.('verification') : onNavigateToVerification?.()}
-      className="trust-badge active:scale-95 transition-all cursor-pointer">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/>
-      </svg>
-      Identité vérifiable
+      className="trust-badge active:scale-95 transition-transform cursor-pointer">
+      Vendeurs verifies
     </button>
     <button
       onClick={() => isGuest ? onGuestAction?.('chat') : onNavigateToChat?.()}
-      className="trust-badge active:scale-95 transition-all cursor-pointer">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      Chat Direct
+      className="trust-badge active:scale-95 transition-transform cursor-pointer">
+      Chat integre
     </button>
     <div className="trust-badge">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      </svg>
       Livraison locale
     </div>
   </div>
