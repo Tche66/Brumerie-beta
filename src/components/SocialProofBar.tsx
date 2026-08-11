@@ -1,21 +1,37 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { Users, ShoppingBag, PackageCheck } from 'lucide-react';
-
-interface SocialProofBarProps {
-  vendorCount?: number;
-  productCount?: number;
-  orderCount?: number;
-}
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { db } from '@/config/firebase';
 
 function formatNumber(n: number): string {
   return n.toLocaleString('fr-FR');
 }
 
-export function SocialProofBar({
-  vendorCount = 150,
-  productCount = 2500,
-  orderCount = 800,
-}: SocialProofBarProps) {
+export function SocialProofBar() {
+  const [vendorCount, setVendorCount] = useState(0);
+  const [productCount, setProductCount] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [sellers, products, orders] = await Promise.all([
+          getCountFromServer(query(collection(db, 'users'), where('role', '==', 'seller'))),
+          getCountFromServer(query(collection(db, 'products'), where('status', '==', 'active'))),
+          getCountFromServer(query(collection(db, 'orders'), where('status', '==', 'delivered'))),
+        ]);
+        setVendorCount(sellers.data().count);
+        setProductCount(products.data().count);
+        setOrderCount(orders.data().count);
+      } catch {
+        // Fallback silencieux — les compteurs restent à 0
+      }
+    };
+    fetchCounts();
+  }, []);
+
+  if (vendorCount === 0 && productCount === 0 && orderCount === 0) return null;
+
   const stats = [
     { icon: Users, value: vendorCount, label: 'vendeurs actifs' },
     { icon: ShoppingBag, value: productCount, label: 'articles en ligne' },
