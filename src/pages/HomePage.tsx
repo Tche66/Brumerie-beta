@@ -17,6 +17,7 @@ import { StoriesBar } from '@/components/StoriesBar';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
+import { SocialProofBar } from '@/components/SocialProofBar';
 import { getRepostsFeed, getRecentReposts, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { searchSellers, getSuggestedSellers } from '@/services/userService';
 import type { Repost } from '@/types';
@@ -315,6 +316,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   return (
     <div className="min-h-screen bg-white pb-24 font-sans">
       <Header onProfileClick={onProfileClick} onSearchChange={setSearchTerm} searchTerm={searchTerm} onNotificationsClick={onNotificationsClick} onLogoClick={onLogoClick} />
+
+      {/* Social Proof — compteurs activité plateforme */}
+      <SocialProofBar />
 
       {/* Bannière système admin */}
       <SystemBanner />

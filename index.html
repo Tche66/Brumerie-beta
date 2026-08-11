@@ -243,7 +243,7 @@
         background: linear-gradient(90deg, #16A34A, #10B981, #16A34A);
         background-size: 200% 100%;
         border-radius: 10px;
-        animation: fill-progress 4.5s ease-out forwards, shimmer 1.5s linear infinite;
+        animation: fill-progress 1.5s ease-out forwards, shimmer 1.5s linear infinite;
       }
       .loader-text {
         font-size: 9px;
@@ -436,7 +436,7 @@
         });
       }
 
-      // Splash → visible minimum 3s, puis fade out quand React est prêt
+      // Splash → visible minimum 1.2s, puis fade out quand React est prêt
       var splashReady = false;
       var splashMinTime = false;
       window.__hideSplash = function () {
@@ -451,11 +451,11 @@
       setTimeout(function () {
         splashMinTime = true;
         if (splashReady) window.__hideSplash();
-      }, 2000);
+      }, 1200);
       setTimeout(function () {
         var splash = document.getElementById('splash');
         if (splash) splash.classList.add('fade-out');
-      }, 5000);
+      }, 2500);
     </script>
   </body>
 </html>

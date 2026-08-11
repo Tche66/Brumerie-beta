@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChangeEmailModal } from '@/components/ChangeEmailModal';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { Footer } from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
@@ -443,6 +444,9 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
           Brumerie v1.0 — Cote d'Ivoire
         </p>
       </div>
+
+      {/* Footer pro */}
+      <Footer onNavigate={onNavigate} />
 
       {/* Modals */}
       <ConfirmModal

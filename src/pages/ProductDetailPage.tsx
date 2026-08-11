@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react';
 import { VerifiedTag } from '@/components/VerifiedTag';
 import { ConditionBadge } from '@/components/ConditionBadge';
 import React, { useState, useRef, useEffect } from 'react';
@@ -507,23 +508,23 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
         {/* ── Header : Retour + Vendeur overlay ── */}
         <div className="absolute top-0 inset-x-0 px-4 pt-5 pb-8 flex items-center gap-3 z-10">
-          <button onClick={onBack} className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 active:scale-90 transition-all">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <button onClick={onBack} className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center active:scale-95 transition-all">
+            <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
           </button>
           <button
             onClick={() => onSellerClick(product.sellerId)}
-            className="w-9 h-9 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex-shrink-0 border-2 border-white/60 active:scale-90 transition-all"
+            className="w-9 h-9 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm flex-shrink-0 border-2 border-white/60 active:scale-95 transition-all"
           >
             {product.sellerPhoto
               ? <img src={product.sellerPhoto} alt={product.sellerName} className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center text-white font-black text-xs">{product.sellerName?.charAt(0)}</div>
+              : <div className="w-full h-full flex items-center justify-center text-white font-semibold text-xs">{product.sellerName?.charAt(0)}</div>
             }
           </button>
           <button
             onClick={() => onSellerClick(product.sellerId)}
             className="flex items-center gap-1.5 active:opacity-70 transition-all"
           >
-            <span className="text-[13px] font-black text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
+            <span className="text-sm font-semibold text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
               <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
             )}
@@ -547,7 +548,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 } catch {}
                 setFollowingLoading(false);
               }}
-              className={`ml-auto px-4 py-1.5 rounded-full text-[10px] font-black active:scale-90 transition-all shadow-lg disabled:opacity-50 ${
+              className={`ml-auto px-4 py-1.5 rounded-lg text-xs font-medium active:scale-95 transition-all disabled:opacity-50 ${
                 isFollowingSeller
                   ? 'bg-white/20 backdrop-blur-md text-white border border-white/30'
                   : 'bg-green-500 text-white'
@@ -568,8 +569,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
         {/* ── Badges status en bas à gauche ── */}
         <div className="absolute bottom-14 left-4 flex flex-col gap-2 z-10">
-          {isNew && <span className="bg-green-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg uppercase">Nouveau</span>}
-          {product.status === 'sold' && <span className="bg-slate-900 text-white text-[9px] font-black px-3 py-1.5 rounded-full shadow-lg uppercase">Vendu</span>}
+          {isNew && <span className="bg-green-600 text-white text-xs font-medium px-3 py-1.5 rounded-full">Nouveau</span>}
+          {product.status === 'sold' && <span className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-full">Vendu</span>}
         </div>
 
         {/* Dots indicateurs */}
@@ -584,7 +585,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
         {/* Compteur images */}
         {product.images.length > 1 && (
-          <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full z-10">
+          <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full z-10">
             {currentImageIndex + 1}/{product.images.length}
           </div>
         )}
@@ -598,12 +599,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             const el = document.getElementById('comments-section');
             el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
-          className="flex items-center gap-1.5 active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
           </svg>
-          <span className="text-[12px] font-black text-slate-500">
+          <span className="text-sm font-medium text-slate-500">
             {comments.length > 0 ? `${comments.length} commentaire${comments.length > 1 ? 's' : ''}` : 'Commenter'}
           </span>
         </button>
@@ -611,12 +612,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* Repost */}
         <button
           onClick={() => setShowRepost(v => !v)}
-          className="flex items-center gap-1.5 active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={repostDone ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
           </svg>
-          <span className={`text-[12px] font-black ${repostDone ? 'text-green-600' : 'text-slate-500'}`}>
+          <span className={`text-sm font-medium ${repostDone ? 'text-green-600' : 'text-slate-500'}`}>
             {repostDone ? "Partagé ✓" : "Repost"}
           </span>
         </button>
@@ -624,13 +625,13 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* Partager */}
         <button
           onClick={handleShare}
-          className="flex items-center gap-1.5 active:scale-90 transition-transform"
+          className="flex items-center gap-1.5 active:scale-95 transition-transform"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={copySuccess ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
-          <span className={`text-[12px] font-black ${copySuccess ? 'text-green-600' : 'text-slate-500'}`}>
+          <span className={`text-sm font-medium ${copySuccess ? 'text-green-600' : 'text-slate-500'}`}>
             {copySuccess ? 'Copié ✓' : 'Partager'}
           </span>
         </button>
@@ -645,12 +646,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             setIsBookmarked(!isBookmarked);
             await refreshUserProfile();
           }}
-          className="flex items-center gap-1.5 active:scale-90 transition-transform ml-auto"
+          className="flex items-center gap-1.5 active:scale-95 transition-transform ml-auto"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill={isBookmarked ? '#16A34A' : 'none'} stroke={isBookmarked ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
           </svg>
-          <span className={`text-[12px] font-black ${isBookmarked ? 'text-green-600' : 'text-slate-500'}`}>
+          <span className={`text-sm font-medium ${isBookmarked ? 'text-green-600' : 'text-slate-500'}`}>
             {isBookmarked ? 'Enregistre' : 'Enregistrer'}
           </span>
         </button>
@@ -659,10 +660,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── MODAL REPOST ── */}
       {showRepost && (
         <div className="px-6 py-4 bg-green-50 border-b border-green-100">
-          <p className="text-[11px] font-black text-green-700 uppercase tracking-wider mb-3">
+          <p className="text-xs font-medium text-green-700 mb-3">
             🔄 Partager avec un commentaire
           </p>
-          <div className="bg-white rounded-2xl border-2 border-green-200 overflow-hidden mb-3">
+          <div className="bg-white rounded-lg border-2 border-green-200 overflow-hidden mb-3">
             <textarea
               autoFocus
               value={repostComment}
@@ -676,15 +677,14 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           <div className="flex gap-2">
             <button
               onClick={() => { setShowRepost(false); setRepostComment(''); }}
-              className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all"
+              className="flex-1 py-3 rounded-lg bg-slate-100 text-slate-500 text-sm font-medium active:scale-[0.98] transition-all"
             >
               Annuler
             </button>
             <button
               onClick={handleRepost}
               disabled={sendingRepost}
-              className="flex-1 py-3 rounded-2xl text-white text-[11px] font-black uppercase tracking-wider disabled:opacity-60 active:scale-95 transition-all flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+              className="flex-1 py-3 rounded-lg bg-emerald-600 text-white text-sm font-medium disabled:opacity-60 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               {sendingRepost
                 ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
@@ -715,44 +715,44 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 return (
                   <>
                     {(p.flashSaleLabel || p.flashSaleActive) && (
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-full mb-2 animate-pulse shadow-md">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-full mb-2 animate-pulse shadow-md">
                         🔥 {p.flashSaleLabel || 'Vente flash en cours'}
                         {p.promoActiveUntil && (
                           <span className="opacity-80 font-bold">· jusqu'au {new Date(p.promoActiveUntil).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
                         )}
                       </div>
                     )}
-                    <p className="price-brumerie text-[38px] text-slate-900 leading-none" style={{ fontFamily:"'Syne',sans-serif", fontWeight:900, letterSpacing:'-0.04em' }}>
+                    <p className="price-brumerie text-2xl text-slate-900 leading-none" style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, letterSpacing:'-0.02em' }}>
                       {displayPrice.toLocaleString('fr-FR')} <span className="text-[20px] text-slate-400 font-bold" style={{ fontFamily:"'DM Sans',sans-serif" }}>FCFA</span>
                     </p>
                     {crossed && crossed > displayPrice && (
                       <div className="flex items-center gap-2">
                         <span className="text-slate-400 line-through text-[15px] font-bold">{crossed.toLocaleString('fr-FR')} F</span>
-                        <span className="bg-red-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">-{pct}%</span>
+                        <span className="bg-red-500 text-white text-xs font-medium px-2.5 py-1 rounded-lg shadow-sm">-{pct}%</span>
                       </div>
                     )}
                   </>
                 );
               })()}
             </div>
-            <div className="flex items-center gap-2 mt-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+            <div className="flex items-center gap-2 mt-2 text-gray-500 font-medium text-xs">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="#94A3B8"><path d="M12 2a8 8 0 00-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 00-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z"/></svg>
               <span>{product.neighborhood}</span>
               <span className="w-1 h-1 bg-slate-200 rounded-full"/>
               <span>{formatRelativeDate(product.createdAt)}</span>
             </div>
           </div>
-          <span className="bg-slate-100 text-slate-700 text-[9px] font-black px-4 py-2 rounded-xl uppercase tracking-widest">{categoryLabel}</span>
+          <span className="bg-slate-100 text-slate-700 text-xs font-medium px-4 py-2 rounded-xl">{categoryLabel}</span>
         </div>
 
-        <h1 className="text-2xl font-black text-slate-900 mb-3 leading-tight uppercase">{product.title}</h1>
+        <h1 className="text-xl font-semibold text-slate-900 mb-3 leading-tight">{product.title}</h1>
 
         {/* État + Quantité */}
         {(product.condition || (product.quantity && product.quantity > 1)) && (
           <div className="flex items-center gap-3 mb-5 flex-wrap">
             {product.condition && <ConditionBadge condition={product.condition} size="md" />}
             {product.quantity && product.quantity > 1 && (
-              <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs font-medium px-3 py-1 rounded-full">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
                   <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
@@ -768,15 +768,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           const desc = product.description || 'Aucune description fournie.';
           const isLong = desc.length > 200;
           return (
-            <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Description</p>
+            <div className="bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100">
+              <p className="text-xs font-medium text-gray-500 mb-3">Description</p>
               <p className="text-slate-700 text-sm leading-relaxed font-medium" style={{ whiteSpace: 'pre-line' }}>
                 {isLong && !expandedDesc ? desc.slice(0, 200) + '...' : desc}
               </p>
               {isLong && (
                 <button
                   onClick={() => setExpandedDesc(v => !v)}
-                  className="mt-3 text-[11px] font-black text-green-600 uppercase tracking-widest active:scale-95 transition-all"
+                  className="mt-3 text-xs font-medium text-green-600 active:scale-95 transition-all"
                 >
                   {expandedDesc ? '▲ Réduire' : '▼ Voir plus'}
                 </button>
@@ -806,7 +806,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   console.error('[Contacter vendeur]', e);
                 }
               }}
-              className="flex-1 py-4 rounded-2xl bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
+              className="flex-1 py-4 rounded-lg bg-slate-900 text-white font-medium text-sm flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
@@ -817,7 +817,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               <a
                 href={`https://wa.me/${sellerWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Bonjour ! Je suis interesse par votre article "' + product.title + '" sur Brumerie.')}`}
                 target="_blank" rel="noopener noreferrer"
-                className="w-14 py-4 rounded-2xl bg-green-500 flex items-center justify-center active:scale-95 transition-all shadow-lg shadow-green-200"
+                className="w-14 py-4 rounded-lg bg-green-500 flex items-center justify-center active:scale-95 transition-all shadow-sm"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -831,10 +831,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* ── TAGS VENDEURS ── */}
         {product.taggedSellerNames && product.taggedSellerNames.length > 0 && (
           <div className="mb-5 px-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Vendeurs tagués</p>
+            <p className="text-xs font-medium text-gray-500 mb-2">Vendeurs tagués</p>
             <div className="flex flex-wrap gap-2">
               {product.taggedSellerNames.map((name, i) => (
-                <span key={i} className="flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl text-[11px] font-black text-green-700">
+                <span key={i} className="flex items-center gap-1.5 bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl text-xs font-medium text-green-700">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
@@ -851,28 +851,28 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           {/* Compteurs — masquables par le vendeur */}
           {!product.hideStats && (
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                <p className="text-lg font-black text-slate-900">
+              <div className="bg-white rounded-lg p-3 text-center border border-slate-100 shadow-sm">
+                <p className="text-lg font-semibold text-slate-900">
                   {liveContactCount === -1 ? '…' : liveContactCount}
                 </p>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">intéressés</p>
+                <p className="text-xs font-medium text-gray-500 mt-0.5">intéressés</p>
               </div>
-              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                <p className="text-lg font-black text-slate-900">
+              <div className="bg-white rounded-lg p-3 text-center border border-slate-100 shadow-sm">
+                <p className="text-lg font-semibold text-slate-900">
                   {liveViewCount === -1 ? '…' : liveViewCount}
                 </p>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Vues</p>
+                <p className="text-xs font-medium text-gray-500 mt-0.5">Vues</p>
               </div>
-              <div className="bg-white rounded-2xl p-3 text-center border border-slate-100 shadow-sm">
-                <p className={`text-sm font-black ${product.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
+              <div className="bg-white rounded-lg p-3 text-center border border-slate-100 shadow-sm">
+                <p className={`text-sm font-semibold ${product.status === 'sold' ? 'text-red-500' : 'text-green-600'}`}>
                   {product.status === 'sold' ? 'Vendu' : 'Dispo'}
                 </p>
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mt-0.5">Statut</p>
+                <p className="text-xs font-medium text-gray-500 mt-0.5">Statut</p>
               </div>
             </div>
           )}
           {product.hideStats && (
-            <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <div className="bg-green-50 border border-green-100 rounded-lg px-4 py-3 flex items-center gap-2">
               <span className="text-green-600 text-base">✅</span>
               <span className="text-[11px] font-bold text-green-700">Article disponible · Publié sur Brumerie</span>
             </div>
@@ -891,38 +891,38 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           <div className="grid grid-cols-2 gap-2">
             {/* Vendeur vérifié */}
             {(product.sellerVerified || product.sellerPremium) && (
-              <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <div className="bg-green-50 border border-green-100 rounded-lg px-4 py-3 flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
                 <div>
-                  <p className="text-[10px] font-black text-green-800">Vendeur Vérifié</p>
+                  <p className="text-xs font-medium text-green-800">Vendeur Vérifié</p>
                   <p className="text-[9px] text-green-600">Identité contrôlée</p>
                 </div>
               </div>
             )}
             {/* Paiement sécurisé */}
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
               <div>
-                <p className="text-[10px] font-black text-blue-800">Paiement Mobile Money</p>
+                <p className="text-xs font-medium text-blue-800">Paiement Mobile Money</p>
                 <p className="text-[9px] text-blue-600">Wave · Orange · MTN</p>
               </div>
             </div>
             {/* Article récent */}
             {isNew && (
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <div className="bg-amber-50 border border-amber-100 rounded-lg px-4 py-3 flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
                 <div>
-                  <p className="text-[10px] font-black text-amber-800">Nouveau</p>
+                  <p className="text-xs font-medium text-amber-800">Nouveau</p>
                   <p className="text-[9px] text-amber-600">Publié récemment</p>
                 </div>
               </div>
             )}
             {/* Livraison disponible */}
             {sellerDelivery?.phone && (
-              <div className="bg-purple-50 border border-purple-100 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <div className="bg-purple-50 border border-purple-100 rounded-lg px-4 py-3 flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="16" r="1"/><circle cx="20" cy="16" r="1"/></svg>
                 <div>
-                  <p className="text-[10px] font-black text-purple-800">Livraison dispo</p>
+                  <p className="text-xs font-medium text-purple-800">Livraison dispo</p>
                   <p className="text-[9px] text-purple-600">Dans ton quartier</p>
                 </div>
               </div>
@@ -930,10 +930,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </div>
 
           {/* Garantie Brumerie */}
-          <div className="bg-slate-900 rounded-2xl px-5 py-4 flex items-start gap-3">
+          <div className="bg-slate-900 rounded-lg px-5 py-4 flex items-start gap-3">
             <span className="text-xl flex-shrink-0">🛡️</span>
             <div>
-              <p className="text-[11px] font-black text-white mb-1">Protection acheteur Brumerie</p>
+              <p className="text-xs font-medium text-white mb-1">Protection acheteur Brumerie</p>
               <p className="text-[10px] text-slate-400 leading-snug">
                 Problème avec ta commande ? Notre équipe intervient sur WhatsApp <span className="text-green-400 font-bold">+225 05 86 86 76 93</span>. Chaque vendeur est soumis à nos règles d'utilisation.
               </p>
@@ -943,16 +943,16 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
         {/* ── CARTE VENDEUR enrichie ── */}
         <button onClick={() => onSellerClick(product.sellerId)}
-          className="w-full bg-slate-900 rounded-[2.5rem] p-5 flex items-center gap-4 active:scale-95 transition-all shadow-2xl mb-6">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white/10 border-2 border-white/20 shrink-0">
+          className="w-full bg-slate-900 rounded-xl p-5 flex items-center gap-4 active:scale-95 transition-all shadow-sm mb-6">
+          <div className="w-14 h-14 rounded-lg overflow-hidden bg-white/10 border-2 border-white/20 shrink-0">
             {product.sellerPhoto
               ? <img src={product.sellerPhoto} alt="" className="w-full h-full object-cover"/>
-              : <div className="w-full h-full flex items-center justify-center bg-green-500 text-white text-xl font-black">{product.sellerName?.charAt(0).toUpperCase()}</div>
+              : <div className="w-full h-full flex items-center justify-center bg-green-500 text-white text-xl font-semibold">{product.sellerName?.charAt(0).toUpperCase()}</div>
             }
           </div>
           <div className="flex-1 text-left min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-black text-white text-sm uppercase truncate">{product.sellerName}</span>
+              <span className="font-semibold text-white text-sm truncate">{product.sellerName}</span>
               {(product.sellerVerified || product.sellerPremium) && (
                 <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="xs" />
               )}
@@ -970,7 +970,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 <span className="text-[9px] text-slate-400 font-bold">{avgRating.toFixed(1)} ({reviewCount} avis)</span>
               </div>
             )}
-            <p className="text-[8px] text-slate-500 uppercase font-black tracking-widest">Voir le vendeur →</p>
+            <p className="text-xs text-gray-500 font-medium">Voir le vendeur →</p>
           </div>
         </button>
 
@@ -978,13 +978,13 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* ── COMMENTAIRES ── */}
         <div id="comments-section" className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-black text-slate-900 text-sm uppercase tracking-tight">
+            <p className="font-semibold text-slate-900 text-sm">
               Commentaires {comments.length > 0 && <span className="text-slate-400 font-bold">({comments.length})</span>}
             </p>
             {comments.length > 3 && (
               <button
                 onClick={() => setShowAllComments(v => !v)}
-                className="text-[10px] font-black text-green-600 uppercase tracking-wider"
+                className="text-xs font-medium text-green-600"
               >
                 {showAllComments ? 'Réduire' : `Voir tous (${comments.length})`}
               </button>
@@ -997,12 +997,12 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                 {userProfile?.photoURL
                   ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
-                  : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{userProfile?.name?.charAt(0)}</div>
+                  : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-sm">{userProfile?.name?.charAt(0)}</div>
                 }
               </div>
               {/* ── Dropdown mentions @utilisateur ── */}
               {mentionResults.length > 0 && (
-                <div className="mb-2 bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+                <div className="mb-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                   {mentionResults.map(user => (
                     <button key={user.id}
                       onClick={() => {
@@ -1018,11 +1018,11 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                       <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                         {user.photoURL
                           ? <img src={user.photoURL} alt="" className="w-full h-full object-cover"/>
-                          : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{user.name?.charAt(0)?.toUpperCase()}</div>
+                          : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-xs">{user.name?.charAt(0)?.toUpperCase()}</div>
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-slate-900 text-[12px] truncate">{user.name}</p>
+                        <p className="font-semibold text-slate-900 text-[12px] truncate">{user.name}</p>
                         {user.neighborhood && <p className="text-[10px] text-slate-400 truncate">{user.neighborhood}</p>}
                       </div>
                       {(user.isVerified || user.isPremium) && (
@@ -1036,14 +1036,14 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 </div>
               )}
 
-              <div className="flex-1 bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-green-400 transition-all overflow-hidden">
+              <div className="flex-1 bg-slate-50 rounded-lg border-2 border-transparent focus-within:border-green-400 transition-all overflow-hidden">
                 {/* Preview photo sélectionnée */}
                 {commentPhotoPreview && (
                   <div className="relative mx-3 mt-3">
-                    <img src={commentPhotoPreview} alt="" className="w-24 h-24 object-cover rounded-2xl border border-slate-200"/>
+                    <img src={commentPhotoPreview} alt="" className="w-24 h-24 object-cover rounded-lg border border-slate-200"/>
                     <button
                       onClick={() => { setCommentPhoto(null); setCommentPhotoPreview(null); }}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-md active:scale-90 transition-all"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-semibold shadow-md active:scale-95 transition-all"
                     >✕</button>
                   </div>
                 )}
@@ -1078,7 +1078,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 {(commentText.trim() || commentPhoto) && (
                   <div className="flex items-center justify-between px-3 pb-2">
                     {/* Bouton ajouter photo */}
-                    <label className="cursor-pointer active:scale-90 transition-all">
+                    <label className="cursor-pointer active:scale-95 transition-all">
                       <input
                         type="file"
                         accept="image/*"
@@ -1102,8 +1102,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                     <button
                       onClick={handleAddComment}
                       disabled={sendingComment || uploadingCommentPhoto || (!commentText.trim() && !commentPhoto)}
-                      className="px-4 py-1.5 rounded-xl text-white text-[11px] font-black uppercase tracking-wider disabled:opacity-50 active:scale-95 transition-all flex items-center gap-1.5"
-                      style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                      className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium disabled:opacity-50 active:scale-[0.98] transition-all flex items-center gap-1.5"
                     >
                       {sendingComment || uploadingCommentPhoto
                         ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
@@ -1115,7 +1114,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 {/* Bouton photo visible même si pas encore de texte */}
                 {!commentText.trim() && !commentPhoto && (
                   <div className="flex items-center px-3 pb-2 pt-1">
-                    <label className="cursor-pointer active:scale-90 transition-all">
+                    <label className="cursor-pointer active:scale-95 transition-all">
                       <input
                         type="file"
                         accept="image/*"
@@ -1146,7 +1145,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           {isGuest && (
             <button
               onClick={() => onGuestAction?.('comment')}
-              className="w-full py-4 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 text-[12px] font-bold mb-4 active:scale-95 transition-all"
+              className="w-full py-4 rounded-lg bg-slate-50 border-2 border-dashed border-slate-200 text-slate-400 text-[12px] font-bold mb-4 active:scale-95 transition-all"
             >
               Connecte-toi pour commenter
             </button>
@@ -1155,7 +1154,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           {/* Liste des commentaires */}
           {comments.length === 0 ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center mx-auto mb-3">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                 </svg>
@@ -1182,17 +1181,17 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
                 const CommentBubble = ({ c, isReply = false }: { c: any; isReply?: boolean }) => (
                   <div className={`flex gap-2.5 ${isReply ? 'ml-10' : ''}`}>
-                    <div className={`${isReply ? 'w-7 h-7' : 'w-8 h-8'} rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5 cursor-pointer active:scale-90 transition-all`}
+                    <div className={`${isReply ? 'w-7 h-7' : 'w-8 h-8'} rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 mt-0.5 cursor-pointer active:scale-95 transition-all`}
                       onClick={() => c.userId && onSellerClick(c.userId)}>
                       {c.userPhoto
                         ? <img src={c.userPhoto} alt="" className="w-full h-full object-cover"/>
-                        : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[10px]">{c.userName?.charAt(0).toUpperCase()}</div>
+                        : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-[10px]">{c.userName?.charAt(0).toUpperCase()}</div>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`${isReply ? 'bg-green-50 border border-green-100' : 'bg-slate-50'} rounded-2xl rounded-tl-sm px-3 py-2.5`}>
+                      <div className={`${isReply ? 'bg-green-50 border border-green-100' : 'bg-slate-50'} rounded-lg rounded-tl-sm px-3 py-2.5`}>
                         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="font-black text-slate-900 text-[11px] cursor-pointer active:text-green-700 transition-colors"
+                          <span className="font-semibold text-slate-900 text-[11px] cursor-pointer active:text-green-700 transition-colors"
                             onClick={() => c.userId && onSellerClick(c.userId)}>{c.userName}</span>
                           {c.userVerified && (
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
@@ -1210,7 +1209,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                             <img
                               src={c.photoUrl}
                               alt="photo commentaire"
-                              className="max-w-[220px] rounded-2xl border border-slate-200 cursor-pointer active:opacity-80 transition-opacity"
+                              className="max-w-[220px] rounded-lg border border-slate-200 cursor-pointer active:opacity-80 transition-opacity"
                               onClick={() => window.open(c.photoUrl, '_blank')}
                             />
                           </div>
@@ -1233,7 +1232,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                                 setReplyText('');
                               }
                             }}
-                            className="text-[10px] font-black text-slate-400 hover:text-green-600 transition-colors"
+                            className="text-xs font-medium text-slate-400 hover:text-green-600 transition-colors"
                           >
                             Répondre
                           </button>
@@ -1255,10 +1254,10 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                           <div className="w-6 h-6 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
                             {userProfile?.photoURL
                               ? <img src={userProfile.photoURL} alt="" className="w-full h-full object-cover"/>
-                              : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-[8px]">{userProfile?.name?.charAt(0)}</div>
+                              : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-[8px]">{userProfile?.name?.charAt(0)}</div>
                             }
                           </div>
-                          <div className="flex-1 bg-white border-2 border-green-300 rounded-2xl overflow-hidden">
+                          <div className="flex-1 bg-white border-2 border-green-300 rounded-lg overflow-hidden">
                             <textarea
                               autoFocus
                               value={replyText}
@@ -1282,8 +1281,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                                 <button
                                   onClick={() => handleAddReply(c.id)}
                                   disabled={sendingReply || !replyText.trim()}
-                                  className="px-3 py-1 rounded-xl text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-50 active:scale-95 transition-all"
-                                  style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}
+                                  className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium disabled:opacity-50 active:scale-[0.98] transition-all"
                                 >
                                   {sendingReply
                                     ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
@@ -1320,21 +1318,21 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* ── REPOSTS ── */}
         {reposts.length > 0 && (
           <div className="mb-8">
-            <p className="font-black text-slate-900 text-sm uppercase tracking-tight mb-4">
+            <p className="font-semibold text-slate-900 text-sm mb-4">
               🔄 Partagé par <span className="text-slate-400 font-bold">({reposts.length})</span>
             </p>
             <div className="space-y-3">
               {reposts.map(r => (
-                <div key={r.id} className="flex gap-3 bg-slate-50 rounded-2xl p-3">
+                <div key={r.id} className="flex gap-3 bg-slate-50 rounded-lg p-3">
                   <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                     {r.reposterPhoto
                       ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
-                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-xs">{r.reposterName?.charAt(0).toUpperCase()}</div>
+                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-xs">{r.reposterName?.charAt(0).toUpperCase()}</div>
                     }
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-black text-slate-900 text-[11px]">{r.reposterName}</span>
+                      <span className="font-semibold text-slate-900 text-[11px]">{r.reposterName}</span>
                       <span className="text-[9px] text-slate-400 font-bold bg-slate-200 px-1.5 py-0.5 rounded-full">🔄 a partagé</span>
                     </div>
                     {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
@@ -1350,7 +1348,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                         await deleteRepost(r.id);
                         setReposts(prev => prev.filter(rp => rp.id !== r.id));
                       }}
-                      className="self-center w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center active:scale-90 transition-all flex-shrink-0">
+                      className="self-center w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center active:scale-95 transition-all flex-shrink-0">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
                         <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
                       </svg>
@@ -1365,7 +1363,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         {/* ── PRODUITS SIMILAIRES ── */}
         {similarProducts.length > 0 && (
           <div className="mb-8">
-            <p className="font-black text-slate-900 text-sm uppercase tracking-tight mb-4">Articles similaires</p>
+            <p className="font-semibold text-slate-900 text-sm mb-4">Articles similaires</p>
             <div className="grid grid-cols-2 gap-3">
               {similarProducts.slice(0, 4).map(p => (
                 <div key={p.id} className="active:scale-95 transition-transform">
@@ -1384,7 +1382,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
         {/* Signaler */}
         <button onClick={() => setShowTrustModal(true)}
-          className="w-full py-3 flex items-center justify-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+          className="w-full py-3 flex items-center justify-center gap-2 text-slate-400 text-xs font-medium">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
@@ -1394,29 +1392,29 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
 
       {/* ── FOOTER FIXE ── */}
       {chatLimitError && (
-        <div className="fixed bottom-24 left-4 right-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 z-40 shadow-lg">
+        <div className="fixed bottom-24 left-4 right-4 bg-amber-50 border border-amber-200 rounded-lg p-4 z-40 shadow-sm">
           <p className="text-[11px] font-bold text-amber-700">⚠️ {chatLimitError}</p>
-          <button onClick={() => setChatLimitError('')} className="absolute top-2 right-3 text-amber-400 font-black text-sm">×</button>
+          <button onClick={() => setChatLimitError('')} className="absolute top-2 right-3 text-amber-400 font-semibold text-sm">×</button>
         </div>
       )}
 
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 z-50 p-4">
         {product.status === 'sold' ? (
-          <div className="w-full py-5 rounded-2xl bg-slate-100 text-slate-300 font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center">VENDU</div>
+          <div className="w-full py-5 rounded-lg bg-slate-100 text-slate-300 font-medium text-sm flex items-center justify-center">VENDU</div>
         ) : isSelf ? (
           <div className="flex gap-2">
             <button onClick={() => onBack()}
-              className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+              className="flex-1 py-4 rounded-lg border-2 border-slate-200 text-slate-600 font-medium text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Modifier
             </button>
             <button onClick={() => setShowBoost(true)}
-              className="flex-1 py-4 rounded-2xl bg-blue-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-lg shadow-blue-100">
+              className="flex-1 py-4 rounded-lg bg-blue-500 text-white font-medium text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
               Boost
             </button>
             <button onClick={() => setShowOwnerMenu(true)}
-              className="w-12 py-4 rounded-2xl bg-slate-100 flex items-center justify-center active:scale-95 transition-all">
+              className="w-12 py-4 rounded-lg bg-slate-100 flex items-center justify-center active:scale-95 transition-all">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
                 <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
               </svg>
@@ -1427,7 +1425,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           <div className="flex gap-3">
             {!isGuest && currentUser?.uid !== product.sellerId && (
               <button onClick={() => setShowOfferModal(true)}
-                className="flex-1 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                className="flex-1 py-5 rounded-lg font-medium text-sm border-2 border-slate-200 text-slate-700 bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 💰 Offre
               </button>
             )}
@@ -1437,8 +1435,8 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 setAddedToCart(true);
                 setTimeout(() => setAddedToCart(false), 2500);
               }}
-              className={`flex-1 py-5 rounded-[2rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
-                addedToCart ? 'bg-green-500 text-white shadow-lg shadow-green-200' : 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+              className={`flex-1 py-5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+                addedToCart ? 'bg-green-500 text-white shadow-sm' : 'bg-orange-500 text-white shadow-sm'
               }`}>
               {addedToCart ? (
                 <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> Ajouté !</>
@@ -1447,8 +1445,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               )}
             </button>
             <button onClick={() => { if (isGuest) { onGuestAction?.('contact'); return; } onBuyClick?.(product); }}
-              className="flex-[2] py-5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-white flex items-center justify-center gap-2 shadow-xl shadow-green-200 active:scale-95 transition-all"
-              style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+              className="flex-[2] py-5 rounded-lg bg-emerald-600 font-medium text-sm text-white flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
               </svg>
@@ -1460,7 +1457,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <a
               href={getDeliveryLink()}
               target="_blank" rel="noopener noreferrer"
-              className="mt-3 w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all border-2 border-green-200 text-green-700 bg-green-50">
+              className="mt-3 w-full py-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 active:scale-95 transition-all border-2 border-green-200 text-green-700 bg-green-50">
               🚚 Livraison disponible — Contacter {sellerDelivery.name || 'le livreur'}
             </a>
           )}
@@ -1486,19 +1483,19 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {/* ── MODAL FAIRE UNE OFFRE ── */}
       {showOfferModal && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[300] flex items-end justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
+          <div className="bg-white rounded-xl w-full max-w-md p-8" style={{ maxHeight: '85dvh', overflowY: 'auto' }}>
             <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"/>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0">
+              <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
                 <img src={product.images?.[0]} alt="" className="w-full h-full object-cover"/>
               </div>
               <div>
-                <p className="font-black text-slate-900 text-sm truncate">{product.title}</p>
-                <p className="text-green-600 font-black">{product.price.toLocaleString('fr-FR')} FCFA</p>
+                <p className="font-semibold text-slate-900 text-sm truncate">{product.title}</p>
+                <p className="text-green-600 font-semibold">{product.price.toLocaleString('fr-FR')} FCFA</p>
                 <p className="text-[10px] text-slate-400 font-bold">Prix demandé par le vendeur</p>
               </div>
             </div>
-            <p className="font-black text-slate-900 text-lg uppercase tracking-tight mb-1">Faire une offre</p>
+            <p className="font-semibold text-slate-900 text-lg uppercase tracking-tight mb-1">Faire une offre</p>
             <p className="text-slate-400 text-[11px] mb-5">Proposez votre prix — le vendeur pourra accepter ou refuser.</p>
             <div className="relative mb-5">
               <input
@@ -1506,9 +1503,9 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                 value={offerInput}
                 onChange={e => setOfferInput(e.target.value)}
                 placeholder={`Ex: ${Math.round(product.price * 0.85).toLocaleString('fr-FR')}`}
-                className="w-full bg-slate-50 rounded-2xl px-5 py-4 text-[18px] font-black border-2 border-transparent focus:border-green-400 focus:bg-white outline-none transition-all"
+                className="w-full bg-slate-50 rounded-lg px-5 py-4 text-[18px] font-semibold border-2 border-transparent focus:border-green-400 focus:bg-white outline-none transition-all"
               />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">FCFA</span>
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 font-semibold text-slate-400 text-sm">FCFA</span>
             </div>
             {offerInput && parseInt(offerInput) > 0 && (
               <div className={`text-[11px] font-bold mb-4 px-3 py-2 rounded-xl ${
@@ -1528,12 +1525,11 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             )}
             <div className="flex gap-3">
               <button onClick={() => { setShowOfferModal(false); setOfferInput(''); }}
-                className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-black text-[11px] uppercase">Annuler</button>
+                className="flex-1 py-4 rounded-lg bg-slate-100 text-slate-700 font-medium text-sm">Annuler</button>
               <button
                 onClick={handleSendOffer}
                 disabled={!offerInput || parseInt(offerInput) <= 0 || sendingOffer}
-                className="flex-[2] py-4 rounded-2xl text-white font-black text-[11px] uppercase disabled:opacity-40 active:scale-95 transition-all flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg,#16A34A,#115E2E)' }}>
+                className="flex-[2] py-4 rounded-lg bg-emerald-600 text-white font-medium text-sm disabled:opacity-40 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 {sendingOffer ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : '💰 Envoyer l\'offre'}
               </button>
             </div>
@@ -1548,15 +1544,15 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowOwnerMenu(false)} />
           <div className="relative w-full bg-white rounded-t-[2rem] p-5 pb-8 animate-slide-up">
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5"/>
-            <h3 className="text-[13px] font-black text-slate-900 mb-4">Gérer mon article</h3>
+            <h3 className="text-[13px] font-semibold text-slate-900 mb-4">Gérer mon article</h3>
             <div className="space-y-2">
               <button onClick={() => { setShowOwnerMenu(false); onBack(); }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg bg-slate-50 active:bg-slate-100 transition-all">
                 <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-black text-slate-800">Modifier l'annonce</p>
+                  <p className="text-sm font-medium text-slate-800">Modifier l'annonce</p>
                   <p className="text-[9px] text-slate-400">Changer titre, prix, photos...</p>
                 </div>
               </button>
@@ -1570,34 +1566,34 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   } catch {} finally { setMarkingSold(false); }
                 }}
                 disabled={markingSold}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg bg-slate-50 active:bg-slate-100 transition-all">
                 <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-black text-slate-800">{markingSold ? 'En cours...' : 'Marquer comme vendu'}</p>
+                  <p className="text-sm font-medium text-slate-800">{markingSold ? 'En cours...' : 'Marquer comme vendu'}</p>
                   <p className="text-[9px] text-slate-400">L'article ne sera plus visible</p>
                 </div>
               </button>
 
               <button onClick={() => setShowBoost(true)}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-slate-50 active:bg-slate-100 transition-all">
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg bg-slate-50 active:bg-slate-100 transition-all">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-black text-slate-800">Booster l'article</p>
+                  <p className="text-sm font-medium text-slate-800">Booster l'article</p>
                   <p className="text-[9px] text-slate-400">Plus de visibilité pendant 7 jours</p>
                 </div>
               </button>
 
               <button onClick={() => { setShowOwnerMenu(false); setShowDeleteConfirm(true); }}
-                className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-red-50 active:bg-red-100 transition-all">
+                className="w-full flex items-center gap-4 px-4 py-4 rounded-lg bg-red-50 active:bg-red-100 transition-all">
                 <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-[12px] font-black text-red-600">Supprimer l'annonce</p>
+                  <p className="text-sm font-medium text-red-600">Supprimer l'annonce</p>
                   <p className="text-[9px] text-red-400">Action irréversible</p>
                 </div>
               </button>
@@ -1610,19 +1606,19 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center px-6" style={{ maxWidth: 480, margin: '0 auto' }}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="relative bg-white rounded-3xl p-6 w-full max-w-[340px] shadow-2xl">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="relative bg-white rounded-xl p-6 w-full max-w-[340px] shadow-sm">
+            <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-4">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round">
                 <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
                 <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
               </svg>
             </div>
-            <h3 className="text-[15px] font-black text-slate-900 text-center mb-2">Supprimer cette annonce ?</h3>
+            <h3 className="text-[15px] font-semibold text-slate-900 text-center mb-2">Supprimer cette annonce ?</h3>
             <p className="text-[11px] text-slate-500 text-center mb-1 font-bold">"{product.title}"</p>
             <p className="text-[10px] text-slate-400 text-center mb-6">Cette action est irréversible. L'annonce sera définitivement supprimée.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all">
+                className="flex-1 py-3.5 rounded-lg border-2 border-slate-200 text-slate-600 font-medium text-sm active:scale-95 transition-all">
                 Annuler
               </button>
               <button
@@ -1639,7 +1635,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
                   }
                 }}
                 disabled={deleting}
-                className="flex-1 py-3.5 rounded-2xl bg-red-500 text-white font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                className="flex-1 py-3.5 rounded-lg bg-red-500 text-white font-medium text-sm active:scale-95 transition-all disabled:opacity-50">
                 {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
