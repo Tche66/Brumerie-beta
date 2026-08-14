@@ -98,8 +98,8 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
   const [loadingTrending, setLoadingTrending] = useState(false);
-  const [repostsFeed, setRepostsFeed] = useState<any[]>([]);
-  const [allReposts, setAllReposts] = useState<any[]>([]);
+  const [repostsFeed] = useState<any[]>([]);
+  const [allReposts] = useState<any[]>([]);
   const [sellerResults, setSellerResults] = useState<any[]>([]);
   const [sellerSearchLoading, setSellerSearchLoading] = useState(false);
   const [sellerSearchTerm, setSellerSearchTerm] = useState('');
@@ -227,11 +227,6 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
     return () => clearTimeout(t);
   }, [loadProducts]);
 
-  // ── Charger les reposts globaux au montage ──
-  useEffect(() => {
-    getRecentReposts(15).then(setAllReposts).catch(() => {});
-  }, []);
-
   // ── Recherche vendeurs quand searchTerm contient @ ou "vendeur:" ──
   useEffect(() => {
     const term = searchTerm.trim();
@@ -258,13 +253,9 @@ export function HomePage({ onProductClick, onProfileClick, onNotificationsClick,
       ? [...new Set([...ids, currentUser.uid])]
       : ids;
     setLoadingFollowing(true);
-    Promise.all([
-      getFollowingFeed(allIds),
-      getRepostsFeed(allIds),
-    ])
-      .then(([feed, reposts]) => {
+    getFollowingFeed(allIds)
+      .then((feed) => {
         setFollowingFeed(feed);
-        setRepostsFeed(reposts);
       })
       .catch((e) => console.error('[HomePage] followingFeed error:', e))
       .finally(() => setLoadingFollowing(false));

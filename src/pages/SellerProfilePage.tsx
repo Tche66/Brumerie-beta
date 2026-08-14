@@ -6,7 +6,6 @@ import { SocialIcon, SocialBar, SocialNetwork } from '@/components/SocialIcon';
 import { getUserById, updateUserProfile } from '@/services/userService';
 import { formatLastSeen, getActivityColor, isShopClosed, formatShopClosedUntil, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { getSellerProducts, updateProduct } from '@/services/productService';
-import { getRecentReposts } from '@/services/shopFeaturesService';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
 import { subscribeSellerReviews } from '@/services/reviewService';
 import { drawQROnCanvas } from '@/utils/qrCode';
@@ -66,7 +65,7 @@ interface SellerProfilePageProps {
   onSellerClick?: (sellerId: string) => void;
 }
 
-type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections' | 'reposts' | 'avis';
+type Tab = 'actifs' | 'vendus' | 'brouillons' | 'collections' | 'avis';
 
 export function SellerProfilePage({
   sellerId, onBack, onProductClick, onStartChat,
@@ -89,7 +88,6 @@ export function SellerProfilePage({
   const [followLoading, setFollowLoading] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [reposts, setReposts]             = useState<any[]>([]);
   const [totalLikes, setTotalLikes]       = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [aiScore, setAiScore] = useState<SellerScoreResult | null>(null);
@@ -106,10 +104,6 @@ export function SellerProfilePage({
       setSeller(sellerData);
       setProducts(sellerProducts);
       setLoading(false);
-      // Charger reposts reçus
-      getRecentReposts(50).then(all => {
-        setReposts(all.filter(r => r.originalSellerId === sellerId));
-      }).catch(() => {});
       // Compter les vendeurs que ce vendeur suit (following)
       if (sellerData?.followingSellers) {
         setFollowingCount((sellerData.followingSellers as string[]).length);
@@ -524,7 +518,6 @@ export function SellerProfilePage({
                   { id: 'vendus',    label: 'Vendus',    count: soldProducts.length },
                   ...(isSelf ? [{ id: 'brouillons', label: 'Brouillons', count: draftProducts.length }] : []),
                   ...((s?.shopCategories?.length ?? 0) > 0 ? [{ id: 'collections', label: 'Collections', count: s?.shopCategories?.length ?? 0 }] : []),
-                  ...(reposts.length > 0 ? [{ id: 'reposts', label: 'Reposts', count: reposts.length }] : []),
                   ...(reviews.length > 0 ? [{ id: 'avis', label: 'Avis', count: reviewCount }] : []),
                 ] as { id: Tab; label: string; count: number }[]).map(t => (
                   <button key={t.id} onClick={() => setTab(t.id)}
@@ -642,55 +635,6 @@ export function SellerProfilePage({
                     </div>
                   );
                 })}
-              </div>
-            )}
-
-            {/* ── REPOSTS REÇUS ── */}
-            {tab === 'reposts' && (
-              <div className="space-y-4">
-                {reposts.map(r => (
-                  <button key={r.id}
-                    onClick={async () => {
-                      const { getProductById } = await import('@/services/productService');
-                      const real = await getProductById(r.originalProductId);
-                      if (real) onProductClick(real);
-                    }}
-                    className="w-full bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden active:scale-[0.98] transition-all text-left"
-                  >
-                    <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-                      <div className="w-10 h-10 rounded-2xl overflow-hidden bg-slate-200 flex-shrink-0">
-                        {r.reposterPhoto
-                          ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
-                          : <div className="w-full h-full flex items-center justify-center text-slate-500 font-black text-sm">{r.reposterName?.charAt(0)?.toUpperCase()}</div>
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-black text-slate-900 truncate">{r.reposterName}</p>
-                        <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-                          a partagé ton article
-                        </p>
-                      </div>
-                      <span className="text-[10px] text-slate-300 font-bold flex-shrink-0">
-                        {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
-                      </span>
-                    </div>
-                    {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
-                      <p className="px-4 pb-3 text-[13px] text-slate-700 italic leading-snug">"{r.comment}"</p>
-                    )}
-                    {r.originalProductImage && (
-                      <div className="aspect-square bg-slate-100 overflow-hidden">
-                        <img src={r.originalProductImage} alt={r.originalProductTitle} className="w-full h-full object-cover"/>
-                      </div>
-                    )}
-                    <div className="px-4 py-3">
-                      <p className="text-[15px] font-black text-slate-900">{r.originalProductTitle}</p>
-                      <p className="text-[16px] font-black text-green-700 mt-0.5">
-                        {r.originalProductPrice?.toLocaleString('fr-FR')} <span className="text-[11px] font-bold text-slate-400">FCFA</span>
-                      </p>
-                    </div>
-                  </button>
-                ))}
               </div>
             )}
 
