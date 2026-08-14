@@ -312,26 +312,6 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
               ))}
             </div>
 
-            {/* Bannière */}
-            <div className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm">
-              <p className="text-xs font-medium text-slate-400 mb-3">Photo de bannière</p>
-              <label className={`block w-full rounded-lg border-2 border-dashed overflow-hidden cursor-pointer ${bannerPreview ? 'border-green-400' : 'border-slate-200'}`}>
-                {bannerPreview
-                  ? <img src={bannerPreview} alt="" className="w-full h-24 object-cover"/>
-                  : <div className="flex flex-col items-center justify-center py-8 gap-2">
-                      <span className="text-3xl">🖼️</span>
-                      <p className="text-xs font-medium text-slate-400">Ajouter une bannière</p>
-                    </div>
-                }
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBannerChange}/>
-              </label>
-              {bannerPreview && (
-                <button onClick={() => { setBannerPreview(''); setBannerFile(null); }}
-                  className="text-[9px] text-red-400 font-bold mt-2 block">
-                  Supprimer la bannière
-                </button>
-              )}
-            </div>
           </>
         )}
 

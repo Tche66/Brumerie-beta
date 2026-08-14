@@ -112,7 +112,7 @@ export function EditDelivererProfilePage({ onBack, onSaved }: Props) {
               <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest text-white cursor-pointer active:scale-95 transition-all"
                 style={{ background: 'linear-gradient(135deg,#E05A00,#FF7A1A)' }}>
                 📷 Changer la photo
-                <input type="file" accept="image/*" capture="user" className="hidden"
+                <input type="file" accept="image/*" className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (!f) return;

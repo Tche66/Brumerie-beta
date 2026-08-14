@@ -83,11 +83,9 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
   const FEATURES_VERIFIED = [
     'Badge bleu de confiance sur votre profil',
-    'Visibilite boostee dans les recherches (+20%)',
-    'Messagerie illimitee',
-    'Bio + liens reseaux sociaux',
-    'Stories 24h',
-    'Jusqu\'a 20 produits publies',
+    'Indique aux acheteurs que vous etes un vendeur verifie par Brumerie',
+    'Identite confirmee — les clients vous font confiance',
+    'Votre profil est marque comme fiable et authentique',
   ];
 
   const FEATURES_PREMIUM = [
@@ -125,7 +123,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
                 </div>
                 <div>
                   <p className="text-[14px] font-bold text-slate-900">Badge Verifie</p>
-                  <p className="text-[11px] text-slate-500">Badge de confiance</p>
+                  <p className="text-[11px] text-slate-500">Vendeur verifie par la plateforme</p>
                 </div>
               </div>
               <div className="text-right">
@@ -260,8 +258,8 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
         <div className="bg-slate-50 rounded-xl p-4">
           <p className="text-[11px] font-semibold text-slate-500 mb-2">Comment ca marche ?</p>
           <div className="space-y-2 text-[11px] text-slate-500">
-            <p><span className="font-semibold text-blue-500">Verifie</span> — Badge de confiance. Remplissez les criteres, envoyez vos documents, puis payez 5 000 FCFA/an pour activer. Renouvelable chaque annee.</p>
-            <p><span className="font-semibold text-amber-500">Premium</span> — Abonnement vendeur pro. Acces a tous les outils avances pour developper votre boutique. 10 000 FCFA/mois.</p>
+            <p><span className="font-semibold text-blue-500">Verifie</span> — Badge de confiance uniquement. Prouve aux acheteurs que votre identite a ete verifiee par Brumerie. Criteres + documents + 5 000 FCFA/an.</p>
+            <p><span className="font-semibold text-amber-500">Premium</span> — Abonnement vendeur pro. Acces a tous les outils avances (produits illimites, compta, catalogue, stats). 3 000 FCFA/mois.</p>
           </div>
         </div>
 
