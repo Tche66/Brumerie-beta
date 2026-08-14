@@ -17,7 +17,6 @@ const REASONS: Record<string, { icon: string; title: string; sub: string }> = {
   offer:    { icon: '💰', title: 'Fais une offre',          sub: 'Connecte-toi pour proposer ton prix au vendeur.' },
   like:     { icon: '❤️', title: 'Aime cet article',        sub: 'Connecte-toi pour liker et sauvegarder tes coups de cœur.' },
   comment:  { icon: '💬', title: 'Commente cet article',    sub: 'Connecte-toi pour partager ton avis avec la communauté.' },
-  repost:   { icon: '🔄', title: 'Repartage cet article',   sub: 'Connecte-toi pour partager avec tes abonnés.' },
   follow:   { icon: '➕', title: 'Suis ce vendeur',         sub: 'Connecte-toi pour suivre tes vendeurs préférés.' },
   default:  { icon: '🔒', title: 'Connecte-toi pour continuer', sub: 'Rejoins la communauté Brumerie gratuitement.' },
 };

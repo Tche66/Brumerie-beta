@@ -10,11 +10,9 @@ import { Product, Order } from '@/types';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
 import { updateUserProfile, getSuggestedSellers } from '@/services/userService';
 import {
-  removeFromWishlist, toggleWishlistPublic, buildWishlistLink,
   followSeller, unfollowSeller, getRedeemablePoints,
   CASHBACK_RATE, CASHBACK_REDEEM, CASHBACK_VALUE,
   formatLastSeen,
-  getUserReposts, deleteRepost,
 } from '@/services/shopFeaturesService';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -26,7 +24,7 @@ interface BuyerProfilePageProps {
   onSellerClick?: (sellerId: string) => void;
 }
 
-type Tab = 'favorites' | 'purchases' | 'wishlist' | 'following' | 'cashback' | 'recent' | 'reposts';
+type Tab = 'favorites' | 'purchases' | 'following' | 'cashback' | 'recent';
 
 // ── Palette Brumerie — Dark premium ──────────────────────────────
 const G1  = '#0f172a';   // slate-900
@@ -143,11 +141,6 @@ const Icons = {
       <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
     </svg>
   ),
-  wishlist_empty: () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/>
-    </svg>
-  ),
   following_empty: () => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
       <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -239,16 +232,10 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const [loadingFavs, setLoadingFavs]   = useState(true);
   const [orders, setOrders]             = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
-  const [wishlistPublic, setWishlistPublic]     = useState(false);
-  const [wishlistLink, setWishlistLink]         = useState('');
-  const [wishlistCopied, setWishlistCopied]     = useState(false);
   const [followedSellers, setFollowedSellers]   = useState<any[]>([]);
   const [suggestedSellers, setSuggestedSellers] = useState<any[]>([]);
   const [recentlyViewed, setRecentlyViewed]     = useState<Product[]>([]);
   const [loadingRecent, setLoadingRecent]       = useState(false);
-  const [reposts, setReposts]                   = useState<any[]>([]);
-  const [loadingReposts, setLoadingReposts]     = useState(false);
 
   const pts = (userProfile as any)?.loyaltyPoints || 0;
   const { redeemable, discount: cashbackDiscount } = getRedeemablePoints(pts);
@@ -271,28 +258,9 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
       .finally(() => setLoadingRecent(false));
   }, [JSON.stringify((userProfile as any)?.recentlyViewedIds)]);
   useEffect(() => {
-    if (tab !== 'reposts' || !currentUser) return;
-    setLoadingReposts(true);
-    getUserReposts(currentUser.uid)
-      .then(setReposts)
-      .catch(() => {})
-      .finally(() => setLoadingReposts(false));
-  }, [tab, currentUser?.uid]);
-
-  useEffect(() => {
     if (!currentUser) return;
     return subscribeOrdersAsBuyer(currentUser.uid, (ords) => { setOrders(ords); setLoadingOrders(false); });
   }, [currentUser?.uid]);
-  useEffect(() => {
-    if (!userProfile) return;
-    const ids: string[] = (userProfile as any).wishlistIds || [];
-    setWishlistPublic((userProfile as any).wishlistPublic || false);
-    const slug = (userProfile as any).wishlistSlug;
-    if (slug) setWishlistLink(buildWishlistLink(slug));
-    if (!ids.length) { setWishlistProducts([]); return; }
-    Promise.all(ids.map(id => getDoc(doc(db, 'products', id)).then(d => d.exists() ? { id: d.id, ...d.data() } as Product : null)))
-      .then(list => setWishlistProducts(list.filter(Boolean) as Product[])).catch(() => {});
-  }, [JSON.stringify((userProfile as any)?.wishlistIds)]);
   useEffect(() => {
     if (!userProfile) return;
     const ids: string[] = (userProfile as any).followingSellers || [];
@@ -341,12 +309,6 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   ];
 
   const MORE_TABS: { id: Tab; icon: React.ReactNode; label: string; count: number }[] = [
-    { id: 'reposts',   icon: (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
-        </svg>
-      ), label: 'Partages', count: reposts.length },
-    { id: 'wishlist',  icon: Icons.star(),   label: 'Wishlist', count: wishlistProducts.length },
     { id: 'cashback',  icon: Icons.gift(),   label: 'Points',   count: pts },
     { id: 'recent',    icon: (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -576,84 +538,6 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
           )
         )}
 
-        {/* ─── WISHLIST ─────────────────────────────────────────────── */}
-        {tab === 'wishlist' && (
-          <>
-            {/* Contrôle partage */}
-            <div className="bg-white rounded-2xl p-4"
-              style={{ border: `1px solid ${G2}15`, boxShadow: `0 2px 12px ${G1}06` }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-black text-[14px]" style={{ color: INK }}>Ma Wishlist</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: '#A3A3A3' }}>{wishlistProducts.length} article{wishlistProducts.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold" style={{ color: '#A3A3A3' }}>Publique</span>
-                  <button
-                    onClick={async () => {
-                      if (!currentUser) return;
-                      const next = !wishlistPublic;
-                      setWishlistPublic(next);
-                      await toggleWishlistPublic(currentUser.uid, next).catch(() => {});
-                      await refreshUserProfile();
-                    }}
-                    className="w-10 h-6 rounded-full transition-all relative"
-                    style={{ background: wishlistPublic ? G2 : '#E5E7EB' }}>
-                    <div className="w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-all"
-                      style={{ left: wishlistPublic ? '1.125rem' : '0.125rem' }}/>
-                  </button>
-                </div>
-              </div>
-              {wishlistPublic && wishlistLink && (
-                <div className="mt-3 rounded-xl px-3 py-2.5 flex items-center gap-2"
-                  style={{ background: `${G2}10`, border: `1px solid ${G2}20` }}>
-                  <p className="flex-1 text-[9px] font-bold truncate" style={{ color: G2 }}>{wishlistLink}</p>
-                  <button
-                    onClick={async () => {
-                      try {
-                        if (navigator.share) await navigator.share({ title: 'Ma Wishlist Brumerie', url: wishlistLink });
-                        else { await navigator.clipboard.writeText(wishlistLink); setWishlistCopied(true); setTimeout(() => setWishlistCopied(false), 2000); }
-                      } catch {}
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[9px] uppercase text-white active:scale-95 flex-shrink-0"
-                    style={{ background: G2, color: 'white' }}>
-                    <span style={{ color: 'white' }}>{Icons.share()}</span>
-                    {wishlistCopied ? 'Copié' : 'Partager'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {wishlistProducts.length === 0 ? (
-              <EmptyState svgIcon={Icons.wishlist_empty()} title="Wishlist vide"
-                sub="Sur une fiche produit, appuie sur le bouton étoile pour ajouter un article ici"/>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {wishlistProducts.map(p => (
-                  <div key={p.id} className="relative">
-                    <ProductCard product={p} onClick={() => onProductClick(p)}
-                      onAddToCart={(prod) => addToCart(prod)}
-                      bookmarkedIds={new Set((userProfile as any)?.wishlistIds || [])}/>
-                    <button
-                      onClick={async () => {
-                        if (!currentUser) return;
-                        await removeFromWishlist(currentUser.uid, p.id);
-                        setWishlistProducts(prev => prev.filter(x => x.id !== p.id));
-                        await refreshUserProfile();
-                      }}
-                      className="absolute top-2 right-2 w-6 h-6 bg-white/95 rounded-full shadow flex items-center justify-center active:scale-90 z-10"
-                      style={{ border: `1px solid ${G2}20` }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
         {/* ─── VENDEURS SUIVIS ──────────────────────────────────────── */}
         {tab === 'following' && (
           followedSellers.length === 0 ? (
@@ -880,93 +764,6 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
                     onBookmark={() => {}}
                     isBookmarked={bookmarkIds.has(product.id)}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ─── REPOSTS / PARTAGES ──────────────────────────────────── */}
-        {tab === 'reposts' && (
-          <div className="px-4 pb-8">
-            {loadingReposts ? (
-              <div className="space-y-3">
-                {[1,2,3].map(i => (
-                  <div key={i} className="h-20 bg-slate-100 rounded-2xl animate-pulse"/>
-                ))}
-              </div>
-            ) : reposts.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-                <div className="text-4xl mb-3">🔄</div>
-                <p className="font-black text-slate-400 uppercase tracking-tight text-[12px]">
-                  Aucun partage
-                </p>
-                <p className="text-[10px] text-slate-300 mt-1">
-                  Les articles que tu repartages apparaissent ici
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {reposts.map((repost) => (
-                  <div key={repost.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <button
-                      onClick={() => {
-                        const fakeProduct = {
-                          id: repost.originalProductId,
-                          title: repost.originalProductTitle,
-                          images: [repost.originalProductImage],
-                          price: repost.originalProductPrice,
-                          sellerId: repost.originalSellerId,
-                          sellerName: repost.originalSellerName,
-                        } as any;
-                        onProductClick?.(fakeProduct);
-                      }}
-                      className="w-full flex items-center gap-3 p-3 active:bg-slate-50 transition-all text-left"
-                    >
-                      <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
-                        {repost.originalProductImage && (
-                          <img src={repost.originalProductImage} alt="" className="w-full h-full object-cover"/>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-800 truncate">{repost.originalProductTitle}</p>
-                        <p className="text-[10px] font-black text-green-600">{repost.originalProductPrice?.toLocaleString()} FCFA</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">
-                          Vendeur : {repost.originalSellerName}
-                          {repost.comment && <span className="text-slate-500"> · "{repost.comment.slice(0, 30)}"</span>}
-                        </p>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round">
-                        <path d="M9 18l6-6-6-6"/>
-                      </svg>
-                    </button>
-                    <div className="flex border-t border-slate-50">
-                      <button
-                        onClick={() => {
-                          const fakeProduct = {
-                            id: repost.originalProductId,
-                            title: repost.originalProductTitle,
-                            images: [repost.originalProductImage],
-                            price: repost.originalProductPrice,
-                            sellerId: repost.originalSellerId,
-                            sellerName: repost.originalSellerName,
-                          } as any;
-                          onProductClick?.(fakeProduct);
-                        }}
-                        className="flex-1 py-2.5 text-[9px] font-black text-blue-600 uppercase tracking-widest text-center active:bg-blue-50 transition-all">
-                        Voir
-                      </button>
-                      <div className="w-px bg-slate-100"/>
-                      <button
-                        onClick={async () => {
-                          await deleteRepost(repost.id);
-                          setReposts(prev => prev.filter(r => r.id !== repost.id));
-                        }}
-                        className="flex-1 py-2.5 text-[9px] font-black text-red-500 uppercase tracking-widest text-center active:bg-red-50 transition-all">
-                        Supprimer
-                      </button>
-                    </div>
-                  </div>
                 ))}
               </div>
             )}

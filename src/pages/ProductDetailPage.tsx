@@ -7,10 +7,9 @@ import { formatPrice, formatRelativeDate } from '@/utils/helpers';
 import { getProducts, incrementViewCount, incrementContactCount, toggleLike, checkIsLiked, addComment, deleteComment, subscribeComments, deleteProduct, updateProductStatus } from '@/services/productService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { searchAllUsers } from '@/services/userService';
-import { repostProduct, getRepostsForProduct, deleteRepost } from '@/services/shopFeaturesService';
 import type { ProductComment } from '@/types';
 import { addBookmark, removeBookmark } from '@/services/bookmarkService';
-import { addToWishlist, removeFromWishlist, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
+import { followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { BoostModal } from '@/components/BoostModal';
 import { ImageLightbox } from '@/components/ImageLightbox';
@@ -48,7 +47,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [isFollowingSeller, setIsFollowingSeller] = useState(false);
   const [followingLoading, setFollowingLoading] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
@@ -97,11 +95,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   const [replyTo, setReplyTo] = useState<{ id: string; userName: string } | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const [showRepost, setShowRepost] = useState(false);
-  const [repostComment, setRepostComment] = useState('');
-  const [sendingRepost, setSendingRepost] = useState(false);
-  const [repostDone, setRepostDone] = useState(false);
-  const [reposts, setReposts] = useState<any[]>([]);
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
 
@@ -147,13 +140,11 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     };
   }, [product.id, currentUser?.uid]);
 
-  // Bookmark + Wishlist + Following sync
+  // Bookmark + Following sync
   useEffect(() => {
-    const ids      = userProfile?.bookmarkedProductIds || [];
-    const wishIds  = (userProfile as any)?.wishlistIds || [];
+    const ids = userProfile?.bookmarkedProductIds || [];
     const followIds = (userProfile as any)?.followingSellers || [];
     setIsBookmarked(ids.includes(product.id));
-    setIsInWishlist(wishIds.includes(product.id));
     setIsFollowingSeller(followIds.includes(product.sellerId));
   }, [userProfile, product.id, product.sellerId]);
 
@@ -188,12 +179,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       if (score && score.riskLevel !== 'safe') setSellerRiskScore(score);
     }).catch(() => {});
   }, [product.sellerId]);
-
-  // ── Charger les reposts de cet article ──
-  useEffect(() => {
-    if (!product.id) return;
-    getRepostsForProduct(product.id).then(setReposts).catch(() => {});
-  }, [product.id]);
 
   // ── Init like status + subscribe comments ──
   useEffect(() => {
@@ -422,37 +407,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
     finally { setSendingReply(false); }
   };
 
-  const handleRepost = async () => {
-    if (isGuest) { onGuestAction?.('repost'); return; }
-    if (!currentUser || !userProfile || sendingRepost) return;
-    setSendingRepost(true);
-    try {
-      await repostProduct(
-        currentUser.uid,
-        userProfile.name,
-        userProfile.photoURL || undefined,
-        {
-          id: product.id,
-          title: product.title,
-          images: product.images || [],
-          price: product.price,
-          sellerId: product.sellerId,
-          sellerName: product.sellerName || '',
-        },
-        repostComment.trim() || "Regarde cet article sur Brumerie !"
-      );
-      setRepostDone(true);
-      setShowRepost(false);
-      setRepostComment('');
-      setTimeout(() => setRepostDone(false), 3000);
-    } catch (e) {
-      console.error('[Repost] Erreur:', e);
-      // Ne pas laisser le spinner bloqué même en cas d'erreur règle Firestore
-    } finally {
-      setSendingRepost(false);
-    }
-  };
-
   const createdAtDate = (() => {
     try {
       if (!product.createdAt) return new Date(0);
@@ -609,19 +563,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           </span>
         </button>
 
-        {/* Repost */}
-        <button
-          onClick={() => setShowRepost(v => !v)}
-          className="flex items-center gap-1.5 active:scale-95 transition-transform"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={repostDone ? '#16A34A' : '#64748B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
-          </svg>
-          <span className={`text-sm font-medium ${repostDone ? 'text-green-600' : 'text-slate-500'}`}>
-            {repostDone ? "Partagé ✓" : "Repost"}
-          </span>
-        </button>
-
         {/* Partager */}
         <button
           onClick={handleShare}
@@ -657,43 +598,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
         </button>
       </div>
 
-      {/* ── MODAL REPOST ── */}
-      {showRepost && (
-        <div className="px-6 py-4 bg-green-50 border-b border-green-100">
-          <p className="text-xs font-medium text-green-700 mb-3">
-            🔄 Partager avec un commentaire
-          </p>
-          <div className="bg-white rounded-lg border-2 border-green-200 overflow-hidden mb-3">
-            <textarea
-              autoFocus
-              value={repostComment}
-              onChange={e => setRepostComment(e.target.value)}
-              placeholder="Ajoute ton commentaire... (optionnel)"
-              rows={2}
-              maxLength={200}
-              className="w-full px-4 pt-3 pb-2 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 outline-none resize-none"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => { setShowRepost(false); setRepostComment(''); }}
-              className="flex-1 py-3 rounded-lg bg-slate-100 text-slate-500 text-sm font-medium active:scale-[0.98] transition-all"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={handleRepost}
-              disabled={sendingRepost}
-              className="flex-1 py-3 rounded-lg bg-emerald-600 text-white text-sm font-medium disabled:opacity-60 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-            >
-              {sendingRepost
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                : <>🔄 Repost</>
-              }
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── INFOS PRODUIT ── */}
       <div className="px-6 py-8">
@@ -1314,51 +1218,6 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             </div>
           )}
         </div>
-
-        {/* ── REPOSTS ── */}
-        {reposts.length > 0 && (
-          <div className="mb-8">
-            <p className="font-semibold text-slate-900 text-sm mb-4">
-              🔄 Partagé par <span className="text-slate-400 font-bold">({reposts.length})</span>
-            </p>
-            <div className="space-y-3">
-              {reposts.map(r => (
-                <div key={r.id} className="flex gap-3 bg-slate-50 rounded-lg p-3">
-                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
-                    {r.reposterPhoto
-                      ? <img src={r.reposterPhoto} alt="" className="w-full h-full object-cover"/>
-                      : <div className="w-full h-full flex items-center justify-center text-slate-500 font-semibold text-xs">{r.reposterName?.charAt(0).toUpperCase()}</div>
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-slate-900 text-[11px]">{r.reposterName}</span>
-                      <span className="text-[9px] text-slate-400 font-bold bg-slate-200 px-1.5 py-0.5 rounded-full">🔄 a partagé</span>
-                    </div>
-                    {r.comment && r.comment !== "Regarde cet article sur Brumerie !" && (
-                      <p className="text-[12px] text-slate-600 italic">"{r.comment}"</p>
-                    )}
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      {r.createdAt?.toDate ? new Date(r.createdAt.toDate()).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}
-                    </p>
-                  </div>
-                  {currentUser?.uid === r.reposterId && (
-                    <button
-                      onClick={async () => {
-                        await deleteRepost(r.id);
-                        setReposts(prev => prev.filter(rp => rp.id !== r.id));
-                      }}
-                      className="self-center w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center active:scale-95 transition-all flex-shrink-0">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* ── PRODUITS SIMILAIRES ── */}
         {similarProducts.length > 0 && (
