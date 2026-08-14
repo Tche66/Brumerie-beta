@@ -250,7 +250,7 @@ export function EditProfilePage({ onBack, onSaved }: EditProfilePageProps) {
               <Camera size={16} className="text-white" />
             </button>
           </div>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden"/>
+          <input ref={fileRef} type="file" accept="image/*" capture="user" onChange={handlePhotoChange} className="hidden"/>
         </div>
 
         {/* Identité */}

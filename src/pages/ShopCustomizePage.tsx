@@ -323,7 +323,7 @@ export function ShopCustomizePage({ onBack, onSaved }: ShopCustomizePageProps) {
                       <p className="text-xs font-medium text-slate-400">Ajouter une bannière</p>
                     </div>
                 }
-                <input type="file" accept="image/*" className="hidden" onChange={handleBannerChange}/>
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBannerChange}/>
               </label>
               {bannerPreview && (
                 <button onClick={() => { setBannerPreview(''); setBannerFile(null); }}

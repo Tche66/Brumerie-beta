@@ -14,7 +14,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
   const [sentPremium, setSentPremium] = useState(false);
 
   const [verificationPrice, setVerificationPrice] = useState(5000);
-  const [premiumPrice, setPremiumPrice] = useState(10000);
+  const [premiumPrice, setPremiumPrice] = useState(3000);
 
   useEffect(() => {
     getGlobalSettings().then((s: any) => {
@@ -83,7 +83,6 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
   const FEATURES_VERIFIED = [
     'Badge bleu de confiance sur votre profil',
-    'Galerie photos complete (pas seulement camera)',
     'Visibilite boostee dans les recherches (+20%)',
     'Messagerie illimitee',
     'Bio + liens reseaux sociaux',

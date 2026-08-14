@@ -265,7 +265,7 @@ export function PublishStoryModal({ onClose, onPublished }: { onClose: () => voi
           style={preview ? { backgroundImage: `url(${preview})`, backgroundSize: 'cover', backgroundPosition: 'center', border: 'none' } : {}}>
           {!preview && <><span className="text-3xl">📷</span><p className="text-slate-400 font-bold text-[12px]">Ajouter une photo</p></>}
         </button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile}/>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile}/>
 
         <textarea value={caption} onChange={e => setCaption(e.target.value)}
           placeholder="Texte promotionnel (optionnel)..." maxLength={120} rows={3}

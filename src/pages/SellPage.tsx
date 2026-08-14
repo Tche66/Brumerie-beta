@@ -60,7 +60,6 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const [aiScore, setAiScore] = useState<number | null>(null);
   const [aiTips, setAiTips] = useState<string[]>([]);
 
-  const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
   // Catégories et quartiers personnalisés (ajoutés via SuggestionsPage)
@@ -124,14 +123,6 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
   const isCapacitor = typeof (window as any).Capacitor !== 'undefined' &&
     (window as any).Capacitor?.isNativePlatform?.();
 
-  // Ouvre galerie via input HTML
-  const triggerInput = (ref: React.RefObject<HTMLInputElement>) => {
-    if (ref.current) {
-      ref.current.value = '';
-      ref.current.click();
-    }
-  };
-
   // Caméra native via @capacitor/camera — seule façon fiable sur Android
   const handleNativeCamera = async () => {
     if (images.length >= 5) { setError('Maximum 5 photos.'); return; }
@@ -160,9 +151,6 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
       }
     }
   };
-
-  // Galerie — input HTML suffit
-  const handleNativeGallery = () => triggerInput(galleryRef);
 
   const toggleCity = (city: string) => {
     setSelectedCities(prev => {
@@ -399,9 +387,9 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
               {images.length < 5 && (
                 <div onClick={() => {
                   if (isCapacitor) {
-                    (userProfile?.isVerified || userProfile?.isPremium) ? handleNativeGallery() : handleNativeCamera();
+                    handleNativeCamera();
                   } else {
-                    (userProfile?.isVerified || userProfile?.isPremium) ? galleryRef.current?.click() : cameraRef.current?.click();
+                    cameraRef.current?.click();
                   }
                 }}
                   className="aspect-[4/5] rounded-[1.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 bg-slate-50 active:scale-95 transition-all cursor-pointer">
@@ -410,29 +398,16 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
                 </div>
               )}
             </div>
-            {/* Vendeur Simple = caméra uniquement | Vérifié/Premium = galerie + caméra */}
-            {(userProfile?.isVerified || userProfile?.isPremium) ? (
-              <div className="flex gap-3">
-                <button onClick={() => triggerInput(galleryRef)} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
-                  <Icon name="gallery" /> Galerie
-                </button>
-                <button onClick={() => triggerInput(cameraRef)} className="flex-1 flex items-center justify-center gap-3 py-5 bg-slate-50 text-slate-900 rounded-[2rem] font-bold text-xs uppercase tracking-widest border border-slate-100 active:scale-95">
-                  <Icon name="camera" /> Caméra
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <button onClick={() => triggerInput(cameraRef)} className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
-                  <Icon name="camera" /> Prendre une photo
-                </button>
-                <p className="text-center text-[9px] text-slate-400 font-bold">
-                  📸 Photos réelles uniquement · <span className="text-blue-500">Devenir Vérifié via Paramètres</span> pour accéder à la galerie
-                </p>
-              </div>
-            )}
-            {/* Un seul input sans capture — Android affiche le menu caméra/galerie nativement */}
-            <input ref={galleryRef} type="file" accept="image/*" multiple onChange={handleImageChange} className="hidden" />
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handleImageChange} className="hidden" />
+            <div className="space-y-2">
+              <button onClick={() => { if (isCapacitor) handleNativeCamera(); else cameraRef.current?.click(); }}
+                className="w-full flex items-center justify-center gap-3 py-5 bg-slate-900 text-white rounded-[2rem] font-bold text-xs uppercase tracking-widest active:scale-95">
+                <Icon name="camera" /> Prendre une photo
+              </button>
+              <p className="text-center text-[9px] text-slate-400 font-bold">
+                Photos prises en direct uniquement — anti-arnaque Brumerie
+              </p>
+            </div>
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" multiple onChange={handleImageChange} className="hidden" />
           </div>
         )}
 
