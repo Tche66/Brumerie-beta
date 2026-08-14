@@ -18,9 +18,8 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { SystemBanner } from '@/components/SystemBanner';
 import { SocialProofBar } from '@/components/SocialProofBar';
-import { getRepostsFeed, getRecentReposts, followSeller, unfollowSeller } from '@/services/shopFeaturesService';
+import { followSeller, unfollowSeller } from '@/services/shopFeaturesService';
 import { searchSellers, getSuggestedSellers } from '@/services/userService';
-import type { Repost } from '@/types';
 
 interface HomePageProps {
   onProductClick: (product: Product) => void;
