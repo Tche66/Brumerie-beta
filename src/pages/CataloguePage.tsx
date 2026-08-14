@@ -68,8 +68,8 @@ export function CataloguePage({ onBack }: CataloguePageProps) {
     });
   };
 
-  // ── Garde Vérifié / Premium ───────────────────────────────
-  if (!userProfile?.isVerified && !userProfile?.isPremium) {
+  // ── Garde Premium ───────────────────────────────
+  if (!userProfile?.isPremium) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center px-6 pb-24">
         <div className="text-5xl mb-4">🔵</div>

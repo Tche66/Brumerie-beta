@@ -71,8 +71,8 @@ export function CarnetClientsPage({ onBack, onOpenChat }: CarnetClientsPageProps
     }, () => setLoading(false));
   }, [currentUser?.uid]);
 
-  // ── Garde Vérifié / Premium — après tous les hooks ─────────
-  if (!userProfile?.isVerified && !userProfile?.isPremium) {
+  // ── Garde Premium — après tous les hooks ─────────
+  if (!userProfile?.isPremium) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col items-center justify-center px-6 pb-24">
         <div className="text-5xl mb-4">🔵</div>

@@ -200,8 +200,8 @@ export const REFERRAL_REWARDS = [
 ];
 
 export const PLAN_LIMITS = {
-  simple:   { products: 5,  dailyChats: 5,  boost: 0   },
-  verified: { products: 20, dailyChats: 999, boost: 20  },
+  simple:   { products: 5,   dailyChats: 5,   boost: 0   },
+  verified: { products: 5,   dailyChats: 5,   boost: 0   },
   premium:  { products: 999, dailyChats: 999, boost: 100 },
 } as const;
 

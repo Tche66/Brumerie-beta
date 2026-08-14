@@ -91,14 +91,15 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
 
   const FEATURES_PREMIUM = [
     'Badge Or Premium sur votre profil',
-    'Tout le badge Verifie inclus',
-    'Priorite maximale (top des resultats)',
-    'Produits illimites',
-    'Boutique 100% personnalisee + Vente flash',
-    'Comptabilite, Carnet clients, Catalogue',
-    'Marge, Rapport hebdomadaire, Dettes',
-    'Analyse detaillee des ventes',
-    'Auto-reponse messagerie',
+    'Produits illimites (au lieu de 5)',
+    'Messagerie illimitee',
+    'Comptabilite et suivi des ventes',
+    'Carnet clients',
+    'Catalogue produits',
+    'Calculateur de marge',
+    'Rapport et suivi des dettes',
+    'Personnalisation boutique (slogan, couleurs, vente flash)',
+    'Visibilite boostee dans les resultats',
   ];
 
   return (

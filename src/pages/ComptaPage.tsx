@@ -75,7 +75,7 @@ export function ComptaPage({ onBack, onOpenChat, onNavigate }: ComptaPageProps) 
   const [payModal, setPayModal]   = useState<Dette | null>(null);
   const [payAmount, setPayAmount] = useState('');
 
-  const isVerified = !!(userProfile?.isVerified || (userProfile as any)?.isPremium);
+  const isVerified = !!(userProfile as any)?.isPremium;
 
   // Charger entrées compta
   useEffect(() => {
