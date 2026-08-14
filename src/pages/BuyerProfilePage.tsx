@@ -322,145 +322,104 @@ export function BuyerProfilePage({ onProductClick, onNavigate, onOpenOrder, onSe
   const loyaltyColor = pts >= 500 ? '#F59E0B' : pts >= 100 ? '#94A3B8' : '#16A34A';
 
   return (
-    <div className="min-h-screen pb-28 bg-slate-50">
+    <div className="min-h-screen pb-28 bg-white">
 
-      {/* ══ HEADER PROFIL — Brumerie Style ═══════════════════════════ */}
-      <div className="relative bg-white rounded-b-[2rem] shadow-sm">
-        {/* Top bar fixe */}
-        <div className="flex items-center justify-between px-4 pt-12 pb-2">
-          <div className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 2a7 7 0 017 7c0 3-1.5 5-3 6.5V18H8v-2.5C6.5 14 5 12 5 9a7 7 0 017-7z"/>
-            </svg>
-            <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mon profil</span>
-          </div>
+      {/* ══ HEADER PROFIL — Style marketplace ═══════════════════════════ */}
+      <div className="bg-white border-b border-slate-100">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-5 pt-12 pb-3">
+          <p className="text-[15px] font-bold text-slate-900">Mon profil</p>
           <button onClick={() => onNavigate?.('settings')}
-            className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center active:scale-90 transition-all">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
-              <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
-            </svg>
+            className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center active:scale-90 transition-all">
+            {Icons.settings()}
           </button>
         </div>
-        {/* Bannière verte signature Brumerie */}
-        <div className="h-10 mx-4 rounded-2xl relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #065F46 0%, #16A34A 50%, #0F172A 100%)' }}>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }}/>
-        </div>
 
-        {/* Profil info */}
-        <div className="px-4 pb-5">
-          <div className="flex items-end gap-4 -mt-8">
-            {/* Avatar avec ring vert */}
-            <div className="relative">
-              <div className="w-[76px] h-[76px] rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0">
-                <img
-                  src={userProfile.photoURL ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=065F46&color=fff&bold=true`}
-                  alt="" className="w-full h-full object-cover"
-                />
-              </div>
-              {/* Badge niveau */}
-              <div className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-md text-[7px] font-black text-white shadow-lg"
-                style={{ background: loyaltyColor }}>
-                {loyaltyLevel}
-              </div>
+        {/* Profil card */}
+        <div className="px-5 pb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
+              <img
+                src={userProfile.photoURL ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.name || 'U')}&background=16A34A&color=fff&bold=true`}
+                alt="" className="w-full h-full object-cover"
+              />
             </div>
-
-            {/* Stats inline */}
-            <div className="flex-1 flex items-center justify-around pb-1">
-              <div className="text-center">
-                <p className="text-[16px] font-black text-slate-900">{bookmarkIds.size}</p>
-                <p className="text-[8px] text-slate-500 font-bold uppercase">Favoris</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-[15px] font-bold text-slate-900 truncate">{userProfile.name}</p>
+                {(userProfile as any).isVerified && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#16A34A" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                )}
               </div>
-              <div className="text-center">
-                <p className="text-[16px] font-black text-slate-900">{completedOrders.length}</p>
-                <p className="text-[8px] text-slate-500 font-bold uppercase">Achats</p>
+              <div className="flex items-center gap-3 mt-1">
+                {(userProfile as any).neighborhood && (
+                  <span className="text-[12px] text-slate-500">{(userProfile as any).neighborhood}</span>
+                )}
+                {memberSince && (
+                  <span className="text-[11px] text-slate-400">Membre depuis {memberSince}</span>
+                )}
               </div>
-              <div className="text-center">
-                <p className="text-[16px] font-black text-slate-900">{((userProfile as any).followingSellers || []).length}</p>
-                <p className="text-[8px] text-slate-500 font-bold uppercase">Suivis</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[16px] font-black" style={{ color: loyaltyColor }}>{pts}</p>
-                <p className="text-[8px] text-slate-500 font-bold uppercase">Points</p>
-              </div>
+              {(userProfile as any).bio && (
+                <p className="text-[12px] text-slate-500 mt-1 line-clamp-2">{(userProfile as any).bio}</p>
+              )}
             </div>
           </div>
 
-          {/* Nom + infos */}
-          <div className="mt-3">
-            <div className="flex items-center gap-2">
-              <p className="text-[14px] font-black text-slate-900">{userProfile.name}</p>
-              {(userProfile as any).isVerified && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="#16A34A" stroke="white" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              )}
+          {/* Stats */}
+          <div className="flex items-center justify-between mt-4 px-2">
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-slate-900">{bookmarkIds.size}</p>
+              <p className="text-[11px] text-slate-400">Favoris</p>
             </div>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              {(userProfile as any).neighborhood && (
-                <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  {(userProfile as any).neighborhood}
-                </span>
-              )}
-              {memberSince && (
-                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-                  {memberSince}
-                </span>
-              )}
+            <div className="w-px h-8 bg-slate-100"/>
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-slate-900">{completedOrders.length}</p>
+              <p className="text-[11px] text-slate-400">Achats</p>
             </div>
-            {(userProfile as any).bio && (
-              <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">{(userProfile as any).bio}</p>
-            )}
+            <div className="w-px h-8 bg-slate-100"/>
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-slate-900">{((userProfile as any).followingSellers || []).length}</p>
+              <p className="text-[11px] text-slate-400">Suivis</p>
+            </div>
+            <div className="w-px h-8 bg-slate-100"/>
+            <div className="text-center">
+              <p className="text-[15px] font-bold text-green-600">{pts}</p>
+              <p className="text-[11px] text-slate-400">Points</p>
+            </div>
           </div>
 
-          {/* Boutons d'action */}
+          {/* Actions */}
           <div className="flex gap-2 mt-4">
             <button onClick={() => onNavigate?.('edit-profile')}
-              className="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-[10px] font-black text-slate-700 uppercase tracking-widest active:scale-95 transition-all">
-              Modifier
-            </button>
-            <button onClick={() => onNavigate?.('affiliate')}
-              className="flex-1 py-2.5 rounded-xl text-[10px] font-black text-white uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-green-200"
-              style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
-              Affiliation
+              className="flex-1 py-2.5 rounded-lg border border-slate-200 text-[12px] font-semibold text-slate-700 active:scale-[0.98] transition-all">
+              Modifier le profil
             </button>
             <button onClick={() => {
                 const text = `Rejoins Brumerie ! ${userProfile.referralCode ? 'Code: ' + userProfile.referralCode : ''} https://brumerie.com`;
                 navigator.share ? navigator.share({ title: 'Brumerie', text }) : navigator.clipboard.writeText(text);
               }}
-              className="w-11 py-2.5 rounded-xl border-2 border-slate-200 flex items-center justify-center active:scale-95 transition-all">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2.5" strokeLinecap="round">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/>
-              </svg>
+              className="py-2.5 px-4 rounded-lg border border-slate-200 text-[12px] font-semibold text-slate-700 active:scale-[0.98] transition-all">
+              Partager
             </button>
           </div>
         </div>
       </div>
 
-      {/* ══ ONGLETS — Brumerie pills vertes ═══════════════════════════ */}
-      <div className="sticky top-0 z-30 bg-slate-50 pt-3 pb-2 px-3">
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-2" style={{ minWidth: 'max-content' }}>
-            {[...TABS, ...MORE_TABS].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[9px] font-black uppercase tracking-wide transition-all whitespace-nowrap ${
-                  tab === t.id
-                    ? 'bg-slate-900 text-white shadow-lg'
-                    : 'bg-white text-slate-500 border border-slate-200'
-                }`}>
-                <div className="w-3.5 h-3.5 flex items-center justify-center">{t.icon}</div>
-                {t.label}
-                {t.count > 0 && (
-                  <span className={`text-[7px] font-black min-w-[14px] h-[14px] rounded-full flex items-center justify-center ${
-                    tab === t.id ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {t.count > 99 ? '99+' : t.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* ══ ONGLETS ═══════════════════════════════════════════════════ */}
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-100">
+        <div className="flex">
+          {[...TABS, ...MORE_TABS].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={`flex-1 py-3 text-center text-[11px] font-semibold transition-all relative ${
+                tab === t.id ? 'text-slate-900' : 'text-slate-400'
+              }`}>
+              {t.label}
+              {tab === t.id && (
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-slate-900 rounded-full"/>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 

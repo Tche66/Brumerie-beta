@@ -201,35 +201,29 @@ export function SellerProfilePage({
   const hasSocialLinks = s?.socialLinks && Object.values(s.socialLinks).some(Boolean);
 
   return (
-    <div className="min-h-screen pb-24 font-sans bg-slate-50">
+    <div className="min-h-screen pb-24 font-sans bg-white">
 
       {loading ? (
         <div className="flex flex-col items-center justify-center pt-32 gap-4">
-          <div className="w-14 h-14 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"/>
-          <p className="font-black text-[10px] text-slate-400 uppercase tracking-widest">Chargement...</p>
+          <div className="w-10 h-10 border-3 border-slate-100 border-t-slate-900 rounded-full animate-spin"/>
         </div>
       ) : seller ? (
         <>
-          {/* ══════════════════════════════════════════
-              SECTION 1 — HERO BRUMERIE + IDENTITÉ
-          ══════════════════════════════════════════ */}
-          <div className="relative rounded-b-[3rem] overflow-hidden" style={{ background: 'linear-gradient(160deg, #0F172A 0%, #065F46 50%, #16A34A 100%)' }}>
-            {/* Pattern feuille Brumerie */}
-            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 5c0 8-7 15-7 15s7-7 14 0\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")' }} />
-
-            {/* Nav buttons */}
-            <div className="relative z-10 flex items-center justify-between px-4 pt-5">
-              <button onClick={onBack} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          {/* ══ HEADER — Style marketplace ══════════════════════ */}
+          <div className="bg-white border-b border-slate-100">
+            {/* Nav */}
+            <div className="flex items-center justify-between px-4 pt-5 pb-2">
+              <button onClick={onBack} className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center active:scale-90 transition-all">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#334155" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
               <div className="flex gap-2">
-                <button onClick={() => setShowQR(true)} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                <button onClick={() => setShowQR(true)} className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center active:scale-90 transition-all">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round">
                     <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h3v3h-3z"/>
                   </svg>
                 </button>
-                <button onClick={handleShare} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 active:scale-90 transition-all">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+                <button onClick={handleShare} className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center active:scale-90 transition-all">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" strokeLinecap="round">
                     <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                   </svg>
@@ -237,78 +231,79 @@ export function SellerProfilePage({
               </div>
             </div>
 
-            {/* Identité */}
-            <div className="relative z-10 flex flex-col items-center text-center px-5 pt-4 pb-8">
-              {/* Avatar */}
-              <div className="relative mb-3">
-                <div className="w-22 h-22 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl" style={{ width: 88, height: 88 }}>
-                  {seller.photoURL
-                    ? <img src={seller.photoURL} alt={seller.name} className="w-full h-full object-cover"/>
-                    : <div className="w-full h-full flex items-center justify-center bg-slate-700 text-white text-3xl font-black">{seller.name?.charAt(0)?.toUpperCase()}</div>
-                  }
-                </div>
-                {tier !== 'simple' && (
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-                    <VerifiedTag tier={tier as any} size="sm"/>
+            {/* Profil */}
+            <div className="px-5 pb-5">
+              <div className="flex items-center gap-4">
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100">
+                    {seller.photoURL
+                      ? <img src={seller.photoURL} alt={seller.name} className="w-full h-full object-cover"/>
+                      : <div className="w-full h-full flex items-center justify-center bg-green-600 text-white text-xl font-bold">{seller.name?.charAt(0)?.toUpperCase()}</div>
+                    }
                   </div>
-                )}
+                  {tier !== 'simple' && (
+                    <div className="absolute -bottom-1 -right-1">
+                      <VerifiedTag tier={tier as any} size="sm"/>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-[15px] font-bold text-slate-900 truncate">{seller.name}</h2>
+                  </div>
+
+                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                    {seller.neighborhood && (
+                      <span className="text-[12px] text-slate-500">{seller.neighborhood}</span>
+                    )}
+                    {seller?.lastActiveAt && (() => {
+                      const color = getActivityColor(seller.lastActiveAt);
+                      return (
+                        <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                          <span className={`w-1.5 h-1.5 rounded-full ${color === 'green' ? 'bg-green-500' : color === 'amber' ? 'bg-amber-400' : 'bg-slate-300'}`}/>
+                          {formatLastSeen(seller.lastActiveAt)}
+                        </span>
+                      );
+                    })()}
+                  </div>
+
+                  {avgRating > 0 && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Stars rating={avgRating} size={11}/>
+                      <span className="text-[11px] font-semibold text-slate-600">{avgRating.toFixed(1)}</span>
+                      <span className="text-[10px] text-slate-400">({reviewCount} avis)</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Nom */}
-              <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">{seller.name}</h2>
-
-              {/* Dernier vu */}
-              {seller?.lastActiveAt && (() => {
-                const color = getActivityColor(seller.lastActiveAt);
-                return (
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${color === 'green' ? 'bg-green-400 animate-pulse' : color === 'amber' ? 'bg-amber-400' : 'bg-slate-400'}`}/>
-                    <span className="text-[10px] font-bold text-white/50">{formatLastSeen(seller.lastActiveAt)}</span>
-                  </div>
-                );
-              })()}
-
-              {/* Note */}
-              {avgRating > 0 && (
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Stars rating={avgRating} size={12}/>
-                  <span className="text-[11px] font-black text-amber-400">{avgRating.toFixed(1)}</span>
-                  <span className="text-[10px] text-white/40">({reviewCount})</span>
-                </div>
-              )}
-
-              {/* Slogan */}
               {s?.shopSlogan && (
-                <p className="text-[11px] font-bold italic text-white/60 mb-2">"{s.shopSlogan}"</p>
+                <p className="text-[12px] text-slate-500 italic mt-3">"{s.shopSlogan}"</p>
               )}
 
-              {/* Infos pills */}
-              <div className="flex items-center gap-2 flex-wrap justify-center mb-4">
-                {seller.neighborhood && (
-                  <span className="flex items-center gap-1 text-[10px] text-white/60 font-bold bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
-                    <BruIcons.MapPin size={10}/> {seller.neighborhood}
-                  </span>
-                )}
+              {/* Info tags */}
+              <div className="flex items-center gap-2 flex-wrap mt-3">
                 {memberSince && (
-                  <span className="text-[10px] text-white/40 font-bold bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
+                  <span className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md">
                     Depuis {memberSince}
                   </span>
                 )}
                 {seller.managesDelivery && (
-                  <span className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/10">
-                    📦 Livraison
+                  <span className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md">
+                    Livraison dispo
                   </span>
                 )}
                 {seller.hasPhysicalShop && (
-                  <span className="text-[10px] font-bold bg-white/10 text-white/70 px-2.5 py-1 rounded-full border border-white/10">
-                    🏠 Boutique
+                  <span className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded-md">
+                    Boutique physique
                   </span>
                 )}
               </div>
 
-              {/* CTA visiteur */}
+              {/* CTA */}
               {!isSelf && !isGuest && currentUser && (
-                <div className="flex gap-2 w-full max-w-xs">
+                <div className="flex gap-2 mt-4">
                   <button
                     disabled={followLoading}
                     onClick={async () => {
@@ -328,8 +323,8 @@ export function SellerProfilePage({
                       } catch {}
                       setFollowLoading(false);
                     }}
-                    className={`flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-1.5 border-2 ${
-                      isFollowing ? 'bg-white text-slate-900 border-white' : 'bg-transparent text-white border-white/40'
+                    className={`flex-1 py-3 rounded-lg text-[12px] font-semibold active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 ${
+                      isFollowing ? 'bg-slate-100 text-slate-700' : 'bg-slate-900 text-white'
                     }`}
                   >
                     {followLoading ? (
@@ -343,7 +338,7 @@ export function SellerProfilePage({
                   {onStartChat && (
                     <button
                       onClick={() => onStartChat(sellerId, seller.name)}
-                      className="flex-1 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest text-slate-900 bg-white flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-lg"
+                      className="flex-1 py-3 rounded-lg text-[12px] font-semibold text-white bg-green-600 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all"
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                       Contacter
@@ -352,20 +347,20 @@ export function SellerProfilePage({
                 </div>
               )}
               {!isSelf && isGuest && (
-                <button onClick={() => onGuestAction?.('default')} className="px-5 py-2.5 bg-white text-slate-900 font-black text-[10px] rounded-full uppercase tracking-widest active:scale-95 transition-all">
+                <button onClick={() => onGuestAction?.('default')} className="py-3 px-5 bg-slate-900 text-white text-[12px] font-semibold rounded-lg active:scale-[0.98] transition-all">
                   Se connecter
                 </button>
               )}
 
               {/* CTA propriétaire */}
               {isSelf && (
-                <div className="flex gap-2 w-full max-w-xs mt-1">
+                <div className="flex gap-2 mt-4">
                   <button onClick={() => onNavigate?.('edit-profile')}
-                    className="flex-1 py-3 rounded-2xl border-2 border-white/30 text-white font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
-                    Profil
+                    className="flex-1 py-2.5 rounded-lg border border-slate-200 text-[12px] font-semibold text-slate-700 active:scale-[0.98] transition-all">
+                    Modifier le profil
                   </button>
                   <button onClick={() => onNavigate?.('sell')}
-                    className="flex-[2] py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest bg-white text-slate-900 active:scale-95 transition-all shadow-lg">
+                    className="flex-1 py-2.5 rounded-lg text-[12px] font-semibold text-white bg-green-600 active:scale-[0.98] transition-all">
                     + Publier
                   </button>
                 </div>
