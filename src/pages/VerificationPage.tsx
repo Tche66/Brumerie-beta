@@ -1,4 +1,3 @@
-// src/pages/VerificationPage.tsx — v3 : matrice badges correcte + Premium actif
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,51 +10,64 @@ interface VerificationPageProps { onBack: () => void; }
 
 export function VerificationPage({ onBack }: VerificationPageProps) {
   const { userProfile } = useAuth();
-  const [sent, setSent]  = useState(false);
+  const [sentVerif, setSentVerif] = useState(false);
   const [sentPremium, setSentPremium] = useState(false);
 
-  // Prix Vérifié (depuis Firestore — modifiable admin)
-  const [verificationPrice, setVerificationPrice]           = useState(5000);
-  const [verificationPromoPrice, setVerificationPromoPrice] = useState<number | null>(null);
-  // Prix Premium (depuis Firestore — modifiable admin)
-  const [premiumPrice, setPremiumPrice]                     = useState(10000);
-  const [premiumPromoPrice, setPremiumPromoPrice]           = useState<number | null>(null);
+  const [verificationPrice, setVerificationPrice] = useState(5000);
+  const [premiumPrice, setPremiumPrice] = useState(10000);
 
   useEffect(() => {
     getGlobalSettings().then((s: any) => {
-      if (s?.verificationPrice)   setVerificationPrice(s.verificationPrice);
-      setVerificationPromoPrice(s?.verificationPromoPrice > 0 ? s.verificationPromoPrice : null);
-      if (s?.premiumPrice)        setPremiumPrice(s.premiumPrice);
-      setPremiumPromoPrice(s?.premiumPromoPrice > 0 ? s.premiumPromoPrice : null);
+      if (s?.verificationPrice) setVerificationPrice(s.verificationPrice);
+      if (s?.premiumPrice) setPremiumPrice(s.premiumPrice);
     }).catch(() => {});
   }, []);
 
-  const effectiveVerifiedPrice = verificationPromoPrice ?? verificationPrice;
-  const effectivePremiumPrice  = premiumPromoPrice ?? premiumPrice;
-
   const tier = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
 
-  const handleActivate = () => {
-    if (!userProfile) return;
-    const config  = getAppConfig();
-    const payLink = config.badgePaymentLink || '';
-    if (payLink) window.open(payLink, '_blank');
-    setSent(true);
-  };
+  // Eligibility check for Verified badge
+  const memberSinceMonths = (() => {
+    try {
+      const created = (userProfile as any)?.createdAt?.toDate
+        ? (userProfile as any).createdAt.toDate()
+        : new Date((userProfile as any)?.createdAt);
+      const months = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24 * 30);
+      return Math.floor(months);
+    } catch { return 0; }
+  })();
 
-  const handleSendProof = () => {
+  const completedSales = (userProfile as any)?.completedSales || 0;
+  const avgRating = (userProfile as any)?.avgRating || 0;
+  const positiveReviews = (userProfile as any)?.positiveReviewCount || 0;
+
+  const isEligible = memberSinceMonths >= 6 && completedSales >= 5 && positiveReviews >= 3;
+
+  const criteria = [
+    { label: '6 mois sur Brumerie', met: memberSinceMonths >= 6, detail: `${memberSinceMonths} mois` },
+    { label: '5 ventes completees', met: completedSales >= 5, detail: `${completedSales}/5` },
+    { label: '3 avis positifs (4★+)', met: positiveReviews >= 3, detail: `${positiveReviews}/3` },
+    { label: "Piece d'identite + selfie", met: false, detail: 'A envoyer' },
+  ];
+
+  const handleRequestVerification = () => {
     if (!userProfile) return;
     const config = getAppConfig();
-    const waNum  = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
-    const msg    = 'Bonjour Brumerie ! Je viens de payer le Badge Vérifié ('
-      + effectiveVerifiedPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement en photo.\n\nNom :'
-      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\nApp :' + userProfile.uid;
+    const waNum = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
+    const msg = `Bonjour Brumerie !\n\nJe souhaite obtenir le Badge Verifie.\n\nNom : ${userProfile.name}\nEmail : ${userProfile.email || ''}\nUID : ${userProfile.uid}\n\nJ'envoie ma piece d'identite et mon selfie en photo ci-apres.`;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
+    setSentVerif(true);
+  };
+
+  const handlePayVerification = () => {
+    if (!userProfile) return;
+    const config = getAppConfig();
+    const payLink = config.badgePaymentLink || '';
+    if (payLink) window.open(payLink, '_blank');
   };
 
   const handleActivatePremium = () => {
     if (!userProfile) return;
-    const config  = getAppConfig();
+    const config = getAppConfig();
     const payLink = (config as any).premiumPaymentLink || config.badgePaymentLink || '';
     if (payLink) window.open(payLink, '_blank');
     setSentPremium(true);
@@ -64,230 +76,193 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
   const handleSendProofPremium = () => {
     if (!userProfile) return;
     const config = getAppConfig();
-    const waNum  = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
-    const msg    = 'Bonjour Brumerie ! Je viens de payer le Badge Premium ('
-      + effectivePremiumPrice.toLocaleString('fr-FR') + 'FCFA).\n\nVoici ma preuve de paiement en photo.\n\nNom :'
-      + userProfile.name + '\n📧 Email : ' + (userProfile.email || '') + '\nApp :' + userProfile.uid;
+    const waNum = config.badgeWhatsappAfter || SUPPORT_WHATSAPP;
+    const msg = `Bonjour Brumerie !\n\nJe viens de payer le Badge Premium (${premiumPrice.toLocaleString('fr-FR')} FCFA/mois).\n\nVoici ma preuve de paiement en photo.\n\nNom : ${userProfile.name}\nEmail : ${userProfile.email || ''}\nUID : ${userProfile.uid}`;
     window.open('https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg), '_blank');
   };
 
-  // Fonctionnalités par badge
-  const FEATURES_SIMPLE = [
-    { icon: '', text: <>Aucun badge d'identité vérifiée</> },
-    { icon: '', text: <>Caméra uniquement (pas de galerie)</> },
-    { icon: '', text: <>Visibilité normale</> },
-    { icon: '', text: <>Max <strong>5 chats / jour</strong></> },
-    { icon: '', text: <>Max <strong>5 produits</strong></> },
-    { icon: '', text: <span className="text-slate-300">Aucune statistique</span> },
-  ];
-
   const FEATURES_VERIFIED = [
-    { icon: '🔵', text: <><strong style={{ color: '#1D9BF0' }}>Badge Bleu</strong> "Vérifié"</> },
-    { icon: '', text: <>Galerie photos complète</> },
-    { icon: '🚀', text: <>Visibilité <strong>boostée (+20%)</strong></> },
-    { icon: '', text: <>Messagerie <strong>illimitée</strong></> },
-    { icon: '', text: <>Bio + Liens réseaux sociaux</> },
-    { icon: '', text: <>Stats de vues de base</> },
-    { icon: '', text: <>Stories <strong>24h</strong></> },
-    { icon: '', text: <>Max <strong>20 produits</strong></> },
+    'Badge bleu de confiance sur votre profil',
+    'Galerie photos complete (pas seulement camera)',
+    'Visibilite boostee dans les recherches (+20%)',
+    'Messagerie illimitee',
+    'Bio + liens reseaux sociaux',
+    'Stories 24h',
+    'Jusqu\'a 20 produits publies',
   ];
 
   const FEATURES_PREMIUM = [
-    { icon: '⭐', text: <><strong style={{ color: '#F59E0B' }}>Badge Or</strong> "Premium"</> },
-    { icon: '🎬', text: <>Photos Studio + <strong style={{ color: '#F59E0B' }}>Vidéos</strong> (bientôt)</> },
-    { icon: '', text: <><strong style={{ color: '#F59E0B' }}>Priorité Max</strong> (Top Page)</> },
-    { icon: '🤖', text: <>Messagerie illimitée + Auto-réponse</> },
-    { icon: '', text: <>Boutique <strong style={{ color: '#F59E0B' }}>100% personnalisée</strong> + Vente flash</> },
-    { icon: '', text: <>Comptabilité · Carnet clients · Catalogue</> },
-    { icon: '', text: <>Marge · Rapport hebdomadaire · Dettes</> },
-    { icon: '', text: <>Analyse <strong style={{ color: '#F59E0B' }}>détaillée</strong> des ventes</> },
-    { icon: '', text: <><strong style={{ color: '#F59E0B' }}>Produits illimités</strong></> },
+    'Badge Or Premium sur votre profil',
+    'Tout le badge Verifie inclus',
+    'Priorite maximale (top des resultats)',
+    'Produits illimites',
+    'Boutique 100% personnalisee + Vente flash',
+    'Comptabilite, Carnet clients, Catalogue',
+    'Marge, Rapport hebdomadaire, Dettes',
+    'Analyse detaillee des ventes',
+    'Auto-reponse messagerie',
   ];
 
   return (
-    <div className="min-h-screen pb-20 font-sans bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen pb-20 bg-white">
 
       {/* Header */}
-      <div className="bg-white sticky top-0 z-50 px-5 py-5 flex items-center gap-4 border-b border-slate-100">
-        <button onClick={onBack} className="w-11 h-11 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-slate-700 active:scale-[0.98] transition-all">
-          <ChevronLeft size={18} className="text-gray-600 dark:text-gray-300" />
+      <div className="sticky top-0 z-50 bg-white border-b border-slate-100 px-5 py-4 flex items-center gap-4">
+        <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-50 active:scale-90 transition-all">
+          <ChevronLeft size={18} className="text-slate-600" />
         </button>
-        <div>
-          <h1 className="font-semibold text-sm text-slate-900">Badges & Plans</h1>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">Choisissez votre niveau de visibilité sur Brumerie</p>
-        </div>
+        <h1 className="font-bold text-[15px] text-slate-900">Badges & Plans</h1>
       </div>
 
-      <div className="px-4 pt-6 space-y-4">
+      <div className="px-5 pt-6 space-y-6">
 
-        {/* ── CARTE SIMPLE ── */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-          <p className="text-xs font-medium text-slate-400 mb-1"><BruIcons.Unlock size={14}/> Simple</p>
-          <p className="text-4xl font-semibold text-slate-300 mb-1">0 <span className="text-xl">FCFA</span></p>
-          <p className="text-xs text-slate-400 mb-5">Pour tester l'application</p>
-          <div className="space-y-3">
-            {FEATURES_SIMPLE.map((f, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-base w-6 text-center flex-shrink-0">{f.icon}</span>
-                <p className="text-[12px] font-medium text-slate-600">{f.text}</p>
+        {/* ══ BADGE VERIFIE ══════════════════════════════════════════ */}
+        <div className="border border-blue-200 rounded-2xl overflow-hidden">
+          <div className="bg-blue-50 px-5 py-4 border-b border-blue-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-slate-900">Badge Verifie</p>
+                  <p className="text-[11px] text-slate-500">Badge de confiance</p>
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-6 bg-slate-100 rounded-lg py-4 text-center">
-            <p className="text-xs font-medium text-slate-400">
-              {tier === 'simple' ? '— Plan actuel —' : 'Plan de base'}
-            </p>
-          </div>
-        </div>
-
-        {/* ── CARTE VÉRIFIÉ ── */}
-        <div className="rounded-xl overflow-visible relative"
-          style={{ boxShadow: tier === 'simple' ? '0 20px 60px rgba(29,155,240,0.25)' : 'none', border: '2px solid #1D9BF0' }}>
-
-          {tier === 'simple' && (
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="bg-amber-400 text-slate-900 text-xs font-medium px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap">
-                <BruIcons.Flame size={14}/> Recommandé pour vous !
+              <div className="text-right">
+                <p className="text-[14px] font-bold text-slate-900">{verificationPrice.toLocaleString('fr-FR')} FCFA</p>
+                <p className="text-[10px] text-slate-400">/an</p>
               </div>
             </div>
-          )}
+          </div>
 
-          <div className="bg-white rounded-xl p-6 pt-8">
-            <p className="font-semibold mb-2" style={{ color: '#1D9BF0' }}>🔵 Vérifié</p>
-
-            <div className="flex items-baseline gap-3 mb-1">
-              {verificationPromoPrice && (
-                <p className="text-slate-300 line-through text-lg font-bold">{verificationPrice.toLocaleString('fr-FR')}</p>
-              )}
-              <p className="text-5xl font-semibold text-slate-900">
-                {effectiveVerifiedPrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span>
-              </p>
-              {verificationPromoPrice && (
-                <span className="bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">PROMO</span>
-              )}
+          <div className="px-5 py-5">
+            {/* Criteres d'eligibilite */}
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-3">Criteres d'eligibilite</p>
+            <div className="space-y-2.5 mb-5">
+              {criteria.map((c, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${c.met ? 'bg-green-100' : 'bg-slate-100'}`}>
+                    {c.met
+                      ? <Check size={12} className="text-green-600"/>
+                      : <X size={12} className="text-slate-400"/>
+                    }
+                  </div>
+                  <p className={`text-[12px] flex-1 ${c.met ? 'text-slate-700' : 'text-slate-400'}`}>{c.label}</p>
+                  <span className={`text-[10px] font-semibold ${c.met ? 'text-green-600' : 'text-slate-400'}`}>{c.detail}</span>
+                </div>
+              ))}
             </div>
-            <p className="text-xs text-slate-400 mb-5">Visibilité accrue · Identité contrôlée · /mois</p>
 
-            <div className="space-y-3">
+            {/* Avantages */}
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-3">Avantages inclus</p>
+            <div className="space-y-2 mb-5">
               {FEATURES_VERIFIED.map((f, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-base w-6 text-center flex-shrink-0">{f.icon}</span>
-                  <p className="text-[12px] font-medium text-slate-600">{f.text}</p>
+                <div key={i} className="flex items-center gap-2.5">
+                  <Check size={12} className="text-blue-500 flex-shrink-0"/>
+                  <p className="text-[12px] text-slate-600">{f}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 space-y-3">
-              {tier === 'verified' ? (
-                <div className="rounded-lg py-4 text-center" style={{ background: '#EFF6FF' }}>
-                  <p className="text-xs font-medium" style={{ color: '#1D9BF0' }}>✓ Badge actif</p>
+            {/* CTA */}
+            {tier === 'verified' || tier === 'premium' ? (
+              <div className="rounded-xl py-3 text-center bg-blue-50 border border-blue-200">
+                <p className="text-[12px] font-semibold text-blue-600">Badge Verifie actif</p>
+              </div>
+            ) : sentVerif ? (
+              <div className="space-y-3">
+                <div className="rounded-xl py-3 px-4 text-center bg-green-50 border border-green-200">
+                  <p className="text-[12px] font-semibold text-green-700">Demande envoyee !</p>
+                  <p className="text-[11px] text-green-600 mt-1">Envoyez votre piece + selfie sur WhatsApp. Apres validation, payez {verificationPrice.toLocaleString('fr-FR')} FCFA pour activer.</p>
                 </div>
-              ) : tier === 'premium' ? (
-                <div className="rounded-lg py-4 text-center bg-gray-50 dark:bg-slate-900">
-                  <p className="text-xs font-medium text-slate-400">Inclus dans Premium ✓</p>
-                </div>
-              ) : (
-                <>
-                  {sent ? (
-                    <div className="space-y-3">
-                      <div className="rounded-lg py-4 px-4 text-center bg-green-50 border-2 border-green-200">
-                        <p className="text-green-800 font-semibold text-[12px]"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
-                        <p className="text-green-600 text-xs mt-1 font-medium">Envoie ta preuve de paiement ci-dessous</p>
-                      </div>
-                      <button onClick={handleSendProof}
-                        className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all">
-                        <BruIcons.Camera size={14}/> Envoyer ma preuve de paiement
-                      </button>
-                      <button onClick={() => setSent(false)} className="w-full py-3 rounded-lg font-bold text-[11px] text-slate-400 bg-gray-50 dark:bg-slate-900">
-                        ← Recommencer
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={handleActivate}
-                      className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all shadow-sm">
-                      <BruIcons.Credit size={14}/> PAYER {effectiveVerifiedPrice.toLocaleString('fr-FR')} FCFA
-                    </button>
-                  )}
-                  <p className="text-center text-amber-500 font-semibold text-xs">✨ Cadeau : +30 jours gratuits !</p>
-                </>
-              )}
-            </div>
+                <button onClick={handlePayVerification}
+                  className="w-full py-3 rounded-xl bg-blue-500 text-white text-[12px] font-semibold active:scale-[0.98] transition-all">
+                  Payer {verificationPrice.toLocaleString('fr-FR')} FCFA pour activer
+                </button>
+              </div>
+            ) : !isEligible ? (
+              <div className="rounded-xl py-3 px-4 text-center bg-slate-50 border border-slate-200">
+                <p className="text-[12px] font-semibold text-slate-500">Criteres non remplis</p>
+                <p className="text-[11px] text-slate-400 mt-1">Continuez a vendre pour debloquer ce badge</p>
+              </div>
+            ) : (
+              <button onClick={handleRequestVerification}
+                className="w-full py-3.5 rounded-xl bg-blue-500 text-white text-[12px] font-semibold active:scale-[0.98] transition-all">
+                Demander la verification
+              </button>
+            )}
           </div>
         </div>
 
-        {/* ── CARTE PREMIUM ── */}
-        <div className="rounded-xl p-6 pb-8 relative overflow-visible"
-          style={{
-            background: '#0F0F0F',
-            border: tier === 'premium' ? '2px solid #F59E0B' : '2px solid rgba(245,158,11,0.2)',
-            boxShadow: tier !== 'premium' ? '0 8px 24px rgba(245,158,11,0.10)' : '0 8px 24px rgba(245,158,11,0.20)',
-          }}>
-
-          {tier !== 'premium' && tier !== 'simple' && (
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-              <div className="text-xs font-medium px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap bg-amber-500 text-slate-900">
-                ⭐ Passe au niveau supérieur
+        {/* ══ BADGE PREMIUM ═══════════════════════════════════════════ */}
+        <div className="border border-amber-200 rounded-2xl overflow-hidden">
+          <div className="bg-slate-900 px-5 py-4 border-b border-amber-300/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white" stroke="none">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-white">Badge Premium</p>
+                  <p className="text-[11px] text-slate-400">Vendeur professionnel</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[14px] font-bold text-amber-400">{premiumPrice.toLocaleString('fr-FR')} FCFA</p>
+                <p className="text-[10px] text-slate-500">/mois</p>
               </div>
             </div>
-          )}
+          </div>
 
-          <div className="pt-2">
-            <p className="font-semibold mb-2" style={{ color: '#F59E0B' }}>⭐ Premium</p>
-
-            <div className="flex items-baseline gap-3 mb-1">
-              {premiumPromoPrice && (
-                <p className="line-through text-lg font-bold" style={{ color: '#78716C' }}>{premiumPrice.toLocaleString('fr-FR')}</p>
-              )}
-              <p className="text-5xl font-semibold text-white">
-                {effectivePremiumPrice.toLocaleString('fr-FR')} <span className="text-xl font-bold">FCFA</span>
-              </p>
-              {premiumPromoPrice && (
-                <span className="bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">PROMO</span>
-              )}
-            </div>
-            <p className="text-xs mb-5" style={{ color: '#78716C' }}>L'élite du e-commerce local · /mois</p>
-
-            <div className="space-y-3">
+          <div className="px-5 py-5 bg-slate-950">
+            {/* Avantages */}
+            <div className="space-y-2.5 mb-5">
               {FEATURES_PREMIUM.map((f, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <span className="text-base w-6 text-center flex-shrink-0">{f.icon}</span>
-                  <p className="text-[12px] font-medium" style={{ color: '#A8A29E' }}>{f.text}</p>
+                <div key={i} className="flex items-center gap-2.5">
+                  <Check size={12} className="text-amber-400 flex-shrink-0"/>
+                  <p className="text-[12px] text-slate-300">{f}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 space-y-3">
-              {tier === 'premium' ? (
-                <div className="rounded-lg py-4 text-center"
-                  style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
-                  <p className="text-xs font-medium" style={{ color: '#F59E0B' }}>⭐ Badge Premium actif</p>
+            {/* CTA */}
+            {tier === 'premium' ? (
+              <div className="rounded-xl py-3 text-center border border-amber-500/30" style={{ background: 'rgba(245,158,11,0.1)' }}>
+                <p className="text-[12px] font-semibold text-amber-400">Badge Premium actif</p>
+              </div>
+            ) : sentPremium ? (
+              <div className="space-y-3">
+                <div className="rounded-xl py-3 px-4 text-center border border-amber-500/30" style={{ background: 'rgba(245,158,11,0.1)' }}>
+                  <p className="text-[12px] font-semibold text-amber-400">Paiement lance !</p>
+                  <p className="text-[11px] text-amber-300/60 mt-1">Envoyez votre preuve de paiement</p>
                 </div>
-              ) : (
-                <>
-                  {sentPremium ? (
-                    <div className="space-y-3">
-                      <div className="rounded-lg py-4 px-4 text-center bg-amber-900/30 border border-amber-600/40">
-                        <p className="font-semibold text-xs text-amber-400"><BruIcons.CheckCircle size={14}/> Paiement lancé !</p>
-                        <p className="text-amber-300/70 text-xs mt-1 font-medium">Envoie ta preuve ci-dessous</p>
-                      </div>
-                      <button onClick={handleSendProofPremium}
-                        className="w-full py-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 font-medium text-xs text-white active:scale-[0.98] transition-all">
-                        <BruIcons.Camera size={14}/> Envoyer ma preuve de paiement
-                      </button>
-                      <button onClick={() => setSentPremium(false)}
-                        className="w-full py-3 rounded-lg font-bold text-[11px] bg-white/10 text-white/50">
-                        ← Recommencer
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={handleActivatePremium}
-                      className="w-full py-4 rounded-lg bg-amber-500 hover:bg-amber-600 font-medium text-xs text-slate-900 active:scale-[0.98] transition-all shadow-sm">
-                      ⭐ PAYER {effectivePremiumPrice.toLocaleString('fr-FR')} FCFA
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+                <button onClick={handleSendProofPremium}
+                  className="w-full py-3.5 rounded-xl bg-amber-500 text-slate-900 text-[12px] font-semibold active:scale-[0.98] transition-all">
+                  Envoyer la preuve de paiement
+                </button>
+                <button onClick={() => setSentPremium(false)}
+                  className="w-full py-2.5 rounded-xl text-[11px] text-slate-500 bg-white/5">
+                  Recommencer
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleActivatePremium}
+                className="w-full py-3.5 rounded-xl bg-amber-500 text-slate-900 text-[12px] font-bold active:scale-[0.98] transition-all">
+                S'abonner Premium — {premiumPrice.toLocaleString('fr-FR')} FCFA/mois
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Note explicative */}
+        <div className="bg-slate-50 rounded-xl p-4">
+          <p className="text-[11px] font-semibold text-slate-500 mb-2">Comment ca marche ?</p>
+          <div className="space-y-2 text-[11px] text-slate-500">
+            <p><span className="font-semibold text-blue-500">Verifie</span> — Badge de confiance. Remplissez les criteres, envoyez vos documents, puis payez 5 000 FCFA/an pour activer. Renouvelable chaque annee.</p>
+            <p><span className="font-semibold text-amber-500">Premium</span> — Abonnement vendeur pro. Acces a tous les outils avances pour developper votre boutique. 10 000 FCFA/mois.</p>
           </div>
         </div>
 

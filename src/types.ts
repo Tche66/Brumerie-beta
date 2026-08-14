@@ -89,8 +89,8 @@ export const BRUMERIE_FEE_PERCENT = 0; // MVP — pas de commission
 export const SUPPORT_EMAIL = 'support@brumerie.com';
 export const CONTACT_EMAIL = 'contact@brumerie.com';
 export const SUPPORT_WHATSAPP = '2250586867693';
-export const VERIFICATION_PRICE = 3000; // FCFA/mois — badge VÉRIFIÉ
-// PREMIUM_PRICE non défini — badge PREMIUM bientôt disponible, prix non communiqué
+export const VERIFICATION_PRICE = 5000; // FCFA/an — badge VÉRIFIÉ (confiance)
+export const PREMIUM_PRICE = 10000; // FCFA/mois — badge PREMIUM (vendeur pro)
 
 // Limites par plan
 // ─── PALIERS DE PARRAINAGE ───────────────────────────────────
