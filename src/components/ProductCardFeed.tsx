@@ -203,7 +203,7 @@ export function ProductCardFeed({
           </button>
           {(product.sellerVerified || product.sellerPremium) && (
             <span className="flex-shrink-0 drop-shadow-lg">
-              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="md"/>
+              <VerifiedTag isVerified={product.sellerVerified} isPremium={product.sellerPremium} showBoth size="md"/>
             </span>
           )}
           {/* Bouton Suivre — juste après le badge */}

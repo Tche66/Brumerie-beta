@@ -91,10 +91,7 @@ export function Header({ onProfileClick, onSearchChange, searchTerm = '', onNoti
                 }
               </button>
               {(userProfile.isVerified || (userProfile as any).isPremium) && (
-                <VerifiedTag
-                  tier={(userProfile as any).isPremium ? 'premium' : 'verified'}
-                  size="sm"
-                />
+                <VerifiedTag isVerified={userProfile.isVerified} isPremium={(userProfile as any).isPremium} showBoth size="sm"/>
               )}
             </div>
           )}

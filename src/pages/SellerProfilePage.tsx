@@ -241,9 +241,9 @@ export function SellerProfilePage({
                       : <div className="w-full h-full flex items-center justify-center bg-green-600 text-white text-xl font-bold">{seller.name?.charAt(0)?.toUpperCase()}</div>
                     }
                   </div>
-                  {tier !== 'simple' && (
+                  {(seller?.isVerified || s?.isPremium) && (
                     <div className="absolute -bottom-1 -right-1">
-                      <VerifiedTag tier={tier as any} size="sm"/>
+                      <VerifiedTag isVerified={seller?.isVerified} isPremium={s?.isPremium} showBoth size="sm"/>
                     </div>
                   )}
                 </div>

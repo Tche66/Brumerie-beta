@@ -23,7 +23,8 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
     }).catch(() => {});
   }, []);
 
-  const tier = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
+  const isVerified = !!userProfile?.isVerified;
+  const isPremium = !!userProfile?.isPremium;
 
   // Eligibility check for Verified badge
   const memberSinceMonths = (() => {
@@ -163,7 +164,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
             </div>
 
             {/* CTA */}
-            {tier === 'verified' || tier === 'premium' ? (
+            {isVerified ? (
               <div className="rounded-xl py-3 text-center bg-blue-50 border border-blue-200">
                 <p className="text-[12px] font-semibold text-blue-600">Badge Verifie actif</p>
               </div>
@@ -226,7 +227,7 @@ export function VerificationPage({ onBack }: VerificationPageProps) {
             </div>
 
             {/* CTA */}
-            {tier === 'premium' ? (
+            {isPremium ? (
               <div className="rounded-xl py-3 text-center border border-amber-500/30" style={{ background: 'rgba(245,158,11,0.1)' }}>
                 <p className="text-[12px] font-semibold text-amber-400">Badge Premium actif</p>
               </div>

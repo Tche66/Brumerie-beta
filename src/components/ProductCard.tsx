@@ -212,10 +212,7 @@ export function ProductCard({ product, onClick, onBookmark, onAddToCart, isBookm
             <div className="flex items-center gap-1 min-w-0 flex-1">
               <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{product.sellerName}</span>
               {(product.sellerVerified || product.sellerPremium) && (
-                <VerifiedTag
-                  tier={product.sellerPremium ? 'premium' : 'verified'}
-                  size="xs"
-                />
+                <VerifiedTag isVerified={product.sellerVerified} isPremium={product.sellerPremium} showBoth size="xs"/>
               )}
             </div>
           </div>

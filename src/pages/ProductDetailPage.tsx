@@ -480,7 +480,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
           >
             <span className="text-sm font-semibold text-white drop-shadow-md truncate max-w-[120px]">{product.sellerName}</span>
             {(product.sellerVerified || product.sellerPremium) && (
-              <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="sm"/>
+              <VerifiedTag isVerified={product.sellerVerified} isPremium={product.sellerPremium} showBoth size="sm"/>
             )}
           </button>
           {/* Bouton Suivre */}
@@ -858,7 +858,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-semibold text-white text-sm truncate">{product.sellerName}</span>
               {(product.sellerVerified || product.sellerPremium) && (
-                <VerifiedTag tier={product.sellerPremium ? 'premium' : 'verified'} size="xs" />
+                <VerifiedTag isVerified={product.sellerVerified} isPremium={product.sellerPremium} showBoth size="xs" />
               )}
             </div>
             {/* Note du vendeur */}
