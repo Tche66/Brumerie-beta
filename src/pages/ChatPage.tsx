@@ -577,7 +577,7 @@ export function ChatPage({ conversation, onBack, onProductClick, onBuyAtPrice }:
                 </svg>
             }
           </button>
-          <input ref={imageInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageSelect}/>
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect}/>
 
           <input ref={inputRef} type="text" value={text} onChange={e => setText(e.target.value)}
             onKeyDown={handleKey} placeholder="Écris un message..."
