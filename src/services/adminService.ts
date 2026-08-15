@@ -166,18 +166,15 @@ export async function toggleUserVerification(userId: string, enable: boolean, ad
 export async function forcePremiumUser(userId: string, adminUid: string, durationDays = 30): Promise<void> {
   const expiresAt = new Date(Date.now() + durationDays * 24 * 3600000);
   await updateDoc(doc(db, 'users', userId), {
-    isPremium: true, isVerified: true, tier: 'premium',
+    isPremium: true,
     premiumUntil: Timestamp.fromDate(expiresAt),
     premiumByAdmin: adminUid, premiumAt: serverTimestamp(),
-    verifiedUntil: Timestamp.fromDate(expiresAt),
-    verificationPending: false,
   });
-  try { await syncSellerDataToProducts(userId, { isVerified: true }); } catch {}
   await logAdminAction(adminUid, 'PREMIUM_ENABLED', userId, `${durationDays} jours`);
 }
 
 export async function revokePremium(userId: string, adminUid: string): Promise<void> {
-  await updateDoc(doc(db, 'users', userId), { isPremium: false, tier: 'verified', premiumUntil: null });
+  await updateDoc(doc(db, 'users', userId), { isPremium: false, premiumUntil: null });
   await logAdminAction(adminUid, 'PREMIUM_REVOKED', userId, '');
 }
 
