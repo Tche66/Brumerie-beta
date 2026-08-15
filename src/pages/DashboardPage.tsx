@@ -90,9 +90,9 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   const [articlesFilter, setArticlesFilter] = useState<'actifs' | 'brouillons'>('actifs');
   const [activeBoosts, setActiveBoosts] = useState<Record<string, any>>({}); // productId → boost data
 
-  const tier     = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
-  const isSimple = tier === 'simple';
-  const limits   = PLAN_LIMITS[tier];
+  const isPremium = !!userProfile?.isPremium;
+  const tier = isPremium ? 'premium' : 'simple';
+  const limits = PLAN_LIMITS[isPremium ? 'premium' : 'simple'];
 
 
   // Charger Seller Score IA + Data Loop stats
@@ -158,7 +158,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
     { id: 'articles',  label: 'Articles',  badge: activeProducts.length + draftProducts.length },
     { id: 'commandes', label: 'Commandes', badge: activeOrders.length },
     { id: 'offres',    label: 'Offres',    badge: pendingOffers.length },
-    ...(!isSimple ? [{ id: 'ventes' as Tab, label: 'Ventes', badge: completedSales.length }] : []),
+    ...(!!isPremium ? [{ id: 'ventes' as Tab, label: 'Ventes', badge: completedSales.length }] : []),
     { id: 'filleuls',  label: 'Filleuls' },
   ];
 
@@ -226,10 +226,10 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
         {activeTab === 'stats' && (
           <>
             {/* Bannière upgrade — Simple seulement */}
-            {isSimple && (
+            {!isPremium && (
               <button onClick={onUpgrade}
                 className="w-full rounded-3xl p-5 text-left active:scale-[0.98] transition-all relative overflow-hidden"
-                style={{ background: 'linear-gradient(135deg,#1D9BF0 0%,#0E6FC7 100%)' }}>
+                style={{ background: 'linear-gradient(135deg,#1a1a1a 0%,#292524 100%)' }}>
                 <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10"/>
                 <div className="absolute right-10 bottom-0 w-16 h-16 rounded-full bg-white/5"/>
                 <div className="flex items-start gap-3 mb-3">
@@ -237,17 +237,17 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                     {Icon.flash}
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-blue-100">Plan actuel : Gratuit</p>
-                    <p className="font-black text-white text-[17px] leading-tight mt-0.5">Passe Vérifié →</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-300/70">Plan actuel : Gratuit</p>
+                    <p className="font-black text-white text-[17px] leading-tight mt-0.5">Passe Premium →</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                  {['20 articles', 'Chats illimités', 'Badge bleu', 'Réseaux sociaux', 'Revenus & stats'].map(f => (
+                  {['Articles illimités', 'Chats illimités', 'Compta & catalogue', 'Badge Or', 'Visibilité max'].map(f => (
                     <span key={f} className="text-[8px] font-black bg-white/20 text-white px-2 py-0.5 rounded-lg">{f}</span>
                   ))}
                 </div>
-                <div className="inline-flex items-center gap-2 bg-white text-blue-700 font-black text-[10px] uppercase px-4 py-2.5 rounded-2xl shadow-lg">
-                  Obtenir le badge Vérifié
+                <div className="inline-flex items-center gap-2 bg-amber-400 text-slate-900 font-black text-[10px] uppercase px-4 py-2.5 rounded-2xl shadow-lg">
+                  Passer Premium
                   {Icon.arrowRight}
                 </div>
               </button>
@@ -302,45 +302,29 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">Articles vendus</p>
               </div>
 
-              {!isSimple ? (
-                <>
-                  {/* Vues — Vérifié/Premium */}
-                  <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm">
-                    <div className="w-9 h-9 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-3">
-                      {Icon.eye}
-                    </div>
-                    <p className="font-black text-2xl text-slate-900">{loading ? '…' : totalViews}</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">Vues totales</p>
-                  </div>
+              {/* Vues */}
+              <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm">
+                <div className="w-9 h-9 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 mb-3">
+                  {Icon.eye}
+                </div>
+                <p className="font-black text-2xl text-slate-900">{loading ? '…' : totalViews}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">Vues totales</p>
+              </div>
 
-                  {/* Revenus — Vérifié/Premium */}
-                  <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm">
-                    <div className="w-9 h-9 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-3">
-                      {Icon.coin}
-                    </div>
-                    <p className="font-black text-lg text-slate-900 truncate">
-                      {loading ? '…' : `${totalRevenue.toLocaleString('fr-FR')} F`}
-                    </p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">Revenus totaux</p>
-                  </div>
-                </>
-              ) : (
-                /* Simple : bloc verrouillé */
-                <button onClick={onUpgrade}
-                  className="col-span-2 bg-slate-50 rounded-3xl p-4 border-2 border-dashed border-slate-200 flex items-center gap-4 active:scale-[0.98] transition-all">
-                  <div className="w-10 h-10 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-400">
-                    {Icon.lock}
-                  </div>
-                  <div className="text-left">
-                    <p className="font-black text-slate-700 text-[12px]">Vues, revenus & note</p>
-                    <p className="text-[9px] text-blue-500 font-bold mt-0.5">Passer Vérifié pour débloquer →</p>
-                  </div>
-                </button>
-              )}
+              {/* Revenus */}
+              <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm">
+                <div className="w-9 h-9 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-600 mb-3">
+                  {Icon.coin}
+                </div>
+                <p className="font-black text-lg text-slate-900 truncate">
+                  {loading ? '…' : `${totalRevenue.toLocaleString('fr-FR')} F`}
+                </p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1">Revenus totaux</p>
+              </div>
             </div>
 
-            {/* Note moyenne — Vérifié/Premium */}
-            {!isSimple && avgRating > 0 && (
+            {/* Note moyenne */}
+            {avgRating > 0 && (
               <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Réputation</p>
                 <div className="flex items-center gap-4">
@@ -371,7 +355,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
             )}
 
             {/* Résumé revenus — Vérifié/Premium */}
-            {!isSimple && totalRevenue > 0 && (
+            {totalRevenue > 0 && (
               <div className="rounded-3xl p-5 text-white relative overflow-hidden"
                 style={{ background: 'linear-gradient(135deg,#0F0F0F,#1a1a1a)' }}>
                 <div className="absolute right-4 top-4 opacity-10">{Icon.trending}</div>
@@ -752,7 +736,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
                         <span className="text-[8px] text-slate-400 flex items-center gap-0.5">
                           <span className="text-slate-300">{Icon.chat}</span> {p.whatsappClickCount || 0}
                         </span>
-                        {!isSimple && (
+                        {!!isPremium && (
                           <span className="text-[8px] text-slate-400 flex items-center gap-0.5">
                             <span className="text-slate-300">{Icon.eye}</span> {p.viewCount || 0}
                           </span>
@@ -909,7 +893,7 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
         )}
 
         {/* ══════════════ VENTES — Vérifié/Premium ══════════════ */}
-        {activeTab === 'ventes' && !isSimple && (
+        {activeTab === 'ventes' && !!isPremium && (
           <>
             {/* Hero revenus */}
             <div className="rounded-3xl p-5 text-white relative overflow-hidden"
