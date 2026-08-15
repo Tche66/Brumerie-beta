@@ -844,9 +844,10 @@ export function AdminPage({ onBack, onContact, onSellerClick }: AdminPageProps) 
                         <select value={badgeDays} onChange={e => setBadgeDays(e.target.value)}
                           className="bg-slate-50 border border-slate-200 rounded-xl px-1.5 text-[10px] font-bold text-slate-600 outline-none">
                           <option value="7">7j</option>
-                          <option value="30">30j</option>
-                          <option value="90">90j</option>
-                          <option value="365">1an</option>
+                          <option value="30">1 mois</option>
+                          <option value="90">3 mois</option>
+                          <option value="180">6 mois</option>
+                          <option value="365">1 an</option>
                         </select>
                       </div>
                       {/* Toggle paiement à l'avance par vendeur */}
