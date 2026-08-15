@@ -162,11 +162,10 @@ export function SellPage({ onClose, onSuccess }: SellPageProps) {
 
   const handleSubmit = async () => {
     // Vérifier limite produits selon le plan
-    const tier = userProfile?.isPremium ? 'premium' : userProfile?.isVerified ? 'verified' : 'simple';
-    const productLimit = PLAN_LIMITS[tier].products;
+    const productLimit = PLAN_LIMITS[userProfile?.isPremium ? 'premium' : 'simple'].products;
     const currentProductCount = userProfile?.productCount || 0;
     if (currentProductCount >= productLimit) {
-      setError(`Limite de ${productLimit} produits atteinte pour le plan ${tier}. Passe au plan supérieur !`);
+      setError(`Limite de ${productLimit} produits atteinte. Passe Premium pour publier sans limite !`);
       return;
     }
     if (!userProfile || !canPublish) return;

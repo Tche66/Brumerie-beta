@@ -170,10 +170,8 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
   };
 
   // Couleurs par tier
-  const tierGradient = tier === 'premium'
+  const tierGradient = isPremium
     ? 'linear-gradient(135deg,#0F0F0F 0%,#1a1a1a 100%)'
-    : tier === 'verified'
-    ? 'linear-gradient(135deg,#1D9BF0 0%,#0E6FC7 100%)'
     : 'linear-gradient(135deg,#475569 0%,#334155 100%)';
 
   return (
@@ -195,9 +193,9 @@ export function DashboardPage({ onBack, onUpgrade, onEditProduct, onOpenOrder, o
             </div>
           </div>
           <span className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase flex-shrink-0 flex items-center gap-1.5"
-            style={{ background: tier === 'premium' ? '#0F0F0F' : tier === 'verified' ? '#1D9BF0' : '#E2E8F0', color: tier === 'simple' ? '#64748B' : 'white' }}>
-            {tier !== 'simple' && Icon.shield}
-            {tier === 'simple' ? 'Gratuit' : tier}
+            style={{ background: isPremium ? '#0F0F0F' : '#E2E8F0', color: isPremium ? '#F59E0B' : '#64748B' }}>
+            {isPremium && Icon.shield}
+            {isPremium ? 'Premium' : 'Gratuit'}
           </span>
         </div>
 
