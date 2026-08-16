@@ -5,7 +5,7 @@ import {
   Timestamp, limit,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { Order, OrderStatus, PaymentInfo, BRUMERIE_FEE_PERCENT, PAYMENT_GATEWAY_FEE_PERCENT, PAYMENT_GATEWAY_FIXED_FEE } from '@/types';
+import { Order, OrderStatus, PaymentInfo, BRUMERIE_FEE_PERCENT, BUYER_PROTECTION_FEE_PERCENT } from '@/types';
 import { createNotification } from './notificationService';
 import { showLocalPushNotification } from './pushService';
 import { ordersApi } from './apiClient';
@@ -15,11 +15,10 @@ const ordersCol = collection(db, 'orders');
 // ── Calcul frais ──────────────────────────────────────────────────
 export function calcOrderFees(price: number) {
   const brumerieFee = Math.round(price * BRUMERIE_FEE_PERCENT / 100);
-  const gatewayFee = Math.round(price * PAYMENT_GATEWAY_FEE_PERCENT / 100) + PAYMENT_GATEWAY_FIXED_FEE;
-  const totalFees = brumerieFee + gatewayFee;
+  const buyerProtectionFee = Math.round(price * BUYER_PROTECTION_FEE_PERCENT / 100);
   const sellerReceives = price - brumerieFee;
-  const buyerPays = price + gatewayFee;
-  return { brumerieFee, gatewayFee, totalFees, sellerReceives, buyerPays };
+  const buyerPays = price + buyerProtectionFee;
+  return { brumerieFee, buyerProtectionFee, sellerReceives, buyerPays };
 }
 
 // ── Générer code livraison ────────────────────────────────────────
@@ -42,7 +41,7 @@ export async function createOrder(params: {
   buyerAWCode?: string; buyerAWRepere?: string;
   buyerAWLatitude?: number; buyerAWLongitude?: number;
 }): Promise<string> {
-  const { brumerieFee, gatewayFee, sellerReceives, buyerPays } = calcOrderFees(params.productPrice);
+  const { brumerieFee, buyerProtectionFee, sellerReceives, buyerPays } = calcOrderFees(params.productPrice);
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
   const totalAmount = buyerPays + (params.deliveryFee || 0);
 
@@ -59,7 +58,7 @@ export async function createOrder(params: {
       deliveryFee:      params.deliveryFee || 0,
       totalAmount,
       brumerieFee,
-      gatewayFee,
+      buyerProtectionFee,
       sellerReceives,
       paymentMethod:    params.paymentInfo.method,
       paymentPhone:     params.paymentInfo.phone,

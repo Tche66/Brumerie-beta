@@ -319,8 +319,8 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[12px] text-slate-500 font-medium">Frais de transaction</span>
-                  <span className="text-slate-600 text-[12px] font-medium">{fees.gatewayFee.toLocaleString('fr-FR')} FCFA</span>
+                  <span className="text-[12px] text-slate-500 font-medium">Protection acheteur (2%)</span>
+                  <span className="text-slate-600 text-[12px] font-medium">{fees.buyerProtectionFee.toLocaleString('fr-FR')} FCFA</span>
                 </div>
                 {deliveryType === 'delivery' && (
                   <div className="flex justify-between items-center">
@@ -335,9 +335,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                     {fees.buyerPays.toLocaleString('fr-FR')} FCFA
                   </span>
                 </div>
-                <p className="text-[9px] text-slate-400 mt-1">
-                  Le vendeur recevra {fees.sellerReceives.toLocaleString('fr-FR')} FCFA (commission Brumerie 5%)
-                </p>
+                <div className="flex items-center gap-1.5 mt-2 bg-green-50 rounded-xl px-3 py-2 border border-green-100">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <p className="text-[10px] text-green-700 font-medium">Transaction protégée — votre argent est sécurisé jusqu'à réception</p>
+                </div>
               </div>
             </div>
           );
