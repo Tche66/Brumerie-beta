@@ -330,43 +330,78 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         {/* Type de remise */}
         <div>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de remise</p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { id: 'in_person', label: 'Main propre', icon: '', sub: 'Confirmation immédiate' },
-              { id: 'delivery',  label: 'Livraison',   icon: '', sub: 'Livreur Brumerie ou vendeur' },
-            ].map(opt => (
-              <button key={opt.id}
-                onClick={() => setDeliveryType(opt.id as any)}
-                className={`p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${deliveryType === opt.id ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`}>
-                <p className="text-xl mb-1">{opt.icon}</p>
-                <p className={`text-[11px] font-black uppercase tracking-tight ${deliveryType === opt.id ? 'text-green-800' : 'text-slate-700'}`}>{opt.label}</p>
-                <p className="text-[9px] text-slate-400 font-medium mt-0.5">{opt.sub}</p>
-              </button>
-            ))}
+          <div className="space-y-3">
+            {/* Main propre */}
+            <button
+              onClick={() => setDeliveryType('in_person')}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${deliveryType === 'in_person' ? 'border-slate-900 bg-slate-50' : 'border-slate-100 bg-white'}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${deliveryType === 'in_person' ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={deliveryType === 'in_person' ? 'white' : '#64748B'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className={`text-[13px] font-bold ${deliveryType === 'in_person' ? 'text-slate-900' : 'text-slate-700'}`}>Remise en main propre</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Rencontrez le vendeur et recevez l'article directement</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-[9px] text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-md">Gratuit</span>
+                  <span className="text-[9px] text-slate-400">Confirmation immediate</span>
+                </div>
+              </div>
+              {deliveryType === 'in_person' && (
+                <div className="w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+              )}
+            </button>
+
+            {/* Livraison */}
+            <button
+              onClick={() => setDeliveryType('delivery')}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.98] ${deliveryType === 'delivery' ? 'border-slate-900 bg-slate-50' : 'border-slate-100 bg-white'}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${deliveryType === 'delivery' ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={deliveryType === 'delivery' ? 'white' : '#64748B'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className={`text-[13px] font-bold ${deliveryType === 'delivery' ? 'text-slate-900' : 'text-slate-700'}`}>Livraison</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Un livreur Brumerie vous apporte l'article</p>
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md">Frais selon distance</span>
+                  <span className="text-[9px] text-slate-400">24-72h</span>
+                </div>
+              </div>
+              {deliveryType === 'delivery' && (
+                <div className="w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+              )}
+            </button>
           </div>
 
-          {/* ── Livreur partenaire (si livraison choisie) ── */}
+          {/* Info livraison */}
           {deliveryType === 'delivery' && (
-            <div className="mt-3">
-              <div className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50">
-                <p className="text-[11px] font-bold text-slate-500 text-center">
-                  Un livreur vous sera proposé par le vendeur une fois la commande validée.
-                </p>
-              </div>
+            <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <p className="text-[11px] text-slate-600 font-medium">
+                Les frais de livraison seront fixes par le livreur apres validation de la commande. Vous serez notifie du montant avant la livraison.
+              </p>
             </div>
           )}
         </div>
 
-        {/* ── ADRESSE DE LIVRAISON Address-Web — inline, sans quitter l'app ── */}
-        <div className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100">
-          <AWAddressPicker
-            value={awCode}
-            onChange={(code, addr) => { setAwCode(code); setAwAddress(addr); }}
-            label="Adresse de livraison"
-            placeholder="AW-ABJ-84321 (optionnel)"
-            firebaseUid={currentUser?.uid}
-          />
-        </div>
+        {/* ── ADRESSE — visible si livraison ── */}
+        {deliveryType === 'delivery' && (
+          <div className="bg-white rounded-2xl p-5 border border-slate-100">
+            <AWAddressPicker
+              value={awCode}
+              onChange={(code, addr) => { setAwCode(code); setAwAddress(addr); }}
+              label="Adresse de livraison"
+              placeholder="AW-ABJ-84321"
+              firebaseUid={currentUser?.uid}
+            />
+          </div>
+        )}
 
         {/* ── MODE DE PAIEMENT — Escrow uniquement ── */}
         <div>
