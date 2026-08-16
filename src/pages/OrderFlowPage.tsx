@@ -8,6 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Product, MOBILE_PAYMENT_METHODS, PaymentInfo } from '@/types';
 import { initiateEscrowPayment } from '@/services/escrowService';
+import { getAvailableDeliverers } from '@/services/deliveryService';
 import { getAppConfig, subscribeAppConfig } from '@/services/appConfigService';
 import { AWAddress } from '@/services/awService';
 import { AWAddressPicker } from '@/components/AWAddressPicker';
@@ -33,6 +34,10 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [awCode, setAwCode] = useState(userProfile?.awAddressCode || '');
   const [awAddress, setAwAddress] = useState<AWAddress | null>(null);
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
+  const [chooseDeliverer, setChooseDeliverer] = useState(false);
+  const [availableDeliverers, setAvailableDeliverers] = useState<any[]>([]);
+  const [selectedDeliverer, setSelectedDeliverer] = useState<any>(null);
+  const [loadingDeliverers, setLoadingDeliverers] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
   const [sellerPhone, setSellerPhone] = useState<string>('');
@@ -61,6 +66,16 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
 
 
 
+
+  React.useEffect(() => {
+    if (!chooseDeliverer || availableDeliverers.length > 0) return;
+    setLoadingDeliverers(true);
+    const zone = userProfile?.neighborhood || product.neighborhood || 'Abidjan';
+    getAvailableDeliverers(zone)
+      .then(setAvailableDeliverers)
+      .catch(() => setAvailableDeliverers([]))
+      .finally(() => setLoadingDeliverers(false));
+  }, [chooseDeliverer]);
 
   const copyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
@@ -380,12 +395,87 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             </button>
           </div>
 
-          {/* Info livraison */}
+          {/* Choix livreur */}
           {deliveryType === 'delivery' && (
-            <div className="mt-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
-              <p className="text-[11px] text-slate-600 font-medium">
-                Les frais de livraison seront fixes par le livreur apres validation de la commande. Vous serez notifie du montant avant la livraison.
-              </p>
+            <div className="mt-4 space-y-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Livreur</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { setChooseDeliverer(false); setSelectedDeliverer(null); }}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all active:scale-[0.98] ${!chooseDeliverer ? 'border-slate-900 bg-slate-50' : 'border-slate-100 bg-white'}`}>
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${!chooseDeliverer ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!chooseDeliverer ? 'white' : '#64748B'} strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-[12px] font-bold ${!chooseDeliverer ? 'text-slate-900' : 'text-slate-600'}`}>Brumerie assigne un livreur</p>
+                    <p className="text-[10px] text-slate-400">Nous trouvons le meilleur livreur pour vous</p>
+                  </div>
+                  {!chooseDeliverer && (
+                    <div className="w-5 h-5 bg-slate-900 rounded-full flex items-center justify-center">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setChooseDeliverer(true)}
+                  className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 text-left transition-all active:scale-[0.98] ${chooseDeliverer ? 'border-slate-900 bg-slate-50' : 'border-slate-100 bg-white'}`}>
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${chooseDeliverer ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={chooseDeliverer ? 'white' : '#64748B'} strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-[12px] font-bold ${chooseDeliverer ? 'text-slate-900' : 'text-slate-600'}`}>Choisir mon livreur</p>
+                    <p className="text-[10px] text-slate-400">Selectionnez un livreur disponible dans votre zone</p>
+                  </div>
+                  {chooseDeliverer && (
+                    <div className="w-5 h-5 bg-slate-900 rounded-full flex items-center justify-center">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Liste livreurs disponibles */}
+              {chooseDeliverer && (
+                <div className="space-y-2">
+                  {loadingDeliverers ? (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-900 rounded-full animate-spin"/>
+                    </div>
+                  ) : availableDeliverers.length === 0 ? (
+                    <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                      <p className="text-[11px] text-amber-700 font-medium text-center">Aucun livreur disponible dans votre zone pour le moment</p>
+                    </div>
+                  ) : (
+                    availableDeliverers.map((d: any) => (
+                      <button key={d.id}
+                        onClick={() => setSelectedDeliverer(d)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.98] ${selectedDeliverer?.id === d.id ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-white'}`}>
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 flex-shrink-0">
+                          {d.photoURL || d.deliveryPhotoURL
+                            ? <img src={d.deliveryPhotoURL || d.photoURL} alt="" className="w-full h-full object-cover"/>
+                            : <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-sm">{d.name?.charAt(0)}</div>
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-[12px] font-bold text-slate-900 truncate">{d.name}</p>
+                          <p className="text-[10px] text-slate-400">{d.neighborhood || 'Abidjan'}</p>
+                        </div>
+                        {d.deliveryPriceSameZone && (
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-lg flex-shrink-0">
+                            {d.deliveryPriceSameZone?.toLocaleString('fr-FR')} F
+                          </span>
+                        )}
+                        {selectedDeliverer?.id === d.id && (
+                          <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
