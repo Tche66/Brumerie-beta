@@ -5,7 +5,7 @@ import {
   Timestamp, limit,
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { Order, OrderStatus, PaymentInfo, BRUMERIE_FEE_PERCENT } from '@/types';
+import { Order, OrderStatus, PaymentInfo, BRUMERIE_FEE_PERCENT, PAYMENT_GATEWAY_FEE_PERCENT, PAYMENT_GATEWAY_FIXED_FEE } from '@/types';
 import { createNotification } from './notificationService';
 import { showLocalPushNotification } from './pushService';
 import { ordersApi } from './apiClient';
@@ -14,9 +14,12 @@ const ordersCol = collection(db, 'orders');
 
 // ── Calcul frais ──────────────────────────────────────────────────
 export function calcOrderFees(price: number) {
-  const brumerieFee    = Math.round(price * BRUMERIE_FEE_PERCENT / 100);
+  const brumerieFee = Math.round(price * BRUMERIE_FEE_PERCENT / 100);
+  const gatewayFee = Math.round(price * PAYMENT_GATEWAY_FEE_PERCENT / 100) + PAYMENT_GATEWAY_FIXED_FEE;
+  const totalFees = brumerieFee + gatewayFee;
   const sellerReceives = price - brumerieFee;
-  return { brumerieFee, sellerReceives };
+  const buyerPays = price + gatewayFee;
+  return { brumerieFee, gatewayFee, totalFees, sellerReceives, buyerPays };
 }
 
 // ── Générer code livraison ────────────────────────────────────────
@@ -39,9 +42,9 @@ export async function createOrder(params: {
   buyerAWCode?: string; buyerAWRepere?: string;
   buyerAWLatitude?: number; buyerAWLongitude?: number;
 }): Promise<string> {
-  const { brumerieFee, sellerReceives } = calcOrderFees(params.productPrice);
+  const { brumerieFee, gatewayFee, sellerReceives, buyerPays } = calcOrderFees(params.productPrice);
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
-  const totalAmount = params.productPrice + (params.deliveryFee || 0);
+  const totalAmount = buyerPays + (params.deliveryFee || 0);
 
   try {
     // Essayer le backend NestJS d'abord
@@ -56,6 +59,7 @@ export async function createOrder(params: {
       deliveryFee:      params.deliveryFee || 0,
       totalAmount,
       brumerieFee,
+      gatewayFee,
       sellerReceives,
       paymentMethod:    params.paymentInfo.method,
       paymentPhone:     params.paymentInfo.phone,
@@ -99,7 +103,7 @@ export async function createOrder(params: {
     const initialStatus: OrderStatus = isCOD ? 'cod_pending' : 'initiated';
     const cleanParams = Object.fromEntries(
       Object.entries({
-        ...params, isCOD: isCOD || false, brumerieFee, sellerReceives,
+        ...params, isCOD: isCOD || false, brumerieFee, gatewayFee, sellerReceives,
         totalAmount, status: initialStatus, createdAt: serverTimestamp(),
       }).filter(([_, v]) => v !== undefined)
     );

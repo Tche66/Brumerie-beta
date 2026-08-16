@@ -85,7 +85,9 @@ export const MOBILE_PAYMENT_METHODS = [
   { id: 'moov',  name: 'Moov Money',       logo: '/assets/payments/moov.png',   color: '#FF6B00' },
 ];
 
-export const BRUMERIE_FEE_PERCENT = 0; // MVP — pas de commission
+export const BRUMERIE_FEE_PERCENT = 5; // Commission Brumerie sur chaque vente
+export const PAYMENT_GATEWAY_FEE_PERCENT = 3; // Frais CinetPay (mobile money) — ajuster selon tarifs réels
+export const PAYMENT_GATEWAY_FIXED_FEE = 100; // Frais fixes CinetPay par transaction (FCFA)
 export const SUPPORT_EMAIL = 'support@brumerie.com';
 export const CONTACT_EMAIL = 'contact@brumerie.com';
 export const SUPPORT_WHATSAPP = '2250586867693';

@@ -2,7 +2,7 @@
 // Flow complet acheteur : Récapitulatif → Paiement → Upload preuve
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createOrder, submitProof } from '@/services/orderService';
+import { createOrder, submitProof, calcOrderFees } from '@/services/orderService';
 import { uploadToCloudinary } from '@/utils/uploadImage';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/config/firebase';
@@ -302,37 +302,46 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           </div>
         </div>
 
-        {/* Détail du prix — frais de livraison si applicable */}
-        <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Récapitulatif</p>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-[12px] text-slate-600 font-medium">Prix de l'article</span>
-              <div className="flex items-center gap-2">
-                {acceptedPrice && acceptedPrice !== product.price && (
-                  <span className="text-[11px] text-slate-400 line-through">{product.price.toLocaleString('fr-FR')}</span>
+        {/* Détail du prix — frais détaillés */}
+        {(() => {
+          const fees = calcOrderFees(effectivePrice);
+          return (
+            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Récapitulatif</p>
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] text-slate-600 font-medium">Prix de l'article</span>
+                  <div className="flex items-center gap-2">
+                    {acceptedPrice && acceptedPrice !== product.price && (
+                      <span className="text-[11px] text-slate-400 line-through">{product.price.toLocaleString('fr-FR')}</span>
+                    )}
+                    <span className="font-bold text-slate-900 text-[13px]">{effectivePrice.toLocaleString('fr-FR')} FCFA</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] text-slate-500 font-medium">Frais de transaction</span>
+                  <span className="text-slate-600 text-[12px] font-medium">{fees.gatewayFee.toLocaleString('fr-FR')} FCFA</span>
+                </div>
+                {deliveryType === 'delivery' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[12px] text-slate-500 font-medium">Frais de livraison</span>
+                    <span className="text-slate-400 text-[11px] font-medium">Fixé par le livreur</span>
+                  </div>
                 )}
-                <span className="font-black text-slate-900 text-[13px]">{effectivePrice.toLocaleString('fr-FR')} FCFA</span>
-                {acceptedPrice && acceptedPrice !== product.price && (
-                  <span className="text-[9px] bg-green-100 text-green-700 font-black px-1.5 py-0.5 rounded-lg">Négocié ✓</span>
-                )}
+                <div className="h-px bg-slate-200 my-1" />
+                <div className="flex justify-between items-center">
+                  <span className="text-[12px] font-black text-slate-800">Total à payer</span>
+                  <span className="font-black text-green-700 text-[15px]">
+                    {fees.buyerPays.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Le vendeur recevra {fees.sellerReceives.toLocaleString('fr-FR')} FCFA (commission Brumerie 5%)
+                </p>
               </div>
             </div>
-            {deliveryType === 'delivery' && (
-              <div className="flex justify-between items-center">
-                <span className="text-[12px] text-slate-500 font-medium">Frais de livraison</span>
-                <span className="text-slate-400 text-[11px] font-medium">Fixé par le livreur</span>
-              </div>
-            )}
-            <div className="h-px bg-slate-200 my-2" />
-            <div className="flex justify-between items-center">
-              <span className="text-[12px] font-black text-slate-800 uppercase">Total à envoyer</span>
-              <span className="font-black text-green-700 text-[15px]">
-                {effectivePrice.toLocaleString('fr-FR')} FCFA
-              </span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Type de remise */}
         <div>
