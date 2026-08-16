@@ -24,31 +24,14 @@ interface OrderFlowPageProps {
 }
 
 type Step = 'recap' | 'availability_check' | 'payment_details' | 'proof' | 'cod_confirm' | 'escrow_redirect';
-type PaymentMode = 'mobile_money' | 'cash_on_delivery' | 'escrow';
-
 export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }: OrderFlowPageProps) {
   const { currentUser, userProfile } = useAuth();
   const [step, setStep] = useState<Step>('recap');
   const [orderId, setOrderId] = useState('');
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>('escrow');
+  const paymentMode = 'escrow' as const;
   // Address-Web — pré-rempli depuis le profil si disponible
   const [awCode, setAwCode] = useState(userProfile?.awAddressCode || '');
   const [awAddress, setAwAddress] = useState<AWAddress | null>(null);
-
-  // Paiement à l'avance — écoute temps réel Firestore
-  const [advancePaymentOk, setAdvancePaymentOk] = useState(() => {
-    const cfg = getAppConfig();
-    return cfg.advancePaymentEnabled || (product as any)?.sellerAdvancePaymentAllowed === true;
-  });
-
-  useEffect(() => {
-    const sellerAllowed = (product as any)?.sellerAdvancePaymentAllowed === true;
-    // S'abonner aux changements temps réel — le toggle admin prend effet immédiatement
-    const unsub = subscribeAppConfig((config) => {
-      setAdvancePaymentOk(config.advancePaymentEnabled || sellerAllowed);
-    });
-    return unsub;
-  }, [product]);
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'in_person'>('in_person');
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
@@ -385,162 +368,66 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
           />
         </div>
 
-        {/* ── MODE DE PAIEMENT — Mobile Money ou À la livraison ── */}
+        {/* ── MODE DE PAIEMENT — Escrow uniquement ── */}
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mode de paiement</p>
-          <div className="grid grid-cols-1 gap-3 mb-4">
-            {/* Paiement sécurisé — Escrow CinetPay (PAR DÉFAUT, en premier) */}
-            <button onClick={() => setPaymentMode('escrow')}
-              className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'escrow' ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`}>
-              <div className="absolute -top-2 -right-1 bg-green-600 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Recommande
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Paiement</p>
+          <div className="bg-white rounded-2xl border border-green-200 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
-              <div className="text-2xl flex-shrink-0"></div>
-              <div className="flex-1">
-                <p className={`text-[12px] font-black ${paymentMode === 'escrow' ? 'text-green-800' : 'text-slate-700'}`}>Paiement securise</p>
-                <p className="text-[10px] text-slate-400 font-medium">Ton argent est protege jusqu'a reception du produit</p>
-                <p className="text-[9px] text-amber-600 font-bold mt-1">+100 FCFA de frais de securisation</p>
+              <div>
+                <p className="text-[13px] font-bold text-slate-900">Paiement securise</p>
+                <p className="text-[11px] text-slate-500">Ton argent est protege jusqu'a reception</p>
               </div>
-              {paymentMode === 'escrow' && (
-                <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-              )}
-            </button>
-            {paymentMode === 'escrow' && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 -mt-1">
-                <p className="text-[9px] text-green-700 font-bold leading-relaxed">
-                  Wave, Orange Money, MTN, Moov — ton argent reste bloque tant que tu n'as pas confirme la reception. Si probleme, remboursement automatique.
-                </p>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
-                  <span className="text-[9px] text-slate-500 font-bold">Total a payer :</span>
-                  <span className="text-[12px] font-black text-green-700">{(effectivePrice + 100).toLocaleString('fr-FR')} FCFA</span>
-                </div>
+            </div>
+            <div className="space-y-2 text-[11px] text-slate-600">
+              <div className="flex items-center gap-2">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>Wave, Orange Money, MTN, Moov acceptes</span>
               </div>
-            )}
-
-            {/* Payer à la livraison */}
-            <button onClick={() => setPaymentMode('cash_on_delivery')}
-              className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${paymentMode === 'cash_on_delivery' ? 'border-blue-500 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
-              <div className="text-2xl flex-shrink-0"></div>
-              <div className="flex-1">
-                <p className={`text-[12px] font-black ${paymentMode === 'cash_on_delivery' ? 'text-blue-800' : 'text-slate-700'}`}>Payer a la livraison</p>
-                <p className="text-[10px] text-slate-400 font-medium">Tu paies quand tu recois l'article (pas de protection)</p>
+              <div className="flex items-center gap-2">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>Argent bloque jusqu'a confirmation de reception</span>
               </div>
-              {paymentMode === 'cash_on_delivery' && (
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-              )}
-            </button>
-
-            {/* Payer à l'avance — conditionnel */}
-            {advancePaymentOk && (
-              <button
-                onClick={() => setPaymentMode('mobile_money')}
-                className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all active:scale-95 ${
-                  paymentMode === 'mobile_money' ? 'border-orange-400 bg-orange-50' : 'border-slate-100 bg-slate-50'
-                }`}>
-                <div className="text-2xl flex-shrink-0"></div>
-                <div className="flex-1">
-                  <p className={`text-[12px] font-black ${paymentMode === 'mobile_money' ? 'text-orange-800' : 'text-slate-700'}`}>Payer a l'avance</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Wave, Orange Money, MTN, Moov (sans protection)</p>
-                </div>
-                {paymentMode === 'mobile_money' && (
-                  <div className="w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </div>
-                )}
-              </button>
-            )}
+              <div className="flex items-center gap-2">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>Remboursement en cas de litige</span>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-green-100 flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-medium">Protection acheteur (2%)</span>
+              <span className="text-[11px] font-bold text-green-700">
+                {calcOrderFees(effectivePrice).buyerProtectionFee.toLocaleString('fr-FR')} FCFA
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Choix méthode de paiement Mobile Money — visible seulement si mobile_money */}
-        {paymentMode === 'mobile_money' && (
-        <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Méthode de paiement du vendeur</p>
-          {loadingSellerInfo ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-6 h-6 border-2 border-green-200 border-t-green-600 rounded-full animate-spin"/>
-            </div>
-          ) : sellerPayments.length === 0 ? (
-            <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-              <p className="text-[11px] text-amber-800 font-bold">Le vendeur n'a pas encore renseigné ses coordonnées de paiement. Contactez-le via la messagerie.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {sellerPayments.map((pm) => {
-                const m = MOBILE_PAYMENT_METHODS.find(x => x.id === pm.method);
-                const isSelected = paymentInfo?.method === pm.method && paymentInfo?.phone === pm.phone;
-                return (
-                  <button key={`${pm.method}-${pm.phone}`}
-                    onClick={() => setPaymentInfo(pm)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all ${isSelected ? 'border-green-500 bg-green-50' : 'border-slate-100 bg-slate-50'}`}>
-                    {m && <PaymentLogo logo={m.logo} name={m.name} color={m.color} size={42} />}
-                    <div className="flex-1">
-                      <p className="font-black text-slate-900 text-[12px]">{m?.name}</p>
-                      <p className="text-slate-500 text-[11px] font-bold">{pm.phone} · {pm.holderName}</p>
-                    </div>
-                    {isSelected && (
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        )} {/* fin paymentMode === 'mobile_money' */}
       </div>
 
+      {/* Bouton de commande */}
       <div className="px-5 py-4 border-t border-slate-100 space-y-3">
         {orderError && (
           <p className="text-red-500 text-[11px] font-bold text-center px-2 mb-1">{orderError}</p>
         )}
-        {paymentMode === 'mobile_money' ? (
-          <button
-            onClick={() => setStep('availability_check')}
-            disabled={!paymentInfo || loading}
-            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-orange-200 active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #D97706, #92400E)' }}>
-            Continuer → Vérifier la disponibilité
-          </button>
-        ) : paymentMode === 'escrow' ? (
-          <button
-            onClick={() => { setOrderError(''); handleStartEscrow(); }}
-            disabled={loading}
-            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-green-200 active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
-            {loading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                Redirection paiement...
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Payer en toute securite — {(effectivePrice + 100).toLocaleString()} F
-              </div>
-            )}
-          </button>
-        ) : (
-          <button
-            onClick={() => { setOrderError(''); handleStartCOD(); }}
-            disabled={loading}
-            className="w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-widest text-white shadow-xl shadow-blue-200 active:scale-95 transition-all disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)' }}>
-            {loading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                Commande en cours...
-              </div>
-            ) : 'Commander — Payer à la livraison'}
-          </button>
-        )}
+        <button
+          onClick={() => { setOrderError(''); handleStartEscrow(); }}
+          disabled={loading}
+          className="w-full py-4 rounded-2xl font-bold text-[13px] text-white active:scale-[0.98] transition-all disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg, #16A34A, #065F46)' }}>
+          {loading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+              Redirection paiement...
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Payer {calcOrderFees(effectivePrice).buyerPays.toLocaleString('fr-FR')} FCFA
+            </div>
+          )}
+        </button>
       </div>
     </div>
   </>
