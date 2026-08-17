@@ -1104,6 +1104,23 @@ function MissionCard({ order, isAssigned, onChatSeller, onChatBuyer, currentDeli
           Voir les détails de la course
         </button>
 
+        {/* Prendre la mission — pour les missions non assignées */}
+        {!isAssigned && currentDelivererId && currentDelivererName && (
+          <button onClick={async () => {
+            setAccepting(true);
+            try {
+              const { assignDeliverer } = await import('@/services/deliveryService');
+              await assignDeliverer({ orderId: order.id, deliverer: { id: currentDelivererId, name: currentDelivererName } as any, fee: 0, order });
+              setAccepted(true);
+            } catch (e) { console.error(e); }
+            finally { setAccepting(false); }
+          }} disabled={accepting}
+            className="w-full py-3 rounded-xl font-bold text-[12px] text-white active:scale-[0.98] transition-all disabled:opacity-50 mb-2"
+            style={{ background: `linear-gradient(135deg, #E05A00, #FF7A1A)` }}>
+            {accepting ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block"/> : 'Prendre cette mission'}
+          </button>
+        )}
+
         {/* Accepter / Refuser pour les missions assignées non encore acceptées */}
         {isAssigned && !accepted && currentDelivererId && currentDelivererName && (
           <div className="flex gap-2 mb-2">
