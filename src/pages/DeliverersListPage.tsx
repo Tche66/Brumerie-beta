@@ -127,8 +127,8 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                 {/* Avatar */}
                 <button onClick={() => onDelivererClick?.(d.id)} className="flex-shrink-0">
                   <div className="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 border-2 border-slate-200">
-                    {d.photoURL ? (
-                      <img src={d.photoURL} alt="" className="w-full h-full object-cover" />
+                    {(d.deliveryPhotoURL || d.photoURL) ? (
+                      <img src={d.deliveryPhotoURL || d.photoURL} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round">
@@ -143,7 +143,7 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => onDelivererClick?.(d.id)} className="font-semibold text-[13px] text-slate-900 truncate">
-                      {d.name}
+                      {d.deliveryPartnerName || d.name}
                     </button>
                     {d.isVerified && (
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round">
@@ -209,7 +209,7 @@ export function DeliverersListPage({ onBack, onDelivererClick, onContact }: Prop
                     className="px-3 py-2 rounded-xl bg-slate-100 font-medium text-sm text-slate-700 active:scale-[0.98] transition-all">
                     Profil
                   </button>
-                  <button onClick={() => onContact?.(d.id, d.name)}
+                  <button onClick={() => onContact?.(d.id, d.deliveryPartnerName || d.name)}
                     className="px-3 py-2 rounded-xl bg-green-600 font-medium text-sm text-white active:scale-[0.98] transition-all">
                     Contacter
                   </button>

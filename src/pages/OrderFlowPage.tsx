@@ -454,11 +454,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 flex-shrink-0">
                           {d.photoURL || d.deliveryPhotoURL
                             ? <img src={d.deliveryPhotoURL || d.photoURL} alt="" className="w-full h-full object-cover"/>
-                            : <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-sm">{d.name?.charAt(0)}</div>
+                            : <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold text-sm">{(d.deliveryPartnerName || d.name)?.charAt(0)}</div>
                           }
                         </div>
                         <div className="flex-1 min-w-0 text-left">
-                          <p className="text-[12px] font-bold text-slate-900 truncate">{d.name}</p>
+                          <p className="text-[12px] font-bold text-slate-900 truncate">{d.deliveryPartnerName || d.name}</p>
                           <p className="text-[10px] text-slate-400">{d.neighborhood || 'Abidjan'}</p>
                         </div>
                         {d.deliveryPriceSameZone && (
