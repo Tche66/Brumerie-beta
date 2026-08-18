@@ -190,13 +190,15 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             sublabel={userProfile?.email || ''}
             onClick={() => setShowChangeEmail(true)}
           />
-          <SettingItem
-            icon={<Shield size={16} className="text-gray-600 dark:text-gray-300" />}
-            label="Verification & Abonnement"
-            sublabel={isPremium ? 'Premium actif' : isVerified ? 'Verifie — passe au Premium' : 'Fais verifier ton identite'}
-            onClick={() => onNavigate('verification')}
-            badge={isPremium ? 'Premium' : isVerified ? 'Verifie' : undefined}
-          />
+          {!isBuyer && (
+            <SettingItem
+              icon={<Shield size={16} className="text-gray-600 dark:text-gray-300" />}
+              label="Verification & Abonnement"
+              sublabel={isPremium ? 'Premium actif' : isVerified ? 'Verifie — passe au Premium' : 'Fais verifier ton identite'}
+              onClick={() => onNavigate('verification')}
+              badge={isPremium ? 'Premium' : isVerified ? 'Verifie' : undefined}
+            />
+          )}
           <SettingItem
             icon={<RefreshCw size={16} className="text-gray-600 dark:text-gray-300" />}
             label={isBuyer ? 'Passer en mode Vendeur' : 'Passer en mode Acheteur'}
@@ -334,49 +336,59 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               onClick={() => onNavigate('edit-profile')}
             />
           )}
-          {!(userProfile as any)?.deliveryCGUAccepted ? (
-            <SettingItem
-              icon={<Truck size={16} className="text-orange-500" />}
-              label="Devenir Livreur"
-              sublabel="Livre dans ton quartier et gagne"
-              onClick={() => onNavigate('become-deliverer')}
-            />
-          ) : (
-            <SettingItem
-              icon={<Truck size={16} className="text-orange-500" />}
-              label="Mon espace livreur"
-              sublabel="Missions et gains"
-              onClick={() => onNavigate('deliverer-dashboard')}
-            />
+          {!isBuyer && (
+            <>
+              {!(userProfile as any)?.deliveryCGUAccepted ? (
+                <SettingItem
+                  icon={<Truck size={16} className="text-orange-500" />}
+                  label="Devenir Livreur"
+                  sublabel="Livre dans ton quartier et gagne"
+                  onClick={() => onNavigate('become-deliverer')}
+                />
+              ) : (
+                <SettingItem
+                  icon={<Truck size={16} className="text-orange-500" />}
+                  label="Mon espace livreur"
+                  sublabel="Missions et gains"
+                  onClick={() => onNavigate('deliverer-dashboard')}
+                />
+              )}
+              <SettingItem
+                icon={<Users size={16} className="text-emerald-600" />}
+                label="Livreurs disponibles"
+                sublabel="Consulter les profils des livreurs"
+                onClick={() => onNavigate('deliverers-list')}
+              />
+            </>
           )}
-          <SettingItem
-            icon={<Users size={16} className="text-emerald-600" />}
-            label="Livreurs disponibles"
-            sublabel="Consulter les profils des livreurs"
-            onClick={() => onNavigate('deliverers-list')}
-          />
         </Section>
 
         {/* Communaute */}
-        <Section title="Communaute">
-          <SettingItem
-            icon={<Users size={16} className="text-gray-600 dark:text-gray-300" />}
-            label="Parrainage"
-            sublabel={`${userProfile?.referralCount || 0} ami${(userProfile?.referralCount || 0) > 1 ? 's' : ''} invite${(userProfile?.referralCount || 0) > 1 ? 's' : ''}`}
-            onClick={() => onNavigate('referral')}
-          />
-          <SettingItem
-            icon={<UserPlus size={16} className="text-emerald-600" />}
-            label="Affiliation vendeur"
-            sublabel="Gagne 20% sur les ventes de tes filleuls"
-            onClick={() => onNavigate('affiliate')}
-          />
-          <SettingItem
-            icon={<ShieldCheck size={16} className="text-red-500" />}
-            label="Anti-Arnaque"
-            sublabel="Signalement et liste noire"
-            onClick={() => onNavigate('trust')}
-          />
+        {!isBuyer && (
+          <Section title="Communaute">
+            <SettingItem
+              icon={<Users size={16} className="text-gray-600 dark:text-gray-300" />}
+              label="Parrainage"
+              sublabel={`${userProfile?.referralCount || 0} ami${(userProfile?.referralCount || 0) > 1 ? 's' : ''} invite${(userProfile?.referralCount || 0) > 1 ? 's' : ''}`}
+              onClick={() => onNavigate('referral')}
+            />
+            <SettingItem
+              icon={<UserPlus size={16} className="text-emerald-600" />}
+              label="Affiliation vendeur"
+              sublabel="Gagne 20% sur les ventes de tes filleuls"
+              onClick={() => onNavigate('affiliate')}
+            />
+            <SettingItem
+              icon={<ShieldCheck size={16} className="text-red-500" />}
+              label="Anti-Arnaque"
+              sublabel="Signalement et liste noire"
+              onClick={() => onNavigate('trust')}
+            />
+          </Section>
+        )}
+
+        {/* App */}
+        <Section title="Application">
           <SettingItem
             icon={<Download size={16} className="text-gray-600 dark:text-gray-300" />}
             label="Installer l'app"
@@ -393,12 +405,14 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
             sublabel="Comment utiliser Brumerie"
             onClick={() => onNavigate('guide')}
           />
-          <SettingItem
-            icon={<Star size={16} className="text-gray-600 dark:text-gray-300" />}
-            label="Suggerer un quartier ou categorie"
-            sublabel="Ajoute ce qui manque sur Brumerie"
-            onClick={() => onNavigate('suggestions')}
-          />
+          {!isBuyer && (
+            <SettingItem
+              icon={<Star size={16} className="text-gray-600 dark:text-gray-300" />}
+              label="Suggerer un quartier ou categorie"
+              sublabel="Ajoute ce qui manque sur Brumerie"
+              onClick={() => onNavigate('suggestions')}
+            />
+          )}
           <SettingItem
             icon={<MessageCircle size={16} className="text-gray-600 dark:text-gray-300" />}
             label="Support"
