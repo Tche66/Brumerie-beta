@@ -198,8 +198,8 @@ function OrderDetail({ orderId, onBack, onOpenChatWithSeller }: { orderId: strin
                 <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100">
                   <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest mb-2"><BruIcons.Moto size={14}/> Livreur assigné</p>
                   <div className="flex items-center gap-3">
-                    {delivererInfo.photoURL
-                      ? <img src={delivererInfo.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"/>
+                    {(delivererInfo.deliveryPhotoURL || delivererInfo.photoURL)
+                      ? <img src={delivererInfo.deliveryPhotoURL || delivererInfo.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"/>
                       : <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-lg flex-shrink-0"><BruIcons.Moto size={14}/></div>
                     }
                     <div className="flex-1 min-w-0">

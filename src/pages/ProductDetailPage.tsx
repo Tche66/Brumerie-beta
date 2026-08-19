@@ -69,7 +69,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
   // Trust system — signalement lié au vendeur + score de risque vendeur
   const [showTrustModal, setShowTrustModal] = useState(false);
   const [sellerRiskScore, setSellerRiskScore] = useState<TrustScore | null>(null);
-  const [sellerDelivery, setSellerDelivery] = useState<{ name?: string; phone?: string } | null>(null);
+  const [sellerDelivery, setSellerDelivery] = useState<{ name?: string; phone?: string; photo?: string } | null>(null);
   const [sellerWhatsapp, setSellerWhatsapp] = useState<string>('');
   // Compteurs live — initialisés à -1 (chargement) pour éviter le flash
   const [liveViewCount, setLiveViewCount] = useState<number>(-1);
@@ -166,7 +166,7 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
       if (!snap.exists()) return;
       const data = snap.data();
       if (data.managesDelivery && (data.deliveryPartnerName || data.deliveryPartnerPhone)) {
-        setSellerDelivery({ name: data.deliveryPartnerName, phone: data.deliveryPartnerPhone });
+        setSellerDelivery({ name: data.deliveryPartnerName, phone: data.deliveryPartnerPhone, photo: data.deliveryPhotoURL || data.photoURL });
       }
       setSellerWhatsapp(data.shopWhatsapp || data.phone || '');
     }).catch(() => {});
@@ -824,10 +824,13 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
             {/* Livraison disponible */}
             {sellerDelivery?.phone && (
               <div className="bg-purple-50 border border-purple-100 rounded-lg px-4 py-3 flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="16" r="1"/><circle cx="20" cy="16" r="1"/></svg>
+                {sellerDelivery.photo
+                  ? <img src={sellerDelivery.photo} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0"/>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="16" r="1"/><circle cx="20" cy="16" r="1"/></svg>
+                }
                 <div>
                   <p className="text-xs font-medium text-purple-800">Livraison dispo</p>
-                  <p className="text-[9px] text-purple-600">Dans ton quartier</p>
+                  <p className="text-[9px] text-purple-600">{sellerDelivery.name || 'Dans ton quartier'}</p>
                 </div>
               </div>
             )}
@@ -1319,7 +1322,11 @@ export function ProductDetailPage({ product: productRaw, onBack, onSellerClick, 
               href={getDeliveryLink()}
               target="_blank" rel="noopener noreferrer"
               className="mt-3 w-full py-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 active:scale-95 transition-all border-2 border-green-200 text-green-700 bg-green-50">
-              🚚 Livraison disponible — Contacter {sellerDelivery.name || 'le livreur'}
+              {sellerDelivery.photo
+                ? <img src={sellerDelivery.photo} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0"/>
+                : <span>🚚</span>
+              }
+              Livraison disponible — Contacter {sellerDelivery.name || 'le livreur'}
             </a>
           )}
           </>
