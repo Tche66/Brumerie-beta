@@ -101,9 +101,6 @@ const PAGE_TO_PATH: Record<string, string> = {
   rapport: '/rapport',
   suggestions: '/suggestions',
   trust: '/trust',
-  'become-deliverer': '/devenir-livreur',
-  'deliverer-dashboard': '/livreur',
-  'deliverers-list': '/livreurs',
   'brume-ia': '/brume-ia',
   affiliate: '/affiliation',
   'edit-product': '/modifier-produit',
@@ -252,19 +249,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     return undefined;
   }, [currentUser?.uid, userProfile?.role]);
 
-  // Deliverer active missions
-  useEffect(() => {
-    if (!currentUser || userProfile?.role !== 'livreur') return;
-    const qr = query(collection(db, 'orders'), where('delivererId', '==', currentUser.uid));
-    const unsub = onSnapshot(qr, (snap) => {
-      const active = snap.docs.filter((d) => {
-        const s = d.data().status;
-        return !['delivered', 'cod_delivered', 'cancelled'].includes(s);
-      }).length;
-      setActiveMissions(active);
-    }, () => {});
-    return unsub;
-  }, [currentUser?.uid, userProfile?.role]);
 
   // Presence
   useEffect(() => {
@@ -319,15 +303,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser?.uid, (userProfile as any)?.needsOnboarding, userProfile?.neighborhood, userProfile?.phone]);
 
-  // Redirect livreur
-  useEffect(() => {
-    if (!userProfile || userProfile.role !== 'livreur') return;
-    const nonDelivererPaths = ['/', '/tableau', '/publier', '/explorer', '/profil', '/devenir-livreur'];
-    if (nonDelivererPaths.includes(location.pathname)) {
-      const t = setTimeout(() => navigate('/livreur'), 300);
-      return () => clearTimeout(t);
-    }
-  }, [userProfile?.role, location.pathname, navigate]);
 
   // Boost/badge expiry check (placeholder for future implementation)
   useEffect(() => {

@@ -89,11 +89,16 @@ function AppShell() {
 
   return (
     <div className="min-h-full bg-white">
-      <main style={{ animation: 'pageSlideIn 0.22s cubic-bezier(0.25,0.46,0.45,0.94) both' }}>
+      {role === 'livreur' && (
+        <div className="fixed top-0 left-0 right-0 z-[200] bg-orange-500 text-white text-center py-2.5 px-4 text-[11px] font-bold shadow-lg" style={{ maxWidth: 480, margin: '0 auto' }}>
+          Ton espace livreur est sur <a href="https://delivery.brumerie.com" className="underline font-black">delivery.brumerie.com</a>
+        </div>
+      )}
+      <main style={{ animation: 'pageSlideIn 0.22s cubic-bezier(0.25,0.46,0.45,0.94) both', ...(role === 'livreur' ? { paddingTop: 36 } : {}) }}>
         <AppRoutes />
       </main>
 
-      {MAIN_PAGES.includes(window.location.pathname) && role !== 'livreur' && (
+      {MAIN_PAGES.includes(window.location.pathname) && (
         <BottomNav
           activePage={window.location.pathname === '/' ? 'home' : window.location.pathname.slice(1)}
           onNavigate={(page) => {

@@ -336,31 +336,12 @@ export function SettingsPage({ onBack, onNavigate, role = 'seller' }: SettingsPa
               onClick={() => onNavigate('edit-profile')}
             />
           )}
-          {!isBuyer && (
-            <>
-              {!(userProfile as any)?.deliveryCGUAccepted ? (
-                <SettingItem
-                  icon={<Truck size={16} className="text-orange-500" />}
-                  label="Devenir Livreur"
-                  sublabel="Livre dans ton quartier et gagne"
-                  onClick={() => onNavigate('become-deliverer')}
-                />
-              ) : (
-                <SettingItem
-                  icon={<Truck size={16} className="text-orange-500" />}
-                  label="Mon espace livreur"
-                  sublabel="Missions et gains"
-                  onClick={() => onNavigate('deliverer-dashboard')}
-                />
-              )}
-              <SettingItem
-                icon={<Users size={16} className="text-emerald-600" />}
-                label="Livreurs disponibles"
-                sublabel="Consulter les profils des livreurs"
-                onClick={() => onNavigate('deliverers-list')}
-              />
-            </>
-          )}
+          <SettingItem
+            icon={<Truck size={16} className="text-orange-500" />}
+            label="Espace livreur"
+            sublabel="Gere tes missions sur delivery.brumerie.com"
+            onClick={() => window.open('https://delivery.brumerie.com', '_blank')}
+          />
         </Section>
 
         {/* Communaute */}

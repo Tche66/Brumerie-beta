@@ -76,28 +76,7 @@ function IconSettings({ active }: { active: boolean }) {
 }
 
 export function BottomNav({ activePage, onNavigate, role = 'seller', unreadMessages = 0, pendingDashboard = 0, activeMissions = 0, cartCount = 0 }: BottomNavProps) {
-  const isBuyer = role === 'buyer';
-  const isDeliverer = role === 'livreur';
-
-  if (isDeliverer) return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100"
-      style={{ maxWidth: 480, margin: '0 auto' }}>
-      <div className="flex items-center h-16 px-1 safe-area-pb">
-        <NavItem label="Accueil" active={activePage === 'home'} onClick={() => onNavigate('home')}>
-          <IconHome active={activePage === 'home'}/>
-        </NavItem>
-        <NavItem label="Missions" active={activePage === 'deliverer-dashboard'} onClick={() => onNavigate('deliverer-dashboard')} badge={activeMissions}>
-          <IconTruck active={activePage === 'deliverer-dashboard'}/>
-        </NavItem>
-        <NavItem label="Messages" active={activePage === 'messages'} onClick={() => onNavigate('messages')} badge={unreadMessages}>
-          <IconMessage active={activePage === 'messages'}/>
-        </NavItem>
-        <NavItem label="Profil" active={activePage === 'settings'} onClick={() => onNavigate('settings')}>
-          <IconSettings active={activePage === 'settings'}/>
-        </NavItem>
-      </div>
-    </nav>
-  );
+  const isBuyer = role === 'buyer' || role === 'livreur';
 
   if (isBuyer) return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100"

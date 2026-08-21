@@ -37,10 +37,7 @@ const CataloguePage = lazy(() => import('@/pages/CataloguePage').then(m => ({ de
 const RapportPage = lazy(() => import('@/pages/RapportPage').then(m => ({ default: m.RapportPage })));
 const SuggestionsPage = lazy(() => import('@/pages/SuggestionsPage').then(m => ({ default: m.SuggestionsPage })));
 const TrustPage = lazy(() => import('@/pages/TrustPage').then(m => ({ default: m.TrustPage })));
-const BecomeDelivererPage = lazy(() => import('@/pages/BecomeDelivererPage').then(m => ({ default: m.BecomeDelivererPage })));
-const DelivererDashboardPage = lazy(() => import('@/pages/DelivererDashboardPage').then(m => ({ default: m.DelivererDashboardPage })));
 const DelivererProfilePage = lazy(() => import('@/pages/DelivererProfilePage').then(m => ({ default: m.DelivererProfilePage })));
-const DeliverersListPage = lazy(() => import('@/pages/DeliverersListPage').then(m => ({ default: m.DeliverersListPage })));
 const AffiliatePage = lazy(() => import('@/pages/AffiliatePage').then(m => ({ default: m.AffiliatePage })));
 
 function PageLoader() {
@@ -290,11 +287,7 @@ export function AppRoutes() {
             onOpenConversation={async (convId: string) => { await app.handleStartChat(convId); }}
             onOpenOrder={(orderId: string) => {
               app.setSelectedOrderId(orderId);
-              if (userProfile?.role === 'livreur') {
-                app.handleNavigate('deliverer-dashboard');
-              } else {
-                app.handleNavigate('order-status');
-              }
+              app.handleNavigate('order-status');
             }}
           />
         } />
@@ -340,32 +333,8 @@ export function AppRoutes() {
         <Route path="/rapport" element={<RapportPage onBack={app.goBack} />} />
         <Route path="/suggestions" element={<SuggestionsPage onBack={app.goBack} />} />
         <Route path="/trust" element={<TrustPage onBack={app.goBack} />} />
-        <Route path="/devenir-livreur" element={
-          <BecomeDelivererPage
-            onBack={app.goBack}
-            onDone={async () => {
-              await refreshUserProfile();
-              app.handleNavigate('deliverer-dashboard');
-            }}
-          />
-        } />
-        <Route path="/livreur" element={
-          <DelivererDashboardPage
-            onNavigate={app.handleNavigate}
-            onChat={async (targetId: string, targetName: string) => {
-              await app.handleOpenChatWithSeller(targetId, targetName, targetId, 'Contact Brumerie');
-            }}
-          />
-        } />
         <Route path="/livreur/:delivererId" element={
           app.selectedDelivererId ? <DelivererProfilePage delivererId={app.selectedDelivererId} onBack={app.goBack} /> : <HomeRoute />
-        } />
-        <Route path="/livreurs" element={
-          <DeliverersListPage
-            onBack={app.goBack}
-            onDelivererClick={(id: string) => { app.setSelectedDelivererId(id); app.handleNavigate('deliverer-profile'); }}
-            onContact={async (id: string, name: string) => { await app.handleOpenChatWithSeller(id, name, id, 'Contact livreur'); }}
-          />
         } />
         <Route path="/affiliation" element={<AffiliatePage onBack={app.goBack} />} />
         {/* Fallback */}
