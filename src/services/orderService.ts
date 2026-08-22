@@ -40,6 +40,8 @@ export async function createOrder(params: {
   isCOD?: boolean;
   buyerAWCode?: string; buyerAWRepere?: string;
   buyerAWLatitude?: number; buyerAWLongitude?: number;
+  sellerAWCode?: string; sellerLat?: number; sellerLng?: number;
+  [key: string]: any;
 }): Promise<string> {
   const { brumerieFee, buyerProtectionFee, sellerReceives, buyerPays } = calcOrderFees(params.productPrice);
   const isCOD = params.paymentInfo?.method === 'cash_on_delivery' || params.isCOD;
@@ -69,6 +71,9 @@ export async function createOrder(params: {
       buyerAWRepere:    params.buyerAWRepere,
       buyerAWLatitude:  params.buyerAWLatitude,
       buyerAWLongitude: params.buyerAWLongitude,
+      sellerAWCode:     params.sellerAWCode,
+      sellerLat:        params.sellerLat,
+      sellerLng:        params.sellerLng,
     }) as any;
 
     const orderId = order.id;

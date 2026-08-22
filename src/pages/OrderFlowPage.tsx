@@ -42,6 +42,7 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
   const [sellerPayments, setSellerPayments] = useState<PaymentInfo[]>([]);
   const [sellerPhone, setSellerPhone] = useState<string>('');
   const [sellerDelivery, setSellerDelivery] = useState<{ sameZone: number; otherZone: number }>({ sameZone: 0, otherZone: 0 });
+  const [sellerLocation, setSellerLocation] = useState<{ awCode?: string; lat?: number; lng?: number }>({});
   const [loadingSellerInfo, setLoadingSellerInfo] = useState(true);
   const [transactionRef, setTransactionRef] = useState('');
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
@@ -97,6 +98,11 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
             sameZone: data.deliveryPriceSameZone || 0,
             otherZone: data.deliveryPriceOtherZone || 0,
           });
+          setSellerLocation({
+            awCode: data.awAddressCode || undefined,
+            lat: data.latitude || data.shopLatitude || undefined,
+            lng: data.longitude || data.shopLongitude || undefined,
+          });
         }
       } catch (e) { console.error('[OrderFlow] fetchSeller:', e); }
       finally { setLoadingSellerInfo(false); }
@@ -128,7 +134,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        // <BruIcons.CheckCircle size={14}/> Firestore refuse undefined — on omet les champs vides
+        ...(sellerLocation.awCode ? { sellerAWCode: sellerLocation.awCode } : {}),
+        ...(sellerLocation.lat    ? { sellerLat: sellerLocation.lat }       : {}),
+        ...(sellerLocation.lng    ? { sellerLng: sellerLocation.lng }       : {}),
         ...(awCode        ? { buyerAWCode:      awCode }               : {}),
         ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
         ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
@@ -172,7 +180,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
-        // Firestore refuse undefined — on omet les champs vides
+        ...(sellerLocation.awCode ? { sellerAWCode: sellerLocation.awCode } : {}),
+        ...(sellerLocation.lat    ? { sellerLat: sellerLocation.lat }       : {}),
+        ...(sellerLocation.lng    ? { sellerLng: sellerLocation.lng }       : {}),
         ...(awCode        ? { buyerAWCode:      awCode }               : {}),
         ...(awAddress?.repere    ? { buyerAWRepere: awAddress.repere }  : {}),
         ...(awAddress?.latitude  ? { buyerAWLatitude: awAddress.latitude } : {}),
@@ -216,6 +226,9 @@ export function OrderFlowPage({ product, onBack, onOrderCreated, acceptedPrice }
         deliveryType,
         sellerNeighborhood: product.neighborhood || '',
         buyerNeighborhood: userProfile.neighborhood || '',
+        ...(sellerLocation.awCode ? { sellerAWCode: sellerLocation.awCode } : {}),
+        ...(sellerLocation.lat    ? { sellerLat: sellerLocation.lat }       : {}),
+        ...(sellerLocation.lng    ? { sellerLng: sellerLocation.lng }       : {}),
         ...(awCode ? { buyerAWCode: awCode } : {}),
         ...(awAddress?.repere ? { buyerAWRepere: awAddress.repere } : {}),
         ...(awAddress?.latitude ? { buyerAWLatitude: awAddress.latitude } : {}),
